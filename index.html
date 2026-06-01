@@ -616,8 +616,8 @@ tbody tr:hover td{background:#f5f9ff;}
 <script>
 // ════════════════════════════════════════════════════════════════
 // !! แก้ค่านี้ก่อนใช้งาน !!
-const SUPABASE_URL = 'https://zwtulepvmlngcrbcrrki.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp3dHVsZXB2bWxuZ2NyYmNycmtpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNTc2NDcsImV4cCI6MjA5NTYzMzY0N30.9nhe0_NF3Fa-4FtmbE2AvQCtJdHS05RbkiyC8WvtvvA';
+const SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
 // ════════════════════════════════════════════════════════════════
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -2643,7 +2643,7 @@ async function pgCover(){
 
     <!-- ตราโรงเรียน กึ่งกลาง บนสุด -->
     <div style="text-align:center;margin-bottom:8px">
-      <img src="https://drive.google.com/uc?export=view&id=1IjjamxeQ9VaeAao8PtmR7RCwioE4hndi"
+      <img src="https://lh5.googleusercontent.com/d/1IjjamxeQ9VaeAao8PtmR7RCwioE4hndi"
            alt="ตราโรงเรียน"
            style="height:80px;width:auto;object-fit:contain"
            onerror="this.style.display='none'">
@@ -2711,7 +2711,7 @@ async function pgCover(){
       <thead>
         <tr>
           ${th('รายการประเมิน','text-align:left;padding-left:6px;width:200px')}
-          ${th('จำนวน<br>ที่ประเมิน')}
+          ${th('จำนวน')}
           ${th('ดีเยี่ยม (3)')}${th('ดี (2)')}${th('ผ่าน (1)')}${th('ไม่ผ่าน (0)')}
         </tr>
       </thead>
@@ -2719,22 +2719,12 @@ async function pgCover(){
         <tr>
           <td style="border:1px solid #000;padding:4px 6px;font-size:12px">การอ่าน คิดวิเคราะห์ และเขียน</td>
           ${td(erTotal||'')}
-          ${td(erLv[3]||'')}${td(erLv[2]||'')}${td(erLv[1]||'')}${td(erLv[0]||'')}
-        </tr>
-        <tr>
-          <td style="border:1px solid #000;padding:3px 6px;font-size:11px;color:#555">ร้อยละ</td>
-          ${td('')}
-          ${[3,2,1,0].map(v=>td(erTotal>0?(erLv[v]/erTotal*100).toFixed(1)+'%':'')).join('')}
+          ${[3,2,1,0].map(v=>td(erLv[v]?(erLv[v]+(erTotal>0?' ('+( erLv[v]/erTotal*100).toFixed(1)+'%)':'')):'' )).join('')}
         </tr>
         <tr>
           <td style="border:1px solid #000;padding:4px 6px;font-size:12px">คุณลักษณะอันพึงประสงค์</td>
           ${td(ecTotal||'')}
-          ${td(ecLv[3]||'')}${td(ecLv[2]||'')}${td(ecLv[1]||'')}${td(ecLv[0]||'')}
-        </tr>
-        <tr>
-          <td style="border:1px solid #000;padding:3px 6px;font-size:11px;color:#555">ร้อยละ</td>
-          ${td('')}
-          ${[3,2,1,0].map(v=>td(ecTotal>0?(ecLv[v]/ecTotal*100).toFixed(1)+'%':'')).join('')}
+          ${[3,2,1,0].map(v=>td(ecLv[v]?(ecLv[v]+(ecTotal>0?' ('+( ecLv[v]/ecTotal*100).toFixed(1)+'%)':'')):'' )).join('')}
         </tr>
       </tbody>
     </table>
