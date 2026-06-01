@@ -616,8 +616,8 @@ tbody tr:hover td{background:#f5f9ff;}
 <script>
 // ════════════════════════════════════════════════════════════════
 // !! แก้ค่านี้ก่อนใช้งาน !!
-const SUPABASE_URL = 'https://zwtulepvmlngcrbcrrki.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp3dHVsZXB2bWxuZ2NyYmNycmtpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNTc2NDcsImV4cCI6MjA5NTYzMzY0N30.9nhe0_NF3Fa-4FtmbE2AvQCtJdHS05RbkiyC8WvtvvA';
+const SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
 // ════════════════════════════════════════════════════════════════
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -1700,31 +1700,81 @@ function renderScPage(){
 function renderUnitTab(period,maxTotal){
   const units=scU[period], lbl=period==='before'?'ก่อนกลางภาค':'หลังกลางภาค';
   return`
+  <!-- ── เพิ่มหน่วยการเรียน ── -->
   <div class="card" style="margin-bottom:14px"><div class="cb">
-    <div style="font-size:13px;font-weight:600;color:var(--pd);margin-bottom:10px">เพิ่มหน่วยการเรียน${lbl}</div>
+    <div style="font-size:13.5px;font-weight:600;color:var(--txt);margin-bottom:12px">เพิ่มหน่วยการเรียน${lbl}</div>
     <div class="wc">
-      <div><label class="fl">หน่วยที่</label><input type="number" class="fi" id="${period}-un" value="${units.length+1}" min="1" style="width:72px"></div>
-      <div style="flex:1;min-width:150px"><label class="fl">ชื่อหน่วย</label><input class="fi" id="${period}-unm" placeholder="เช่น หน่วยที่ 1"></div>
-      <div style="min-width:140px"><label class="fl">มาตรฐาน/ตัวชี้วัด</label><input class="fi" id="${period}-std" placeholder="เช่น ว1.2 ม.1/1"></div>
-      <div><label class="fl">คะแนนเต็ม</label><input type="number" class="fi" id="${period}-mx" value="${maxTotal}" min="1" style="width:80px"></div>
-      <div style="align-self:flex-end"><button class="btn bp" onclick="openUnitModal('${period}')">📋 บันทึกคะแนน</button></div>
+      <div><label class="fl">หน่วยที่</label>
+        <input type="number" class="fi" id="${period}-un" value="${units.length+1}" min="1" style="width:72px"></div>
+      <div style="flex:1;min-width:150px"><label class="fl">ชื่อหน่วย</label>
+        <input class="fi" id="${period}-unm" placeholder="เช่น สิ่งมีชีวิต"></div>
+      <div style="min-width:140px"><label class="fl">มาตรฐาน/ตัวชี้วัด</label>
+        <input class="fi" id="${period}-std" placeholder="เช่น ว1.2 ม.1/1"></div>
+      <div><label class="fl">คะแนนเต็ม</label>
+        <input type="number" class="fi" id="${period}-mx" value="${maxTotal}" min="1" style="width:80px"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap">
+      <button class="btn bs" onclick="addUnitOnly('${period}')">+ เพิ่มหน่วย (ยังไม่กรอกคะแนน)</button>
+      <button class="btn bp" onclick="openUnitModal('${period}')">✏️ เพิ่มหน่วย + กรอกคะแนน</button>
     </div>
   </div></div>
+
+  <!-- ── ตารางคะแนนหน่วย ── -->
   ${units.length>0?`
-  <div class="card"><div class="ch"><div class="ct">คะแนนหน่วย${lbl}</div></div><div class="cb">
-    <div class="tw"><table>
-      <thead><tr><th>เลขที่</th><th class="tl">ชื่อ-สกุล</th>
-        ${units.map(u=>`<th>หน่วย ${u.unit_number}<br><span style="font-size:10px;font-weight:400">/${u.max_score}</span></th>`).join('')}
-        <th>รวม</th></tr></thead>
-      <tbody>${scStus.length===0
-        ?`<tr><td colspan="${units.length+3}" class="tc" style="padding:20px;color:var(--muted)">⚠️ ไม่พบนักเรียน</td></tr>`
-        :scStus.map((s,i)=>{
-          let tot=0;
-          const cells=units.map(u=>{const sc=gsc(s.id,period,u.unit_number);tot+=sc??0;return`<td class="tr2">${sc??'-'}</td>`;});
-          return`<tr><td class="tc">${i+1}</td><td>${esc(s.student_name)}</td>${cells.join('')}<td class="tr2"><strong>${tot||'-'}</strong></td></tr>`;
-        }).join('')}
-      </tbody></table></div>
-  </div></div>`:`<div class="card"><div class="empty" style="padding:22px"><div>ยังไม่มีหน่วยการเรียน</div></div></div>`}`;
+  <div class="card">
+    <div class="ch">
+      <div class="ct">คะแนนหน่วย${lbl}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <span class="badge bg-gr">${units.length} หน่วย</span>
+      </div>
+    </div>
+    <div class="cb">
+      <!-- หัวหน่วย: ชื่อ + ปุ่มแก้/ลบ -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+        ${units.map(u=>`
+          <div style="background:var(--info-bg);border:1px solid var(--info-bdr);border-radius:8px;padding:6px 10px;font-size:12.5px">
+            <div style="font-weight:600;color:var(--info-txt)">หน่วย ${u.unit_number} (/${u.max_score})</div>
+            ${u.unit_name?`<div style="color:var(--muted);font-size:11px">${esc(u.unit_name)}</div>`:''}
+            <div style="display:flex;gap:4px;margin-top:4px">
+              <button class="btn bs btn-sm" onclick="openUnitModalEdit('${period}',${u.unit_number})">✏️ แก้ไข</button>
+              <button class="btn bd btn-sm" onclick="deleteUnit('${period}',${u.unit_number},'${esc(u.unit_name||'หน่วย '+u.unit_number)}')">🗑️ ลบ</button>
+            </div>
+          </div>`).join('')}
+      </div>
+      <div class="tw"><table>
+        <thead><tr>
+          <th>เลขที่</th><th class="tl">ชื่อ-สกุล</th>
+          ${units.map(u=>`<th style="min-width:64px">
+            หน่วย ${u.unit_number}<br>
+            <span style="font-size:10px;font-weight:400;opacity:.7">/${u.max_score}</span>
+          </th>`).join('')}
+          <th>รวม</th>
+        </tr></thead>
+        <tbody>${scStus.length===0
+          ?`<tr><td colspan="${units.length+3}" class="tc" style="padding:20px;color:var(--muted)">⚠️ ไม่พบนักเรียน</td></tr>`
+          :scStus.map((s,i)=>{
+            let tot=0;
+            const cells=units.map(u=>{
+              const sc=gsc(s.id,period,u.unit_number);
+              tot+=sc??0;
+              const display=sc!=null?sc:'-';
+              return`<td class="tr2" style="cursor:pointer" onclick="quickEditScore('${period}',${u.unit_number},${u.max_score},'${s.id}',${sc??'null'})" title="คลิกเพื่อแก้ไข">${display}</td>`;
+            });
+            return`<tr>
+              <td class="tc">${i+1}</td>
+              <td>${esc(s.student_name)}</td>
+              ${cells.join('')}
+              <td class="tr2"><strong>${tot>0?tot:'-'}</strong></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table></div>
+    </div>
+  </div>`
+  :`<div class="card"><div class="empty" style="padding:28px">
+    <span class="ei" style="font-size:32px">📝</span>
+    <div style="margin-top:8px;color:var(--muted)">ยังไม่มีหน่วยการเรียน<br>กรอกข้อมูลด้านบนแล้วกด "+ เพิ่มหน่วย"</div>
+  </div></div>`}`;
 }
 let _unitCtx={}; // เก็บ context ของ unit modal
 function openUnitModal(period){
@@ -1769,6 +1819,122 @@ function openUnitModal(period){
 }
 function fillUnitScore(mx){ scStus.forEach(s=>{const el=$('usc-'+s.id);if(el){el.value=mx;el.classList.remove('over');}}); }
 function clearUnitScore(){ scStus.forEach(s=>{const el=$('usc-'+s.id);if(el){el.value='';el.classList.remove('over');}}); }
+// ── เพิ่มหน่วย โดยไม่กรอกคะแนน (บันทึกทีหลัง) ──────────────
+async function addUnitOnly(period){
+  const un=parseInt($(period+'-un')?.value)||1;
+  const unm=($(period+'-unm')?.value||'').trim()||('หน่วยที่ '+un);
+  const std=($(period+'-std')?.value||'').trim();
+  const mx=parseFloat($(period+'-mx')?.value)||20;
+  if(scU[period].find(u=>u.unit_number===un)){
+    toast('หน่วย '+un+' มีอยู่แล้ว','er'); return;
+  }
+  // สร้าง row เดียวสำหรับ student แรก เพื่อ upsert ชื่อหน่วยลง DB
+  // (ถ้าไม่มีนักเรียนก็เก็บ meta ไว้ใน scU แทน)
+  if(scStus.length===0){
+    // ยังไม่มีนักเรียน เพิ่ม stub ไว้ใน scU ก่อน
+    scU[period].push({period,unit_number:un,unit_name:unm,standard_ref:std,max_score:mx});
+    scU[period].sort((a,b)=>a.unit_number-b.unit_number);
+    toast('เพิ่มหน่วย '+un+' เรียบร้อย (ยังไม่มีนักเรียน)');
+    const tabId='sc-'+(period==='before'?'bf':'af');
+    const tabEl=$(tabId);
+    if(tabEl) tabEl.innerHTML=renderUnitTab(period,period==='before'?scSub?.score_before_mid||25:scSub?.score_after_mid||25);
+    return;
+  }
+  // มีนักเรียน: บันทึก score=0 เพื่อเก็บ meta
+  loading(true);
+  try{
+    const rows=scStus.map(s=>({subject_id:S.selSub,student_id:s.id,period,unit_number:un,
+      unit_name:unm,standard_ref:std,max_score:mx,score:0}));
+    invalidateSc();
+    await q(sb.from('score_units').upsert(rows,{onConflict:'subject_id,student_id,period,unit_number'}));
+    scUnits=await q(sb.from('score_units').select('*').eq('subject_id',S.selSub));
+    rebuildUnits();
+    toast('เพิ่มหน่วย '+un+' เรียบร้อย — กดแก้ไขเพื่อกรอกคะแนน');
+    const tabId='sc-'+(period==='before'?'bf':'af');
+    const tabEl=$(tabId);
+    if(tabEl) tabEl.innerHTML=renderUnitTab(period,period==='before'?scSub?.score_before_mid||25:scSub?.score_after_mid||25);
+  }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
+}
+
+// ── เปิด modal แก้ไขหน่วยที่มีอยู่แล้ว ──────────────────────
+function openUnitModalEdit(period,unitNum){
+  const u=scU[period].find(x=>x.unit_number===unitNum);
+  if(!u){toast('ไม่พบหน่วย','er');return;}
+  _unitCtx={period,un:u.unit_number,unm:u.unit_name||'',std:u.standard_ref||'',mx:parseFloat(u.max_score)||20};
+  const existSc={};
+  scUnits.filter(x=>x.period===period&&parseInt(x.unit_number)===unitNum)
+    .forEach(x=>{existSc[String(x.student_id)]=parseFloat(x.score)||0;});
+  document.body.insertAdjacentHTML('beforeend',`
+  <div class="mo" id="unMod"><div class="md md-lg">
+    <div class="mh">
+      <div>
+        <div class="mt">แก้ไขคะแนน — หน่วยที่ ${u.unit_number}${u.unit_name?' : '+esc(u.unit_name):''}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">คะแนนเต็ม ${u.max_score} คะแนน</div>
+      </div>
+      <button class="mx" onclick="rmModal('unMod')">✕</button>
+    </div>
+    <div class="mb">
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+        <span class="badge bg-b">/${u.max_score}</span>
+        <button class="btn bs btn-sm" onclick="fillUnitScore(${u.max_score})">✅ ได้เต็มทุกคน</button>
+        <button class="btn bs btn-sm" onclick="clearUnitScore()">ล้างทั้งหมด</button>
+      </div>
+      <div class="tw"><table>
+        <thead><tr><th>เลขที่</th><th class="tl">ชื่อ-สกุล</th><th>คะแนน (/${u.max_score})</th></tr></thead>
+        <tbody>${scStus.map((s,i)=>`
+          <tr><td class="tc">${i+1}</td><td>${esc(s.student_name)}</td>
+          <td class="tc"><input type="number" class="si2" id="usc-${s.id}"
+            value="${existSc[String(s.id)]??''}" min="0" max="${u.max_score}" step="0.5"
+            oninput="this.classList.toggle('over',parseFloat(this.value)>parseFloat(this.max))"></td></tr>`).join('')}
+        </tbody></table></div>
+    </div>
+    <div class="mf">
+      <button class="btn bs" onclick="rmModal('unMod')">ยกเลิก</button>
+      <button class="btn bp" onclick="saveUnitSc()">💾 บันทึก</button>
+    </div>
+  </div></div>`);
+}
+
+// ── ลบหน่วยทั้งหมด (ลบ score_units ของ unit นั้น) ───────────
+async function deleteUnit(period,unitNum,unitName){
+  if(!confirm('ต้องการลบหน่วย "'+unitName+'" และคะแนนทั้งหมด?'))return;
+  loading(true);
+  try{
+    // ลบ score_units ของ unit นี้ทุก student
+    const idsToDelete=scUnits
+      .filter(u=>u.period===period&&parseInt(u.unit_number)===unitNum)
+      .map(u=>u.id);
+    if(idsToDelete.length>0){
+      await q(sb.from('score_units').delete().in('id',idsToDelete));
+    }
+    invalidateSc();
+    scUnits=await q(sb.from('score_units').select('*').eq('subject_id',S.selSub));
+    rebuildUnits();
+    toast('ลบหน่วย '+unitNum+' เรียบร้อย');
+    const tabId='sc-'+(period==='before'?'bf':'af');
+    const tabEl=$(tabId);
+    if(tabEl) tabEl.innerHTML=renderUnitTab(period,period==='before'?scSub?.score_before_mid||25:scSub?.score_after_mid||25);
+  }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
+}
+
+// ── คลิกช่องคะแนนรายคน เพื่อแก้ไขได้ทันที ─────────────────
+function quickEditScore(period,unitNum,maxScore,studentId,currentScore){
+  _unitCtx={period,un:unitNum,unm:'',std:'',mx:maxScore};
+  const stu=scStus.find(s=>String(s.id)===String(studentId));
+  if(!stu)return;
+  // หา score ทุก student สำหรับ unit นี้ (เผื่อ save พร้อมกัน)
+  const existSc={};
+  scUnits.filter(u=>u.period===period&&parseInt(u.unit_number)===unitNum)
+    .forEach(u=>{existSc[String(u.student_id)]=parseFloat(u.score)||0;});
+  // เปิด modal เหมือน edit แต่เลื่อนไปที่ student ที่คลิก
+  openUnitModalEdit(period,unitNum);
+  // focus ช่องของ student ที่คลิก หลัง modal render
+  setTimeout(()=>{
+    const el=$('usc-'+studentId);
+    if(el){ el.select(); el.scrollIntoView({behavior:'smooth',block:'center'}); }
+  },100);
+}
+
 async function saveUnitSc(){
   const {period,un,unm,std,mx}=_unitCtx;
   if(!period){toast('เกิดข้อผิดพลาด: ไม่พบข้อมูลหน่วย','er');return;}
@@ -1938,34 +2104,141 @@ function buildScoreRows(){
 }
 function exportScores(){
   const sub=scSub;
-  const rows=buildScoreRows();
-  const aoa=[
+  const mBef=sub.score_before_mid||25, mAft=sub.score_after_mid||25;
+  const mM=sub.score_mid||20, mF=sub.score_final||30;
+  const hdr=[
     [`${S.config.school_name||''} — บันทึกคะแนน`],
     [`วิชา ${sub.subject_name} (${sub.subject_code}) ม.${sub.grade_level}/${sub.room}  ครู${sub.teacher_name||''}`],
     [`ปีการศึกษา ${S.config.academic_year} ภาคเรียนที่ ${S.config.semester}`],
-    [],
-    ...rows
+    []
   ];
-  const ncol=rows[0].length;
-  const colW=[6,10,28,...Array(ncol-3).fill(12)];
-  exportExcel([{name:'คะแนน',aoa,colWidths:colW}],
-    `คะแนน_${sub.subject_code}_ม${sub.grade_level}-${sub.room}.xlsx`);
+
+  // ══ Sheet 1: หน่วยการเรียนก่อนกลาง + หลังกลาง ══
+  const h1=['เลขที่','เลขประจำตัว','ชื่อ-สกุล'];
+  const befCols=[], aftCols=[];
+  scU.before.forEach(u=>{ befCols.push(u); h1.push(`หน่วย ${u.unit_number}(/${u.max_score})`); });
+  h1.push(`รวมก่อนกลาง(/${mBef})`);
+  scU.after.forEach(u=>{ aftCols.push(u); h1.push(`หน่วย ${u.unit_number}(/${u.max_score})`); });
+  h1.push(`รวมหลังกลาง(/${mAft})`);
+  const aoa1=[...hdr,h1];
+  scStus.forEach((s,i)=>{
+    const r=[i+1,s.student_code,s.student_name];
+    let bef=0,aft=0;
+    befCols.forEach(u=>{ const v=gsc(s.id,'before',u.unit_number)??0; bef+=v; r.push(v||''); });
+    r.push(bef||'');
+    aftCols.forEach(u=>{ const v=gsc(s.id,'after',u.unit_number)??0; aft+=v; r.push(v||''); });
+    r.push(aft||'');
+    aoa1.push(r);
+  });
+  const w1=[6,10,28,...befCols.map(()=>10),12,...aftCols.map(()=>10),12];
+
+  // ══ Sheet 2: สรุปคะแนนและเกรด ══
+  const h2=['เลขที่','เลขประจำตัว','ชื่อ-สกุล',
+    `รวมก่อนกลาง(/${mBef})`,`รวมหลังกลาง(/${mAft})`,
+    `สอบกลางภาค(/${mM})`,`รวมระหว่างภาค`,
+    `ปลายภาค(/${mF})`,`คะแนนรวม(100)`,'เกรด','ผลพิเศษ'];
+  const aoa2=[...hdr,h2];
+  scStus.forEach((s,i)=>{
+    const sm=gsum(s.id);
+    const sid=String(s.id);
+    const bef=sm.total_before_mid!=null?parseFloat(sm.total_before_mid)
+      :scUnits.filter(u=>u.period==='before'&&String(u.student_id)===sid).reduce((a,b)=>a+(parseFloat(b.score)||0),0);
+    const aft=sm.total_after_mid!=null?parseFloat(sm.total_after_mid)
+      :scUnits.filter(u=>u.period==='after'&&String(u.student_id)===sid).reduce((a,b)=>a+(parseFloat(b.score)||0),0);
+    const midUsed=Math.max(parseFloat(sm.mid_normal)||0,parseFloat(sm.mid_retake)||0,parseFloat(sm.mid_repeat)||0);
+    const fin=parseFloat(sm.final_score)||0;
+    const tot=sm.total_score!=null?parseFloat(sm.total_score):(bef+aft+midUsed+fin);
+    const g=sm.grade!=null&&sm.grade!==''?sm.grade:(tot>0?calcGrade(tot):'-');
+    aoa2.push([i+1,s.student_code,s.student_name,
+      bef||'',aft||'',midUsed||'',bef+aft+midUsed||'',fin||'',tot||'',g,sm.special_result||'']);
+  });
+  const w2=[6,10,28,14,14,14,16,12,14,8,10];
+
+  exportExcel(
+    [{name:'หน่วยการเรียน',aoa:aoa1,colWidths:w1},{name:'สรุปคะแนน',aoa:aoa2,colWidths:w2}],
+    `คะแนน_${sub.subject_code}_ม${sub.grade_level}-${sub.room}.xlsx`
+  );
 }
 function printScores(){
   const sub=scSub;
-  const rows=buildScoreRows();
-  let html=`<div class="meta">วิชา ${esc(sub.subject_name)} (${esc(sub.subject_code)}) ม.${sub.grade_level}/${sub.room} &nbsp; ครูผู้สอน ${esc(sub.teacher_name||'')}</div>`;
-  html+='<table><thead><tr>';
-  rows[0].forEach(h=>html+=`<th>${esc(h)}</th>`);
-  html+='</tr></thead><tbody>';
-  for(let i=1;i<rows.length;i++){
-    html+='<tr>';
-    rows[i].forEach((c,j)=>html+=`<td class="${j===2?'l':''}">${esc(c)}</td>`);
-    html+='</tr>';
-  }
-  html+='</tbody></table>';
+  const meta=`วิชา ${esc(sub.subject_name)} (${esc(sub.subject_code)}) ม.${sub.grade_level}/${sub.room} &nbsp; ครู${esc(sub.teacher_name||'')} &nbsp; ปีการศึกษา ${S.config.academic_year||''} ภาค ${S.config.semester||''}`;
+  const mBef=sub.score_before_mid||25, mAft=sub.score_after_mid||25;
+  const mM=sub.score_mid||20, mF=sub.score_final||30;
+  const unitsBef=scU.before, unitsAft=scU.after;
 
-  printHTML(`บันทึกคะแนน — ${sub.subject_name} ม.${sub.grade_level}/${sub.room}`, html);
+  // ══ หน้า 1: หน่วยการเรียนทั้งหมด + รวมแต่ละช่วง ══
+  let p1=`<div>
+    <h3 style="margin:0 0 4px">บันทึกคะแนนหน่วยการเรียน</h3>
+    <div class="meta" style="margin-bottom:8px">${meta}</div>
+    <table><thead>
+      <tr>
+        <th rowspan="2">เลขที่</th>
+        <th rowspan="2">เลขประจำตัว</th>
+        <th rowspan="2" style="text-align:left">ชื่อ-สกุล</th>`;
+  if(unitsBef.length) p1+=`<th colspan="${unitsBef.length}" style="background:#d4e6ff">ก่อนกลางภาค</th>`;
+  p1+=`<th rowspan="2" style="background:#b8d4ff">รวมก่อนกลาง<br>(/${mBef})</th>`;
+  if(unitsAft.length) p1+=`<th colspan="${unitsAft.length}" style="background:#d4f0e0">หลังกลางภาค</th>`;
+  p1+=`<th rowspan="2" style="background:#a8e0c0">รวมหลังกลาง<br>(/${mAft})</th>
+      </tr><tr>`;
+  unitsBef.forEach(u=>{ p1+=`<th style="background:#e8f2ff">${u.unit_number}${u.unit_name?'<br><span style="font-size:9px;font-weight:400">'+esc(u.unit_name.slice(0,12))+'</span>':''}<br><span style="font-size:9px;opacity:.6">/${u.max_score}</span></th>`; });
+  unitsAft.forEach(u=>{ p1+=`<th style="background:#e8f8f0">${u.unit_number}${u.unit_name?'<br><span style="font-size:9px;font-weight:400">'+esc(u.unit_name.slice(0,12))+'</span>':''}<br><span style="font-size:9px;opacity:.6">/${u.max_score}</span></th>`; });
+  p1+='</tr></thead><tbody>';
+  scStus.forEach((s,i)=>{
+    let bef=0,aft=0;
+    let befCells='', aftCells='';
+    unitsBef.forEach(u=>{ const sc=gsc(s.id,'before',u.unit_number); bef+=sc??0; befCells+=`<td>${sc!=null?sc:''}</td>`; });
+    unitsAft.forEach(u=>{ const sc=gsc(s.id,'after',u.unit_number);  aft+=sc??0; aftCells+=`<td>${sc!=null?sc:''}</td>`; });
+    p1+=`<tr><td>${i+1}</td><td>${esc(s.student_code)}</td><td class="l">${esc(s.student_name)}</td>
+      ${befCells}<td><strong>${bef||''}</strong></td>
+      ${aftCells}<td><strong>${aft||''}</strong></td></tr>`;
+  });
+  p1+='</tbody></table></div>';
+
+  // ══ หน้า 2: รวมก่อนกลาง + หลังกลาง + สอบกลาง + ปลาย + รวม + เกรด ══
+  let p2=`<div style="page-break-before:always">
+    <h3 style="margin:0 0 4px">สรุปคะแนนและผลการเรียน</h3>
+    <div class="meta" style="margin-bottom:8px">${meta}</div>
+    <table><thead><tr>
+      <th>เลขที่</th>
+      <th>เลขประจำตัว</th>
+      <th style="text-align:left">ชื่อ-สกุล</th>
+      <th style="background:#b8d4ff">รวมก่อนกลาง<br>(/${mBef})</th>
+      <th style="background:#a8e0c0">รวมหลังกลาง<br>(/${mAft})</th>
+      <th style="background:#ffd4b8">สอบกลางภาค<br>(/${mM})</th>
+      <th style="background:#ffe8b8">รวมคะแนน<br>ระหว่างภาค</th>
+      <th style="background:#ffc8a0">ปลายภาค<br>(/${mF})</th>
+      <th style="background:#ffaa80">คะแนนรวม<br>(100)</th>
+      <th style="background:#ff8844">เกรด</th>
+      <th>ผลพิเศษ</th>
+    </tr></thead><tbody>`;
+  scStus.forEach((s,i)=>{
+    const sm=gsum(s.id);
+    // คำนวณจาก scUnits ถ้า summary ยังไม่มี
+    const sid=String(s.id);
+    const bef2=sm.total_before_mid!=null?parseFloat(sm.total_before_mid)
+      :scUnits.filter(u=>u.period==='before'&&String(u.student_id)===sid).reduce((a,b)=>a+(parseFloat(b.score)||0),0);
+    const aft2=sm.total_after_mid!=null?parseFloat(sm.total_after_mid)
+      :scUnits.filter(u=>u.period==='after'&&String(u.student_id)===sid).reduce((a,b)=>a+(parseFloat(b.score)||0),0);
+    const mid=parseFloat(sm.mid_normal)||0;
+    const midUsed=Math.max(parseFloat(sm.mid_normal)||0,parseFloat(sm.mid_retake)||0,parseFloat(sm.mid_repeat)||0);
+    const fin=parseFloat(sm.final_score)||0;
+    const tot=sm.total_score!=null?parseFloat(sm.total_score):(bef2+aft2+midUsed+fin);
+    const g=sm.grade!=null&&sm.grade!==''?sm.grade:(tot>0?calcGrade(tot):'-');
+    p2+=`<tr>
+      <td>${i+1}</td><td>${esc(s.student_code)}</td><td class="l">${esc(s.student_name)}</td>
+      <td><strong>${bef2||''}</strong></td>
+      <td><strong>${aft2||''}</strong></td>
+      <td>${midUsed||''}</td>
+      <td>${bef2+aft2+midUsed||''}</td>
+      <td>${fin||''}</td>
+      <td><strong>${tot||''}</strong></td>
+      <td><strong>${g}</strong></td>
+      <td>${sm.special_result||''}</td>
+    </tr>`;
+  });
+  p2+='</tbody></table></div>';
+
+  printHTML(`บันทึกคะแนน — ${sub.subject_name} ม.${sub.grade_level}/${sub.room}`, p1+p2);
 }
 
 // ════════════════════════════════════════════════════════════════
