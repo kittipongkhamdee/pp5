@@ -617,8 +617,8 @@ tbody tr:hover td{background:#f5f9ff;}
 <script>
 // ════════════════════════════════════════════════════════════════
 // !! แก้ค่านี้ก่อนใช้งาน !!
-const SUPABASE_URL = 'https://zwtulepvmlngcrbcrrki.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp3dHVsZXB2bWxuZ2NyYmNycmtpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNTc2NDcsImV4cCI6MjA5NTYzMzY0N30.9nhe0_NF3Fa-4FtmbE2AvQCtJdHS05RbkiyC8WvtvvA';
+const SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
 // ════════════════════════════════════════════════════════════════
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -1239,49 +1239,207 @@ async function delStu(id,name){
 }
 function openImport(){
   document.body.insertAdjacentHTML('beforeend',`
-  <div class="mo" id="impMod"><div class="md">
+  <div class="mo" id="impMod"><div class="md md-lg">
     <div class="mh"><div class="mt">📥 นำเข้ารายชื่อนักเรียน</div>
     <button class="mx" onclick="rmModal('impMod')">✕</button></div>
     <div class="mb">
-      <div class="alert al-in">วางข้อมูลจาก Excel: <code>เลขที่[TAB]รหัส[TAB]ชื่อ-สกุล</code> หรือ <code>รหัส[TAB]ชื่อ-สกุล</code></div>
-      <div class="fg" style="margin-bottom:12px">
-        <div><label class="fl">ชั้น ม.</label>
-          <select class="fs" id="imp-gr">${[1,2,3,4,5,6].map(g=>`<option>${g}</option>`).join('')}</select></div>
-        <div><label class="fl">ห้อง <span class="req">*</span></label><input class="fi" id="imp-rm" placeholder="เช่น 1"></div>
+      <!-- Tabs -->
+      <div class="tabs" style="margin-bottom:16px">
+        <button class="tab active" data-tg="imp" data-ti="imp-excel" onclick="swTab('imp','imp-excel')">📂 ไฟล์ Excel (.xlsx)</button>
+        <button class="tab" data-tg="imp" data-ti="imp-paste" onclick="swTab('imp','imp-paste')">📋 วางข้อความ (ทีละห้อง)</button>
       </div>
-      <div><label class="fl">รายชื่อนักเรียน</label>
-        <textarea class="fta" id="imp-txt" rows="12" placeholder="1&#9;02411&#9;เด็กชายกฤษฎา พงาตุนัตถ์&#10;2&#9;02412&#9;เด็กชายชานนท์ รัตน์เมือง"></textarea></div>
+
+      <!-- TAB: Excel ทั้งโรงเรียน -->
+      <div class="tp active" id="imp-excel" data-tp="imp">
+        <div class="alert al-in" style="margin-bottom:12px">
+          <div>
+            <strong>รองรับ format คอลัมน์:</strong><br>
+            <code>เลขที่ | รหัส | ชื่อ-สกุล | ชั้น | ห้อง</code><br>
+            <span style="font-size:12px;color:var(--muted)">
+              • ชั้น = ตัวเลข เช่น 1, 2, 3 (ไม่ต้องมีคำว่า ม.)<br>
+              • ห้อง = ตัวเลข เช่น 1, 2, 3<br>
+              • คำนำหน้าในชื่อจะตรวจจับอัตโนมัติ (เด็กชาย/เด็กหญิง/นาย/นางสาว)
+            </span>
+          </div>
+        </div>
+        <div style="border:2px dashed var(--bdr);border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:all .2s"
+             id="drop-zone"
+             onclick="$('excel-file').click()"
+             ondragover="event.preventDefault();this.style.borderColor='var(--ac)'"
+             ondragleave="this.style.borderColor='var(--bdr)'"
+             ondrop="handleFileDrop(event)">
+          <div style="font-size:36px;margin-bottom:8px">📂</div>
+          <div style="font-weight:600;color:var(--txt);margin-bottom:4px">คลิกเพื่อเลือกไฟล์ หรือลากวางที่นี่</div>
+          <div style="font-size:12.5px;color:var(--muted)">รองรับ .xlsx, .xls</div>
+          <input type="file" id="excel-file" accept=".xlsx,.xls" style="display:none" onchange="handleFileSelect(this)">
+        </div>
+        <div id="imp-preview" style="margin-top:14px"></div>
+      </div>
+
+      <!-- TAB: วางข้อความทีละห้อง -->
+      <div class="tp" id="imp-paste" data-tp="imp">
+        <div class="alert al-in" style="margin-bottom:12px">
+          วางข้อมูลจาก Excel: <code>เลขที่[TAB]รหัส[TAB]ชื่อ-สกุล</code>
+        </div>
+        <div class="fg" style="margin-bottom:12px">
+          <div><label class="fl">ชั้น ม.</label>
+            <select class="fs" id="imp-gr">${[1,2,3,4,5,6].map(g=>`<option>${g}</option>`).join('')}</select></div>
+          <div><label class="fl">ห้อง <span class="req">*</span></label>
+            <input class="fi" id="imp-rm" placeholder="เช่น 1"></div>
+        </div>
+        <div><label class="fl">รายชื่อนักเรียน</label>
+          <textarea class="fta" id="imp-txt" rows="10"
+            placeholder="1&#9;02411&#9;เด็กชายกฤษฎา พงาตุนัตถ์&#10;2&#9;02412&#9;เด็กชายชานนท์ รัตน์เมือง"></textarea></div>
+      </div>
     </div>
     <div class="mf">
       <button class="btn bs" onclick="rmModal('impMod')">ยกเลิก</button>
-      <button class="btn bp" onclick="doImport()">📥 นำเข้า</button>
+      <button class="btn bp" id="imp-btn" onclick="doImport()">📥 นำเข้า</button>
     </div>
   </div></div>`);
 }
-async function doImport(){
-  const gr=$('imp-gr').value,rm=$('imp-rm').value.trim(),txt=$('imp-txt').value.trim();
-  if(!rm){toast('กรุณากรอกห้อง','er');return;}
-  const lines=txt.split('\n').filter(l=>l.trim());
-  const arr=lines.map(l=>{
-    const p=l.split(/\t/).map(x=>x.trim());
-    let code='',name='';
-    if(p.length>=3&&!isNaN(p[0])){code=p[1];name=p[2];}
-    else if(p.length>=2){code=p[0];name=p[1];}
-    else name=p[0];
-    if(!name)return null;
-    const pfx=['เด็กชาย','เด็กหญิง','นาย','นางสาว','นาง'].find(p=>name.startsWith(p))||'';
+
+// ── Excel file handlers ──────────────────────────────────────────
+let _excelData = []; // เก็บข้อมูลที่อ่านจาก Excel
+
+function handleFileDrop(e){
+  e.preventDefault();
+  $('drop-zone').style.borderColor='var(--bdr)';
+  const file=e.dataTransfer.files[0];
+  if(file) readExcelFile(file);
+}
+function handleFileSelect(input){
+  const file=input.files[0];
+  if(file) readExcelFile(file);
+}
+
+function readExcelFile(file){
+  $('imp-preview').innerHTML='<div style="color:var(--muted);font-size:13px">⏳ กำลังอ่านไฟล์...</div>';
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const wb=XLSX.read(e.target.result,{type:'binary'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      parseExcelRows(rows);
+    }catch(err){
+      $('imp-preview').innerHTML=`<div class="alert al-er">อ่านไฟล์ไม่ได้: ${err.message}</div>`;
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+
+function parseExcelRows(rows){
+  _excelData=[];
+  const prefixes=['เด็กชาย','เด็กหญิง','นาย','นางสาว','นาง'];
+  let skipped=0;
+
+  // ตรวจหา header row (แถวที่มีคำว่า ชื่อ หรือ name)
+  let dataStart=0;
+  for(let i=0;i<Math.min(5,rows.length);i++){
+    const r=rows[i].map(c=>String(c||'').trim().toLowerCase());
+    if(r.some(c=>c.includes('ชื่อ')||c.includes('name')||c.includes('student'))){
+      dataStart=i+1; break;
+    }
+  }
+
+  for(let i=dataStart;i<rows.length;i++){
+    const r=rows[i].map(c=>String(c||'').trim());
+    if(r.every(c=>!c)) continue; // skip empty rows
+
+    // หา columns: รองรับทั้ง format [เลขที่,รหัส,ชื่อ,ชั้น,ห้อง] และ [รหัส,ชื่อ,ชั้น,ห้อง]
+    let code='',name='',grade='',room='';
+
+    if(r.length>=5 && !isNaN(r[0]) && !isNaN(r[3])){
+      // format: เลขที่ | รหัส | ชื่อ | ชั้น | ห้อง
+      code=r[1]; name=r[2]; grade=r[3]; room=r[4];
+    } else if(r.length>=4 && !isNaN(r[2])){
+      // format: รหัส | ชื่อ | ชั้น | ห้อง
+      code=r[0]; name=r[1]; grade=r[2]; room=r[3];
+    } else if(r.length>=3 && !isNaN(r[0]) && !isNaN(r[1])){
+      // format: เลขที่ | รหัส | ชื่อ (ไม่มีชั้น/ห้อง — skip)
+      skipped++; continue;
+    } else { skipped++; continue; }
+
+    if(!name||!grade||!room){ skipped++; continue; }
+    // normalize grade: "1", "ม.1", "ม1" → "1"
+    grade=String(grade).replace(/[^0-9]/g,'');
+    room=String(room).replace(/[^0-9]/g,'');
+    if(!grade||!room){ skipped++; continue; }
+
+    const pfx=prefixes.find(p=>name.startsWith(p))||'';
     const gender=pfx==='เด็กชาย'||pfx==='นาย'?'ช':'ญ';
-    return{student_code:code,student_name:name,prefix:pfx,grade_level:gr,room:rm,gender};
-  }).filter(Boolean);
-  if(!arr.length){toast('ไม่พบรายชื่อ','er');return;}
-  loading(true);
-  try{
-    await q(sb.from('students').upsert(arr,{onConflict:'student_code,grade_level,room',ignoreDuplicates:false}));
-    clearStuCache();
-    allStu=await q(sb.from('students').select('*').order('grade_level').order('room').order('student_code'));
-    rmModal('impMod');toast('นำเข้า '+arr.length+' คนเรียบร้อย');
-    filterStu();$('stu-cnt').textContent='รวม '+allStu.length+' คน';
-  }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
+    _excelData.push({student_code:code,student_name:name,prefix:pfx,grade_level:grade,room,gender});
+  }
+
+  // สรุปตามชั้น/ห้อง
+  const groups={};
+  _excelData.forEach(s=>{ const k=`ม.${s.grade_level}/${s.room}`; groups[k]=(groups[k]||0)+1; });
+  const groupList=Object.entries(groups).sort((a,b)=>a[0].localeCompare(b[0]));
+
+  $('imp-preview').innerHTML=_excelData.length===0
+    ?`<div class="alert al-er">ไม่พบข้อมูลที่ถูกต้อง — ตรวจสอบ format คอลัมน์ (ต้องมีคอลัมน์ ชั้น และ ห้อง)</div>`
+    :`<div class="alert al-ok" style="margin-bottom:8px">
+        ✅ พบข้อมูล <strong>${_excelData.length} คน</strong>
+        ${skipped>0?`<span style="color:var(--warn-txt)"> (ข้าม ${skipped} แถวที่ไม่ครบข้อมูล)</span>`:''}
+      </div>
+      <div class="tw"><table>
+        <thead><tr><th>ชั้น/ห้อง</th><th>จำนวน</th></tr></thead>
+        <tbody>${groupList.map(([k,n])=>`<tr><td class="tc">${k}</td><td class="tc">${n} คน</td></tr>`).join('')}</tbody>
+      </table></div>`;
+}
+
+async function doImport(){
+  // ตรวจว่าอยู่ tab ไหน
+  const excelTab=$('imp-excel');
+  const isExcel = excelTab && excelTab.classList.contains('active');
+
+  if(isExcel){
+    // นำเข้าจาก Excel
+    if(!_excelData.length){toast('กรุณาเลือกไฟล์ Excel ก่อน','er');return;}
+    loading(true);
+    try{
+      // แบ่ง upsert เป็น batch 100 คน กัน timeout
+      const BATCH=100;
+      let total=0;
+      for(let i=0;i<_excelData.length;i+=BATCH){
+        const batch=_excelData.slice(i,i+BATCH);
+        await q(sb.from('students').upsert(batch,{onConflict:'student_code,grade_level,room',ignoreDuplicates:false}));
+        total+=batch.length;
+      }
+      clearStuCache();
+      allStu=await q(sb.from('students').select('*').order('grade_level').order('room').order('student_code'));
+      _excelData=[];
+      rmModal('impMod');
+      toast('นำเข้า '+total+' คนเรียบร้อย');
+      filterStu();$('stu-cnt').textContent='รวม '+allStu.length+' คน';
+    }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
+  } else {
+    // นำเข้าจากการวางข้อความ (เดิม)
+    const gr=$('imp-gr').value,rm=$('imp-rm').value.trim(),txt=$('imp-txt').value.trim();
+    if(!rm){toast('กรุณากรอกห้อง','er');return;}
+    const lines=txt.split('\n').filter(l=>l.trim());
+    const arr=lines.map(l=>{
+      const p=l.split(/\t/).map(x=>x.trim());
+      let code='',name='';
+      if(p.length>=3&&!isNaN(p[0])){code=p[1];name=p[2];}
+      else if(p.length>=2){code=p[0];name=p[1];}
+      else name=p[0];
+      if(!name)return null;
+      const pfx=['เด็กชาย','เด็กหญิง','นาย','นางสาว','นาง'].find(p=>name.startsWith(p))||'';
+      const gender=pfx==='เด็กชาย'||pfx==='นาย'?'ช':'ญ';
+      return{student_code:code,student_name:name,prefix:pfx,grade_level:gr,room:rm,gender};
+    }).filter(Boolean);
+    if(!arr.length){toast('ไม่พบรายชื่อ','er');return;}
+    loading(true);
+    try{
+      await q(sb.from('students').upsert(arr,{onConflict:'student_code,grade_level,room',ignoreDuplicates:false}));
+      clearStuCache();
+      allStu=await q(sb.from('students').select('*').order('grade_level').order('room').order('student_code'));
+      rmModal('impMod');toast('นำเข้า '+arr.length+' คนเรียบร้อย');
+      filterStu();$('stu-cnt').textContent='รวม '+allStu.length+' คน';
+    }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
+  }
 }
 
 // ════════════════════════════════════════════════════════════════
