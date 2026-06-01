@@ -1661,14 +1661,15 @@ function invalidateSc(){ cacheInv('sc_units_'+S.selSub,'sc_sum_'+S.selSub); }
 function rebuildUnits(){
   const um={};
   scUnits.forEach(u=>{
-    const k=`${u.period}_${u.unit_number}`;
-    if(!um[k])um[k]={period:u.period,unit_number:u.unit_number,unit_name:u.unit_name,standard_ref:u.standard_ref,max_score:u.max_score};
+    const un=parseInt(u.unit_number); // normalize เป็น int เสมอ
+    const k=`${u.period}_${un}`;
+    if(!um[k])um[k]={period:u.period,unit_number:un,unit_name:u.unit_name||'',standard_ref:u.standard_ref||'',max_score:parseFloat(u.max_score)||20};
   });
   scU.before=Object.values(um).filter(u=>u.period==='before').sort((a,b)=>a.unit_number-b.unit_number);
   scU.after=Object.values(um).filter(u=>u.period==='after').sort((a,b)=>a.unit_number-b.unit_number);
 }
-function gsc(sid,period,un){const r=scUnits.find(s=>s.student_id===sid&&s.period===period&&s.unit_number===un);return r?parseFloat(r.score):null;}
-function gsum(sid){return scSum.find(s=>s.student_id===sid)||{};}
+function gsc(sid,period,un){const r=scUnits.find(s=>String(s.student_id)===String(sid)&&s.period===period&&parseInt(s.unit_number)===parseInt(un));return r!=null?parseFloat(r.score):null;}
+function gsum(sid){return scSum.find(s=>String(s.student_id)===String(sid))||{};}
 
 function renderScPage(){
   const sub=scSub;
@@ -1725,43 +1726,72 @@ function renderUnitTab(period,maxTotal){
       </tbody></table></div>
   </div></div>`:`<div class="card"><div class="empty" style="padding:22px"><div>ยังไม่มีหน่วยการเรียน</div></div></div>`}`;
 }
+let _unitCtx={}; // เก็บ context ของ unit modal
 function openUnitModal(period){
-  const un=parseInt($(period+'-un').value)||1, unm=$(period+'-unm').value.trim()||'หน่วยที่ '+un;
-  const std=$(period+'-std').value.trim(), mx=parseFloat($(period+'-mx').value)||20;
+  const un=parseInt($(period+'-un')?.value)||1;
+  const unm=($(period+'-unm')?.value||'').trim()||('หน่วยที่ '+un);
+  const std=($(period+'-std')?.value||'').trim();
+  const mx=parseFloat($(period+'-mx')?.value)||20;
+  // เก็บ context ใน state — ไม่ส่งผ่าน inline string (กันพัง)
+  _unitCtx={period,un,unm,std,mx};
   const existSc={};
-  scUnits.filter(u=>u.period===period&&u.unit_number===un).forEach(u=>{existSc[u.student_id]=u.score;});
+  scUnits.filter(u=>u.period===period&&parseInt(u.unit_number)===un)
+    .forEach(u=>{existSc[String(u.student_id)]=parseFloat(u.score)||0;});
   document.body.insertAdjacentHTML('beforeend',`
   <div class="mo" id="unMod"><div class="md md-lg">
-    <div class="mh"><div class="mt">✏️ คะแนนหน่วยที่ ${un} — ${esc(unm)}</div>
-    <button class="mx" onclick="rmModal('unMod')">✕</button></div>
+    <div class="mh">
+      <div>
+        <div class="mt">บันทึกคะแนน — หน่วยที่ ${un}${unm&&unm!=='หน่วยที่ '+un?' : '+esc(unm):''}</div>
+        ${std?`<div style="font-size:12px;color:var(--muted);margin-top:2px">${esc(std)}</div>`:''}
+      </div>
+      <button class="mx" onclick="rmModal('unMod')">✕</button>
+    </div>
     <div class="mb">
-      ${std?`<div class="alert al-in">มาตรฐาน: <strong>${esc(std)}</strong></div>`:''}
-      <div class="alert al-in">คะแนนเต็ม: <strong>${mx}</strong></div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+        <span class="badge bg-b">คะแนนเต็ม ${mx} คะแนน</span>
+        <button class="btn bs btn-sm" onclick="fillUnitScore(${mx})">✅ ได้เต็มทุกคน</button>
+        <button class="btn bs btn-sm" onclick="clearUnitScore()">🗑️ ล้างทั้งหมด</button>
+      </div>
       <div class="tw"><table>
         <thead><tr><th>เลขที่</th><th class="tl">ชื่อ-สกุล</th><th>คะแนน (/${mx})</th></tr></thead>
         <tbody>${scStus.map((s,i)=>`
           <tr><td class="tc">${i+1}</td><td>${esc(s.student_name)}</td>
           <td class="tc"><input type="number" class="si2" id="usc-${s.id}"
-            value="${existSc[s.id]??''}" min="0" max="${mx}" step="0.5"
-            oninput="this.classList.toggle('over',+this.value>+this.max)"></td></tr>`).join('')}
+            value="${existSc[String(s.id)]??''}" min="0" max="${mx}" step="0.5"
+            oninput="this.classList.toggle('over',parseFloat(this.value)>parseFloat(this.max))"></td></tr>`).join('')}
         </tbody></table></div>
     </div>
     <div class="mf">
       <button class="btn bs" onclick="rmModal('unMod')">ยกเลิก</button>
-      <button class="btn bp" onclick="saveUnitSc('${period}',${un},'${unm.replace(/'/g,"\\'")}','${std}',${mx})">💾 บันทึก</button>
+      <button class="btn bp" onclick="saveUnitSc()">💾 บันทึกคะแนน</button>
     </div>
   </div></div>`);
 }
-async function saveUnitSc(period,un,unm,std,mx){
-  const rows=scStus.map(s=>({subject_id:S.selSub,student_id:s.id,period,unit_number:un,
-    unit_name:unm,standard_ref:std,max_score:mx,score:Math.min(mx,parseFloat($('usc-'+s.id)?.value)||0)}));
+function fillUnitScore(mx){ scStus.forEach(s=>{const el=$('usc-'+s.id);if(el){el.value=mx;el.classList.remove('over');}}); }
+function clearUnitScore(){ scStus.forEach(s=>{const el=$('usc-'+s.id);if(el){el.value='';el.classList.remove('over');}}); }
+async function saveUnitSc(){
+  const {period,un,unm,std,mx}=_unitCtx;
+  if(!period){toast('เกิดข้อผิดพลาด: ไม่พบข้อมูลหน่วย','er');return;}
+  // ตรวจว่ามีคะแนนเกินกำหนดไหม
+  const over=scStus.some(s=>{const v=parseFloat($('usc-'+s.id)?.value);return !isNaN(v)&&v>mx;});
+  if(over){toast('มีคะแนนเกินกำหนด ('+mx+') กรุณาตรวจสอบ','er');return;}
+  const rows=scStus.map(s=>({
+    subject_id:S.selSub, student_id:s.id, period,
+    unit_number:un, unit_name:unm, standard_ref:std, max_score:mx,
+    score:Math.min(mx, parseFloat($('usc-'+s.id)?.value)||0)
+  }));
   loading(true);
   try{
     invalidateSc();
     await q(sb.from('score_units').upsert(rows,{onConflict:'subject_id,student_id,period,unit_number'}));
     scUnits=await q(sb.from('score_units').select('*').eq('subject_id',S.selSub));
-    rebuildUnits();rmModal('unMod');toast('บันทึกคะแนนเรียบร้อย');
-    renderScPage();swTab('sc','sc-'+(period==='before'?'bf':'af'));
+    rebuildUnits();
+    rmModal('unMod');
+    toast('บันทึกคะแนนหน่วย '+un+' เรียบร้อย');
+    // อัปเฉพาะตาราง ไม่ render ทั้งหน้า
+    const tabId='sc-'+(period==='before'?'bf':'af');
+    const tabEl=$(tabId);
+    if(tabEl) tabEl.innerHTML=renderUnitTab(period,period==='before'?scSub?.score_before_mid||25:scSub?.score_after_mid||25);
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
 }
 function renderExamTab(){
@@ -1809,26 +1839,49 @@ async function saveExam(){
     invalidateSc(); invalidateSubjects();
     await q(sb.from('score_summary').upsert(rows,{onConflict:'subject_id,student_id'}));
     scSum=await q(sb.from('score_summary').select('*').eq('subject_id',S.selSub));
-    toast('บันทึกคะแนนสอบเรียบร้อย');renderScPage();swTab('sc','sc-ex');
+    toast('บันทึกคะแนนสอบเรียบร้อย');
+    // อัปเฉพาะแท็บสรุปผล ไม่ render ทั้งหน้า (กันข้อมูลที่กรอกหาย)
+    const smEl=$('sc-sm');
+    if(smEl) smEl.innerHTML=renderSumTab();
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
 }
 function renderSumTab(){
   const RESULTS=['','ร','มส','มก','ผ','มผ'];
+  // คำนวณคะแนนหน่วยจาก scUnits (เผื่อ summary ยังไม่ได้ save)
+  const unitBef={}, unitAft={};
+  scUnits.forEach(u=>{
+    const sid=String(u.student_id), sc=parseFloat(u.score)||0;
+    if(u.period==='before') unitBef[sid]=(unitBef[sid]||0)+sc;
+    else if(u.period==='after') unitAft[sid]=(unitAft[sid]||0)+sc;
+  });
   return`<div class="card"><div class="ch"><div class="ct">📊 สรุปผลการเรียน</div></div><div class="cb">
+    <div class="alert al-in" style="margin-bottom:12px">
+      กรอกคะแนนสอบในแท็บ "คะแนนสอบ" แล้วกดบันทึก จะคำนวณเกรดให้อัตโนมัติ
+    </div>
     <div class="tw"><table>
       <thead><tr>
         <th>เลขที่</th><th class="tl">ชื่อ-สกุล</th>
-        <th>ก่อนกลาง</th><th>หลังกลาง</th><th>กลางภาค</th><th>ปลายภาค</th>
+        <th>ก่อนกลาง<br><span style="font-size:10px;font-weight:400">/${scSub?.score_before_mid||25}</span></th>
+        <th>หลังกลาง<br><span style="font-size:10px;font-weight:400">/${scSub?.score_after_mid||25}</span></th>
+        <th>กลางภาค<br><span style="font-size:10px;font-weight:400">/${scSub?.score_mid||20}</span></th>
+        <th>ปลายภาค<br><span style="font-size:10px;font-weight:400">/${scSub?.score_final||30}</span></th>
         <th>รวม</th><th>เกรด</th><th>ผลพิเศษ</th>
       </tr></thead>
       <tbody>${scStus.map((s,i)=>{
         const sm=gsum(s.id);
-        const g=sm.grade??'-';
+        const sid=String(s.id);
+        // ใช้ค่าจาก summary ถ้ามี ไม่งั้นใช้จาก units
+        const bef=sm.total_before_mid!=null?parseFloat(sm.total_before_mid):(unitBef[sid]||0);
+        const aft=sm.total_after_mid!=null?parseFloat(sm.total_after_mid):(unitAft[sid]||0);
+        const mid=sm.mid_normal!=null?parseFloat(sm.mid_normal):0;
+        const fin=sm.final_score!=null?parseFloat(sm.final_score):0;
+        const tot=sm.total_score!=null?parseFloat(sm.total_score):0;
+        const g=sm.grade!=null&&sm.grade!==''?sm.grade:(tot>0?calcGrade(tot):'-');
         return`<tr>
           <td class="tc">${i+1}</td><td>${esc(s.student_name)}</td>
-          <td class="tr2">${sm.total_before_mid??0}</td><td class="tr2">${sm.total_after_mid??0}</td>
-          <td class="tr2">${sm.mid_normal??0}</td><td class="tr2">${sm.final_score??0}</td>
-          <td class="tr2"><strong>${sm.total_score??0}</strong></td>
+          <td class="tr2">${bef||'-'}</td><td class="tr2">${aft||'-'}</td>
+          <td class="tr2">${mid||'-'}</td><td class="tr2">${fin||'-'}</td>
+          <td class="tr2"><strong>${tot||'-'}</strong></td>
           <td class="tc"><span class="${gcls(g)}" style="font-size:15px;font-weight:700">${g}</span></td>
           <td class="tc">
             <select class="es" id="res-${s.id}" onchange="updEsColor(this)">
@@ -1837,7 +1890,7 @@ function renderSumTab(){
           </td></tr>`;
       }).join('')}</tbody>
     </table></div>
-    <div style="margin-top:12px;display:flex;justify-content:flex-end">
+    <div style="margin-top:12px;display:flex;justify-content:flex-end;gap:8px">
       <button class="btn bp" onclick="saveSpecial()">💾 บันทึกผลพิเศษ</button>
     </div>
   </div></div>`;
@@ -2132,377 +2185,4 @@ async function pgReport(){
     qc('sc_sum_'+S.selSub,  ()=>q(sb.from('score_summary').select('*').eq('subject_id',S.selSub))),
     qc('ev_read_'+S.selSub, ()=>q(sb.from('eval_read').select('*').eq('subject_id',S.selSub))),
     qc('ev_char_'+S.selSub, ()=>q(sb.from('eval_char').select('*').eq('subject_id',S.selSub))),
-    qc('att_sum_'+S.selSub, ()=>qc('att_sum_'+S.selSub, ()=>q(sb.from('attendance').select('student_id,status,periods').eq('subject_id',S.selSub))))
-  ]);
-  loading(false);
-  const sumMap=Object.fromEntries(sumRows.map(s=>[s.student_id,s]));
-  const erMap=Object.fromEntries(erRows.map(e=>[e.student_id,e]));
-  const ecMap=Object.fromEntries(ecRows.map(e=>[e.student_id,e]));
-  // calc att summary
-  const attMap={};
-  const totalH=sub?.total_hours||60;
-  stus.forEach(s=>{attMap[s.id]={attended:0,totalH,pct:0,ms:false};});
-  attRows.forEach(a=>{
-    if(!attMap[a.student_id])attMap[a.student_id]={attended:0,totalH,pct:0,ms:false};
-    if(a.status!=='absent')attMap[a.student_id].attended+=(parseInt(a.periods)||1);
-  });
-  Object.values(attMap).forEach(m=>{m.pct=m.totalH>0?Math.round(m.attended/m.totalH*100):0;m.ms=m.pct<80;});
-  // เก็บไว้ใน state เพื่อให้ export ใช้ได้
-  S._rpt={sub,stus,sumMap,erMap,ecMap,attMap};
-  // stats
-  const pass=sumRows.filter(s=>parseFloat(s.grade)>0).length;
-  const avg=sumRows.length>0?(sumRows.reduce((a,b)=>a+(parseFloat(b.total_score)||0),0)/sumRows.length).toFixed(1):0;
-  const gradeCount={4:0,3.5:0,3:0,2.5:0,2:0,1.5:0,1:0,0:0};
-  sumRows.forEach(s=>{const g=parseFloat(s.grade);if(gradeCount[g]!==undefined)gradeCount[g]++;});
-  const pct=stus.length>0?((pass/stus.length)*100).toFixed(1):0;
-
-  $('pg').innerHTML=`
-  <div class="ph"><div class="ptitle">รายงานผลการเรียน</div>
-    <div style="display:flex;gap:8px">
-      <button class="btn bs no-print" onclick="exportReport()">📥 Excel</button>
-      <button class="btn bs no-print" onclick="window.print()">🖨️ พิมพ์</button>
-    </div></div>
-  <div style="display:flex;gap:10px;margin-bottom:18px" class="no-print">
-    <select class="fs" style="max-width:310px" onchange="changeRptSub(this.value)">
-      ${S.subjects.map(s=>`<option value="${s.id}" ${s.id===S.selSub?'selected':''}>${s.subject_name} ม.${s.grade_level}/${s.room}</option>`).join('')}
-    </select>
-  </div>
-  <div class="sg no-print">
-    <div class="sc"><div class="si bl">👥</div><div><div class="sv">${stus.length}</div><div class="sl">นักเรียน</div></div></div>
-    <div class="sc"><div class="si gr">✅</div><div><div class="sv">${pass}<small style="font-size:13px"> (${pct}%)</small></div><div class="sl">ผ่าน</div></div></div>
-    <div class="sc"><div class="si re">❌</div><div><div class="sv">${sumRows.length-pass}</div><div class="sl">ไม่ผ่าน</div></div></div>
-    <div class="sc"><div class="si or">📈</div><div><div class="sv">${avg}</div><div class="sl">คะแนนเฉลี่ย</div></div></div>
-  </div>
-  <div class="card" style="margin-bottom:16px">
-    <div class="ch"><div>
-      <div class="ct">สรุปผลการเรียนรายบุคคล</div>
-      <div style="font-size:11.5px;color:var(--muted);margin-top:2px">${esc(sub?.subject_name||'')} (${esc(sub?.subject_code||'')}) ม.${sub?.grade_level||''}/${sub?.room||''} ครู${esc(sub?.teacher_name||'')}</div>
-    </div></div>
-    <div class="cb"><div class="tw"><table>
-      <thead><tr>
-        <th>เลขที่</th><th class="tl">ชื่อ-สกุล</th>
-        <th>ก่อนกลาง</th><th>หลังกลาง</th><th>กลางภาค</th><th>ปลายภาค</th>
-        <th>รวม</th><th>เกรด</th><th>ผลพิเศษ</th>
-        <th>เวลาเรียน</th><th>อ่าน/คิด/เขียน</th><th>คุณลักษณะ</th>
-      </tr></thead>
-      <tbody>${stus.map((s,i)=>{
-        const sm=sumMap[s.id]||{};
-        const er=erMap[s.id]||{};
-        const ec=ecMap[s.id]||{};
-        const att=attMap[s.id]||{pct:0,ms:false};
-        const g=sm.grade??'-';
-        return`<tr>
-          <td class="tc">${i+1}</td><td>${esc(s.student_name)}</td>
-          <td class="tr2">${sm.total_before_mid??0}</td>
-          <td class="tr2">${sm.total_after_mid??0}</td>
-          <td class="tr2">${sm.mid_normal??0}</td>
-          <td class="tr2">${sm.final_score??0}</td>
-          <td class="tr2"><strong>${sm.total_score??0}</strong></td>
-          <td class="tc"><span class="${gcls(g)}" style="font-size:15px;font-weight:700">${g}</span></td>
-          <td class="tc">${sm.special_result?`<span class="badge bg-r">${esc(sm.special_result)}</span>`:`<span class="badge bg-g">ปกติ</span>`}</td>
-          <td class="tc"><span class="badge ${att.ms?'bg-r':'bg-g'}">${att.pct}%${att.ms?' (มส)':''}</span></td>
-          <td class="tc"><span class="badge bg-b">${elb(er.result)}</span></td>
-          <td class="tc"><span class="badge bg-b">${elb(ec.overall_result)}</span></td>
-        </tr>`;
-      }).join('')}
-      </tbody></table></div></div>
-  </div>
-  <div class="card no-print">
-    <div class="ch"><div class="ct">การกระจายเกรด</div></div>
-    <div class="cb"><div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;padding:8px 0">
-      ${[[4,'#1a6e37'],[3.5,'#2a7a44'],[3,'#2d72d2'],[2.5,'#4a90d9'],
-         [2,'#e6940a'],[1.5,'#c0810a'],[1,'#c0392b'],[0,'#922b21']].map(([grade,color])=>{
-        const cnt=gradeCount[grade]||0;
-        const p=stus.length>0?Math.round(cnt/stus.length*100):0;
-        return`<div style="text-align:center;min-width:52px">
-          <div style="height:${Math.max(4,p*1.4)}px;background:${color};border-radius:4px;margin-bottom:4px;min-height:4px"></div>
-          <div style="font-size:14px;font-weight:700;color:${color}">${grade}</div>
-          <div style="font-size:11px;color:var(--muted)">${cnt} คน (${p}%)</div>
-        </div>`;}).join('')}
-    </div></div>
-  </div>`;
-}
-async function changeRptSub(sid){S.selSub=sid;await pgReport();}
-
-function exportReport(){
-  if(!S._rpt){toast('ไม่มีข้อมูลรายงาน','er');return;}
-  const {sub,stus,sumMap,erMap,ecMap,attMap}=S._rpt;
-  const h=['เลขที่','รหัส','ชื่อ-สกุล',
-    `ก่อนกลาง(${sub.score_before_mid})`,`หลังกลาง(${sub.score_after_mid})`,
-    `กลางภาค(${sub.score_mid})`,`ปลายภาค(${sub.score_final})`,
-    'รวม(100)','เกรด','ผลพิเศษ','เวลาเรียน(%)','สถานะเวลา','อ่าน/คิด/เขียน','คุณลักษณะ'];
-  const aoa=[
-    [`${S.config.school_name||''} — รายงานผลการเรียน`],
-    [`วิชา ${sub.subject_name} (${sub.subject_code}) ม.${sub.grade_level}/${sub.room}  ครู${sub.teacher_name||''}`],
-    [`ปีการศึกษา ${S.config.academic_year} ภาคเรียนที่ ${S.config.semester}`],
-    [],
-    h
-  ];
-  stus.forEach((s,i)=>{
-    const sm=sumMap[s.id]||{}, er=erMap[s.id]||{}, ec=ecMap[s.id]||{}, att=attMap[s.id]||{};
-    aoa.push([i+1,s.student_code,s.student_name,
-      sm.total_before_mid??0,sm.total_after_mid??0,sm.mid_normal??0,sm.final_score??0,
-      sm.total_score??0,sm.grade??'',sm.special_result||'',
-      (att.pct??0)+'%',att.ms?'มส':'ปกติ',elb(er.result),elb(ec.overall_result)]);
-  });
-  exportExcel([{name:'รายงานผล',aoa,colWidths:[6,10,28,14,14,12,12,10,8,10,12,10,14,14]}],
-    `รายงานผล_${sub.subject_code}_ม${sub.grade_level}-${sub.room}.xlsx`);
-}
-
-// ════════════════════════════════════════════════════════════════
-// 8. COVER
-// ════════════════════════════════════════════════════════════════
-async function pgCover(){
-  if(!S.subjects.length){$('pg').innerHTML=`<div class="card"><div class="empty"><div class="ei">🖨️</div><div>ยังไม่มีรายวิชา</div></div></div>`;return;}
-  if(!S.selSub) S.selSub=S.subjects[0].id;
-  loading(true);
-  const sub=getSubject(S.selSub);
-  const [sumRows,erRows,ecRows]=await Promise.all([
-    qc('sc_sum_'+S.selSub,  ()=>q(sb.from('score_summary').select('grade,special_result').eq('subject_id',S.selSub))),
-    qc('ev_read_'+S.selSub, ()=>q(sb.from('eval_read').select('student_id,result').eq('subject_id',S.selSub))),
-    qc('ev_char_'+S.selSub, ()=>q(sb.from('eval_char').select('student_id,overall_result').eq('subject_id',S.selSub)))
-  ]);
-  loading(false);
-  const cfg=S.config;
-  const cvStus=await getStudentsBySubject(S.selSub);
-  const totalN=cvStus.length;
-
-  // ── ระดับผลการเรียน ──
-  const gc={4:0,3.5:0,3:0,2.5:0,2:0,1.5:0,1:0,0:0};
-  let rC=0,msC=0;
-  sumRows.forEach(s=>{
-    const g=parseFloat(s.grade);
-    if(gc[g]!==undefined) gc[g]++;
-    if(s.special_result==='ร')  rC++;
-    if(s.special_result==='มส') msC++;
-  });
-
-  // ── ประเมินการอ่าน ──
-  const erLv={3:0,2:0,1:0,0:0};
-  erRows.forEach(e=>{ const v=parseInt(e.result); if(v in erLv) erLv[v]++; });
-  const erTotal=erRows.length;
-
-  // ── คุณลักษณะ ──
-  const ecLv={3:0,2:0,1:0,0:0};
-  ecRows.forEach(e=>{ const v=parseInt(e.overall_result); if(v in ecLv) ecLv[v]++; });
-  const ecTotal=ecRows.length;
-
-  const td=(c,ex='')=>`<td style="border:1px solid #000;padding:4px;text-align:center;font-size:12px;${ex}">${c}</td>`;
-  const th=(c,ex='')=>`<td style="border:1px solid #000;padding:3px 4px;text-align:center;font-size:11px;font-weight:600;background:#f0f0f0;${ex}">${c}</td>`;
-  const pct=(n)=>totalN>0?(n/totalN*100).toFixed(1):'';
-
-  $('pg').innerHTML=`
-  <div class="ph"><div class="ptitle">ปก ปพ.5</div>
-    <button class="btn bs no-print" onclick="window.print()">🖨️ พิมพ์ปก</button></div>
-  <div style="display:flex;gap:10px;margin-bottom:14px" class="no-print">
-    <select class="fs" style="max-width:310px" onchange="changeCvrSub(this.value)">
-      ${S.subjects.map(s=>`<option value="${s.id}" ${s.id===S.selSub?'selected':''}>${s.subject_name} ม.${s.grade_level}/${s.room}</option>`).join('')}
-    </select>
-  </div>
-
-  <div style="max-width:800px;margin:auto">
-  <div style="border:2px solid #000;padding:28px 36px 24px;font-family:'Sarabun','TH SarabunNew',sans-serif;background:#fff;position:relative">
-
-    <!-- ปพ.5 มุมบนขวา ขนาดเล็ก -->
-    <div style="position:absolute;top:10px;right:14px;font-size:13px;font-weight:700;letter-spacing:1px">ปพ. 5</div>
-
-    <!-- ตราโรงเรียน กึ่งกลาง บนสุด -->
-    <div style="text-align:center;margin-bottom:8px">
-      <img src="https://drive.google.com/uc?export=view&id=1IjjamxeQ9VaeAao8PtmR7RCwioE4hndi"
-           alt="ตราโรงเรียน"
-           style="height:80px;width:auto;object-fit:contain"
-           onerror="this.style.display='none'">
-    </div>
-
-    <!-- หัวกระดาษ -->
-    <div style="text-align:center;font-size:16px;font-weight:700;margin-bottom:16px;margin-top:2px">แบบบันทึกผลการเรียนประจำรายวิชา</div>
-
-    <!-- ข้อมูลวิชา -->
-    <table style="width:100%;border-collapse:collapse;margin-bottom:12px;font-size:13px">
-      <tr><td style="padding:3px 6px;width:175px">โรงเรียน</td>
-          <td style="padding:3px 6px;border-bottom:1px solid #000" colspan="3">${esc(cfg.school_name||'')}</td></tr>
-      <tr><td style="padding:3px 6px">อำเภอ/เขต</td>
-          <td style="padding:3px 6px;border-bottom:1px solid #000">${esc(cfg.school_district||'')}</td>
-          <td style="padding:3px 6px;width:60px">จังหวัด</td>
-          <td style="padding:3px 6px;border-bottom:1px solid #000">${esc(cfg.school_province||'')}</td></tr>
-      <!-- ③ ชั้นมัธยมศึกษาปีที่ -->
-      <tr><td style="padding:3px 6px">ชั้นมัธยมศึกษาปีที่</td>
-          <td style="padding:3px 6px;border-bottom:1px solid #000;width:36px">${sub.grade_level}</td>
-          <td style="padding:3px 6px">ห้อง</td>
-          <td style="padding:3px 6px;border-bottom:1px solid #000">${sub.room}</td></tr>
-      <tr><td style="padding:3px 6px">ภาคเรียนที่</td>
-          <td style="padding:3px 6px;border-bottom:1px solid #000">${cfg.semester||''}</td>
-          <td style="padding:3px 6px">ปีการศึกษา</td>
-          <td style="padding:3px 6px;border-bottom:1px solid #000">${cfg.academic_year||''}</td></tr>
-      <tr><td style="padding:3px 6px">รายวิชา</td>
-          <td colspan="2" style="padding:3px 6px;border-bottom:1px solid #000">${esc(sub.subject_name)}</td>
-          <td style="padding:3px 6px;border-bottom:1px solid #000">${esc(sub.subject_code)}</td></tr>
-      <tr><td style="padding:3px 6px">หน่วยกิต</td>
-          <td style="padding:3px 6px;border-bottom:1px solid #000">${sub.credits}</td>
-          <td style="padding:3px 6px">เวลาเรียน</td>
-          <td style="padding:3px 6px;border-bottom:1px solid #000">${sub.total_hours} ชม./ภาค (${sub.hours_per_week} ชม./สปด.)</td></tr>
-      <tr><td style="padding:3px 6px">ครูผู้สอน</td>
-          <td colspan="3" style="padding:3px 6px;border-bottom:1px solid #000">${esc(sub.teacher_name||'')}</td></tr>
-    </table>
-
-    <!-- ⑤ สรุปผลการประเมิน -->
-    <div style="margin:8px 0 5px;font-weight:700;font-size:13px">สรุปผลการประเมิน</div>
-
-    <!-- ④ ตาราง: ระดับผลการเรียน มี 4, 3.5, 3, ... + ร + มส -->
-    <table style="width:100%;border-collapse:collapse;border:1px solid #000;font-size:12px;margin-bottom:6px">
-      <thead>
-        <tr>
-          ${th('จำนวน<br>นักเรียน','vertical-align:middle;')}
-          ${[4,3.5,3,2.5,2,1.5,1,0].map(g=>th(g)).join('')}
-          ${th('ร')}${th('มส')}
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          ${td(totalN,'font-weight:600;')}
-          ${[4,3.5,3,2.5,2,1.5,1,0].map(g=>td(gc[g]||'')).join('')}
-          ${td(rC||'')}${td(msC||'')}
-        </tr>
-        <tr>
-          ${td('ร้อยละ','font-size:11px;')}
-          ${[4,3.5,3,2.5,2,1.5,1,0].map(g=>td(pct(gc[g]))).join('')}
-          ${td(pct(rC))}${td(pct(msC))}
-        </tr>
-      </tbody>
-    </table>
-
-    <!-- ⑥ ประเมินการอ่าน คิด วิเคราะห์ เขียน + คุณลักษณะ -->
-    <table style="width:100%;border-collapse:collapse;border:1px solid #000;font-size:12px;margin-bottom:12px">
-      <thead>
-        <tr>
-          ${th('รายการประเมิน','text-align:left;padding-left:6px;width:200px')}
-          ${th('จำนวน<br>ที่ประเมิน')}
-          ${th('ดีเยี่ยม (3)')}${th('ดี (2)')}${th('ผ่าน (1)')}${th('ไม่ผ่าน (0)')}
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td style="border:1px solid #000;padding:4px 6px;font-size:12px">การอ่าน คิดวิเคราะห์ และเขียน</td>
-          ${td(erTotal||'')}
-          ${td(erLv[3]||'')}${td(erLv[2]||'')}${td(erLv[1]||'')}${td(erLv[0]||'')}
-        </tr>
-        <tr>
-          <td style="border:1px solid #000;padding:3px 6px;font-size:11px;color:#555">ร้อยละ</td>
-          ${td('')}
-          ${[3,2,1,0].map(v=>td(erTotal>0?(erLv[v]/erTotal*100).toFixed(1)+'%':'')).join('')}
-        </tr>
-        <tr>
-          <td style="border:1px solid #000;padding:4px 6px;font-size:12px">คุณลักษณะอันพึงประสงค์</td>
-          ${td(ecTotal||'')}
-          ${td(ecLv[3]||'')}${td(ecLv[2]||'')}${td(ecLv[1]||'')}${td(ecLv[0]||'')}
-        </tr>
-        <tr>
-          <td style="border:1px solid #000;padding:3px 6px;font-size:11px;color:#555">ร้อยละ</td>
-          ${td('')}
-          ${[3,2,1,0].map(v=>td(ecTotal>0?(ecLv[v]/ecTotal*100).toFixed(1)+'%':'')).join('')}
-        </tr>
-      </tbody>
-    </table>
-
-    <!-- การอนุมัติ -->
-    <div style="font-size:13px;margin-bottom:10px;font-weight:700">การอนุมัติผลการเรียน</div>
-
-    <!-- แถวที่ 1: ครูผู้สอน + หัวหน้ากลุ่มสาระ + หัวหน้างานทะเบียน (กึ่งกลาง ไม่มีช่อง อนุมัติ) -->
-    <div style="display:flex;justify-content:space-around;gap:12px;margin-bottom:14px;font-size:13px">
-      <div style="flex:1;text-align:center">
-        <div>ลงชื่อ …………………………………………</div>
-        <div style="margin-top:3px">(${esc(sub.teacher_name||'…………………………………')})</div>
-        <div style="margin-top:2px;font-size:12px">ครูผู้สอน</div>
-      </div>
-      <div style="flex:1;text-align:center">
-        <div>ลงชื่อ …………………………………………</div>
-        <div style="margin-top:3px">(…………………………………………)</div>
-        <div style="margin-top:2px;font-size:12px">หัวหน้ากลุ่มสาระการเรียนรู้</div>
-      </div>
-      <div style="flex:1;text-align:center">
-        <div>ลงชื่อ …………………………………………</div>
-        <div style="margin-top:3px">(…………………………………………)</div>
-        <div style="margin-top:2px;font-size:12px">หัวหน้างานทะเบียนวัดผล</div>
-      </div>
-    </div>
-
-    <!-- แถวที่ 2: รองผู้อำนวยการ + ผู้อำนวยการ (มีช่อง อนุมัติ) -->
-    <div style="display:flex;justify-content:space-around;gap:12px;margin-top:8px;font-size:13px">
-      <div style="flex:1;text-align:center">
-        <div>☐ อนุมัติ &nbsp; ☐ ไม่อนุมัติ</div>
-        <div style="margin-top:6px">ลงชื่อ …………………………………………</div>
-        <div style="margin-top:3px">(${esc(cfg.vice_director||'……………………………………')})</div>
-        <div style="margin-top:2px;font-size:12px">รองผู้อำนวยการโรงเรียน</div>
-        <div style="margin-top:3px;font-size:11.5px">วันที่ ……… เดือน …………… พ.ศ. ………</div>
-      </div>
-      <div style="flex:1;text-align:center">
-        <div>☐ อนุมัติ &nbsp; ☐ ไม่อนุมัติ</div>
-        <div style="margin-top:6px">ลงชื่อ …………………………………………</div>
-        <div style="margin-top:3px">(${esc(cfg.director_name||'……………………………………')})</div>
-        <div style="margin-top:2px;font-size:12px">ผู้อำนวยการโรงเรียน</div>
-        <div style="margin-top:3px;font-size:11.5px">วันที่ ……… เดือน …………… พ.ศ. ………</div>
-      </div>
-    </div>
-
-  </div></div>`;
-}
-async function changeCvrSub(sid){S.selSub=sid;await pgCover();}
-
-// ════════════════════════════════════════════════════════════════
-// 9. SETTINGS
-// ════════════════════════════════════════════════════════════════
-function pgSettings(){
-  const cfg=S.config;
-  $('pg').innerHTML=`
-  <div class="ph"><div class="ptitle">ตั้งค่าระบบ</div></div>
-  <div class="card" style="max-width:580px">
-    <div class="ch"><div class="ct">⚙️ ข้อมูลโรงเรียนและปีการศึกษา</div></div>
-    <div class="cb">
-      <div class="fg">
-        <div style="grid-column:1/-1"><label class="fl">ชื่อโรงเรียน</label>
-          <input class="fi" id="c-school" value="${esc(cfg.school_name||'')}"></div>
-        <div><label class="fl">อำเภอ/เขต</label><input class="fi" id="c-dist" value="${esc(cfg.school_district||'')}"></div>
-        <div><label class="fl">จังหวัด</label><input class="fi" id="c-prov" value="${esc(cfg.school_province||'')}"></div>
-        <div><label class="fl">ปีการศึกษา</label><input class="fi" id="c-year" value="${esc(cfg.academic_year||'2568')}"></div>
-        <div><label class="fl">ภาคเรียนที่</label>
-          <select class="fs" id="c-sem">
-            <option ${cfg.semester=='1'?'selected':''}>1</option>
-            <option ${cfg.semester=='2'?'selected':''}>2</option>
-          </select></div>
-        <div style="grid-column:1/-1"><label class="fl">ชื่อผู้อำนวยการ</label>
-          <input class="fi" id="c-dir" value="${esc(cfg.director_name||'')}"></div>
-        <div style="grid-column:1/-1"><label class="fl">ชื่อรองผู้อำนวยการ</label>
-          <input class="fi" id="c-vdir" value="${esc(cfg.vice_director||'')}"></div>
-      </div>
-      <div style="margin-top:14px">
-        <button class="btn bp" onclick="saveSettings()">💾 บันทึกการตั้งค่า</button>
-      </div>
-    </div>
-  </div>`;
-}
-async function saveSettings(){
-  const updates=[
-    {key:'school_name',    value:$('c-school').value.trim()},
-    {key:'school_district',value:$('c-dist').value.trim()},
-    {key:'school_province',value:$('c-prov').value.trim()},
-    {key:'academic_year',  value:$('c-year').value.trim()},
-    {key:'semester',       value:$('c-sem').value},
-    {key:'director_name',  value:$('c-dir').value.trim()},
-    {key:'vice_director',  value:$('c-vdir').value.trim()},
-  ];
-  loading(true);
-  try{
-    await q(sb.from('config').upsert(updates,{onConflict:'key'}));
-    await loadConfig();
-    $('school-name').textContent=S.config.school_name||'ระบบบันทึกผลการเรียน';
-    $('tbb').textContent='ปีการศึกษา '+S.config.academic_year+' ภาค '+S.config.semester;
-    $('sb-ft-info').textContent='ปี '+S.config.academic_year+' ภาค '+S.config.semester;
-    toast('บันทึกการตั้งค่าเรียบร้อย');
-  }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
-}
-
-// ── START ────────────────────────────────────────────────────────
-initAuth();
-</script>
-</body>
-</html>
+    qc('att_sum_'+S.selSub, ()=>qc('att_sum_'+S.selSub, ()=>q(sb.from('attendance').
