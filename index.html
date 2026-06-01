@@ -616,8 +616,8 @@ tbody tr:hover td{background:#f5f9ff;}
 <script>
 // ════════════════════════════════════════════════════════════════
 // !! แก้ค่านี้ก่อนใช้งาน !!
-const SUPABASE_URL = 'https://zwtulepvmlngcrbcrrki.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp3dHVsZXB2bWxuZ2NyYmNycmtpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNTc2NDcsImV4cCI6MjA5NTYzMzY0N30.9nhe0_NF3Fa-4FtmbE2AvQCtJdHS05RbkiyC8WvtvvA';
+const SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
 // ════════════════════════════════════════════════════════════════
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -785,77 +785,109 @@ const ATT_FULL={present:'มา',absent:'ขาด',late:'สาย',leave:'ล�
 // ── AUTH ─────────────────────────────────────────────────────────
 async function initAuth(){
   loading(true);
-  const {data:{session}} = await sb.auth.getSession();
-  if(session){
-    S.user = session.user;
-    await loadProfile();
-    await loadConfig();
-    showApp();
-  } else {
+  try{
+    const {data:{session}} = await sb.auth.getSession();
+    if(session){
+      S.user = session.user;
+      await Promise.all([loadProfile(), loadConfig()]);
+    }
+    loadingOff();
+    session ? showApp() : showLogin();
+  }catch(e){
+    loadingOff();
     showLogin();
   }
-  loading(false);
-  // listen auth change
-  sb.auth.onAuthStateChange(async(_,session)=>{
-    if(session){ S.user=session.user; await loadProfile(); await loadConfig(); showApp(); }
-    else { S.user=null; S.profile=null; showLogin(); }
+  // onAuthStateChange: จัดการเฉพาะ session expire
+  sb.auth.onAuthStateChange(async(_ev, session)=>{
+    if(!session && S.user){
+      S.user=null; S.profile=null;
+      loadingOff(); showLogin();
+    }
   });
 }
 
 async function loadProfile(){
   try{
     const {data}=await sb.from('profiles').select('*').eq('id',S.user.id).single();
-    S.profile=data;
-  }catch(e){ S.profile={full_name:S.user.email,role:'teacher'}; }
+    S.profile = data || {full_name:S.user.email, role:'teacher'};
+  }catch(e){
+    S.profile = {full_name:S.user.email, role:'teacher'};
+  }
 }
 
 async function loadConfig(){
   try{
-    const rows=await q(sb.from('config').select('*'));
-    S.config={};
+    const rows = await q(sb.from('config').select('*'));
+    S.config = {};
     rows.forEach(r=>{ S.config[r.key]=r.value; });
-  }catch(e){ S.config={}; }
+  }catch(e){ S.config = {}; }
 }
 
 function showLogin(){
+  loadingOff();
   $('login-page').style.display='block';
   $('main-app').style.display='none';
+  const err=$('login-err'); if(err) err.style.display='none';
 }
+
 function showApp(){
   $('login-page').style.display='none';
   $('main-app').style.display='block';
-  $('tb-user').textContent='👤 '+(S.profile?.full_name||S.user?.email||'');
-  $('school-name').textContent=S.config.school_name||'ระบบบันทึกผลการเรียน';
-  $('tbb').textContent='ปีการศึกษา '+(S.config.academic_year||'2568')+' ภาค '+(S.config.semester||'1');
-  $('sb-ft-info').textContent='ปี '+(S.config.academic_year||'2568')+' ภาค '+(S.config.semester||'1');
+  const n=S.profile?.full_name||S.user?.email||'';
+  const u=$('tb-user'); if(u) u.textContent='👤 '+n;
+  const sn=$('school-name'); if(sn) sn.textContent=S.config.school_name||'ระบบบันทึกผลการเรียน';
+  const tb=$('tbb'); if(tb) tb.textContent='ปีการศึกษา '+(S.config.academic_year||'2568')+' ภาค '+(S.config.semester||'1');
+  const ft=$('sb-ft-info'); if(ft) ft.textContent='ปี '+(S.config.academic_year||'2568')+' ภาค '+(S.config.semester||'1');
   nav('dashboard');
 }
 
 async function doLogin(){
   const email=$('l-email').value.trim(), pass=$('l-pass').value;
-  if(!email||!pass){showLoginErr('กรุณากรอกอีเมลและรหัสผ่าน');return;}
+  if(!email||!pass){ showLoginErr('กรุณากรอกอีเมลและรหัสผ่าน'); return; }
   loading(true);
-  const {error}=await sb.auth.signInWithPassword({email,password:pass});
-  loading(false);
-  if(error) showLoginErr(error.message==='Invalid login credentials'?'อีเมลหรือรหัสผ่านไม่ถูกต้อง':error.message);
+  try{
+    const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
+    if(error){
+      loadingOff();
+      showLoginErr(error.message==='Invalid login credentials'?'อีเมลหรือรหัสผ่านไม่ถูกต้อง':error.message);
+      return;
+    }
+    S.user = data.user;
+    await Promise.all([loadProfile(), loadConfig()]);
+    loadingOff();
+    showApp();
+  }catch(e){
+    loadingOff();
+    showLoginErr('เกิดข้อผิดพลาด: '+(e.message||e));
+  }
 }
-function showLoginErr(msg){$('login-err').textContent=msg;$('login-err').style.display='flex';}
-function showRegister(){$('reg-modal').style.display='flex';}
+function showLoginErr(msg){
+  const el=$('login-err');
+  if(el){ el.textContent=msg; el.style.display='flex'; }
+}
+function showRegister(){ $('reg-modal').style.display='flex'; }
 
 async function doRegister(){
   const name=$('r-name').value.trim(),email=$('r-email').value.trim(),pass=$('r-pass').value;
   if(!name||!email||!pass){toast('กรุณากรอกข้อมูลให้ครบ','er');return;}
   if(pass.length<6){toast('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร','er');return;}
   loading(true);
-  const {error}=await sb.auth.signUp({email,password:pass,options:{data:{full_name:name}}});
-  loading(false);
-  if(error){toast(error.message,'er');return;}
-  $('reg-modal').style.display='none';
-  toast('สมัครเรียบร้อย! กรุณายืนยันอีเมลก่อนเข้าสู่ระบบ','in');
+  try{
+    const {error}=await sb.auth.signUp({email,password:pass,options:{data:{full_name:name}}});
+    loadingOff();
+    if(error){toast(error.message,'er');return;}
+    $('reg-modal').style.display='none';
+    $('l-email').value=email;
+    toast('สมัครเรียบร้อย! เข้าสู่ระบบได้เลย','ok');
+  }catch(e){ loadingOff(); toast('เกิดข้อผิดพลาด: '+(e.message||e),'er'); }
 }
 
 async function doLogout(){
-  await sb.auth.signOut();
+  loading(true);
+  try{ await sb.auth.signOut(); }catch(e){}
+  S.user=null; S.profile=null;
+  loadingOff();
+  showLogin();
   toast('ออกจากระบบเรียบร้อย');
 }
 
@@ -873,7 +905,7 @@ function closeSidebar(){
 }
 
 function nav(page,subId){
-  // reset loading state ก่อนเสมอ กันค้างจากหน้าเดิม
+  // reset loading ก่อนเสมอ
   loadingOff();
   S.page=page; if(subId!==undefined) S.selSub=subId;
   closeSidebar();
@@ -884,13 +916,17 @@ function nav(page,subId){
     attendance:pgAttendance,scores:pgScores,eval:pgEval,
     report:pgReport,cover:pgCover,settings:pgSettings}[page];
   if(fn){
-    Promise.resolve(fn()).catch(e=>{
-      loadingOff();
-      toast('เกิดข้อผิดพลาด: '+(e.message||e),'er');
-      $('pg').innerHTML=`<div class="card"><div class="empty"><div class="ei">⚠️</div>
-        <div>โหลดหน้านี้ไม่สำเร็จ</div>
-        <button class="btn bp" style="margin-top:10px" onclick="nav('${page}')">🔄 ลองใหม่</button></div></div>`;
-    });
+    // wrap ทุก page fn ให้ loadingOff() เสมอเมื่อเสร็จ ไม่ว่าจะ error หรือไม่
+    Promise.resolve(fn())
+      .catch(e=>{
+        toast('โหลดหน้าไม่สำเร็จ: '+(e.message||e),'er');
+        $('pg').innerHTML=`<div class="card"><div class="empty">
+          <span class="ei" style="font-size:36px;display:block;margin-bottom:8px">⚠️</span>
+          <div style="margin-bottom:12px">โหลดหน้านี้ไม่สำเร็จ</div>
+          <button class="btn bp" onclick="nav('${page}')">🔄 ลองใหม่</button>
+        </div></div>`;
+      })
+      .finally(()=>loadingOff()); // ← guarantee ปิดทุกกรณี
   }
 }
 
@@ -917,14 +953,10 @@ function clearStuCache(){ cacheInvPrefix('students_'); S._stuCache={}; }
 // ════════════════════════════════════════════════════════════════
 async function pgDash(){
   loading(true);
-  await loadSubjects();
-  // ── ดึงข้อมูลทั้งหมดด้วย 2 query รวม แทนที่จะยิงทีละวิชา ──
   try{
+    await loadSubjects();
     const subjIds = S.subjects.map(s=>s.id);
-    // query 1: score_summary ของทุกวิชารวดเดียว
-    // query 2: students ทั้งหมด (filter ในฝั่ง JS)
     const [allSum, allStu] = await Promise.all([
-      // ดึงทุก subject พร้อมกัน (parallel) แทน sequential
       subjIds.length ? Promise.all(subjIds.map(id=>
         qc('sc_sum_mini_'+id, ()=>
           q(sb.from('score_summary').select('subject_id,grade,total_score').eq('subject_id',id))
@@ -932,10 +964,8 @@ async function pgDash(){
       )).then(arrs=>arrs.flat()) : Promise.resolve([]),
       q(sb.from('students').select('grade_level,room'))
     ]);
-    // นับนักเรียนต่อ grade/room
     const stuCount = {};
     allStu.forEach(s=>{ const k=s.grade_level+'_'+s.room; stuCount[k]=(stuCount[k]||0)+1; });
-    // จัดกลุ่ม summary ต่อวิชา
     const sumBySubj = {};
     allSum.forEach(r=>{ (sumBySubj[r.subject_id]=sumBySubj[r.subject_id]||[]).push(r); });
     S.subjects = S.subjects.map(s=>{
@@ -949,8 +979,9 @@ async function pgDash(){
     S._dashStuTotal = allStu.length;
   }catch(e){
     S.subjects = S.subjects.map(s=>({...s,stats:{total:0,pass:0,recorded:0,avg:0,passPercent:0}}));
+  }finally{
+    loading(false); // ← ปิดเสมอ ไม่ว่าจะ error หรือไม่
   }
-  loading(false);
   const cfg=S.config;
   $('pg').innerHTML=`
   <div class="ph">
