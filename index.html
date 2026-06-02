@@ -170,8 +170,8 @@ tbody tr:hover td{background:rgba(0,122,255,.04);}
 .ev0{background:var(--err-bg);color:var(--err-txt);border-color:var(--err-bdr);}
 /* Subject cards */
 .subg{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;}
-.subc{border:1px solid var(--bdr);border-radius:var(--r);padding:16px;background:var(--card);cursor:pointer;display:flex;flex-direction:column;gap:8px;box-shadow:var(--sh0);transition:all .2s cubic-bezier(.4,0,.2,1);-webkit-tap-highlight-color:transparent;}
-.subc:hover{box-shadow:var(--sh1);border-color:rgba(0,122,255,.3);transform:translateY(-2px);}
+.subc{border:1px solid var(--bdr);border-left:4px solid #007AFF;border-radius:var(--r);padding:16px;background:var(--card);cursor:pointer;display:flex;flex-direction:column;gap:8px;box-shadow:0 2px 8px rgba(0,0,0,.07);transition:all .2s cubic-bezier(.4,0,.2,1);-webkit-tap-highlight-color:transparent;}
+.subc:hover{box-shadow:0 6px 20px rgba(0,0,0,.1);transform:translateY(-2px);}
 .subc:active{transform:scale(.98) translateY(0);}
 /* Stats */
 .sg{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:16px;}
@@ -230,7 +230,7 @@ tbody tr:hover td{background:rgba(0,122,255,.04);}
 </div>
 
 <!-- Toast container -->
-<div id="tc" class="fixed bottom-6 right-6 z-[9998] flex flex-col gap-2.5 pointer-events-none"></div>
+<div id="tc" class="fixed bottom-6 z-[9998] flex flex-col gap-2.5 pointer-events-none" style="left:50%;transform:translateX(-50%);align-items:center;"></div>
 
 <!-- ══ LOGIN PAGE ══ -->
 <div id="login-page" style="display:none">
@@ -321,18 +321,27 @@ tbody tr:hover td{background:rgba(0,122,255,.04);}
 <!-- ── SIDEBAR ── -->
 <aside id="sidebar" class="fixed top-0 left-0 h-screen flex flex-col z-[200] sb" style="width:244px;background:rgba(248,248,250,.94);backdrop-filter:blur(24px) saturate(180%);border-right:1px solid var(--sep);transition:transform .28s cubic-bezier(.4,0,.2,1)">
   <!-- Header -->
-  <div style="padding:18px 16px 14px;border-bottom:1px solid var(--bdr)">
-    <div class="flex items-center gap-2.5">
-      <!-- App icon -->
-      <div class="w-[34px] h-[34px] rounded-[9px] flex items-center justify-center shrink-0" style="background:linear-gradient(145deg,#0A84FF,#007AFF);box-shadow:0 2px 8px rgba(0,122,255,.35)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="17" height="17"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+  <div style="padding:14px 16px 12px;border-bottom:1px solid var(--bdr)">
+    <div class="flex items-center gap-3">
+      <!-- โลโก้โรงเรียน -->
+      <div style="width:44px;height:44px;border-radius:12px;overflow:hidden;flex-shrink:0;background:#f5f5f7;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.12);border:1px solid rgba(0,0,0,.06)">
+        <img id="sb-logo"
+          src="https://lh5.googleusercontent.com/d/1IjjamxeQ9VaeAao8PtmR7RCwioE4hndi"
+          alt="โลโก้โรงเรียน"
+          style="width:40px;height:40px;object-fit:contain;display:block"
+          onerror="this.style.display='none';document.getElementById('sb-logo-fallback').style.display='flex'">
+        <!-- fallback SVG ถ้าโหลดโลโก้ไม่ได้ -->
+        <div id="sb-logo-fallback" style="display:none;width:44px;height:44px;background:linear-gradient(145deg,#0A84FF,#007AFF);border-radius:12px;align-items:center;justify-content:center">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+        </div>
       </div>
-      <div>
-        <div class="text-[15px] font-bold tracking-tight" style="color:var(--txt)">ปพ.5</div>
-        <div class="text-[11px]" style="color:var(--muted)">บันทึกผลการเรียน</div>
+      <!-- ชื่อระบบ + โรงเรียน -->
+      <div style="min-width:0;flex:1">
+        <div style="font-size:15px;font-weight:800;color:var(--txt);letter-spacing:-.3px;line-height:1.1">ปพ.5</div>
+        <div style="font-size:11px;font-weight:600;color:var(--ac);margin-top:1px;line-height:1.2">บันทึกผลการเรียน</div>
+        <div id="school-name" style="font-size:10.5px;font-weight:600;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">-</div>
       </div>
     </div>
-    <div id="school-name" class="text-[11px] mt-1.5 truncate" style="color:var(--muted)">-</div>
   </div>
 
   <!-- Nav -->
@@ -649,8 +658,8 @@ function printHTML(title, bodyHTML){
 }
 
 // แปลงสถานะเป็นอักษรย่อสำหรับพิมพ์
-const ATT_ABBR={present:'/',absent:'ข',late:'ส',leave:'ล'};
-const ATT_FULL={present:'มา',absent:'ขาด',late:'สาย',leave:'ลา'};
+const ATT_ABBR={present:'/',absent:'ข',leave:'ล'};
+const ATT_FULL={present:'มา',absent:'ขาด',leave:'ลา'};
 
 // ── AUTH ─────────────────────────────────────────────────────────
 async function initAuth(){
@@ -844,13 +853,15 @@ async function pgDash(){
   try{
     await loadSubjects();
     const subjIds = S.subjects.map(s=>s.id);
-    const [allSum, allStu] = await Promise.all([
+    const [allSum, allStu, allAtt] = await Promise.all([
       subjIds.length ? Promise.all(subjIds.map(id=>
         qc('sc_sum_mini_'+id, ()=>
           q(sb.from('score_summary').select('subject_id,grade,total_score').eq('subject_id',id))
         )
       )).then(arrs=>arrs.flat()) : Promise.resolve([]),
-      q(sb.from('students').select('grade_level,room'))
+      q(sb.from('students').select('grade_level,room')),
+      subjIds.length ? q(sb.from('attendance').select('subject_id,student_id,status,periods')
+        .in('subject_id',subjIds)) : Promise.resolve([])
     ]);
     const stuCount = {};
     allStu.forEach(s=>{ const k=s.grade_level+'_'+s.room; stuCount[k]=(stuCount[k]||0)+1; });
@@ -865,8 +876,41 @@ async function pgDash(){
       return {...s,stats:{total,pass,recorded:sum.length,avg,passPercent:pct}};
     });
     S._dashStuTotal = allStu.length;
+
+    // ── คำนวณ % ผ่านเฉลี่ย และ มส. รอติดตาม ──
+    const subjWithScore = S.subjects.filter(s=>s.stats.recorded>0);
+    let _dashPassAvg = 0, _dashMsCount = 0;
+    if(subjWithScore.length){
+      // % ผ่านรวม = นักเรียนที่ผ่านทุกวิชารวมกัน ÷ นักเรียนทั้งหมดทุกวิชารวมกัน
+      const totalPass = subjWithScore.reduce((a,s)=>a+(s.stats.pass||0), 0);
+      const totalAll  = subjWithScore.reduce((a,s)=>a+(s.stats.recorded||0), 0);
+      _dashPassAvg = totalAll>0 ? Math.round(totalPass/totalAll*100) : 0;
+    }
+    // นับ มส. จาก attendance (< 80% เข้าเรียน)
+    if(allAtt.length){
+      // สร้าง attMap: subject_id → student_id → {attended, totalPeriods}
+      const attBySub = {};
+      allAtt.forEach(a=>{
+        if(!attBySub[a.subject_id]) attBySub[a.subject_id]={};
+        const sid=String(a.student_id);
+        if(!attBySub[a.subject_id][sid]) attBySub[a.subject_id][sid]={attended:0};
+        if(a.status!=='absent') attBySub[a.subject_id][sid].attended+=(parseInt(a.periods)||1);
+      });
+      const msSet = new Set();
+      S.subjects.forEach(sub=>{
+        const totalH = sub.total_hours||60;
+        const stuMap = attBySub[sub.id]||{};
+        Object.entries(stuMap).forEach(([sid,m])=>{
+          if(totalH>0 && (m.attended/totalH*100)<80) msSet.add(sid);
+        });
+      });
+      _dashMsCount = msSet.size;
+    }
+    S._dashPassAvg = _dashPassAvg;
+    S._dashMsCount = _dashMsCount;
   }catch(e){
     S.subjects = S.subjects.map(s=>({...s,stats:{total:0,pass:0,recorded:0,avg:0,passPercent:0}}));
+    S._dashPassAvg=0; S._dashMsCount=0;
   }finally{
     loading(false); // ← ปิดเสมอ ไม่ว่าจะ error หรือไม่
   }
@@ -881,19 +925,23 @@ async function pgDash(){
     <div class="sc"><div class="si bl">📖</div><div><div class="sv">${S.subjects.length}</div><div class="sl">รายวิชา</div></div></div>
     <div class="sc"><div class="si gr">👥</div><div><div class="sv" id="d-stu">...</div><div class="sl">นักเรียน</div></div></div>
     <div class="sc"><div class="si or">✅</div><div><div class="sv">${S.subjects.filter(s=>s.stats.recorded>0).length}</div><div class="sl">วิชาที่มีคะแนน</div></div></div>
+    <div class="sc"><div class="si gr"><svg viewBox="0 0 24 24" fill="none" stroke="#16803d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="20 6 9 17 4 12"/></svg></div><div><div class="sv" style="${S._dashPassAvg>=80?'color:#16803d':S._dashPassAvg>=60?'color:#FF9500':'color:#FF3B30'}">${S.subjects.filter(s=>s.stats.recorded>0).length>0?S._dashPassAvg+'%':'—'}</div><div class="sl">% ผ่านเฉลี่ย</div></div></div>
+    <div class="sc"><div class="si ${S._dashMsCount>0?'re':'gr'}"><svg viewBox="0 0 24 24" fill="none" stroke="${S._dashMsCount>0?'#FF3B30':'#16803d'}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div><div class="sv" style="${S._dashMsCount>0?'color:#FF3B30':'color:#16803d'}">${S._dashMsCount}</div><div class="sl">มส. รอติดตาม</div></div></div>
 
   </div>
   ${!S.subjects.length?`<div class="card"><div class="empty"><div class="ei">📚</div>
     <div style="font-weight:600;margin-bottom:10px">ยังไม่มีรายวิชา</div>
     <button class="btn bp" onclick="nav('subjects')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>เพิ่มรายวิชาแรก</button></div></div>`:`
   <div class="card"><div class="ch"><div class="ct">รายวิชาทั้งหมด</div></div><div class="cb">
-    <div class="subg">${S.subjects.map(s=>{
+    <div class="subg">${S.subjects.map((s,_si)=>{
       const st=s.stats;
-      return`<div class="subc" onclick="nav('scores','${s.id}')">
+      const _colors=['#007AFF','#34C759','#FF9500','#7c3aed','#0e7490','#be185d','#b45309','#dc2626'];
+      const _ac=_colors[_si%_colors.length];
+      return`<div class="subc" style="border-left-color:${_ac}" onclick="nav('scores','${s.id}')">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <div><div style="font-size:15px;font-weight:700;color:var(--txt)">${esc(s.subject_name)}</div>
           <div style="font-size:11.5px;color:var(--muted)">${esc(s.subject_code)}</div></div>
-          <span class="badge bg-b">ม.${s.grade_level}/${s.room}</span>
+          <span class="badge" style="background:${_ac}18;color:${_ac}">ม.${s.grade_level}/${s.room}</span>
         </div>
         <div style="font-size:12px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap">
           <span>👨‍🏫 ${esc(s.teacher_name||'-')}</span>
@@ -901,14 +949,14 @@ async function pgDash(){
         </div>
         ${st.recorded>0?`<div>
           <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:3px">
-            <span>ผ่าน ${st.pass}/${st.recorded} • เฉลี่ย ${st.avg}</span><span>${st.passPercent}%</span>
+            <span>ผ่าน ${st.pass}/${st.recorded} • เฉลี่ย ${st.avg}</span><span style="color:${_ac};font-weight:700">${st.passPercent}%</span>
           </div>
-          <div class="pbw"><div class="pb" style="width:${st.passPercent}%"></div></div>
+          <div class="pbw"><div class="pb" style="background:${_ac};width:${st.passPercent}%"></div></div>
         </div>`:`<div style="font-size:11.5px;color:var(--muted)">ยังไม่มีคะแนน</div>`}
         <div style="display:flex;gap:6px;margin-top:2px">
-          <button class="btn bs btn-sm" onclick="event.stopPropagation();nav('attendance','${s.id}')" style="padding:5px 8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button>
-          <button class="btn bs btn-sm" onclick="event.stopPropagation();nav('scores','${s.id}')" style="padding:5px 8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-          <button class="btn bs btn-sm" onclick="event.stopPropagation();nav('report','${s.id}')" style="padding:5px 8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></button>
+          <button class="btn btn-sm" style="padding:5px 8px;background:${_ac}18;color:${_ac}" onclick="event.stopPropagation();nav('attendance','${s.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button>
+          <button class="btn btn-sm" style="padding:5px 8px;background:${_ac}18;color:${_ac}" onclick="event.stopPropagation();nav('scores','${s.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+          <button class="btn btn-sm" style="padding:5px 8px;background:${_ac}18;color:${_ac}" onclick="event.stopPropagation();nav('report','${s.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></button>
         </div>
       </div>`;}).join('')}
     </div></div></div>`}`;
@@ -1023,6 +1071,176 @@ async function delSub(id,name){
 // 3. STUDENTS
 // ════════════════════════════════════════════════════════════════
 let allStu=[];
+
+// ════ เลื่อนชั้น ══════════════════════════════════════════════
+function openPromoteDialog(){
+  // สร้าง unique ชั้น/ห้อง จาก allStu
+  const rooms = [...new Set(allStu.map(s=>s.grade_level+'_'+s.room))]
+    .sort()
+    .map(k=>{ const [g,r]=k.split('_'); return {grade:+g,room:+r,label:'ม.'+g+'/'+r}; });
+  if(!rooms.length){ toast('ยังไม่มีนักเรียนในระบบ','er'); return; }
+
+  const wrap = document.createElement('div');
+  wrap.id = 'promote-wrap';
+  wrap.style.cssText = 'position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.45);backdrop-filter:blur(10px);animation:fadeIn .15s ease';
+
+  const gradeOpts = (sel='') => [1,2,3,4,5,6].map(g=>
+    `<option value="${g}" ${sel==g?'selected':''}> ม.${g}</option>`
+  ).join('');
+  const roomOpts = (sel='') => [1,2,3,4,5,6,7,8,9,10].map(r=>
+    `<option value="${r}" ${sel==r?'selected':''}>ห้อง ${r}</option>`
+  ).join('');
+
+  // คำนวณค่า default: ชั้นถัดไปของ room แรก
+  const firstRoom = rooms[0];
+  const nextGrade = Math.min(6, firstRoom.grade+1);
+
+  wrap.innerHTML =
+    '<div id="promote-box" style="background:#fff;border-radius:22px;width:100%;max-width:400px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.2);animation:dlgPop .22s cubic-bezier(.34,1.56,.64,1)">' +
+      '<div style="padding:24px 24px 16px">' +
+        '<div style="width:52px;height:52px;background:#fff7ed;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="#c2410c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><polyline points="17 11 12 6 7 11"/><polyline points="17 18 12 13 7 18"/></svg>' +
+        '</div>' +
+        '<div style="font-size:17px;font-weight:700;text-align:center;margin-bottom:4px">เลื่อนชั้นนักเรียน</div>' +
+        '<div style="font-size:12.5px;color:#8e8e93;text-align:center;margin-bottom:18px">เปลี่ยนชั้น/ห้องของนักเรียนกลุ่มหนึ่ง<br>ใช้รหัสผู้บริหารยืนยัน</div>' +
+
+        // จากห้อง
+        '<div style="margin-bottom:12px">' +
+          '<div style="font-size:12px;font-weight:700;color:#555;margin-bottom:5px">จากห้อง (ปัจจุบัน)</div>' +
+          '<select id="promo-from" class="fs" style="width:100%" onchange="_updatePromotePreview()">' +
+            rooms.map(r=>`<option value="${r.grade}_${r.room}">${r.label}</option>`).join('') +
+          '</select>' +
+        '</div>' +
+
+        // ไปชั้น/ห้องใหม่
+        '<div style="margin-bottom:14px">' +
+          '<div style="font-size:12px;font-weight:700;color:#555;margin-bottom:5px">ไปยังชั้น/ห้องใหม่</div>' +
+          '<div style="display:flex;gap:8px">' +
+            '<select id="promo-to-grade" class="fs" style="flex:1" onchange="_updatePromotePreview()">' +
+              gradeOpts(nextGrade) +
+            '</select>' +
+            '<select id="promo-to-room" class="fs" style="flex:1" onchange="_updatePromotePreview()">' +
+              roomOpts(firstRoom.room) +
+            '</select>' +
+          '</div>' +
+        '</div>' +
+
+        // preview
+        '<div id="promo-preview" style="background:#f7f7f9;border-radius:10px;padding:10px 12px;font-size:12.5px;min-height:44px"></div>' +
+      '</div>' +
+      '<div style="border-top:1px solid #f3f4f6">' +
+        '<button onclick="_confirmPromote()" style="width:100%;padding:14px;font-size:15px;font-weight:600;color:#c2410c;background:none;border:none;border-bottom:1px solid #f3f4f6;cursor:pointer;font-family:var(--font)">ใส่รหัสผู้บริหารและเลื่อนชั้น</button>' +
+        '<button onclick="_closePromoteDialog()" style="width:100%;padding:14px;font-size:15px;color:#8e8e93;background:none;border:none;cursor:pointer;font-family:var(--font)">ยกเลิก</button>' +
+      '</div>' +
+    '</div>';
+
+  document.body.appendChild(wrap);
+  // แสดง preview ครั้งแรก
+  setTimeout(_updatePromotePreview, 50);
+}
+
+function _closePromoteDialog(){
+  const w=document.getElementById('promote-wrap');
+  if(w){ w.style.animation='fadeIn .15s ease reverse forwards'; setTimeout(()=>w.remove(),150); }
+}
+
+function _updatePromotePreview(){
+  const fromVal = document.getElementById('promo-from')?.value||'';
+  const toGrade = document.getElementById('promo-to-grade')?.value||'';
+  const toRoom  = document.getElementById('promo-to-room')?.value||'';
+  const prev = document.getElementById('promo-preview');
+  if(!prev||!fromVal) return;
+
+  const [fromG,fromR] = fromVal.split('_');
+  const students = allStu.filter(s=>String(s.grade_level)===fromG&&String(s.room)===fromR);
+
+  if(!students.length){
+    prev.innerHTML = '<span style="color:#8e8e93">ไม่พบนักเรียนในห้องนี้</span>';
+    return;
+  }
+
+  // ตรวจว่าชั้นใหม่เท่ากับเดิมไหม
+  const sameRoom = fromG===String(toGrade) && fromR===String(toRoom);
+  const warnHtml = sameRoom
+    ? '<div style="color:#dc2626;font-size:11.5px;margin-top:4px">⚠️ ชั้น/ห้องใหม่เหมือนเดิม</div>'
+    : '';
+
+  prev.innerHTML =
+    '<div style="font-weight:700;color:#c2410c;margin-bottom:5px">' +
+      'จะเปลี่ยน <strong>' + students.length + ' คน</strong>' +
+      ' จาก ม.'+fromG+'/'+fromR+' → ม.'+toGrade+'/'+toRoom +
+    '</div>' +
+    '<div style="font-size:11.5px;color:#555;line-height:1.7;max-height:80px;overflow-y:auto">' +
+      students.slice(0,8).map(s=>esc(s.student_name)).join(' · ') +
+      (students.length>8 ? ' ... และอีก '+(students.length-8)+' คน' : '') +
+    '</div>' +
+    warnHtml;
+}
+
+function _confirmPromote(){
+  const fromVal = document.getElementById('promo-from')?.value||'';
+  const toGrade = +document.getElementById('promo-to-grade')?.value;
+  const toRoom  = +document.getElementById('promo-to-room')?.value;
+  if(!fromVal||!toGrade||!toRoom){ toast('กรุณาเลือกข้อมูลให้ครบ','er'); return; }
+
+  const [fromG,fromR] = fromVal.split('_');
+  const students = allStu.filter(s=>String(s.grade_level)===fromG&&String(s.room)===fromR);
+  if(!students.length){ toast('ไม่พบนักเรียนในห้องนี้','er'); return; }
+  if(String(fromG)===String(toGrade)&&String(fromR)===String(toRoom)){
+    toast('ชั้น/ห้องใหม่เหมือนเดิม กรุณาเลือกใหม่','er'); return;
+  }
+
+  _closePromoteDialog();
+
+  adminAuth({
+    title: 'ยืนยันการเลื่อนชั้น',
+    msg: 'เลื่อน <strong>'+students.length+' คน</strong> จาก ม.'+fromG+'/'+fromR+
+         ' → ม.'+toGrade+'/'+toRoom+
+         '<br><span style="font-size:12px;color:#8e8e93">ข้อมูลคะแนน/เวลาเรียนที่บันทึกไว้จะยังคงอยู่</span>',
+    icon: 'lock',
+    onSuccess: ()=>{
+      confirm2({
+        title: 'ยืนยันอีกครั้ง',
+        msg: 'เลื่อนชั้นนักเรียน <strong>'+students.length+' คน</strong><br>' +
+             'จาก <strong>ม.'+fromG+'/'+fromR+'</strong> → <strong>ม.'+toGrade+'/'+toRoom+'</strong>',
+        type: 'warn',
+        confirmText: 'เลื่อนชั้นเลย',
+        cancelText: 'ยกเลิก',
+        onConfirm: ()=>_doPromote(students, toGrade, toRoom, fromG, fromR)
+      });
+    }
+  });
+}
+
+async function _doPromote(students, toGrade, toRoom, fromG, fromR){
+  loading(true);
+  try{
+    const ids = students.map(s=>s.id);
+    // Update ทีละ batch 50 คน
+    const batchSize = 50;
+    for(let i=0; i<ids.length; i+=batchSize){
+      const batch = ids.slice(i, i+batchSize);
+      await q(
+        sb.from('students')
+          .update({ grade_level: toGrade, room: toRoom })
+          .in('id', batch)
+      );
+    }
+    // อัป allStu local
+    allStu = allStu.map(s=>
+      ids.includes(s.id) ? {...s, grade_level:toGrade, room:toRoom} : s
+    );
+    clearStuCache();
+    toast('เลื่อนชั้น '+students.length+' คน เสร็จแล้ว (ม.'+fromG+'/'+fromR+' → ม.'+toGrade+'/'+toRoom+')');
+    // re-render ตาราง
+    filterStu();
+  }catch(e){
+    toast('เกิดข้อผิดพลาด: '+e.message,'er');
+  }finally{
+    loading(false);
+  }
+}
+
 async function pgStudents(){
   loading(true);
   allStu=await q(sb.from('students').select('*').order('grade_level').order('room').order('student_code'));
@@ -1032,6 +1250,7 @@ async function pgStudents(){
   <div class="ph">
     <div><div class="ptitle">จัดการนักเรียน</div><div class="psub" id="stu-cnt">รวม ${allStu.length} คน</div></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn bs" onclick="openPromoteDialog()" style="background:rgba(255,149,0,.1);color:#c2410c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="17 11 12 6 7 11"/><polyline points="17 18 12 13 7 18"/></svg>เลื่อนชั้น</button>
       <button class="btn bs" onclick="openImport()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>นำเข้ารายชื่อ</button>
       <button class="btn bp" onclick="openStuModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>เพิ่มนักเรียน</button>
     </div>
@@ -1349,9 +1568,9 @@ async function doImport(){
 // ════════════════════════════════════════════════════════════════
 let attStus=[], attData=[], attSub=null;
 const MONTHS=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
-const ATT_C=['present','absent','late','leave'];
-const ATT_I={present:'✅',absent:'❌',late:'🕐',leave:'📋'};
-const ATT_K={present:'ac ap',absent:'ac ab',late:'ac al',leave:'ac av'};
+const ATT_C=['present','absent','leave'];
+const ATT_I={present:'✅',absent:'❌',leave:'📋'};
+const ATT_K={present:'ac ap',absent:'ac ab',leave:'ac av'};
 
 async function pgAttendance(){
   if(!S.subjects.length){$('pg').innerHTML=`<div class="card"><div class="empty"><div class="ei">📅</div><div>ยังไม่มีรายวิชา</div></div></div>`;return;}
@@ -1387,16 +1606,16 @@ function renderAttPage(){
   // ── คำนวณสรุปเวลาเรียนรวมทุกเดือน ──
   const sumMap={};
   const totalH=attSub?.total_hours||60;
-  attStus.forEach(s=>{ sumMap[s.id]={present:0,absent:0,late:0,leave:0,attended:0,totalH,pct:0,ms:false}; });
+  attStus.forEach(s=>{ sumMap[s.id]={present:0,absent:0,leave:0,attended:0,totalH,pct:0,ms:false}; });
   attData.forEach(a=>{
     const m=sumMap[a.student_id]; if(!m) return;
     const periods=parseInt(a.periods)||1;
     if(a.status==='present')m.present+=periods;
     else if(a.status==='absent')m.absent+=periods;
-    else if(a.status==='late')m.late+=periods;
+    // late removed
     else if(a.status==='leave')m.leave+=periods;
   });
-  Object.values(sumMap).forEach(m=>{ m.attended=m.present+m.late+m.leave; m.pct=m.totalH>0?Math.round(m.attended/m.totalH*100):0; m.ms=m.pct<80; });
+  Object.values(sumMap).forEach(m=>{ m.attended=m.present+m.leave; m.pct=m.totalH>0?Math.round(m.attended/m.totalH*100):0; m.ms=m.pct<80; });
 
   $('pg').innerHTML=`
   <div class="ph"><div class="ptitle">บันทึกเวลาเรียน</div>
@@ -1438,7 +1657,7 @@ function renderAttPage(){
         <div><label class="fl">จำนวนคาบ</label>
           <input type="number" class="fi" id="add-periods" min="1" max="8" value="1" style="width:70px"></div>
         <button class="btn bp btn-sm" style="height:38px" onclick="addAttDay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>เพิ่มวันสอน</button>
-        <div style="font-size:11.5px;color:var(--muted);align-self:center">คลิกหัวคอลัมน์เพื่อลบ • คลิกช่องเพื่อเปลี่ยน ✅มา ❌ขาด 🕐สาย 📋ลา</div>
+        <div style="font-size:11.5px;color:var(--muted);align-self:center">คลิกหัวคอลัมน์เพื่อลบ • คลิกช่องเพื่อเปลี่ยน ✅มา ❌ขาด 📋ลา</div>
       </div>
     </div></div>
 
@@ -1453,16 +1672,15 @@ function renderAttPage(){
     <div class="card"><div class="ch"><div class="ct">สรุปเวลาเรียนรายคน</div></div><div class="cb">
       <div class="tw"><table>
         <thead><tr><th>เลขที่</th><th class="tl">ชื่อ-สกุล</th>
-          <th>มา</th><th>ขาด</th><th>สาย</th><th>ลา</th>
+          <th>มา</th><th>ขาด</th><th>ลา</th>
           <th>รวมเข้า</th><th>ชม.ทั้งหมด</th><th>% เข้าเรียน</th><th>สถานะ</th>
         </tr></thead>
         <tbody>${attStus.map((s,i)=>{
-          const m=sumMap[s.id]||{present:0,absent:0,late:0,leave:0,attended:0,totalH:60,pct:0,ms:false};
+          const m=sumMap[s.id]||{present:0,absent:0,leave:0,attended:0,totalH:60,pct:0,ms:false};
           return`<tr>
             <td class="tc">${i+1}</td><td>${esc(s.student_name)}</td>
             <td class="tc"><span class="badge bg-g">${m.present}</span></td>
             <td class="tc"><span class="badge bg-r">${m.absent}</span></td>
-            <td class="tc"><span class="badge bg-o">${m.late}</span></td>
             <td class="tc"><span class="badge bg-b">${m.leave}</span></td>
             <td class="tc"><strong>${m.attended}</strong></td>
             <td class="tc">${m.totalH}</td>
@@ -1626,33 +1844,32 @@ function _refreshSummaryTab(){
   const tab=$('att-sum'); if(!tab) return;
   const totalH=attSub?.total_hours||60;
   const sumMap={};
-  attStus.forEach(s=>{ sumMap[s.id]={present:0,absent:0,late:0,leave:0,attended:0,totalH,pct:0,ms:false}; });
+  attStus.forEach(s=>{ sumMap[s.id]={present:0,absent:0,leave:0,attended:0,totalH,pct:0,ms:false}; });
   attData.forEach(a=>{
     const m=sumMap[a.student_id]; if(!m) return;
     const p=parseInt(a.periods)||1;
     if(a.status==='present')m.present+=p;
     else if(a.status==='absent')m.absent+=p;
-    else if(a.status==='late')m.late+=p;
+    // late removed
     else if(a.status==='leave')m.leave+=p;
   });
   Object.values(sumMap).forEach(m=>{
-    m.attended=m.present+m.late+m.leave;
+    m.attended=m.present+m.leave;
     m.pct=m.totalH>0?Math.round(m.attended/m.totalH*100):0;
     m.ms=m.pct<80;
   });
   tab.innerHTML=`<div class="card"><div class="ch"><div class="ct">สรุปเวลาเรียนรายคน</div></div><div class="cb">
     <div class="tw"><table>
       <thead><tr><th>เลขที่</th><th class="tl">ชื่อ-สกุล</th>
-        <th>มา</th><th>ขาด</th><th>สาย</th><th>ลา</th>
+        <th>มา</th><th>ขาด</th><th>ลา</th>
         <th>รวมเข้า</th><th>ชม.ทั้งหมด</th><th>% เข้าเรียน</th><th>สถานะ</th>
       </tr></thead>
       <tbody>${attStus.map((s,i)=>{
-        const m=sumMap[s.id]||{present:0,absent:0,late:0,leave:0,attended:0,totalH,pct:0,ms:false};
+        const m=sumMap[s.id]||{present:0,absent:0,leave:0,attended:0,totalH,pct:0,ms:false};
         return`<tr>
           <td class="tc">${i+1}</td><td>${esc(s.student_name)}</td>
           <td class="tc"><span class="badge bg-g">${m.present}</span></td>
           <td class="tc"><span class="badge bg-r">${m.absent}</span></td>
-          <td class="tc"><span class="badge bg-o">${m.late}</span></td>
           <td class="tc"><span class="badge bg-b">${m.leave}</span></td>
           <td class="tc"><strong>${m.attended}</strong></td>
           <td class="tc">${m.totalH}</td>
@@ -1670,7 +1887,7 @@ function _refreshSummaryTab(){
 }
 function cycleAtt(el){
   const cur=ATT_C.find(c=>ATT_K[c]===el.className)||'present';
-  const nxt=ATT_C[(ATT_C.indexOf(cur)+1)%4];
+  const nxt=ATT_C[(ATT_C.indexOf(cur)+1)%3];
   el.className=ATT_K[nxt]; el.textContent=ATT_I[nxt];
   // อัปสรุปแบบ real-time โดยใช้ค่าปัจจุบันจาก DOM
   _refreshSummaryFromDOM();
@@ -1679,7 +1896,7 @@ function cycleAtt(el){
 function _refreshSummaryFromDOM(){
   const totalH=attSub?.total_hours||60;
   const domMap={};
-  attStus.forEach(s=>{ domMap[s.id]={present:0,absent:0,late:0,leave:0}; });
+  attStus.forEach(s=>{ domMap[s.id]={present:0,absent:0,leave:0}; });
   // อ่านสถานะจาก DOM ของเดือนปัจจุบัน
   document.querySelectorAll('#att-in .ac').forEach(el=>{
     const sid=el.dataset.sid;
@@ -1692,7 +1909,7 @@ function _refreshSummaryFromDOM(){
   // รวมกับเดือนอื่นจาก attData
   const ym=curYM();
   const sumMap={};
-  attStus.forEach(s=>{ sumMap[s.id]={present:0,absent:0,late:0,leave:0,attended:0,totalH,pct:0,ms:false}; });
+  attStus.forEach(s=>{ sumMap[s.id]={present:0,absent:0,leave:0,attended:0,totalH,pct:0,ms:false}; });
   // เดือนอื่น: ดึงจาก attData
   attData.filter(a=>String(a.year_month)!==String(ym)).forEach(a=>{
     const m=sumMap[a.student_id]; if(!m) return;
@@ -1703,10 +1920,10 @@ function _refreshSummaryFromDOM(){
   attStus.forEach(s=>{
     const dm=domMap[s.id]||{}; const sm=sumMap[s.id];
     sm.present+=dm.present||0; sm.absent+=dm.absent||0;
-    sm.late+=dm.late||0; sm.leave+=dm.leave||0;
+    // late removed sm.leave+=dm.leave||0;
   });
   Object.values(sumMap).forEach(m=>{
-    m.attended=m.present+m.late+m.leave;
+    m.attended=m.present+m.leave;
     m.pct=m.totalH>0?Math.round(m.attended/m.totalH*100):0;
     m.ms=m.pct<80;
   });
@@ -1743,17 +1960,17 @@ function buildAttMonths(){
     .sort((a,b)=>a.ym.localeCompare(b.ym));
 }
 
-// คำนวณสรุป มา/ขาด/สาย/ลา รายคน (นับตามจำนวนคาบ)
+// คำนวณสรุป มา/ขาด/ลา รายคน (นับตามจำนวนคาบ)
 function attSummaryByStudent(){
   const sum={};
   const totalH=attSub?.total_hours||60;
-  attStus.forEach(s=>{sum[s.id]={present:0,absent:0,late:0,leave:0};});
+  attStus.forEach(s=>{sum[s.id]={present:0,absent:0,leave:0};});
   attData.forEach(a=>{
     const m=sum[a.student_id]; if(!m) return;
     const p=parseInt(a.periods)||1;
     if(a.status in m) m[a.status]+=p;
   });
-  Object.values(sum).forEach(m=>{m.attended=m.present+m.late+m.leave;m.pct=totalH>0?Math.round(m.attended/totalH*100):0;m.ms=m.pct<80;m.totalH=totalH;});
+  Object.values(sum).forEach(m=>{m.attended=m.present+m.leave;m.pct=totalH>0?Math.round(m.attended/totalH*100):0;m.ms=m.pct<80;m.totalH=totalH;});
   return sum;
 }
 
@@ -1775,7 +1992,7 @@ function exportAttendance(){
     col+=M.days.length;
   });
   headMonth.push('','','','','','','');
-  headDay.push('มา','ขาด','สาย','ลา','รวม','%','สถานะ');
+  headDay.push('มา','ขาด','ลา','รวม','%','สถานะ');
   const aoa=[
     [`${S.config.school_name||''} — บันทึกเวลาเรียน`],
     [`วิชา ${sub.subject_name} (${sub.subject_code}) ม.${sub.grade_level}/${sub.room}  ครู${sub.teacher_name||''}`],
@@ -1793,12 +2010,12 @@ function exportAttendance(){
         row.push(st?ATT_ABBR[st]:'');
       });
     });
-    const m=sum[s.id]||{present:0,absent:0,late:0,leave:0,attended:0,pct:0,ms:false};
-    row.push(m.present,m.absent,m.late,m.leave,m.attended,m.pct+'%',m.ms?'มส':'ปกติ');
+    const m=sum[s.id]||{present:0,absent:0,leave:0,attended:0,pct:0,ms:false};
+    row.push(m.present,m.absent,m.leave,m.attended,m.pct+'%',m.ms?'มส':'ปกติ');
     aoa.push(row);
   });
   aoa.push([]);
-  aoa.push(['สัญลักษณ์:','/ = มา','ข = ขาด','ส = สาย','ล = ลา','(นับตามจำนวนคาบของแต่ละวัน)']);
+  aoa.push(['สัญลักษณ์:','/ = มา','ข = ขาด','ล = ลา','(นับตามจำนวนคาบของแต่ละวัน)']);
   const ndays=col-3;
   const colW=[6,10,28,...Array(ndays).fill(5),7,7,7,7,8,7,9];
   exportExcel([{name:'เวลาเรียน',aoa,colWidths:colW,merges}],
@@ -1814,7 +2031,7 @@ function printAttendance(){
   html+='<table><thead>';
   html+='<tr><th rowspan="2">เลขที่</th><th rowspan="2">เลขประจำตัว</th><th rowspan="2">ชื่อ-สกุล</th>';
   months.forEach(M=>{ if(M.days.length) html+=`<th colspan="${M.days.length}">${esc(M.monthName)}</th>`; });
-  html+='<th rowspan="2">มา</th><th rowspan="2">ขาด</th><th rowspan="2">สาย</th><th rowspan="2">ลา</th><th rowspan="2">รวม</th><th rowspan="2">%</th><th rowspan="2">สถานะ</th></tr>';
+  html+='<th rowspan="2">มา</th><th rowspan="2">ขาด</th><th rowspan="2">ลา</th><th rowspan="2">รวม</th><th rowspan="2">%</th><th rowspan="2">สถานะ</th></tr>';
   html+='<tr>';
   months.forEach(M=>{ M.days.forEach(d=>html+=`<th title="${d.periods} คาบ">${d.day}</th>`); });
   html+='</tr></thead><tbody>';
@@ -1826,12 +2043,12 @@ function printAttendance(){
         cells+=`<td>${st?ATT_ABBR[st]:''}</td>`;
       });
     });
-    const m=sum[s.id]||{present:0,absent:0,late:0,leave:0,attended:0,pct:0,ms:false};
+    const m=sum[s.id]||{present:0,absent:0,leave:0,attended:0,pct:0,ms:false};
     html+=`<tr><td>${i+1}</td><td>${esc(s.student_code)}</td><td class="l">${esc(s.student_name)}</td>${cells}
-      <td>${m.present}</td><td>${m.absent}</td><td>${m.late}</td><td>${m.leave}</td><td>${m.attended}</td><td>${m.pct}%</td><td>${m.ms?'มส':'-'}</td></tr>`;
+      <td>${m.present}</td><td>${m.absent}</td><td>${m.leave}</td><td>${m.attended}</td><td>${m.pct}%</td><td>${m.ms?'มส':'-'}</td></tr>`;
   });
   html+='</tbody></table>';
-  html+='<div style="font-size:11px;margin-top:6px">สัญลักษณ์: / = มา, ข = ขาด, ส = สาย, ล = ลา &nbsp; (ตัวเลขใต้เดือนคือวันที่ • นับชั่วโมงตามจำนวนคาบของแต่ละวัน)</div>';
+  html+='<div style="font-size:11px;margin-top:6px">สัญลักษณ์: / = มา, ข = ขาด, ล = ลา &nbsp; (ตัวเลขใต้เดือนคือวันที่ • นับชั่วโมงตามจำนวนคาบของแต่ละวัน)</div>';
 
   printHTML(`บันทึกเวลาเรียน — ${sub.subject_name} ม.${sub.grade_level}/${sub.room}`, html);
 }
@@ -2783,7 +3000,7 @@ async function pgReport(){
         const att=attMap[s.id]||{pct:0,ms:false};
         const g=sm.grade??'-';
         return`<tr>
-          <td class="tc">${i+1}</td><td>${esc(s.student_name)}</td>
+          <td class="tc">${i+1}</td><td style="white-space:nowrap">${esc(s.student_name)}</td>
           <td class="tr2">${sm.total_before_mid??0}</td>
           <td class="tr2">${sm.total_after_mid??0}</td>
           <td class="tr2">${sm.mid_normal??0}</td>
@@ -3134,7 +3351,7 @@ async function saveSettings(){
   try{
     await q(sb.from('config').upsert(updates,{onConflict:'key'}));
     await loadConfig();
-    $('school-name').textContent=S.config.school_name||'ระบบบันทึกผลการเรียน';
+    $('school-name').textContent=S.config.school_name||'ตาเบาวิทยา';
     $('tbb').textContent='ปีการศึกษา '+S.config.academic_year+' ภาค '+S.config.semester;
     $('sb-ft-info').textContent='ปี '+S.config.academic_year+' ภาค '+S.config.semester;
     toast('บันทึกการตั้งค่าเรียบร้อย');
@@ -3250,6 +3467,389 @@ function adminAuth(opts){
   }
 }
 
+
+
+// ════ RESTORE DATA ═══════════════════════════════════════════
+
+// ลำดับการ restore (child ก่อน parent เพื่อหลีกเลี่ยง FK conflict)
+const RESTORE_ORDER = [
+  'eval_char','eval_read','score_summary','score_units',
+  'attendance','students','subjects','config'
+];
+// tables ที่ไม่ restore (profiles = user accounts, ไม่ควรเขียนทับ)
+const RESTORE_SKIP = ['profiles','README'];
+
+// column ที่ auto-generated ใน DB — ต้องไม่ส่งกลับ
+const SKIP_COLS = ['id','created_at','updated_at','user_id'];
+
+let _restoreData = null; // เก็บข้อมูลที่อ่านจาก Excel ไว้ชั่วคราว
+
+function openRestoreDialog(){
+  // สร้าง dialog เลือกไฟล์
+  const wrap = document.createElement('div');
+  wrap.id = 'restore-wrap';
+  wrap.style.cssText = 'position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.5);backdrop-filter:blur(10px);animation:fadeIn .15s ease';
+  wrap.innerHTML =
+    '<div style="background:#fff;border-radius:22px;width:100%;max-width:420px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.2);animation:dlgPop .22s cubic-bezier(.34,1.56,.64,1)">' +
+      '<div style="padding:24px 24px 18px">' +
+        '<div style="width:52px;height:52px;background:#fff1f0;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' +
+        '</div>' +
+        '<div style="font-size:17px;font-weight:700;text-align:center;margin-bottom:8px;">Restore ข้อมูล</div>' +
+        '<div style="font-size:12.5px;color:#8e8e93;text-align:center;line-height:1.6;margin-bottom:16px;">' +
+          'การ Restore จะ<strong style="color:#dc2626;">ลบข้อมูลปัจจุบันทั้งหมด</strong>แล้วแทนที่ด้วยข้อมูลจากไฟล์ Backup<br>' +
+          'แนะนำให้ <strong>Backup ปัจจุบันก่อน</strong> หากยังไม่ได้ทำ' +
+        '</div>' +
+        // drop zone
+        '<div id="restore-drop" ' +
+          'style="border:2px dashed #fecaca;border-radius:12px;padding:20px;text-align:center;background:#fff1f0;cursor:pointer;transition:all .15s;" ' +
+          'onclick="_triggerRestoreFile()" ' +
+          'ondrop="_handleRestoreDrop(event)">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="32" height="32" style="margin-bottom:8px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>' +
+          '<div style="font-size:13px;font-weight:700;color:#dc2626;">เลือกหรือลากไฟล์ Backup</div>' +
+          '<div style="font-size:11.5px;color:#f87171;margin-top:3px;">ไฟล์ .xlsx จาก Backup เท่านั้น</div>' +
+        '</div>' +
+        '<input type="file" id="restore-file-input" accept=".xlsx" style="display:none" onchange="_handleRestoreFile(this)">' +
+        // preview area
+        '<div id="restore-preview" style="display:none;margin-top:12px;background:#f9f9fb;border-radius:10px;padding:10px 12px;font-size:12.5px;"></div>' +
+      '</div>' +
+      '<div style="border-top:1px solid #f3f4f6;">' +
+        '<button id="restore-confirm-btn" disabled onclick="_doRestore()" ' +
+          'style="width:100%;padding:14px;font-size:15px;font-weight:600;color:#dc2626;background:none;border:none;border-bottom:1px solid #f3f4f6;cursor:not-allowed;opacity:.4;font-family:var(--font);">Restore เลย</button>' +
+        '<button onclick="_closeRestoreDialog()" ' +
+          'style="width:100%;padding:14px;font-size:15px;color:#8e8e93;background:none;border:none;cursor:pointer;font-family:var(--font);">ยกเลิก</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(wrap);
+  _restoreData = null;
+  // ผูก drag listeners หลัง DOM พร้อม
+  setTimeout(()=>{
+    const dz=document.getElementById('restore-drop');
+    if(!dz) return;
+    dz.addEventListener('dragover',e=>{e.preventDefault();dz.style.borderColor='#dc2626';dz.style.background='#fee2e2';});
+    dz.addEventListener('dragleave',()=>{dz.style.borderColor='#fecaca';dz.style.background='#fff1f0';});
+  },0);
+}
+
+function _closeRestoreDialog(){
+  const w = document.getElementById('restore-wrap');
+  if(w){ w.style.animation='fadeIn .15s ease reverse forwards'; setTimeout(()=>w.remove(),150); }
+  _restoreData = null;
+}
+
+function _handleRestoreDrop(e){
+  e.preventDefault();
+  const drop = document.getElementById('restore-drop');
+  if(drop){ drop.style.borderColor='#fecaca'; drop.style.background='#fff1f0'; }
+  const file = e.dataTransfer?.files?.[0];
+  if(file) _parseRestoreFile(file);
+}
+
+function _handleRestoreFile(input){
+  const file = input.files?.[0];
+  if(file) _parseRestoreFile(file);
+  input.value='';
+}
+
+function _triggerRestoreFile(){
+  const el=document.getElementById('restore-file-input');
+  if(el) el.click();
+}
+function _parseRestoreFile(file){
+  if(!file.name.endsWith('.xlsx')){
+    toast('ต้องเป็นไฟล์ .xlsx จาก Backup เท่านั้น','er'); return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const wb = XLSX.read(e.target.result, {type:'array'});
+      // ตรวจว่าเป็นไฟล์ backup จริง
+      if(!wb.SheetNames.includes('README')||!wb.SheetNames.includes('students')){
+        toast('ไฟล์นี้ไม่ใช่ Backup ของระบบ ปพ.5','er'); return;
+      }
+      // อ่าน README เพื่อแสดง preview
+      const readme = XLSX.utils.sheet_to_json(wb.Sheets['README'],{header:1});
+      const schoolLine = readme.find(r=>r[0]&&String(r[0]).startsWith('โรงเรียน'));
+      const yearLine   = readme.find(r=>r[0]&&String(r[0]).startsWith('ปีการศึกษา'));
+      const dateLine   = readme.find(r=>r[0]&&String(r[0]).startsWith('วันที่'));
+      // นับ records ต่อ table
+      const counts = {};
+      wb.SheetNames.filter(n=>!RESTORE_SKIP.includes(n)).forEach(n=>{
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1});
+        counts[n] = Math.max(0, rows.length-1); // ลบ header row
+      });
+      // เก็บ workbook ไว้
+      _restoreData = wb;
+      // แสดง preview
+      const preview = document.getElementById('restore-preview');
+      if(preview){
+        preview.style.display='block';
+        preview.innerHTML =
+          '<div style="font-weight:700;color:#dc2626;margin-bottom:6px;">ข้อมูลที่จะ Restore:</div>'+
+          (schoolLine?'<div>'+schoolLine[0]+'</div>':'')+
+          (yearLine?'<div>'+yearLine[0]+'</div>':'')+
+          (dateLine?'<div>'+dateLine[0]+'</div>':'')+
+          '<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px;">'+
+          Object.entries(counts).map(([t,n])=>
+            '<span style="background:#e5e5ea;border-radius:5px;padding:2px 7px;font-size:11.5px;"><strong>'+t+'</strong> '+n+' rows</span>'
+          ).join('')+'</div>'+
+          '<div style="margin-top:8px;color:#dc2626;font-size:12px;font-weight:600;">⚠️ ข้อมูลปัจจุบันทั้งหมดจะถูกลบและแทนที่</div>';
+      }
+      // เปิดปุ่ม confirm
+      const btn = document.getElementById('restore-confirm-btn');
+      if(btn){ btn.disabled=false; btn.style.cursor='pointer'; btn.style.opacity='1'; }
+    }catch(err){
+      toast('อ่านไฟล์ไม่ได้: '+err.message,'er');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+async function _doRestore(){
+  if(!_restoreData){ toast('ไม่พบข้อมูล Backup','er'); return; }
+  _closeRestoreDialog();
+  // ยืนยันสุดท้าย
+  confirm2({
+    title:'ยืนยันการ Restore',
+    msg:'ข้อมูลปัจจุบัน<strong>ทั้งหมด</strong>จะถูกลบถาวรแล้วแทนที่ด้วยข้อมูลจาก Backup<br><span style="font-size:12px;color:#dc2626;">ไม่สามารถย้อนกลับได้</span>',
+    type:'danger', confirmText:'ลบและ Restore เลย', cancelText:'ยกเลิก',
+    onConfirm: async()=>{
+      loading(true);
+      const errors = [];
+      try{
+        const wb = _restoreData;
+        _restoreData = null;
+
+        // ── Step 1: ลบข้อมูลทุก table ตามลำดับ child→parent ──
+        toast('กำลังลบข้อมูลเดิม...','in');
+        for(const tbl of RESTORE_ORDER){
+          try{
+            await q(sb.from(tbl).delete().neq('id','00000000-0000-0000-0000-000000000000'));
+          }catch(e){ errors.push('ลบ '+tbl+': '+e.message); }
+        }
+        // config ใช้ key ไม่ใช่ uuid id
+        try{
+          await q(sb.from('config').delete().neq('key','__none__'));
+        }catch(e){}
+
+        // ── Step 2: insert ข้อมูลใหม่จาก backup ──
+        toast('กำลัง Restore ข้อมูล...','in');
+        for(const tbl of [...RESTORE_ORDER].reverse()){
+          if(!wb.SheetNames.includes(tbl)) continue;
+          const ws = wb.Sheets[tbl];
+          const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+          if(rows.length<2) continue;
+          const headers = rows[0].map(h=>String(h));
+          // กรอง column ที่ไม่ส่งกลับ DB
+          const keepIdx = headers
+            .map((h,i)=>SKIP_COLS.includes(h)||h.endsWith('ชื่อวิชา')||h.endsWith('ชื่อนักเรียน')?-1:i)
+            .filter(i=>i>=0);
+          const keepHeaders = keepIdx.map(i=>headers[i]);
+          // แปลง rows เป็น objects
+          const data = rows.slice(1)
+            .filter(r=>r.some(v=>v!==''))  // ข้ามแถวว่าง
+            .map(r=>{
+              const obj={};
+              keepIdx.forEach((ci,ii)=>{
+                let v = r[ci];
+                // แปลง '' → null สำหรับ field ที่ควรเป็น null
+                if(v===''||v===null||v===undefined) v=null;
+                // แปลง number string
+                if(typeof v==='string'&&v!==''&&!isNaN(v)&&!['student_code','year_month','month_name','unit_name','subject_name','subject_code','student_name','note','key','value','full_name','teacher_name','grade_level_str'].includes(keepHeaders[ii])){
+                  v=Number(v);
+                }
+                obj[keepHeaders[ii]]=v;
+              });
+              return obj;
+            });
+          if(!data.length) continue;
+          // insert เป็น batch ขนาด 200 rows
+          const batchSize=200;
+          for(let i=0;i<data.length;i+=batchSize){
+            const batch=data.slice(i,i+batchSize);
+            try{
+              await q(sb.from(tbl).insert(batch));
+            }catch(e){ errors.push('insert '+tbl+' batch '+(i/batchSize+1)+': '+e.message); }
+          }
+        }
+
+        // ── Step 3: รีโหลด config และ clear cache ──
+        cacheInvAll();
+        await loadConfig();
+
+        if(errors.length){
+          console.warn('Restore errors:', errors);
+          toast('Restore เสร็จ (มีข้อผิดพลาดบางส่วน '+errors.length+' จุด — ดูใน console)','in');
+        } else {
+          toast('Restore สำเร็จ! กรุณา Refresh หน้าเพื่อโหลดข้อมูลใหม่');
+        }
+        // แนะนำ reload
+        setTimeout(()=>{
+          confirm2({
+            title:'Restore สำเร็จ',
+            msg:'ข้อมูลถูก Restore เรียบร้อยแล้ว<br>กรุณากด <strong>Refresh</strong> เพื่อโหลดข้อมูลใหม่',
+            type:'warn', confirmText:'Refresh เลย', cancelText:'ทีหลัง',
+            onConfirm:()=>location.reload()
+          });
+        },600);
+
+      }catch(e){
+        toast('Restore ผิดพลาด: '+e.message,'er');
+      }finally{
+        loading(false);
+      }
+    }
+  });
+}
+
+// cacheInvAll — clear cache ทั้งหมด
+function cacheInvAll(){
+  try{ Object.keys(_cache).forEach(k=>delete _cache[k]); }catch(e){}
+  invalidateSubjects(); invalidateStu(); invalidateSc(); invalidateAtt();
+}
+
+// ════ BACKUP ALL DATA ══════════════════════════════════════════
+async function backupAllData(){
+  loading(true);
+  try{
+    const now = new Date();
+    const dateStr = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+    const timeStr = String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0');
+
+    // ── ดึงข้อมูลทุก table พร้อมกัน ──
+    const [
+      allSubjects, allStudents, allAttendance,
+      allScoreUnits, allScoreSummary,
+      allEvalRead, allEvalChar, allConfig, allProfiles
+    ] = await Promise.all([
+      q(sb.from('subjects').select('*').order('grade_level').order('room').order('subject_name')),
+      q(sb.from('students').select('*').order('grade_level').order('room').order('student_code')),
+      q(sb.from('attendance').select('*').order('subject_id').order('student_id').order('year_month').order('date_day')),
+      q(sb.from('score_units').select('*').order('subject_id').order('student_id').order('period').order('unit_number')),
+      q(sb.from('score_summary').select('*').order('subject_id').order('student_id')),
+      q(sb.from('eval_read').select('*').order('subject_id').order('student_id')),
+      q(sb.from('eval_char').select('*').order('subject_id').order('student_id')),
+      q(sb.from('config').select('*')),
+      q(sb.from('profiles').select('id,full_name,role')),
+    ]);
+
+    // ── helper: object array → aoa ──
+    function toAoa(rows){
+      if(!rows||!rows.length) return [['(ไม่มีข้อมูล)']];
+      const keys = Object.keys(rows[0]);
+      return [keys, ...rows.map(r=>keys.map(k=>{
+        const v=r[k];
+        if(v===null||v===undefined) return '';
+        if(typeof v==='object') return JSON.stringify(v);
+        return v;
+      }))];
+    }
+
+    // ── subject name lookup ──
+    const subMap = Object.fromEntries(allSubjects.map(s=>[s.id, s.subject_name+' ม.'+s.grade_level+'/'+s.room]));
+    const stuMap = Object.fromEntries(allStudents.map(s=>[s.id, s.student_name]));
+
+    // ── Sheet 1: ข้อมูลทั้งหมด (ตาม table) ──
+    const sheets = [];
+
+    // Sheet: README
+    sheets.push({
+      name:'README',
+      aoa:[
+        ['ไฟล์ Backup ระบบ ปพ.5 ออนไลน์'],
+        ['โรงเรียน: '+(S.config.school_name||'')],
+        ['ปีการศึกษา: '+(S.config.academic_year||'')+' ภาค '+(S.config.semester||'')],
+        ['วันที่ Backup: '+dateStr+' เวลา '+timeStr.slice(0,2)+':'+timeStr.slice(2)],
+        [],
+        ['Sheet', 'เนื้อหา', 'จำนวน record'],
+        ['subjects','รายวิชาทั้งหมด', allSubjects.length],
+        ['students','นักเรียนทั้งหมด', allStudents.length],
+        ['attendance','บันทึกเวลาเรียน', allAttendance.length],
+        ['score_units','คะแนนหน่วยการเรียน', allScoreUnits.length],
+        ['score_summary','สรุปคะแนนและผลการเรียน', allScoreSummary.length],
+        ['eval_read','การประเมินการอ่านฯ', allEvalRead.length],
+        ['eval_char','การประเมินคุณลักษณะฯ', allEvalChar.length],
+        ['config','ตั้งค่าระบบ', allConfig.length],
+        ['profiles','ข้อมูลผู้ใช้', allProfiles.length],
+        [],
+        ['หมายเหตุ: ไฟล์นี้มีข้อมูลดิบจาก Supabase ทุก table สามารถนำไป restore ได้'],
+      ],
+      colWidths:[22,30,15]
+    });
+
+    // Sheet: subjects
+    sheets.push({ name:'subjects', aoa:toAoa(allSubjects), colWidths:Array(20).fill(16) });
+
+    // Sheet: students
+    sheets.push({ name:'students', aoa:toAoa(allStudents), colWidths:Array(10).fill(18) });
+
+    // Sheet: attendance (อาจมีเยอะ — แสดงชื่อแทน id ด้วย)
+    const attAoa = allAttendance.length ? [
+      [...Object.keys(allAttendance[0]), 'ชื่อวิชา','ชื่อนักเรียน'],
+      ...allAttendance.map(r=>[
+        ...Object.keys(r).map(k=>r[k]??''),
+        subMap[r.subject_id]||'', stuMap[r.student_id]||''
+      ])
+    ] : [['(ไม่มีข้อมูล)']];
+    sheets.push({ name:'attendance', aoa:attAoa });
+
+    // Sheet: score_units
+    const suAoa = allScoreUnits.length ? [
+      [...Object.keys(allScoreUnits[0]),'ชื่อวิชา','ชื่อนักเรียน'],
+      ...allScoreUnits.map(r=>[
+        ...Object.keys(r).map(k=>r[k]??''),
+        subMap[r.subject_id]||'', stuMap[r.student_id]||''
+      ])
+    ] : [['(ไม่มีข้อมูล)']];
+    sheets.push({ name:'score_units', aoa:suAoa });
+
+    // Sheet: score_summary
+    const ssAoa = allScoreSummary.length ? [
+      [...Object.keys(allScoreSummary[0]),'ชื่อวิชา','ชื่อนักเรียน'],
+      ...allScoreSummary.map(r=>[
+        ...Object.keys(r).map(k=>r[k]??''),
+        subMap[r.subject_id]||'', stuMap[r.student_id]||''
+      ])
+    ] : [['(ไม่มีข้อมูล)']];
+    sheets.push({ name:'score_summary', aoa:ssAoa });
+
+    // Sheet: eval_read
+    const erAoa = allEvalRead.length ? [
+      [...Object.keys(allEvalRead[0]),'ชื่อวิชา','ชื่อนักเรียน'],
+      ...allEvalRead.map(r=>[
+        ...Object.keys(r).map(k=>r[k]??''),
+        subMap[r.subject_id]||'', stuMap[r.student_id]||''
+      ])
+    ] : [['(ไม่มีข้อมูล)']];
+    sheets.push({ name:'eval_read', aoa:erAoa });
+
+    // Sheet: eval_char
+    const ecAoa = allEvalChar.length ? [
+      [...Object.keys(allEvalChar[0]),'ชื่อวิชา','ชื่อนักเรียน'],
+      ...allEvalChar.map(r=>[
+        ...Object.keys(r).map(k=>r[k]??''),
+        subMap[r.subject_id]||'', stuMap[r.student_id]||''
+      ])
+    ] : [['(ไม่มีข้อมูล)']];
+    sheets.push({ name:'eval_char', aoa:ecAoa });
+
+    // Sheet: config (ซ่อน admin_password)
+    const configSafe = allConfig.map(r=>({...r, value: r.key==='admin_password'?'[hidden]':r.value}));
+    sheets.push({ name:'config', aoa:toAoa(configSafe), colWidths:[20,30,20] });
+
+    // Sheet: profiles
+    sheets.push({ name:'profiles', aoa:toAoa(allProfiles), colWidths:[20,24,12] });
+
+    const fileName = 'backup_pp5_'+dateStr+'_'+timeStr+'.xlsx';
+    exportExcel(sheets, fileName);
+    toast('Backup เสร็จแล้ว — '+fileName);
+
+  }catch(e){
+    toast('Backup ผิดพลาด: '+e.message,'er');
+  }finally{
+    loading(false);
+  }
+}
 
 // ════ SCHOOL REPORT ════════════════════════════════════════════
 function navSchoolReport(){
@@ -3435,6 +4035,14 @@ async function pgSchoolReport(){
           '<div class="psub">'+esc(S.config.school_name||'')+'&nbsp;·&nbsp;ปีการศึกษา '+esc(S.config.academic_year||'')+'&nbsp;ภาค&nbsp;'+esc(S.config.semester||'')+'</div>'+
         '</div>'+
         '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+          '<button class="btn bs no-print" onclick="backupAllData()" style="background:rgba(52,199,89,.12);color:#16803d">'+
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'+
+            'Backup'+
+          '</button>'+
+          '<button class="btn bs no-print" onclick="openRestoreDialog()" style="background:rgba(255,59,48,.1);color:#dc2626">'+
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>'+
+            'Restore'+
+          '</button>'+
           '<button class="btn bs no-print" onclick="exportSchoolReport()">'+
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>'+
             'Excel'+
