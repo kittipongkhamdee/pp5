@@ -467,6 +467,7 @@ async function qcRevalidate(key, fn, onUpdate){
 // ── UTIL ─────────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
 const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const escJs = s => String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 let _loadTimer=null;
 let _loadCount=0;
 function loading(v){
@@ -942,7 +943,7 @@ async function pgSubjects(){
       </td>
       <td class="tc">
         <button class="btn bs btn-sm" onclick="openSubModal('${s.id}')" style="padding:5px 8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-        <button class="btn bd btn-sm" onclick="delSub('${s.id}','${esc(s.subject_name)}')" style="padding:5px 8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
+        <button class="btn bd btn-sm" onclick="delSub('${s.id}','${escJs(s.subject_name)}')" style="padding:5px 8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
       </td></tr>`).join('')}
     </tbody></table></div>`}
   </div></div>`;
@@ -1057,7 +1058,7 @@ function renderStuTbl(list){
       <td class="tc">${s.gender==='ช'?'ชาย':s.gender==='ญ'?'หญิง':esc(s.gender||'-')}</td>
       <td class="tc">
         <button class="btn bs btn-sm" onclick="openStuModal('${s.id}')" style="padding:5px 8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-        <button class="btn bd btn-sm" onclick="delStu('${s.id}','${esc(s.student_name)}')" style="padding:5px 8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
+        <button class="btn bd btn-sm" onclick="delStu('${s.id}','${escJs(s.student_name)}')" style="padding:5px 8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
       </td></tr>`).join('')}
     </tbody></table></div>`;
 }
@@ -1938,7 +1939,7 @@ function renderUnitTab(period,maxTotal){
             ${u.unit_name?`<div style="color:var(--muted);font-size:11px">${esc(u.unit_name)}</div>`:''}
             <div style="display:flex;gap:4px;margin-top:4px">
               <button class="btn bs btn-sm" onclick="openUnitModalEdit('${period}',${u.unit_number})" ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>แก้ไข</button>
-              <button class="btn bd btn-sm" onclick="deleteUnit('${period}',${u.unit_number},'${esc(u.unit_name||'หน่วย '+u.unit_number)}')" style="padding:5px 9px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>ลบ</button>
+              <button class="btn bd btn-sm" onclick="deleteUnit('${period}',${u.unit_number},'${escJs(u.unit_name||'หน่วย '+u.unit_number)}')" style="padding:5px 9px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>ลบ</button>
             </div>
           </div>`).join('')}
       </div>
@@ -2184,19 +2185,27 @@ function renderExamTab(){
   </div></div>`;
 }
 async function saveExam(){
+  const mM=scSub?.score_mid||20, mF=scSub?.score_final||30;
+  // ตรวจคะแนนเกินเต็มก่อนบันทึก
+  const over=scStus.some(s=>{
+    const mn=parseFloat($('mid-'+s.id)?.value)||0;
+    const fn=parseFloat($('fin-'+s.id)?.value)||0;
+    return mn>mM || fn>mF;
+  });
+  if(over){ toast('มีคะแนนสอบเกินคะแนนเต็ม (กลางภาค/'+mM+' ปลายภาค/'+mF+') กรุณาตรวจสอบ','er'); return; }
   const rows=scStus.map(s=>{
     const sm=gsum(s.id);
     const bef=scUnits.filter(u=>u.student_id===s.id&&u.period==='before').reduce((a,b)=>a+(parseFloat(b.score)||0),0);
     const aft=scUnits.filter(u=>u.student_id===s.id&&u.period==='after').reduce((a,b)=>a+(parseFloat(b.score)||0),0);
-    const mn=parseFloat($('mid-'+s.id)?.value)||0;
-    const fn=parseFloat($('fin-'+s.id)?.value)||0;
+    const mn=Math.min(mM,parseFloat($('mid-'+s.id)?.value)||0);
+    const fn=Math.min(mF,parseFloat($('fin-'+s.id)?.value)||0);
     const midUsed=mn;
     const total=bef+aft+midUsed+fn;
     const ZERO_GRADE=['ร','มส','มผ','ผ'];
     const grade=ZERO_GRADE.includes(sm.special_result||'')?0:calcGrade(total);
     return{subject_id:S.selSub,student_id:s.id,
       total_before_mid:bef,total_after_mid:aft,total_unit:bef+aft,
-      mid_normal:mn,mid_retake:mr,mid_repeat:mrp,final_score:fn,
+      mid_normal:mn,mid_retake:0,mid_repeat:0,final_score:fn,
       total_score:total,grade,special_result:sm.special_result||'',note:sm.note||''};
   });
   loading(true);
@@ -2279,7 +2288,15 @@ async function saveSpecial(){
     // ร มส มผ ผ → เกรด 0; มก → คำนวณปกติ; ว่าง → คำนวณปกติ
     const ZERO_GRADE=['ร','มส','มผ','ผ'];
     const grade=ZERO_GRADE.includes(sr)?0:calcGrade(parseFloat(sm.total_score)||0);
-    return{...sm,subject_id:S.selSub,student_id:s.id,special_result:sr,grade};
+    // เลือกเฉพาะ field ที่ต้องการ ไม่ spread id/created_at จาก select('*')
+    return{
+      subject_id:S.selSub, student_id:s.id,
+      total_before_mid:sm.total_before_mid??0, total_after_mid:sm.total_after_mid??0,
+      total_unit:sm.total_unit??0, mid_normal:sm.mid_normal??0,
+      mid_retake:sm.mid_retake??0, mid_repeat:sm.mid_repeat??0,
+      final_score:sm.final_score??0, total_score:sm.total_score??0,
+      special_result:sr, grade, note:sm.note||''
+    };
   });
   loading(true);
   try{
@@ -3309,6 +3326,8 @@ async function pgSchoolReport(){
     const allAvgs = subjectsWithStats.filter(s=>s._stats.avg!=='—').map(s=>parseFloat(s._stats.avg)||0);
     const schoolScoreAvg = allAvgs.length>0?(allAvgs.reduce((a,b)=>a+b,0)/allAvgs.length).toFixed(1):'—';
 
+    // เก็บไว้ใน state เพื่อให้ exportSchoolReport ใช้ได้
+    S._schoolReport = subjectsWithStats;
     // ── render ──
     const GRADE_COLORS={4:'#15803d',3.5:'#2a7a44',3:'#007AFF',2.5:'#0284c7',2:'#e6940a',1.5:'#c0810a',1:'#c0392b',0:'#922b21'};
 
@@ -3486,17 +3505,27 @@ function _lockSchoolReport(){
 }
 
 function exportSchoolReport(){
-  toast('กำลังสร้าง Excel...','in');
-  // simple export — subjects summary
+  const data=S._schoolReport;
+  if(!data||!data.length){ toast('ไม่มีข้อมูลรายงาน','er'); return; }
   const aoa=[
-    [S.config.school_name||'','รายงานสรุปผลการเรียนทั้งโรงเรียน'],
-    ['ปีการศึกษา '+(S.config.academic_year||'')+' ภาค '+(S.config.semester||'')],
+    [(S.config.school_name||'')+' — รายงานสรุปผลการเรียนทั้งโรงเรียน'],
+    ['ปีการศึกษา '+(S.config.academic_year||'')+' ภาคเรียนที่ '+(S.config.semester||'')],
     [],
-    ['ลำดับ','รหัสวิชา','ชื่อวิชา','ชั้น','ห้อง','ครูผู้สอน','จำนวน','ผ่าน','ไม่ผ่าน','% ผ่าน','คะแนนเฉลี่ย'],
+    ['ลำดับ','รหัสวิชา','ชื่อวิชา','ชั้น/ห้อง','ครูผู้สอน','นักเรียน','ผ่าน','ไม่ผ่าน','% ผ่าน','คะแนนเฉลี่ย','มส.']
   ];
-  // collect data from DOM cards (we stored subjectsWithStats in closure)
-  // re-query is simpler here — just use cached data
-  toast('ฟีเจอร์ Export Excel สำหรับรายงานโรงเรียนจะพัฒนาเพิ่มเติม');
+  data.forEach((sub,i)=>{
+    const st=sub._stats;
+    aoa.push([
+      i+1, sub.subject_code, sub.subject_name,
+      'ม.'+sub.grade_level+'/'+sub.room, st.teacherName,
+      st.total, st.pass!=null?st.pass:'-', st.fail!=null?st.fail:'-',
+      st.pct!=='—'?st.pct+'%':'-', st.avg, st.msCount||0
+    ]);
+  });
+  exportExcel(
+    [{name:'รายงานทั้งโรงเรียน',aoa,colWidths:[6,10,24,10,20,8,7,8,8,10,6]}],
+    'รายงานทั้งโรงเรียน_'+(S.config.academic_year||'')+'.xlsx'
+  );
 }
 
 // ── START ────────────────────────────────────────────────────────
