@@ -962,6 +962,20 @@ function nav(page,subId){
   document.querySelectorAll('.ni').forEach(e=>e.classList.remove('active'));
   const el=$('nav-'+page);if(el)el.classList.add('active');
   $('tbt').textContent=TITLES[page]||page;
+  // settings ต้องผ่าน adminAuth ก่อน
+  if(page==='settings'){
+    adminAuth({
+      title:'เข้าสู่หน้าตั้งค่า',
+      msg:'หน้าตั้งค่าระบบสามารถเข้าถึงได้เฉพาะผู้บริหารเท่านั้น',
+      icon:'lock',
+      onSuccess:()=>{
+        document.querySelectorAll('.ni').forEach(e=>e.classList.remove('active'));
+        const el=$('nav-settings');if(el)el.classList.add('active');
+        pgSettings();
+      }
+    });
+    return;
+  }
   const fn={dashboard:pgDash,subjects:pgSubjects,students:pgStudents,
     attendance:pgAttendance,scores:pgScores,eval:pgEval,
     report:pgReport,cover:pgCover,settings:pgSettings}[page];
@@ -3407,6 +3421,89 @@ function printCover(){
 // ════════════════════════════════════════════════════════════════
 // 9. SETTINGS
 // ════════════════════════════════════════════════════════════════
+
+// ════ CLEAR ALL DATA ══════════════════════════════════════════
+
+const CLEAR_TABLES = [
+  'eval_char','eval_read','score_summary','score_units',
+  'attendance','students','subjects'
+];
+
+function openClearAllDialog(){
+  const wrap = document.createElement('div');
+  wrap.id = 'clearall-wrap';
+  wrap.style.cssText = 'position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.5);backdrop-filter:blur(10px);animation:fadeIn .15s ease';
+  wrap.innerHTML =
+    '<div style="background:#fff;border-radius:22px;width:100%;max-width:400px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.2);animation:dlgPop .22s cubic-bezier(.34,1.56,.64,1)">' +
+      '<div style="padding:24px 24px 16px">' +
+        '<div style="width:54px;height:54px;background:#fff1f0;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>' +
+        '</div>' +
+        '<div style="font-size:17px;font-weight:700;text-align:center;margin-bottom:6px;">ล้างข้อมูลทั้งหมด</div>' +
+        '<div style="font-size:12.5px;color:#6e6e73;text-align:center;line-height:1.6;margin-bottom:16px;">' +
+          'จะลบ <strong style="color:#dc2626">รายวิชา · นักเรียน · เวลาเรียน · คะแนน · ประเมิน</strong><br>' +
+          'ทั้งหมดออกจากระบบ ไม่สามารถกู้คืนได้' +
+        '</div>' +
+        '<div style="background:#fff1f0;border-radius:10px;padding:10px 14px;margin-bottom:14px;">' +
+          '<div style="font-size:12.5px;font-weight:700;color:#dc2626;margin-bottom:6px;">พิมพ์ยืนยัน: <code style="background:#fecaca;padding:1px 6px;border-radius:4px;">ลบข้อมูล</code></div>' +
+          '<input id="clearall-confirm-txt" class="fi" placeholder="พิมพ์ ลบข้อมูล เพื่อยืนยัน" oninput="_checkClearInput(this)">' +
+        '</div>' +
+      '</div>' +
+      '<div style="border-top:1px solid #f3f4f6;">' +
+        '<button id="clearall-btn" disabled onclick="_doClearAll()" ' +
+          'style="width:100%;padding:14px;font-size:15px;font-weight:600;color:#dc2626;background:none;border:none;border-bottom:1px solid #f3f4f6;cursor:not-allowed;opacity:.4;font-family:var(--font);">ล้างข้อมูลทั้งหมด</button>' +
+        '<button onclick="_closeClearAllDialog()" ' +
+          'style="width:100%;padding:14px;font-size:15px;color:#8e8e93;background:none;border:none;cursor:pointer;font-family:var(--font);">ยกเลิก</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(wrap);
+}
+
+function _checkClearInput(el){
+  const btn=document.getElementById('clearall-btn');
+  const ok = el.value.trim() === 'ลบข้อมูล';
+  if(btn){ btn.disabled=!ok; btn.style.cursor=ok?'pointer':'not-allowed'; btn.style.opacity=ok?'1':'.4'; }
+}
+
+function _closeClearAllDialog(){
+  const w=document.getElementById('clearall-wrap');
+  if(w){ w.style.animation='fadeIn .15s ease reverse forwards'; setTimeout(()=>w.remove(),150); }
+}
+
+async function _doClearAll(){
+  _closeClearAllDialog();
+  confirm2({
+    title:'ยืนยันการล้างข้อมูล',
+    msg:'ข้อมูล<strong>ทั้งหมด</strong>จะถูกลบถาวรทันที<br><span style="color:#dc2626;font-size:12px;">ไม่สามารถกู้คืนได้ในทุกกรณี</span>',
+    type:'danger', confirmText:'ลบทั้งหมดเลย', cancelText:'ยกเลิก',
+    onConfirm: async()=>{
+      loading(true);
+      const errors=[];
+      try{
+        toast('กำลังล้างข้อมูล...','in');
+        for(const tbl of CLEAR_TABLES){
+          try{
+            await q(sb.from(tbl).delete().neq('id','00000000-0000-0000-0000-000000000000'));
+          }catch(e){ errors.push(tbl+': '+e.message); }
+        }
+        // reset local state
+        cacheInvAll();
+        S.subjects=[]; S.selSub=null;
+        if(errors.length){
+          toast('ล้างข้อมูลเสร็จ (มีข้อผิดพลาด '+errors.length+' จุด)','in');
+        } else {
+          toast('ล้างข้อมูลทั้งหมดเรียบร้อยแล้ว ✅');
+        }
+        setTimeout(()=>nav('dashboard'),800);
+      }catch(e){
+        toast('เกิดข้อผิดพลาด: '+e.message,'er');
+      }finally{
+        loading(false);
+      }
+    }
+  });
+}
+
 function pgSettings(){
   const cfg=S.config;
   $('pg').innerHTML=`
@@ -3460,7 +3557,29 @@ function pgSettings(){
         <span id="admpw-status" class="badge ${cfg.admin_password?'bg-g':'bg-gr'}">
           ${cfg.admin_password?'✓ ตั้งรหัสไว้แล้ว':'ยังไม่ได้ตั้งรหัส (ค่าเริ่มต้น: 1234)'}
         </span>
+  
+  <div class="card" style="max-width:580px;border:1.5px solid #fecaca;margin-top:0;">
+    <div class="ch" style="background:#fff1f0;">
+      <div class="ct" style="color:#dc2626;display:flex;align-items:center;gap:8px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        โซนอันตราย — ล้างข้อมูลทั้งหมด
       </div>
+    </div>
+    <div class="cb">
+      <div style="font-size:13px;color:#6e6e73;line-height:1.8;margin-bottom:14px;">
+        ลบข้อมูลทั้งหมดในระบบ ได้แก่ <strong>รายวิชา · นักเรียน · เวลาเรียน · คะแนน · การประเมิน</strong><br>
+        <span style="color:#dc2626;font-weight:700;">⚠️ ไม่สามารถกู้คืนได้</span> — แนะนำ <strong>Backup ข้อมูลก่อน</strong> ทุกครั้ง
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <button class="btn" onclick="openClearAllDialog()"
+          style="background:#fff1f0;color:#dc2626;border:1.5px solid #fecaca;padding:9px 18px;font-weight:700;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+          ล้างข้อมูลทั้งหมด
+        </button>
+        <span style="font-size:12px;color:#8e8e93;">ต้องยืนยัน 3 ชั้น — ไม่สามารถย้อนกลับได้</span>
+      </div>
+    </div>
+  </div>    </div>
     </div>
   </div>`;
 }
