@@ -234,49 +234,191 @@ tbody tr:hover td{background:rgba(0,122,255,.04);}
 
 <!-- ══ LOGIN PAGE ══ -->
 <div id="login-page" style="display:none">
-  <div class="min-h-screen flex items-center justify-center p-5" style="background:var(--bg)">
-    <div class="w-full max-w-sm">
-      <!-- Card -->
-      <div class="bg-white rounded-3xl px-10 py-10 shadow-lg border border-black/7">
-        <!-- Logo -->
-        <div class="w-[68px] h-[68px] mx-auto mb-6 rounded-[18px] flex items-center justify-center" style="background:linear-gradient(145deg,#e8f2ff,#cce4ff);box-shadow:0 4px 16px rgba(0,122,255,.18)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#007AFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="32" height="32"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="10" y1="9" x2="16" y2="9"/><line x1="10" y1="13" x2="14" y2="13"/></svg>
-        </div>
-        <h1 class="text-center text-[22px] font-bold text-txt mb-1">ปพ.5</h1>
-        <p class="text-center text-sm text-muted mb-7">ระบบบันทึกผลการเรียนประจำรายวิชา</p>
+<style>
+/* ── Login page styles ── */
+#login-page .lp-wrap{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;
+  position:relative;overflow:hidden;
+  background:linear-gradient(160deg,#dbeeff 0%,#eef5ff 35%,#f8f9ff 65%,#ffffff 100%);
+}
+#login-page .lp-wm{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  pointer-events:none;z-index:0;
+}
+#login-page .lp-wm img{width:520px;height:520px;object-fit:contain;opacity:.045;filter:grayscale(20%);}
+#login-page .lp-deco{position:absolute;border-radius:50%;pointer-events:none;z-index:0;}
+#login-page .lp-d1{width:400px;height:400px;background:radial-gradient(circle,rgba(0,122,255,.07) 0%,transparent 70%);top:-80px;right:-80px;}
+#login-page .lp-d2{width:300px;height:300px;background:radial-gradient(circle,rgba(0,122,255,.05) 0%,transparent 70%);bottom:-60px;left:-60px;}
+#login-page .lp-card{
+  position:relative;z-index:1;width:100%;max-width:400px;
+  background:rgba(255,255,255,.93);backdrop-filter:blur(20px) saturate(180%);
+  border-radius:28px;padding:38px 34px 30px;
+  box-shadow:0 20px 60px rgba(0,0,0,.1),0 4px 16px rgba(0,0,0,.06);
+  border:1px solid rgba(0,122,255,.08);
+}
+#login-page .lp-logo{
+  width:82px;height:82px;border-radius:22px;overflow:hidden;background:#fff;
+  display:flex;align-items:center;justify-content:center;margin:0 auto 14px;
+  box-shadow:0 4px 20px rgba(0,122,255,.14),0 1px 4px rgba(0,0,0,.08);
+  border:1.5px solid rgba(0,122,255,.1);
+}
+#login-page .lp-logo img{width:76px;height:76px;object-fit:contain;}
+#login-page .lp-title{text-align:center;margin-bottom:26px;}
+#login-page .lp-sname{font-size:18px;font-weight:800;color:#1d1d1f;margin-bottom:3px;}
+#login-page .lp-sys{font-size:13px;font-weight:700;color:#007AFF;}
+#login-page .lp-loc{font-size:11.5px;color:#8e8e93;margin-top:2px;}
+/* floating field */
+#login-page .lp-field{position:relative;margin-bottom:16px;}
+#login-page .lp-field input{
+  width:100%;height:56px;padding:22px 44px 8px 16px;
+  border:1.5px solid #e5e5ea;border-radius:14px;
+  font-size:15px;font-family:'Sarabun',sans-serif;
+  background:#fafafa;color:#1d1d1f;outline:none;
+  transition:border-color .18s,box-shadow .18s,background .18s;
+}
+#login-page .lp-field input:focus{
+  border-color:#007AFF;box-shadow:0 0 0 3.5px rgba(0,122,255,.12);background:#fff;
+}
+#login-page .lp-field label{
+  position:absolute;left:16px;top:50%;transform:translateY(-50%);
+  font-size:15px;color:#aeaeb2;pointer-events:none;
+  transition:all .18s cubic-bezier(.4,0,.2,1);
+  font-family:'Sarabun',sans-serif;font-weight:400;
+}
+#login-page .lp-field input:focus ~ label,
+#login-page .lp-field input.lp-filled ~ label{
+  top:10px;transform:translateY(0) scale(.75);
+  color:#007AFF;font-weight:700;
+}
+#login-page .lp-field .lp-fic{
+  position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  color:#c7c7cc;display:flex;pointer-events:none;
+}
+#login-page .lp-field input:focus ~ .lp-fic,
+#login-page .lp-field input.lp-filled ~ .lp-fic{color:#007AFF;}
+#login-page .lp-pw-toggle{
+  position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;color:#aeaeb2;
+  display:flex;align-items:center;padding:4px;border-radius:6px;
+  transition:color .15s;pointer-events:all;
+}
+#login-page .lp-pw-toggle:hover{color:#3a3a3c;}
+/* error */
+#login-page .lp-err{
+  background:#fff1f0;border:1px solid #fecaca;border-radius:10px;
+  padding:9px 12px;font-size:13px;color:#dc2626;
+  display:flex;align-items:center;gap:8px;margin-bottom:14px;
+}
+/* button */
+#login-page .lp-btn{
+  width:100%;height:52px;background:#007AFF;color:#fff;
+  border:none;border-radius:14px;font-size:16px;font-weight:700;
+  font-family:'Sarabun',sans-serif;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:all .18s;box-shadow:0 4px 14px rgba(0,122,255,.3);
+  margin-bottom:16px;
+}
+#login-page .lp-btn:hover{background:#0062cc;transform:translateY(-1.5px);box-shadow:0 6px 22px rgba(0,122,255,.4);}
+#login-page .lp-btn:active{transform:translateY(0);}
+/* divider */
+#login-page .lp-div{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+#login-page .lp-div-line{flex:1;height:1px;background:#f0f0f0;}
+#login-page .lp-div-txt{font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:#c7c7cc;}
+/* register */
+#login-page .lp-reg{text-align:center;font-size:13.5px;color:#8e8e93;margin-bottom:16px;}
+#login-page .lp-reg-btn{color:#007AFF;font-weight:700;background:none;border:none;cursor:pointer;font-family:'Sarabun',sans-serif;}
+/* footer */
+#login-page .lp-footer{border-top:1px solid #f5f5f7;padding-top:12px;text-align:center;}
+#login-page .lp-footer-dev{font-size:12.5px;font-weight:700;color:#3a3a3c;}
+#login-page .lp-footer-school{font-size:11.5px;color:#8e8e93;margin-top:1px;}
+#login-page .lp-footer-tech{font-size:11px;color:#c7c7cc;margin-top:5px;display:flex;align-items:center;justify-content:center;gap:4px;}
+@keyframes lp-spin{to{transform:rotate(360deg)}}
+#login-page .lp-spinner{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:lp-spin .6s linear infinite;}
+</style>
 
-        <!-- Error alert -->
-        <div id="login-err" class="alert al-er mb-4" style="display:none">
-          <div class="alert-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
-          <span id="login-err-msg"></span>
-        </div>
-
-        <!-- Email -->
-        <div class="mb-4">
-          <label class="block text-xs font-semibold text-txt2 mb-1.5">อีเมล</label>
-          <input id="l-email" type="email" class="fi" placeholder="teacher@school.ac.th" onkeydown="if(event.key==='Enter')$('l-pass').focus()">
-        </div>
-        <!-- Password -->
-        <div class="mb-6">
-          <label class="block text-xs font-semibold text-txt2 mb-1.5">รหัสผ่าน</label>
-          <input id="l-pass" type="password" class="fi" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
-        </div>
-
-        <!-- Login button -->
-        <button onclick="doLogin()" class="w-full flex items-center justify-center gap-2 bg-ac text-white font-semibold rounded-[11px] py-3 text-[15px] hover:bg-ac-dk transition-colors">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-          เข้าสู่ระบบ
-        </button>
-
-        <!-- Register link -->
-        <p class="text-center text-sm text-muted mt-4">
-          ยังไม่มีบัญชี?
-          <button onclick="showRegister()" class="text-ac font-semibold hover:underline bg-transparent border-none cursor-pointer" style="font-family:var(--font)">สมัครสมาชิก</button>
-        </p>
-      </div>
+  <div class="lp-wrap">
+    <!-- Watermark -->
+    <div class="lp-wm">
+      <img src="https://lh5.googleusercontent.com/d/1IjjamxeQ9VaeAao8PtmR7RCwioE4hndi" alt="" onerror="this.style.display='none'">
     </div>
-  </div>
+    <!-- Deco -->
+    <div class="lp-deco lp-d1"></div>
+    <div class="lp-deco lp-d2"></div>
+
+    <!-- Card -->
+    <div class="lp-card">
+
+      <!-- Logo -->
+      <div class="lp-logo">
+        <img src="https://lh5.googleusercontent.com/d/1IjjamxeQ9VaeAao8PtmR7RCwioE4hndi"
+          alt="โลโก้โรงเรียน"
+          onerror="this.style.display='none'">
+      </div>
+
+      <!-- Title -->
+      <div class="lp-title">
+        <div class="lp-sname">โรงเรียนตาเบาวิทยา</div>
+        <div class="lp-sys">ปพ.5 — ระบบบันทึกผลการเรียนประจำรายวิชา</div>
+        <div class="lp-loc">อ.ปราสาท จ.สุรินทร์</div>
+      </div>
+
+      <!-- Error -->
+      <div id="login-err" class="lp-err" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        <span id="login-err-msg"></span>
+      </div>
+
+      <!-- Email field -->
+      <div class="lp-field">
+        <input type="email" id="l-email" autocomplete="email"
+          oninput="this.classList.toggle('lp-filled',this.value.length>0)"
+          onkeydown="if(event.key==='Enter')$('l-pass').focus()">
+        <label for="l-email">อีเมล</label>
+        <div class="lp-fic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        </div>
+      </div>
+
+      <!-- Password field -->
+      <div class="lp-field" style="margin-bottom:22px;">
+        <input type="password" id="l-pass" autocomplete="current-password"
+          oninput="this.classList.toggle('lp-filled',this.value.length>0)"
+          onkeydown="if(event.key==='Enter')doLogin()">
+        <label for="l-pass">รหัสผ่าน</label>
+        <button class="lp-pw-toggle" onclick="_lpTogglePw()" id="lp-pw-btn" type="button">
+          <svg id="lp-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+
+      <!-- Login button -->
+      <button class="lp-btn" id="lp-login-btn" onclick="doLogin()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+        เข้าสู่ระบบ
+      </button>
+
+      <div class="lp-div">
+        <div class="lp-div-line"></div>
+        <div class="lp-div-txt">ยังไม่มีบัญชี?</div>
+        <div class="lp-div-line"></div>
+      </div>
+      <div class="lp-reg">
+        <button onclick="showRegister()" class="lp-reg-btn">สมัครสมาชิก (ครูผู้สอน)</button>
+      </div>
+
+      <!-- Footer -->
+      <div class="lp-footer">
+        <div class="lp-footer-dev">พัฒนาระบบ : นายกิตติพงษ์ คำดี</div>
+        <div class="lp-footer-school">โรงเรียนตาเบาวิทยา อ.ปราสาท จ.สุรินทร์</div>
+        <div class="lp-footer-tech">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          ข้อมูลเก็บบน Supabase Cloud · เข้าถึงได้ทุกอุปกรณ์
+        </div>
+      </div>
+
+    </div><!-- end card -->
+  </div><!-- end wrap -->
 </div>
+
 
 <!-- Register modal -->
 <div id="reg-modal" class="mo" style="display:none">
@@ -702,6 +844,17 @@ async function loadConfig(){
   }catch(e){ S.config = {}; }
 }
 
+function _lpTogglePw(){
+  const i=$('l-pass'), eye=$('lp-eye');
+  if(!i||!eye) return;
+  if(i.type==='password'){
+    i.type='text';
+    eye.innerHTML='<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+  } else {
+    i.type='password';
+    eye.innerHTML='<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+  }
+}
 function showLogin(){
   loadingOff();
   $('login-page').style.display='block';
