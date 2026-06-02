@@ -1016,7 +1016,6 @@ function openSubModal(id){
         <div><label class="fl">ชั่วโมง/สัปดาห์</label><input type="number" class="fi" id="f-hw" value="${s?.hours_per_week||3}" min="1"></div>
         <div><label class="fl">ชั่วโมง/ภาค</label><input type="number" class="fi" id="f-th" value="${s?.total_hours||60}" min="1"></div>
         <div><label class="fl">ครูผู้สอน</label><input class="fi" id="f-tch" value="${esc(s?.teacher_name||'')}"></div>
-        <div><label class="fl">ครูที่ปรึกษา</label><input class="fi" id="f-adv" value="${esc(s?.advisor_name||'')}"></div>
       </div>
       <div class="score-box">
         <div class="score-box-title">📊 โครงสร้างคะแนน (รวม = <span id="f-tot">${(s?.score_before_mid||25)+(s?.score_mid||20)+(s?.score_after_mid||25)+(s?.score_final||30)}</span> / 100)</div>
@@ -1046,7 +1045,7 @@ async function saveSubForm(id){
   const payload={
     subject_code:code,subject_name:name,grade_level:$('f-gr').value,room:$('f-rm').value.trim(),
     credits:+$('f-cr').value,hours_per_week:+$('f-hw').value,total_hours:+$('f-th').value,
-    teacher_name:$('f-tch').value.trim(),advisor_name:$('f-adv').value.trim(),
+    teacher_name:$('f-tch').value.trim(),advisor_name:'',
     score_before_mid:sbm,score_mid:sm,score_after_mid:sam,score_final:sf,
     academic_year:S.config.academic_year||'2568',semester:parseInt(S.config.semester||1),
     user_id:S.user.id
@@ -3097,7 +3096,7 @@ async function pgCover(){
 
   const td=(c,ex='')=>`<td style="border:1px solid #000;padding:4px;text-align:center;font-size:12px;${ex}">${c}</td>`;
   const th=(c,ex='')=>`<td style="border:1px solid #000;padding:3px 4px;text-align:center;font-size:11px;font-weight:600;background:#f0f0f0;${ex}">${c}</td>`;
-  const pct=(n)=>totalN>0?(n/totalN*100).toFixed(1):'';
+  const pct=(n)=>totalN>0?(n/totalN*100).toFixed(2):'';
 
   $('pg').innerHTML=`
   <div class="ph"><div class="ptitle">ปก ปพ.5</div>
@@ -3157,11 +3156,11 @@ async function pgCover(){
     <div style="font-size:13px;font-weight:700;margin:6px 0 4px">สรุปผลการประเมิน</div>
 
     <!-- ตารางระดับผลการเรียน -->
-    <table style="width:100%;border-collapse:collapse;border:1px solid #666;font-size:11.5px;margin-bottom:5px">
+    <table style="width:100%;border-collapse:collapse;border:1px solid #666;font-size:13px;margin-bottom:5px">
       <thead><tr style="background:#efefef">
         ${th('จำนวน<br>นักเรียน','vertical-align:middle;font-size:11px;')}
-        ${[4,3.5,3,2.5,2,1.5,1,0].map(g=>th(g,'font-size:11.5px;')).join('')}
-        ${th('ร','font-size:11.5px;')}${th('มส','font-size:11.5px;')}
+        ${[4,3.5,3,2.5,2,1.5,1,0].map(g=>th(g,'font-size:13px;font-weight:700;')).join('')}
+        ${th('ร','font-size:13px;font-weight:700;')}${th('มส','font-size:13px;font-weight:700;')}
       </tr></thead>
       <tbody>
         <tr>
@@ -3170,30 +3169,30 @@ async function pgCover(){
           ${td(rC||'')}${td(msC||'')}
         </tr>
         <tr style="background:#fafafa">
-          ${td('ร้อยละ','font-size:10.5px;color:#555;')}
-          ${[4,3.5,3,2.5,2,1.5,1,0].map(g=>td(pct(gc[g]),'font-size:10.5px;')).join('')}
-          ${td(pct(rC),'font-size:10.5px;')}${td(pct(msC),'font-size:10.5px;')}
+          ${td('ร้อยละ','font-size:13px;color:#555;')}
+          ${[4,3.5,3,2.5,2,1.5,1,0].map(g=>td(pct(gc[g]),'font-size:13px;')).join('')}
+          ${td(pct(rC),'font-size:13px;')}${td(pct(msC),'font-size:13px;')}
         </tr>
       </tbody>
     </table>
 
     <!-- ตารางประเมิน -->
-    <table style="width:100%;border-collapse:collapse;border:1px solid #666;font-size:11.5px;margin-bottom:12px">
+    <table style="width:100%;border-collapse:collapse;border:1px solid #666;font-size:13px;margin-bottom:12px">
       <thead><tr style="background:#efefef">
         ${th('รายการประเมิน','text-align:left;padding-left:6px;font-size:11.5px;')}
-        ${th('จำนวน','font-size:11px;')}
-        ${th('ดีเยี่ยม (3)','font-size:11px;')}${th('ดี (2)','font-size:11px;')}${th('ผ่าน (1)','font-size:11px;')}${th('ไม่ผ่าน (0)','font-size:11px;')}
+        ${th('จำนวน','font-size:13px;')}
+        ${th('ดีเยี่ยม (3)','font-size:13px;')}${th('ดี (2)','font-size:13px;')}${th('ผ่าน (1)','font-size:13px;')}${th('ไม่ผ่าน (0)','font-size:13px;')}
       </tr></thead>
       <tbody>
         <tr>
-          <td style="border:1px solid #666;padding:4px 6px;font-size:12px">การอ่าน คิดวิเคราะห์ และเขียน</td>
+          <td style="border:1px solid #666;padding:4px 6px;font-size:13px">การอ่าน คิดวิเคราะห์ และเขียน</td>
           ${td(erTotal||'')}
-          ${[3,2,1,0].map(v=>td(erLv[v]?(erLv[v]+(erTotal>0?' ('+(erLv[v]/erTotal*100).toFixed(1)+'%)':'')):'','font-size:11px;')).join('')}
+          ${[3,2,1,0].map(v=>td(erLv[v]?(erLv[v]+(erTotal>0?' ('+(erLv[v]/erTotal*100).toFixed(1)+'%)':'')):'','font-size:13px;')).join('')}
         </tr>
         <tr>
-          <td style="border:1px solid #666;padding:4px 6px;font-size:12px">คุณลักษณะอันพึงประสงค์</td>
+          <td style="border:1px solid #666;padding:4px 6px;font-size:13px">คุณลักษณะอันพึงประสงค์</td>
           ${td(ecTotal||'')}
-          ${[3,2,1,0].map(v=>td(ecLv[v]?(ecLv[v]+(ecTotal>0?' ('+(ecLv[v]/ecTotal*100).toFixed(1)+'%)':'')):'','font-size:11px;')).join('')}
+          ${[3,2,1,0].map(v=>td(ecLv[v]?(ecLv[v]+(ecTotal>0?' ('+(ecLv[v]/ecTotal*100).toFixed(1)+'%)':'')):'','font-size:13px;')).join('')}
         </tr>
       </tbody>
     </table>
@@ -4009,15 +4008,15 @@ async function pgSchoolReport(){
       '</div>';
     }
 
-    // ── filter state ──
-    let _gradeFilter='', _teacherFilter='';
+    // ── filter state (global เพื่อให้ onchange เข้าถึงได้) ──
+    window._gradeFilter=''; window._teacherFilter='';
     const grades=[...new Set(allSubjects.map(s=>s.grade_level))].sort();
     const teachers=[...new Set(subjectsWithStats.map(s=>s._stats.teacherName))].filter(t=>t&&t!=='—').sort();
 
-    function _renderCards(){
+    window._renderCards=function(){
       let filtered=subjectsWithStats.filter(s=>{
-        if(_gradeFilter && String(s.grade_level)!==String(_gradeFilter)) return false;
-        if(_teacherFilter && s._stats.teacherName!==_teacherFilter) return false;
+        if(window._gradeFilter && String(s.grade_level)!==String(window._gradeFilter)) return false;
+        if(window._teacherFilter && s._stats.teacherName!==window._teacherFilter) return false;
         return true;
       });
       const container=$('school-cards');
@@ -4066,11 +4065,11 @@ async function pgSchoolReport(){
       '<div class="card" style="margin-bottom:14px">'+
         '<div class="cb" style="padding:10px 16px">'+
           '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">'+
-            '<select class="fs" style="max-width:130px" id="sr-grade" onchange="_gradeFilter=this.value;_renderCards()" style="font-family:var(--font)">'+
+            '<select class="fs" style="max-width:130px" id="sr-grade" onchange="window._gradeFilter=this.value;window._renderCards&&window._renderCards()" style="font-family:var(--font)">'+
               '<option value="">ทุกชั้น</option>'+
               grades.map(g=>'<option value="'+g+'">ม.'+g+'</option>').join('')+
             '</select>'+
-            '<select class="fs" style="max-width:220px" id="sr-teacher" onchange="_teacherFilter=this.value;_renderCards()">'+
+            '<select class="fs" style="max-width:220px" id="sr-teacher" onchange="window._teacherFilter=this.value;window._renderCards&&window._renderCards()">'+
               '<option value="">ครูทุกคน</option>'+
               teachers.map(t=>'<option value="'+esc(t)+'">'+esc(t)+'</option>').join('')+
             '</select>'+
@@ -4088,7 +4087,7 @@ async function pgSchoolReport(){
         'กด "ล็อก" เพื่อออกจากโหมดผู้บริหาร'+
       '</div>';
 
-    _renderCards();
+    window._renderCards();
 
   }catch(e){
     loading(false);
@@ -4107,7 +4106,8 @@ function _toggleSchoolCard(cardId){
 }
 
 function _lockSchoolReport(){
-  // กลับไปแดชบอร์ด
+  window._gradeFilter=''; window._teacherFilter='';
+  window._renderCards=null;
   nav('dashboard');
   toast('ออกจากโหมดผู้บริหารแล้ว');
 }
