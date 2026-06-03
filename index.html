@@ -258,11 +258,11 @@ tbody tr:hover td{background:rgba(0,122,255,.04);}
 .subc:active{transform:scale(.98) translateY(0);}
 /* Stats */
 .sg{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:16px;}
-.sc{background:var(--card);border-radius:var(--r);padding:16px;border:1px solid var(--bdr);box-shadow:var(--sh0);display:flex;align-items:center;gap:12px;}
-.si{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.sc{background:var(--card);border-radius:14px;padding:16px 18px;border:1px solid var(--bdr);box-shadow:0 1px 4px rgba(0,0,0,.05);display:flex;align-items:center;gap:14px;transition:box-shadow .2s;}
+.si{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .si.bl{background:#e8f2ff;}.si.gr{background:#dcfce7;}.si.or{background:#fff7ed;}.si.re{background:#fff1f0;}
-.sv{font-size:22px;font-weight:700;line-height:1;color:var(--txt);}
-.sl{font-size:11.5px;color:var(--muted);margin-top:2px;}
+.sv{font-size:24px;font-weight:800;line-height:1;color:var(--txt);letter-spacing:-.5px;}
+.sl{font-size:12px;color:var(--muted);margin-top:3px;font-weight:500;}
 /* Misc */
 .empty{text-align:center;padding:48px;color:var(--muted);}
 .ei{font-size:44px;margin-bottom:12px;opacity:.4;display:block;}
@@ -1226,11 +1226,11 @@ async function pgDash(){
     </div>
   </div>
   <div class="sg">
-    <div class="sc"><div class="si bl">📖</div><div><div class="sv">${S.subjects.length}</div><div class="sl">รายวิชา</div></div></div>
-    <div class="sc"><div class="si gr">👥</div><div><div class="sv" id="d-stu">...</div><div class="sl">นักเรียน</div></div></div>
-    <div class="sc"><div class="si or">✅</div><div><div class="sv">${S.subjects.filter(s=>s.stats.recorded>0).length}</div><div class="sl">วิชาที่มีคะแนน</div></div></div>
-    <div class="sc"><div class="si gr"><svg viewBox="0 0 24 24" fill="none" stroke="#16803d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="20 6 9 17 4 12"/></svg></div><div><div class="sv" style="${S._dashPassAvg>=80?'color:#16803d':S._dashPassAvg>=60?'color:#FF9500':'color:#FF3B30'}">${S.subjects.filter(s=>s.stats.recorded>0).length>0?S._dashPassAvg+'%':'—'}</div><div class="sl">% ผ่านเฉลี่ย</div></div></div>
-    <div class="sc"><div class="si ${S._dashMsCount>0?'re':'gr'}"><svg viewBox="0 0 24 24" fill="none" stroke="${S._dashMsCount>0?'#FF3B30':'#16803d'}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div><div class="sv" style="${S._dashMsCount>0?'color:#FF3B30':'color:#16803d'}">${S._dashMsCount}</div><div class="sl">มส. รอติดตาม</div></div></div>
+    <div class="sc"><div class="si" style="background:linear-gradient(135deg,#34aadc,#007AFF)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div><div><div class="sv">${S.subjects.length}</div><div class="sl">รายวิชา</div></div></div>
+    <div class="sc"><div class="si" style="background:linear-gradient(135deg,#30d158,#34C759)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div><div class="sv" id="d-stu">...</div><div class="sl">นักเรียน</div></div></div>
+    <div class="sc"><div class="si" style="background:linear-gradient(135deg,#ff9f0a,#FF9500)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="20 6 9 17 4 12"/></svg></div><div><div class="sv">${S.subjects.filter(s=>s.stats.recorded>0).length}</div><div class="sl">วิชาที่มีคะแนน</div></div></div>
+    <div class="sc"><div class="si" style="background:linear-gradient(135deg,#bf5af2,#7c3aed)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div><div><div class="sv" style="${S._dashPassAvg>=80?'color:#16803d':S._dashPassAvg>=60?'color:#FF9500':'color:#FF3B30'}">${S.subjects.filter(s=>s.stats.recorded>0).length>0?S._dashPassAvg+'%':'—'}</div><div class="sl">% ผ่านเฉลี่ย</div></div></div>
+    <div class="sc"><div class="si" style="background:${S._dashMsCount>0?'linear-gradient(135deg,#ff6b6b,#FF3B30)':' linear-gradient(135deg,#30d158,#34C759)'}"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div><div class="sv" style="${S._dashMsCount>0?'color:#FF3B30':'color:#16803d'}">${S._dashMsCount}</div><div class="sl">มส. รอติดตาม</div></div></div>
 
   </div>
   ${!S.subjects.length?`<div class="card"><div class="empty"><div class="ei">📚</div>
