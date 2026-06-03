@@ -8,6 +8,7 @@
 
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -139,6 +140,41 @@
   --sh2:0 16px 48px rgba(0,0,0,.14),0 4px 14px rgba(0,0,0,.07);
   --sw:244px; --hh:52px; --r:12px; --r-lg:16px; --r-xl:20px;
   --font:'Sarabun','Noto Sans Thai',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+
+/* ── Dark Mode ── */
+body.dark{
+  --ac:#0A84FF; --ac-dk:#409cff; --ac-lt:rgba(10,132,255,.15); --ac-mid:rgba(10,132,255,.18);
+  --ok:#30d158; --ok-bg:rgba(48,209,88,.12); --ok-bdr:rgba(48,209,88,.3); --ok-txt:#30d158;
+  --err:#FF453A; --err-bg:rgba(255,69,58,.12); --err-bdr:rgba(255,69,58,.3); --err-txt:#FF453A;
+  --warn:#FF9F0A; --warn-bg:rgba(255,159,10,.12); --warn-bdr:rgba(255,159,10,.3); --warn-txt:#FF9F0A;
+  --info-bg:rgba(10,132,255,.12); --info-bdr:rgba(10,132,255,.3); --info-txt:#0A84FF;
+  --bg:#000; --bg2:#1c1c1e; --card:#1c1c1e; --card2:#2c2c2e;
+  --txt:#f5f5f7; --txt2:#ebebf5; --muted:rgba(235,235,245,.6); --muted2:rgba(235,235,245,.4);
+  --sep:rgba(84,84,88,.65); --bdr:rgba(255,255,255,.1);
+  --sh0:0 1px 3px rgba(0,0,0,.3); --sh1:0 4px 16px rgba(0,0,0,.4); --sh2:0 16px 48px rgba(0,0,0,.6);
+}
+body.dark .tb{background:rgba(28,28,30,.9)!important;}
+body.dark .sb{background:#1c1c1e!important;border-right-color:rgba(255,255,255,.08)!important;}
+body.dark .fi, body.dark .fs{background:#2c2c2e!important;border-color:rgba(255,255,255,.1)!important;color:var(--txt)!important;}
+body.dark .fi:focus, body.dark .fs:focus{border-color:var(--ac)!important;}
+body.dark .mo{background:rgba(0,0,0,.6)!important;}
+body.dark .md{background:#1c1c1e!important;}
+body.dark .btn{color:var(--txt);}
+body.dark .btn.bs{background:rgba(255,255,255,.07)!important;border-color:rgba(255,255,255,.1)!important;}
+body.dark .subc{background:#1c1c1e!important;}
+body.dark .sc{background:#1c1c1e!important;}
+body.dark .ni:hover, body.dark .ni.active{background:rgba(255,255,255,.08)!important;}
+body.dark table{color:var(--txt);}
+body.dark th{background:#2c2c2e!important;color:var(--txt)!important;}
+body.dark tr:nth-child(even){background:rgba(255,255,255,.03)!important;}
+body.dark .av-item{border-color:#1c1c1e!important;}
+body.dark .self-pill{background:#2c2c2e!important;border-color:rgba(255,255,255,.1)!important;}
+body.dark input[type="password"], body.dark input[type="email"], body.dark input[type="text"]{
+  background:#2c2c2e!important; color:var(--txt)!important;
+}
+@media(prefers-color-scheme:dark){
+  body:not(.light){ /* auto dark ถ้าไม่ได้บังคับ light */ }
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{font-family:var(--font);}
@@ -294,38 +330,15 @@ tbody tr:hover td{background:rgba(0,122,255,.04);}
   display:flex;align-items:center;justify-content:center;
   font-size:9.5px;font-weight:600;
   border:2px solid var(--card);
-  cursor:default;position:relative;
+  cursor:pointer;position:relative;
   transition:transform .15s ease;
   flex-shrink:0;
 }
 .av-item:not(:first-child){margin-left:-8px;}
-.av-item:hover{transform:translateY(-3px);z-index:20!important;}
-.av-tip{
-  position:absolute;
-  top:100%;
-  padding-top:10px;
-  margin-top:0;
-  left:50%;
-  transform:translateX(-50%);
-  background:rgba(28,28,30,.95);
-  border-radius:10px;padding:8px 12px;
-  white-space:nowrap;
-  pointer-events:none;
-  opacity:0;
-  visibility:hidden;
-  transition:opacity .2s ease, visibility .2s ease;
-  box-shadow:0 4px 20px rgba(0,0,0,.3);
-  z-index:9999;
-  min-width:130px;
-}
-.av-tip::after{
-  content:'';position:absolute;bottom:100%;left:50%;transform:translateX(-50%);
-  border:5px solid transparent;border-bottom-color:rgba(28,28,30,.95);
-}
-.av-item.tip-show .av-tip{opacity:1;visibility:visible;}
-.av-tip-name{font-size:12.5px;font-weight:600;color:#fff;line-height:1.3;}
-.av-tip-time{font-size:11px;color:rgba(255,255,255,.5);margin-top:3px;display:flex;align-items:center;gap:4px;}
-.av-tip-time::before{content:'';width:5px;height:5px;border-radius:50%;background:#30d158;flex-shrink:0;display:inline-block;}
+.av-item:active{transform:scale(.92);}
+.presence-wrap{cursor:pointer;}
+
+
 .self-pill{
   display:flex;align-items:center;gap:5px;
   padding:3px 10px 3px 7px;
@@ -334,6 +347,56 @@ tbody tr:hover td{background:rgba(0,122,255,.04);}
 }
 .self-pill-dot{width:7px;height:7px;border-radius:50%;background:#30d158;}
 .self-pill-name{font-size:12px;color:var(--muted);}
+
+
+/* มส. badge */
+.ms-badge{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:18px;height:18px;border-radius:9px;
+  background:#FF3B30;color:#fff;
+  font-size:10px;font-weight:700;
+  padding:0 5px;margin-left:auto;
+  line-height:1;
+}
+body.dark .ms-badge{background:#FF453A;}
+
+
+/* Online popup (กดดูรายชื่อ) */
+.online-popup{
+  position:fixed;
+  background:var(--card);
+  border:0.5px solid var(--bdr);
+  border-radius:16px;
+  box-shadow:0 12px 40px rgba(0,0,0,.18);
+  padding:8px;
+  min-width:240px;max-width:300px;
+  z-index:5000;
+  opacity:0;transform:translateY(-8px);
+  pointer-events:none;
+  transition:opacity .18s ease,transform .18s ease;
+}
+.online-popup.show{opacity:1;transform:translateY(0);pointer-events:auto;}
+.online-popup-head{
+  font-size:12px;font-weight:700;color:var(--muted);
+  padding:6px 10px 8px;border-bottom:0.5px solid var(--bdr);margin-bottom:4px;
+  display:flex;align-items:center;gap:6px;
+}
+.online-row{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 10px;border-radius:10px;
+}
+.online-row:hover{background:var(--bg2);}
+.online-row-av{
+  width:30px;height:30px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;flex-shrink:0;
+}
+.online-row-name{font-size:13px;font-weight:500;color:var(--txt);flex:1;}
+.online-row-time{font-size:11px;color:var(--muted);}
+.online-backdrop{
+  position:fixed;inset:0;z-index:4999;
+  background:transparent;
+}
 
 /* Print */
 @media print{
@@ -635,8 +698,9 @@ tbody tr:hover td{background:rgba(0,122,255,.04);}
     </div>
 
     <div class="text-[10px] font-bold uppercase tracking-widest px-2.5 pt-3.5 pb-1" style="color:var(--muted2)">บันทึก</div>
-    <div class="ni" id="nav-attendance" onclick="nav('attendance')">
-      <span class="ic"></span>เวลาเรียน
+    <div class="ni" id="nav-attendance" onclick="nav('attendance')" style="justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:8px"><span class="ic"></span>เวลาเรียน</div>
+      <span id="ms-badge" class="ms-badge" style="display:none">0</span>
     </div>
     <div class="ni" id="nav-scores" onclick="nav('scores')">
       <span class="ic"></span>คะแนน
@@ -689,6 +753,9 @@ tbody tr:hover td{background:rgba(0,122,255,.04);}
     <div id="tb-presence" class="presence-wrap no-print" style="display:none"></div>
     <div id="tb-user" class="flex items-center gap-1.5 text-[12.5px]" style="color:var(--muted)"></div>
     <div id="tbb" class="text-[11.5px] font-semibold px-2.5 py-1 rounded-full border" style="background:var(--ac-lt);color:var(--ac);border-color:rgba(0,122,255,.2)">-</div>
+    <button onclick="toggleDark()" id="dark-btn" class="btn bd btn-sm no-print" style="padding:6px 8px" title="Dark/Light mode">
+      <svg id="dark-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
     <button onclick="doLogout()" class="btn bd btn-sm no-print flex items-center gap-1.5">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       ออกจากระบบ
@@ -1066,8 +1133,104 @@ function showApp(){
   if(_tbu) _tbu.style.display='none';
   nav('dashboard');
   initPresence();
+  updateMsBadge();
 }
 
+
+
+
+// ════ มส. BADGE ══════════════════════════════════════════════════
+
+async function updateMsBadge(){
+  try{
+    if(!S.user || !S.subjects.length){ _setMsBadge(0); return; }
+
+    // ดึง attendance ทุกวิชาของครูคนนี้
+    const subjIds = S.subjects.map(s=>s.id);
+    if(!subjIds.length){ _setMsBadge(0); return; }
+
+    const attRows = await qc('ms_att_'+S.user.id, ()=>
+      q(sb.from('attendance')
+        .select('subject_id,student_id,status,periods')
+        .in('subject_id', subjIds))
+    );
+
+    // สรุปต่อ student ต่อ subject
+    // attended = present + leave, total = present + absent + leave
+    const stuSubMap = {}; // key: student_id+subject_id
+    attRows.forEach(a=>{
+      const key = a.student_id+'|'+a.subject_id;
+      if(!stuSubMap[key]) stuSubMap[key]={attended:0,total:0};
+      const p = parseInt(a.periods)||1;
+      stuSubMap[key].total += p;
+      if(a.status==='present'||a.status==='leave')
+        stuSubMap[key].attended += p;
+    });
+
+    // นับนักเรียนที่มี % < 80% (มีข้อมูลแล้ว)
+    const msSet = new Set();
+    Object.entries(stuSubMap).forEach(([key,m])=>{
+      if(m.total > 0 && (m.attended/m.total*100) < 80){
+        const sid = key.split('|')[0];
+        msSet.add(sid);
+      }
+    });
+
+    _setMsBadge(msSet.size);
+  }catch(e){
+    console.warn('updateMsBadge error:', e);
+  }
+}
+
+function _setMsBadge(count){
+  const badge = document.getElementById('ms-badge');
+  if(!badge) return;
+  if(count > 0){
+    badge.style.display = 'inline-flex';
+    badge.textContent = count > 99 ? '99+' : count;
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// ════ DARK MODE ══════════════════════════════════════════════════
+function toggleDark(){
+  const isDark = document.body.classList.toggle('dark');
+  document.body.classList.toggle('light', !isDark);
+  localStorage.setItem('pp5-theme', isDark ? 'dark' : 'light');
+  _updateDarkIcon(isDark);
+  // อัป topbar bg
+  const tb = document.querySelector('.tb');
+  if(tb) tb.style.background = isDark
+    ? 'rgba(28,28,30,.9)'
+    : 'rgba(255,255,255,.9)';
+}
+
+function _updateDarkIcon(isDark){
+  const icon = document.getElementById('dark-icon');
+  if(!icon) return;
+  if(isDark){
+    // sun icon
+    icon.innerHTML='<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+  } else {
+    // moon icon
+    icon.innerHTML='<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+  }
+}
+
+function initDark(){
+  const saved = localStorage.getItem('pp5-theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme:dark)').matches;
+  const isDark = saved ? saved==='dark' : prefersDark;
+  if(isDark){
+    document.body.classList.add('dark');
+    document.body.classList.remove('light');
+  } else {
+    document.body.classList.remove('dark');
+    document.body.classList.add('light');
+  }
+  _updateDarkIcon(isDark);
+}
 
 // ════ REALTIME PRESENCE ══════════════════════════════════════════
 
@@ -1079,30 +1242,7 @@ const _AVATAR_COLORS = [
   {bg:'#fefce8',color:'#854d0e'},{bg:'#fff1f0',color:'#dc2626'},
 ];
 
-let _avTipTimer = null;
-let _avTipActive = null;
 
-function _avTipShow(el){
-  clearTimeout(_avTipTimer);
-  const tip = el.querySelector('.av-tip');
-  if(!tip) return;
-  // วาง tooltip ด้วย fixed position ตาม bounding rect ของ avatar
-  const rect = el.getBoundingClientRect();
-  tip.style.top = (rect.bottom + 8) + 'px';
-  tip.style.left = (rect.left + rect.width/2) + 'px';
-  tip.style.transform = 'translateX(-50%)';
-  tip.style.opacity = '1';
-  _avTipActive = tip;
-}
-
-function _avTipHide(el){
-  clearTimeout(_avTipTimer);
-  _avTipTimer = setTimeout(()=>{
-    const tip = el.querySelector('.av-tip');
-    if(tip) tip.style.opacity = '0';
-    _avTipActive = null;
-  }, 80);
-}
 function _avColor(uid){
   // สีตาม hash ของ user id
   let h=0; for(let i=0;i<(uid||'').length;i++) h=(h*31+uid.charCodeAt(i))&0xffff;
@@ -1176,6 +1316,41 @@ function _renderOnline(){
   if(!el) return;
   el.style.display='flex';
 
+  const MAX_SHOW=4;
+  const shown=others.slice(0,MAX_SHOW);
+  const extraCount = Math.max(0, others.length-MAX_SHOW);
+
+  let html='';
+  if(others.length){
+    html+='<div class="presence-dot"></div>';
+    html+='<span style="font-size:11.5px;color:var(--muted)">'+others.length+' คน</span>';
+  }
+  html+='<div class="av-stack" onclick="_toggleOnlinePopup(event)">';
+  shown.forEach((p,i)=>{
+    const col=_avColor(p.user_id);
+    const init=_avInitials(p.full_name||'?');
+    html+='<div class="av-item" style="background:'+col.bg+';color:'+col.color+';z-index:'+(10-i)+'">'+init+'</div>';
+  });
+  if(extraCount>0){
+    html+='<div class="av-item" style="background:var(--bg2);color:var(--muted);z-index:1;font-size:10px">+'+extraCount+'</div>';
+  }
+  html+='</div>';
+  const myName=S.profile?.full_name||S.user?.email||'';
+  html+='<div class="self-pill no-print"><div class="self-pill-dot"></div><span class="self-pill-name">'+esc(myName)+'</span></div>';
+  el.innerHTML=html;
+}
+
+let _onlinePopupEl=null, _onlineBackdrop=null;
+
+function _toggleOnlinePopup(ev){
+  ev.stopPropagation();
+  if(_onlinePopupEl){ _closeOnlinePopup(); return; }
+
+  const myId = S.user?.id;
+  const others = Object.values(_onlineUsers).filter(p=>p.user_id!==myId)
+    .sort((a,b)=>new Date(b.online_at)-new Date(a.online_at));
+  if(!others.length) return;
+
   const _ago=(ts)=>{
     const d=Math.floor((Date.now()-new Date(ts))/1000);
     if(d<60) return 'เมื่อกี้';
@@ -1183,43 +1358,40 @@ function _renderOnline(){
     return Math.floor(d/3600)+' ชม.';
   };
 
-  const MAX_SHOW=4;
-  const shown=others.slice(0,MAX_SHOW);
-  const extra=others.slice(MAX_SHOW);
-  let html='';
-  if(others.length){
-    html+='<div class="presence-dot"></div>';
-    html+='<span style="font-size:11.5px;color:var(--muted)">'+others.length+' คน</span>';
-  }
-  html+='<div class="av-stack">';
-  shown.forEach((p,i)=>{
+  // backdrop ปิดเมื่อแตะข้างนอก
+  _onlineBackdrop=document.createElement('div');
+  _onlineBackdrop.className='online-backdrop';
+  _onlineBackdrop.onclick=_closeOnlinePopup;
+  document.body.appendChild(_onlineBackdrop);
+
+  // popup
+  _onlinePopupEl=document.createElement('div');
+  _onlinePopupEl.className='online-popup';
+  let html='<div class="online-popup-head"><div class="presence-dot"></div>ออนไลน์ตอนนี้ '+others.length+' คน</div>';
+  others.forEach(p=>{
     const col=_avColor(p.user_id);
     const init=_avInitials(p.full_name||'?');
-    const ago=_ago(p.online_at);
-    html+=`<div class="av-item" style="background:${col.bg};color:${col.color};z-index:${10-i}"
-      onmouseenter="_avTipShow(this)" onmouseleave="_avTipHide(this)">
-      ${init}
-      <div class="av-tip">
-        <div class="av-tip-name">${esc(p.full_name||'ไม่ระบุ')}</div>
-        <div class="av-tip-time">${ago}</div>
-      </div>
-    </div>`;
+    html+='<div class="online-row"><div class="online-row-av" style="background:'+col.bg+';color:'+col.color+'">'+init+'</div>'+
+      '<span class="online-row-name">'+esc(p.full_name||'ไม่ระบุ')+'</span>'+
+      '<span class="online-row-time">'+_ago(p.online_at)+'</span></div>';
   });
-  if(extra.length){
-    const names=extra.map(p=>esc(p.full_name||'?')).join('<br>');
-    html+=`<div class="av-item" style="background:var(--bg2);color:var(--muted);z-index:1;font-size:10px"
-      onmouseenter="_avTipShow(this)" onmouseleave="_avTipHide(this)">
-      +${extra.length}
-      <div class="av-tip" style="min-width:140px">
-        <div class="av-tip-name" style="color:rgba(255,255,255,.5);font-size:11px;margin-bottom:4px">และอีก</div>
-        <div style="font-size:12px;color:#fff;line-height:1.8">${names}</div>
-      </div>
-    </div>`;
-  }
-  html+='</div>';
-  const myName=S.profile?.full_name||S.user?.email||'';
-  html+=`<div class="self-pill no-print"><div class="self-pill-dot"></div><span class="self-pill-name">${esc(myName)}</span></div>`;
-  el.innerHTML=html;
+  _onlinePopupEl.innerHTML=html;
+  document.body.appendChild(_onlinePopupEl);
+
+  // วางตำแหน่งใต้ avatar stack
+  const stack=$('tb-presence').querySelector('.av-stack');
+  const rect=(stack||$('tb-presence')).getBoundingClientRect();
+  const popW=_onlinePopupEl.offsetWidth;
+  let left=rect.right-popW;
+  if(left<10) left=10;
+  _onlinePopupEl.style.top=(rect.bottom+10)+'px';
+  _onlinePopupEl.style.left=left+'px';
+  requestAnimationFrame(()=>{ if(_onlinePopupEl) _onlinePopupEl.classList.add('show'); });
+}
+
+function _closeOnlinePopup(){
+  if(_onlinePopupEl){ _onlinePopupEl.classList.remove('show'); const el=_onlinePopupEl; setTimeout(()=>el.remove(),180); _onlinePopupEl=null; }
+  if(_onlineBackdrop){ _onlineBackdrop.remove(); _onlineBackdrop=null; }
 }
 
 function _showSelfPill(){
@@ -2393,7 +2565,7 @@ async function saveMonth(){
   // บันทึก API เบื้องหลัง
   invalidateAtt(); cacheInv('att_sum_'+S.selSub);
   q(sb.from('attendance').upsert(rows,{onConflict:'subject_id,student_id,year_month,date_day'}))
-    .catch(e=>{ toast('บันทึกผิดพลาด: '+e.message,'er'); });
+    .then(()=>updateMsBadge()).catch(e=>{ toast('บันทึกผิดพลาด: '+e.message,'er'); });
   // sync attData จาก server เบื้องหลัง แล้วอัปสรุปอีกครั้ง
   setTimeout(async()=>{
     try{
@@ -3693,7 +3865,11 @@ async function pgCover(){
 
   $('pg').innerHTML=`
   <div class="ph no-print"><div class="ptitle">ปก ปพ.5</div>
-    <button class="btn bs no-print" onclick="printCover()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>พิมพ์ปก</button></div>
+    <button class="btn bs no-print" onclick="exportCoverPdf()" style="background:rgba(255,59,48,.1);color:#FF3B30;border-color:rgba(255,59,48,.2)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 13h6M9 17h6"/></svg>
+        Export PDF
+      </button>
+      <button class="btn bs no-print" onclick="printCover()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>พิมพ์ปก</button></div>
   <div style="display:flex;gap:10px;margin-bottom:14px" class="no-print">
     <select class="fs" style="max-width:310px" onchange="changeCvrSub(this.value)">
       ${S.subjects.map(s=>`<option value="${s.id}" ${s.id===S.selSub?'selected':''}>${s.subject_name} ${grm(s.grade_level,s.room)}</option>`).join('')}
@@ -3842,6 +4018,39 @@ async function pgCover(){
 async function changeCvrSub(sid){S.selSub=sid;await pgCover();}
 
 // พิมพ์หน้าปก — ซ่อน browser title ชั่วคราว
+
+// ════ EXPORT COVER PDF ═══════════════════════════════════════════
+async function exportCoverPdf(){
+  const covEl = document.getElementById('cov-content');
+  if(!covEl){ toast('ไม่พบเนื้อหาปก','er'); return; }
+
+  // ดูชื่อวิชา+ชั้น สำหรับชื่อไฟล์
+  const sub = S.subjects.find(s=>s.id===S.selSub)||S.subjects[0];
+  const fname = 'ปก_ปพ5_'+(sub?.subject_code||'')+'_ม.'+(sub?.grade_level||'')+'_'+new Date().getFullYear()+'.pdf';
+
+  toast('กำลัง Export PDF...','in');
+  loading(true);
+
+  try{
+    const opt = {
+      margin:      [10,10,10,10],
+      filename:    fname,
+      image:       { type:'jpeg', quality:0.98 },
+      html2canvas: { scale:2, useCORS:true, logging:false,
+                     backgroundColor:'#ffffff' },
+      jsPDF:       { unit:'mm', format:'a4', orientation:'portrait' },
+      pagebreak:   { mode:'avoid-all' }
+    };
+
+    await html2pdf().set(opt).from(covEl).save();
+    toast('Export PDF สำเร็จ: '+fname);
+  }catch(e){
+    toast('Export PDF ผิดพลาด: '+e.message,'er');
+  }finally{
+    loading(false);
+  }
+}
+
 function printCover(){
   const prev = document.title;
   document.title = ''; // ซ่อน title ที่ browser พิมพ์มุมบน
