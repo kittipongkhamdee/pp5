@@ -1080,12 +1080,28 @@ const _AVATAR_COLORS = [
 ];
 
 let _avTipTimer = null;
+let _avTipActive = null;
+
 function _avTipShow(el){
   clearTimeout(_avTipTimer);
-  el.classList.add('tip-show');
+  const tip = el.querySelector('.av-tip');
+  if(!tip) return;
+  // วาง tooltip ด้วย fixed position ตาม bounding rect ของ avatar
+  const rect = el.getBoundingClientRect();
+  tip.style.top = (rect.bottom + 8) + 'px';
+  tip.style.left = (rect.left + rect.width/2) + 'px';
+  tip.style.transform = 'translateX(-50%)';
+  tip.style.opacity = '1';
+  _avTipActive = tip;
 }
+
 function _avTipHide(el){
-  _avTipTimer = setTimeout(()=>{ el.classList.remove('tip-show'); }, 120);
+  clearTimeout(_avTipTimer);
+  _avTipTimer = setTimeout(()=>{
+    const tip = el.querySelector('.av-tip');
+    if(tip) tip.style.opacity = '0';
+    _avTipActive = null;
+  }, 80);
 }
 function _avColor(uid){
   // สีตาม hash ของ user id
