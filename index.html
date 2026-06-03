@@ -1170,12 +1170,20 @@ function initPresence(){
         _renderPresence(_presenceChannel.presenceState());
       })
       .subscribe(async(status)=>{
+        console.log('[Presence] status:', status);
         if(status==='SUBSCRIBED'){
-          await _presenceChannel.track({
+          const res = await _presenceChannel.track({
             user_id: S.user.id,
             full_name: S.profile?.full_name||S.user?.email||'',
             online_at: new Date().toISOString(),
           });
+          console.log('[Presence] track result:', res);
+          // render ทันทีหลัง track
+          _renderPresence(_presenceChannel.presenceState());
+        } else if(status==='CHANNEL_ERROR'){
+          console.warn('[Presence] channel error — Realtime อาจไม่ได้เปิด');
+        } else if(status==='TIMED_OUT'){
+          console.warn('[Presence] timed out');
         }
       });
   }catch(e){
