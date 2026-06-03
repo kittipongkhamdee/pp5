@@ -2952,6 +2952,7 @@ function renderReadTab(){
       </tr>`;}).join('')}</tbody>
     </table></div>
     <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn bs" onclick="clearEv('read')" style="color:#dc2626;background:#fff1f0;border-color:#fecaca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>ล้างทั้งหมด</button>
       <button class="btn bs" onclick="autoFillEv('read','3')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>ดีเยี่ยมทั้งหมด</button>
       <button class="btn bs" onclick="autoFillEv('read','2')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>ดีทั้งหมด</button>
       <button class="btn bp" onclick="saveRead()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>บันทึก</button>
@@ -2979,11 +2980,35 @@ function renderCharTab(){
       ${CHAR8.map((ch,i)=>`<span style="margin-right:12px"><strong>ข้อ ${i+1}</strong> ${ch.label}</span>`).join('')}
     </div>
     <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn bs" onclick="clearEv('char')" style="color:#dc2626;background:#fff1f0;border-color:#fecaca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>ล้างทั้งหมด</button>
       <button class="btn bs" onclick="autoFillEv('char','3')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>ดีเยี่ยมทั้งหมด</button>
       <button class="btn bs" onclick="autoFillEv('char','2')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>ดีทั้งหมด</button>
       <button class="btn bp" onclick="saveChar()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>บันทึก</button>
     </div>
   </div></div>`;
+}
+function clearEv(type){
+  confirm2({
+    title: type==='read'?'ล้างค่าการอ่านฯ':'ล้างค่าคุณลักษณะฯ',
+    msg: 'ล้างค่าทุกช่องของ<strong>นักเรียนทุกคน</strong> คืนเป็น "ยังไม่ประเมิน"',
+    type:'warn', confirmText:'ล้างทั้งหมด', cancelText:'ยกเลิก',
+    onConfirm:()=>{
+      if(type==='read'){
+        evStus.forEach(s=>{
+          for(let t=1;t<=5;t++){const el=$('rt'+t+'-'+s.id);if(el)el.value='';}
+          const r=$('rr-'+s.id);if(r)r.value='';
+        });
+      } else {
+        evStus.forEach(s=>{
+          CHAR8.forEach(ch=>{const el=$('ch-'+ch.key+'-'+s.id);if(el)el.value='';});
+          const r=$('ch-res-'+s.id);if(r)r.value='';
+        });
+      }
+      // อัป color ทุก dropdown
+      document.querySelectorAll('.es').forEach(updEvCls);
+      toast('ล้างค่าเรียบร้อย — กด "บันทึก" เพื่อบันทึกลงระบบ');
+    }
+  });
 }
 function autoFillEv(type,val){
   if(type==='read'){
