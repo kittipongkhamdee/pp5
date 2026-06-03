@@ -1293,7 +1293,19 @@ function openSubModal(id){
         <div><label class="fl">หน่วยกิต</label><input type="number" class="fi" id="f-cr" value="${s?.credits||1.5}" step="0.5" min="0.5"></div>
         <div><label class="fl">ชั่วโมง/สัปดาห์</label><input type="number" class="fi" id="f-hw" value="${s?.hours_per_week||3}" min="1"></div>
         <div><label class="fl">ชั่วโมง/ภาค</label><input type="number" class="fi" id="f-th" value="${s?.total_hours||60}" min="1"></div>
-        <div><label class="fl">ครูผู้สอน</label><input class="fi" id="f-tch" value="${esc(s?.teacher_name||'')}"></div>
+        <div><label class="fl">ครูผู้สอน</label>
+          <select class="fs" id="f-tch">
+            <option value="">— เลือกหรือพิมพ์ —</option>
+            ${(S.config.teachers||'').split('\n').filter(t=>t.trim()).map(t=>`<option value="${esc(t.trim())}" ${s?.teacher_name===t.trim()?'selected':''}>${esc(t.trim())}</option>`).join('')}
+            ${s?.teacher_name&&!(S.config.teachers||'').split('\n').map(t=>t.trim()).includes(s.teacher_name)?`<option value="${esc(s.teacher_name)}" selected>${esc(s.teacher_name)}</option>`:''}
+          </select>
+        </div>
+        <div><label class="fl">หัวหน้ากลุ่มสาระการเรียนรู้</label>
+          <select class="fs" id="f-hog">
+            <option value="">— เลือก —</option>
+            ${(S.config.teachers||'').split('\n').filter(t=>t.trim()).map(t=>`<option value="${esc(t.trim())}" ${s?.head_of_group===t.trim()?'selected':''}>${esc(t.trim())}</option>`).join('')}
+          </select>
+        </div>
       </div>
       <div class="score-box">
         <div class="score-box-title">📊 โครงสร้างคะแนน (รวม = <span id="f-tot">${(s?.score_before_mid||25)+(s?.score_mid||20)+(s?.score_after_mid||25)+(s?.score_final||30)}</span> / 100)</div>
@@ -1323,7 +1335,7 @@ async function saveSubForm(id){
   const payload={
     subject_code:code,subject_name:name,grade_level:$('f-gr').value,room:$('f-rm').value.trim(),
     credits:+$('f-cr').value,hours_per_week:+$('f-hw').value,total_hours:+$('f-th').value,
-    teacher_name:$('f-tch').value.trim(),advisor_name:'',
+    teacher_name:$('f-tch').value.trim(),head_of_group:$('f-hog')?.value||'',advisor_name:'',
     score_before_mid:sbm,score_mid:sm,score_after_mid:sam,score_final:sf,
     academic_year:S.config.academic_year||'2568',semester:parseInt(S.config.semester||1),
     user_id:S.user.id
@@ -3516,17 +3528,17 @@ async function pgCover(){
     <div style="display:flex;justify-content:space-around;font-size:13px;margin-bottom:22px">
       <div style="flex:1;text-align:center">
         <div style="margin-bottom:2px">ลงชื่อ …………………………………………</div>
-        <div style="margin-bottom:2px">(........................................)</div>
+        <div style="margin-bottom:2px">(${esc(sub.head_of_group||'........................................')})</div>
         <div style="font-size:12px">หัวหน้ากลุ่มสาระการเรียนรู้</div>
       </div>
       <div style="flex:1;text-align:center">
         <div style="margin-bottom:2px">ลงชื่อ …………………………………………</div>
-        <div style="margin-bottom:2px">(........................................)</div>
+        <div style="margin-bottom:2px">(${esc(cfg.head_registrar||'........................................')})</div>
         <div style="font-size:12px">หัวหน้างานทะเบียนวัดผล</div>
       </div>
       <div style="flex:1;text-align:center">
         <div style="margin-bottom:2px">ลงชื่อ …………………………………………</div>
-        <div style="margin-bottom:2px">(........................................)</div>
+        <div style="margin-bottom:2px">(${esc(cfg.head_academic||'........................................')})</div>
         <div style="font-size:12px">หัวหน้างานวิชาการ</div>
       </div>
     </div>
@@ -3669,10 +3681,45 @@ function pgSettings(){
           <input class="fi" id="c-dir" value="${esc(cfg.director_name||'')}"></div>
         <div style="grid-column:1/-1"><label class="fl">ชื่อรองผู้อำนวยการ</label>
           <input class="fi" id="c-vdir" value="${esc(cfg.vice_director||'')}"></div>
+          <div style="grid-column:1/-1"><label class="fl">หัวหน้างานทะเบียนวัดผล</label>
+            <select class="fs" id="c-head-reg">
+              <option value="">— เลือกครู —</option>
+              ${(cfg.teachers||'').split('\n').filter(t=>t.trim()).map(t=>`<option value="${esc(t.trim())}" ${cfg.head_registrar===t.trim()?'selected':''}>${esc(t.trim())}</option>`).join('')}
+            </select>
+          </div>
+          <div style="grid-column:1/-1"><label class="fl">หัวหน้างานวิชาการ</label>
+            <select class="fs" id="c-head-acad">
+              <option value="">— เลือกครู —</option>
+              ${(cfg.teachers||'').split('\n').filter(t=>t.trim()).map(t=>`<option value="${esc(t.trim())}" ${cfg.head_academic===t.trim()?'selected':''}>${esc(t.trim())}</option>`).join('')}
+            </select>
+          </div>
       </div>
       <div style="margin-top:14px">
         <button class="btn bp" onclick="saveSettings()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>บันทึกการตั้งค่า</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ── ครูผู้สอน ── -->
+  <div class="card" style="max-width:580px">
+    <div class="ch"><div class="ct">ครูผู้สอน</div></div>
+    <div class="cb">
+      <div style="font-size:12.5px;color:var(--muted);margin-bottom:10px;">
+        เพิ่มรายชื่อครูไว้ที่นี่ จะปรากฏเป็น dropdown ตอนเพิ่มรายวิชา
+      </div>
+      <div id="teacher-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
+        ${(cfg.teachers||'').split('\n').filter(t=>t.trim()).map((t,i)=>`
+        <div style="display:flex;gap:8px;align-items:center">
+          <input class="fi" style="flex:1" value="${esc(t.trim())}" id="tc-${i}" placeholder="ชื่อครู เช่น นายกิตติพงษ์ คำดี">
+          <button class="btn bs" style="padding:7px 10px;color:var(--err)" onclick="this.closest('div').remove()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+          </button>
+        </div>`).join('')}
+      </div>
+      <button class="btn bs" onclick="_addTeacherRow()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        เพิ่มครู
+      </button>
     </div>
   </div>
 
@@ -3751,7 +3798,23 @@ async function saveAdminPassword(){
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
 }
 
+function _addTeacherRow(){
+  const list=document.getElementById('teacher-list');
+  if(!list) return;
+  const idx=list.querySelectorAll('input').length;
+  const div=document.createElement('div');
+  div.style.cssText='display:flex;gap:8px;align-items:center';
+  div.innerHTML=`<input class="fi" style="flex:1" id="tc-${idx}" placeholder="ชื่อครู เช่น นางสาวสมหญิง ใจดี">
+    <button class="btn bs" style="padding:7px 10px;color:var(--err)" onclick="this.closest('div').remove()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+    </button>`;
+  list.appendChild(div);
+  div.querySelector('input').focus();
+}
 async function saveSettings(){
+  // รวบรวมรายชื่อครูจาก input rows
+  const teacherRows = document.querySelectorAll('#teacher-list input[id^="tc-"]');
+  const teacherVal = Array.from(teacherRows).map(el=>el.value.trim()).filter(Boolean).join('\n');
   const updates=[
     {key:'school_name',    value:$('c-school').value.trim()},
     {key:'school_district',value:$('c-dist').value.trim()},
@@ -3760,6 +3823,9 @@ async function saveSettings(){
     {key:'semester',       value:$('c-sem').value},
     {key:'director_name',  value:$('c-dir').value.trim()},
     {key:'vice_director',  value:$('c-vdir').value.trim()},
+    {key:'teachers',       value:teacherVal},
+    {key:'head_registrar', value:$('c-head-reg')?.value||''},
+    {key:'head_academic',  value:$('c-head-acad')?.value||''},
   ];
   loading(true);
   try{
