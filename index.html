@@ -151,11 +151,11 @@ tbody tr:hover td{background:rgba(0,122,255,.04);}
 .mb{padding:20px;overflow-y:auto;flex:1;}
 .mf{padding:14px 20px;border-top:1px solid var(--bdr);display:flex;gap:8px;justify-content:flex-end;background:var(--card2);border-radius:0 0 var(--r-xl) var(--r-xl);}
 /* Attendance */
-.ac{width:30px;height:30px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid transparent;user-select:none;transition:transform .1s;}
-.ap{background:#dcfce7;color:#15803d;border-color:var(--ok-bdr);}
-.ab{background:var(--err-bg);color:var(--err);border-color:var(--err-bdr);}
+.ac{width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid transparent;user-select:none;transition:transform .1s;}
+.ap{background:#f0fdf4;color:#16803d;border-color:#86efac;}
+.ab{background:#fff1f2;color:#e11d48;border-color:#fda4af;}
 .al{background:var(--warn-bg);color:var(--warn-txt);border-color:var(--warn-bdr);}
-.av{background:var(--ac-lt);color:var(--ac);border-color:var(--info-bdr);}
+.av{background:#eff6ff;color:#2563eb;border-color:#93c5fd;}
 .ac:hover{transform:scale(1.15);box-shadow:var(--sh1);}
 .ac:active{transform:scale(.95);}
 /* Score */
@@ -1277,8 +1277,8 @@ function openPromoteDialog(){
   const gradeOpts = (sel='') => [1,2,3,4,5,6].map(g=>
     `<option value="${g}" ${sel==g?'selected':''}> ม.${g}</option>`
   ).join('');
-  const roomOpts = (sel='') => [1,2,3,4,5,6,7,8,9,10].map(r=>
-    `<option value="${r}" ${sel==r?'selected':''}>ห้อง ${r}</option>`
+  const roomOpts = (sel='') => [0,1,2,3,4,5,6,7,8,9,10].map(r=>
+    `<option value="${r}" ${sel==r?'selected':''}>${r===0?'ห้อง 0 (ไม่ระบุห้อง)':'ห้อง '+r}</option>`
   ).join('');
 
   // คำนวณค่า default: ชั้นถัดไปของ room แรก
@@ -1759,7 +1759,7 @@ async function doImport(){
 let attStus=[], attData=[], attSub=null;
 const MONTHS=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
 const ATT_C=['present','absent','leave'];
-const ATT_I={present:'✅',absent:'❌',leave:'📋'};
+const ATT_I={present:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>',absent:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',leave:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'};
 const ATT_K={present:'ac ap',absent:'ac ab',leave:'ac av'};
 
 async function pgAttendance(){
@@ -1847,7 +1847,7 @@ function renderAttPage(){
         <div><label class="fl">จำนวนคาบ</label>
           <input type="number" class="fi" id="add-periods" min="1" max="8" value="1" style="width:70px"></div>
         <button class="btn bp btn-sm" style="height:38px" onclick="addAttDay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>เพิ่มวันสอน</button>
-        <div style="font-size:11.5px;color:var(--muted);align-self:center">คลิกหัวคอลัมน์เพื่อลบ • คลิกช่องเพื่อเปลี่ยน ✅มา ❌ขาด 📋ลา</div>
+        <div style="font-size:11.5px;color:var(--muted);align-self:center">คลิกหัวคอลัมน์เพื่อลบ • คลิกช่องเพื่อเปลี่ยน ✓ มา  ✕ ขาด  ลา</div>
       </div>
     </div></div>
 
