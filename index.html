@@ -756,45 +756,82 @@ const IC = {
 };
 
 function toast(msg, type='ok'){
-  const icons={ok:IC.check,er:IC.x,in:IC.info};
-  const colors={ok:'border-green-200 bg-white',er:'border-red-200 bg-white',in:'border-blue-200 bg-white'};
-  const icBg={ok:'bg-green-500',er:'bg-red-500',in:'bg-blue-500'};
+  const iconSvg={ok:IC.check,er:IC.x,in:IC.info};
+  // frosted glass สีตาม type
+  const bg={
+    ok:'rgba(235,255,240,.85)',
+    er:'rgba(255,235,235,.85)',
+    in:'rgba(235,245,255,.85)'
+  };
+  const border={
+    ok:'rgba(52,199,89,.25)',
+    er:'rgba(255,59,48,.25)',
+    in:'rgba(0,122,255,.25)'
+  };
+  const iconColor={ok:'#34C759',er:'#FF3B30',in:'#007AFF'};
+  const iconBg={
+    ok:'rgba(52,199,89,.15)',
+    er:'rgba(255,59,48,.15)',
+    in:'rgba(0,122,255,.15)'
+  };
   const el=document.createElement('div');
-  el.className='flex items-center gap-3 px-4 py-3 rounded-2xl shadow-lg border min-w-[220px] max-w-sm cursor-pointer pointer-events-auto '+colors[type];
-  el.style.cssText='animation:toastIn .32s cubic-bezier(.34,1.56,.64,1);backdrop-filter:blur(20px)';
-  el.innerHTML='<div class="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-white '+icBg[type]+'" style="width:24px;height:24px">'+
-    (icons[type]||IC.info).replace('viewBox','style="width:12px;height:12px" viewBox')+'</div>'+
-    '<span class="flex-1 text-sm font-medium text-gray-800">'+msg+'</span>'+
-    '<div class="w-[18px] h-[18px] rounded-full bg-black/5 flex items-center justify-center shrink-0">'+
-      IC.x.replace('viewBox','style="width:8px;height:8px;color:#999" viewBox')+'</div>';
-  el.onclick=()=>{el.style.animation='toastOut .25s forwards';setTimeout(()=>{if(el.parentNode)el.remove();},250);};
+  el.style.cssText=[
+    'display:flex;align-items:center;gap:10px',
+    'padding:11px 14px 11px 12px',
+    'border-radius:16px',
+    'min-width:240px;max-width:360px',
+    'cursor:pointer;pointer-events:auto',
+    'background:'+bg[type],
+    'border:1px solid '+border[type],
+    'box-shadow:0 4px 24px rgba(0,0,0,.08),0 1px 4px rgba(0,0,0,.05)',
+    'backdrop-filter:blur(40px) saturate(200%)',
+    '-webkit-backdrop-filter:blur(40px) saturate(200%)',
+    'animation:toastIn .32s cubic-bezier(.34,1.56,.64,1)'
+  ].join(';');
+  el.innerHTML=
+    '<div style="width:26px;height:26px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:'+iconBg[type]+'">'+
+      (iconSvg[type]||IC.info).replace('viewBox','style="width:13px;height:13px;stroke:'+iconColor[type]+'" viewBox')+
+    '</div>'+
+    '<span style="flex:1;font-size:13.5px;font-weight:600;color:#1d1d1f;font-family:var(--font);line-height:1.4">'+msg+'</span>'+
+    '<div style="width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.06);display:flex;align-items:center;justify-content:center;flex-shrink:0">'+
+      IC.x.replace('viewBox','style="width:8px;height:8px;stroke:#999" viewBox')+
+    '</div>';
+  el.onclick=()=>{
+    el.style.animation='toastOut .25s forwards';
+    setTimeout(()=>{if(el.parentNode)el.remove();},250);
+  };
   $('tc').appendChild(el);
-  setTimeout(()=>{el.style.animation='toastOut .3s forwards';setTimeout(()=>{if(el.parentNode)el.remove();},300);},3400);
+  setTimeout(()=>{
+    el.style.animation='toastOut .3s forwards';
+    setTimeout(()=>{if(el.parentNode)el.remove();},300);
+  },3400);
 }
 
 function confirm2(opts){
   const id='cdlg_'+Date.now();
   const type=opts.type||'danger';
   const iconSvg=type==='danger'?IC.trash:type==='warn'?IC.warn:IC.info;
-  const iconBg=type==='danger'?'bg-red-50 text-red-500':type==='warn'?'bg-amber-50 text-amber-500':'bg-blue-50 text-blue-500';
-  const confirmCls=type==='danger'?'text-red-500':'text-blue-500';
+  const iconColor=type==='danger'?'#FF3B30':type==='warn'?'#FF9500':'#007AFF';
+  const iconBg=type==='danger'?'rgba(255,59,48,.12)':type==='warn'?'rgba(255,149,0,.12)':'rgba(0,122,255,.12)';
+  const confirmColor=type==='danger'?'#FF3B30':type==='warn'?'#FF9500':'#007AFF';
   const wrap=document.createElement('div');
   wrap.id=id;
   wrap.className='fixed inset-0 z-[2000] flex items-center justify-center p-5';
-  wrap.style.cssText='background:rgba(0,0,0,.45);backdrop-filter:blur(10px);animation:fadeIn .15s ease';
+  wrap.style.cssText='background:rgba(0,0,0,.25);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);animation:fadeIn .15s ease';
   wrap.onclick=function(e){if(e.target===wrap)close(false);};
-  wrap.innerHTML='<div class="bg-white rounded-[22px] w-full max-w-[340px] overflow-hidden text-center shadow-2xl" style="animation:dlgPop .22s cubic-bezier(.34,1.56,.64,1)">'+
-    '<div class="px-6 pt-8 pb-5">'+
-      '<div class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 '+iconBg+'" style="width:56px;height:56px">'+
-        iconSvg.replace('viewBox','style="width:28px;height:28px" viewBox')+'</div>'+
-      '<div class="text-[17px] font-bold text-gray-900 mb-2">'+(opts.title||'ยืนยันการดำเนินการ')+'</div>'+
-      '<div class="text-[13.5px] text-gray-500 leading-relaxed">'+(opts.msg||'')+'</div>'+
-    '</div>'+
-    '<div class="border-t border-gray-100">'+
-      '<button id="'+id+'-ok" class="w-full py-4 text-[15px] font-semibold border-b border-gray-100 bg-transparent cursor-pointer '+confirmCls+'" style="font-family:var(--font)">'+(opts.confirmText||'ยืนยัน')+'</button>'+
-      '<button id="'+id+'-no" class="w-full py-4 text-[15px] text-gray-400 bg-transparent border-none cursor-pointer" style="font-family:var(--font)">'+(opts.cancelText||'ยกเลิก')+'</button>'+
-    '</div>'+
-  '</div>';
+  wrap.innerHTML=
+    '<div style="background:rgba(255,255,255,.82);backdrop-filter:blur(40px) saturate(200%);-webkit-backdrop-filter:blur(40px) saturate(200%);border-radius:22px;width:100%;max-width:320px;overflow:hidden;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.12),0 0 0 0.5px rgba(255,255,255,.6);animation:dlgPop .22s cubic-bezier(.34,1.56,.64,1)">'+
+      '<div style="padding:28px 24px 20px">'+
+        '<div style="width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;background:'+iconBg+'">'+
+          iconSvg.replace('viewBox','style="width:26px;height:26px;stroke:'+iconColor+'" viewBox')+'</div>'+
+        '<div style="font-size:17px;font-weight:700;color:#1d1d1f;margin-bottom:6px">'+(opts.title||'ยืนยันการดำเนินการ')+'</div>'+
+        '<div style="font-size:13.5px;color:#6e6e73;line-height:1.6">'+(opts.msg||'')+'</div>'+
+      '</div>'+
+      '<div style="border-top:0.5px solid rgba(0,0,0,.1)">'+
+        '<button id="'+id+'-ok" style="width:100%;padding:15px;font-size:15px;font-weight:700;color:'+confirmColor+';background:none;border:none;border-bottom:0.5px solid rgba(0,0,0,.1);cursor:pointer;font-family:var(--font);letter-spacing:-.1px">'+(opts.confirmText||'ยืนยัน')+'</button>'+
+        '<button id="'+id+'-no" style="width:100%;padding:15px;font-size:15px;font-weight:400;color:#8e8e93;background:none;border:none;cursor:pointer;font-family:var(--font)">'+(opts.cancelText||'ยกเลิก')+'</button>'+
+      '</div>'+
+    '</div>';
   document.body.appendChild(wrap);
   function close(confirmed){
     wrap.style.animation='fadeIn .12s ease reverse forwards';
@@ -1385,7 +1422,7 @@ function openPromoteDialog(){
   const nextGrade = Math.min(6, firstRoom.grade+1);
 
   wrap.innerHTML =
-    '<div id="promote-box" style="background:#fff;border-radius:22px;width:100%;max-width:400px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.2);animation:dlgPop .22s cubic-bezier(.34,1.56,.64,1)">' +
+    '<div id="promote-box" style="background:rgba(255,255,255,.85);backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);border-radius:22px;width:100%;max-width:400px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.2);animation:dlgPop .22s cubic-bezier(.34,1.56,.64,1)">' +
       '<div style="padding:24px 24px 16px">' +
         '<div style="width:52px;height:52px;background:#fff7ed;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="#c2410c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><polyline points="17 11 12 6 7 11"/><polyline points="17 18 12 13 7 18"/></svg>' +
@@ -3587,9 +3624,9 @@ const CLEAR_TABLES = [
 function openClearAllDialog(){
   const wrap = document.createElement('div');
   wrap.id = 'clearall-wrap';
-  wrap.style.cssText = 'position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.5);backdrop-filter:blur(10px);animation:fadeIn .15s ease';
+  wrap.style.cssText = 'position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.25);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);animation:fadeIn .15s ease';
   wrap.innerHTML =
-    '<div style="background:#fff;border-radius:22px;width:100%;max-width:400px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.2);animation:dlgPop .22s cubic-bezier(.34,1.56,.64,1)">' +
+    '<div style="background:rgba(255,255,255,.85);backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);border-radius:22px;width:100%;max-width:400px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.2);animation:dlgPop .22s cubic-bezier(.34,1.56,.64,1)">' +
       '<div style="padding:24px 24px 16px">' +
         '<div style="width:54px;height:54px;background:#fff1f0;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>' +
@@ -3604,7 +3641,7 @@ function openClearAllDialog(){
           '<input id="clearall-confirm-txt" class="fi" placeholder="พิมพ์ ลบข้อมูล เพื่อยืนยัน" oninput="_checkClearInput(this)">' +
         '</div>' +
       '</div>' +
-      '<div style="border-top:1px solid #f3f4f6;">' +
+      '<div style="border-top:0.5px solid rgba(0,0,0,.08);">' +
         '<button id="clearall-btn" disabled onclick="_doClearAll()" ' +
           'style="width:100%;padding:14px;font-size:15px;font-weight:600;color:#dc2626;background:none;border:none;border-bottom:1px solid #f3f4f6;cursor:not-allowed;opacity:.4;font-family:var(--font);">ล้างข้อมูลทั้งหมด</button>' +
         '<button onclick="_closeClearAllDialog()" ' +
@@ -3968,9 +4005,9 @@ function openRestoreDialog(){
   // สร้าง dialog เลือกไฟล์
   const wrap = document.createElement('div');
   wrap.id = 'restore-wrap';
-  wrap.style.cssText = 'position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.5);backdrop-filter:blur(10px);animation:fadeIn .15s ease';
+  wrap.style.cssText = 'position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.25);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);animation:fadeIn .15s ease';
   wrap.innerHTML =
-    '<div style="background:#fff;border-radius:22px;width:100%;max-width:420px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.2);animation:dlgPop .22s cubic-bezier(.34,1.56,.64,1)">' +
+    '<div style="background:rgba(255,255,255,.85);backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);border-radius:22px;width:100%;max-width:420px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.2);animation:dlgPop .22s cubic-bezier(.34,1.56,.64,1)">' +
       '<div style="padding:24px 24px 18px">' +
         '<div style="width:52px;height:52px;background:#fff1f0;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' +
@@ -3993,7 +4030,7 @@ function openRestoreDialog(){
         // preview area
         '<div id="restore-preview" style="display:none;margin-top:12px;background:#f9f9fb;border-radius:10px;padding:10px 12px;font-size:12.5px;"></div>' +
       '</div>' +
-      '<div style="border-top:1px solid #f3f4f6;">' +
+      '<div style="border-top:0.5px solid rgba(0,0,0,.08);">' +
         '<button id="restore-confirm-btn" disabled onclick="_doRestore()" ' +
           'style="width:100%;padding:14px;font-size:15px;font-weight:600;color:#dc2626;background:none;border:none;border-bottom:1px solid #f3f4f6;cursor:not-allowed;opacity:.4;font-family:var(--font);">Restore เลย</button>' +
         '<button onclick="_closeRestoreDialog()" ' +
