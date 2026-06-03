@@ -619,6 +619,7 @@ async function qcRevalidate(key, fn, onUpdate){
 const $ = id => document.getElementById(id);
 const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const escJs = s => String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const grm = (g,r) => +r===0 ? 'ม.'+g : grm(g,r);
 let _loadTimer=null;
 let _loadCount=0;
 window._dashShowAll=false; // toggle แสดงเฉพาะภาคปัจจุบัน หรือทุกภาค
@@ -1130,7 +1131,7 @@ async function pgDash(){
             <div style="font-size:11.5px;color:var(--muted)">${esc(s.subject_code)}</div>
             ${s.academic_year&&window._dashShowAll&&(String(s.academic_year)!==cfg.academic_year||String(s.semester)!==String(cfg.semester))?`<span style="background:#fff7ed;color:#c2410c;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;margin-top:3px;display:inline-block;">ปี${s.academic_year} ภาค${s.semester}</span>`:""}
           </div>
-          <span class="badge" style="background:${_ac}18;color:${_ac};flex-shrink:0;white-space:nowrap">ม.${s.grade_level}/${s.room}</span>
+          <span class="badge" style="background:${_ac}18;color:${_ac};flex-shrink:0;white-space:nowrap">${grm(s.grade_level,s.room)}</span>
         </div>
         <div style="font-size:12px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap">
           <span>👨‍🏫 ${esc(s.teacher_name||'-')}</span>
@@ -1172,7 +1173,7 @@ async function pgSubjects(){
     <tbody>${S.subjects.map((s,i)=>`<tr>
       <td class="tc">${i+1}</td><td>${esc(s.subject_code)}</td>
       <td><strong>${esc(s.subject_name)}</strong></td>
-      <td class="tc">ม.${s.grade_level}/${s.room}</td>
+      <td class="tc">${grm(s.grade_level,s.room)}</td>
       <td class="tc">${s.hours_per_week}</td><td class="tc">${s.total_hours||60}</td>
       <td>${esc(s.teacher_name||'-')}</td>
       <td class="tc" style="font-size:11px;line-height:1.7">
@@ -1266,7 +1267,7 @@ function openPromoteDialog(){
   // สร้าง unique ชั้น/ห้อง จาก allStu
   const rooms = [...new Set(allStu.map(s=>s.grade_level+'_'+s.room))]
     .sort()
-    .map(k=>{ const [g,r]=k.split('_'); return {grade:+g,room:+r,label:'ม.'+g+'/'+r}; });
+    .map(k=>{ const [g,r]=k.split('_'); return {grade:+g,room:+r,label:grm(g,r)}; });
   if(!rooms.length){ toast('ยังไม่มีนักเรียนในระบบ','er'); return; }
 
   const wrap = document.createElement('div');
@@ -1357,7 +1358,7 @@ function _updatePromotePreview(){
   prev.innerHTML =
     '<div style="font-weight:700;color:#c2410c;margin-bottom:5px">' +
       'จะเปลี่ยน <strong>' + students.length + ' คน</strong>' +
-      ' จาก ม.'+fromG+'/'+fromR+' → ม.'+toGrade+'/'+toRoom +
+      ' จาก '+grm(fromG,fromR)+' → '+grm(toGrade,toRoom)+' ' +
     '</div>' +
     '<div style="font-size:11.5px;color:#555;line-height:1.7;max-height:80px;overflow-y:auto">' +
       students.slice(0,8).map(s=>esc(s.student_name)).join(' · ') +
@@ -1420,7 +1421,7 @@ async function _doPromote(students, toGrade, toRoom, fromG, fromR){
       ids.includes(s.id) ? {...s, grade_level:toGrade, room:toRoom} : s
     );
     clearStuCache();
-    toast('เลื่อนชั้น '+students.length+' คน เสร็จแล้ว (ม.'+fromG+'/'+fromR+' → ม.'+toGrade+'/'+toRoom+')');
+    toast('เลื่อนชั้น '+students.length+' คน เสร็จแล้ว ('+grm(fromG,fromR)+' → '+grm(toGrade,toRoom)+')');
     // re-render ตาราง
     filterStu();
   }catch(e){
@@ -1434,7 +1435,7 @@ async function pgStudents(){
   loading(true);
   allStu=await q(sb.from('students').select('*').order('grade_level').order('room').order('student_code'));
   loading(false);
-  const grs=[...new Set(allStu.map(s=>`ม.${s.grade_level}/${s.room}`))].sort();
+  const grs=[...new Set(allStu.map(s=>`${grm(s.grade_level,s.room)}`))].sort();
   $('pg').innerHTML=`
   <div class="ph">
     <div><div class="ptitle">จัดการนักเรียน</div><div class="psub" id="stu-cnt">รวม ${allStu.length} คน</div></div>
@@ -1462,7 +1463,7 @@ function renderStuTbl(list){
     <tbody>${list.map((s,i)=>`<tr>
       <td class="tc">${i+1}</td><td class="tc">${esc(s.student_code)}</td>
       <td>${esc(s.student_name)}</td>
-      <td class="tc">ม.${s.grade_level}/${s.room}</td>
+      <td class="tc">${grm(s.grade_level,s.room)}</td>
       <td class="tc">${s.gender==='ช'?'ชาย':s.gender==='ญ'?'หญิง':esc(s.gender||'-')}</td>
       <td class="tc">
         <button class="btn bs btn-sm" onclick="openStuModal('${s.id}')" style="padding:5px 8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
@@ -1474,7 +1475,7 @@ function filterStu(){
   const qv=$('stu-q').value.toLowerCase(),gr=$('stu-gr').value;
   $('stu-tb').innerHTML=renderStuTbl(allStu.filter(s=>{
     const mq=!qv||s.student_name.toLowerCase().includes(qv)||s.student_code.toLowerCase().includes(qv);
-    const mg=!gr||`ม.${s.grade_level}/${s.room}`===gr;
+    const mg=!gr||`${grm(s.grade_level,s.room)}`===gr;
     return mq&&mg;
   }));
 }
@@ -1684,7 +1685,7 @@ function parseExcelRows(rows){
 
   // สรุปตามชั้น/ห้อง
   const groups={};
-  _excelData.forEach(s=>{ const k=`ม.${s.grade_level}/${s.room}`; groups[k]=(groups[k]||0)+1; });
+  _excelData.forEach(s=>{ const k=`${grm(s.grade_level,s.room)}`; groups[k]=(groups[k]||0)+1; });
   const groupList=Object.entries(groups).sort((a,b)=>a[0].localeCompare(b[0]));
 
   $('imp-preview').innerHTML=_excelData.length===0
@@ -1815,7 +1816,7 @@ function renderAttPage(){
   </div>
   <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center">
     <select class="fs" style="max-width:300px" onchange="changeAttSub(this.value)">
-      ${S.subjects.map(s=>`<option value="${s.id}" ${s.id===sid?'selected':''}>${s.subject_name} ม.${s.grade_level}/${s.room}</option>`).join('')}
+      ${S.subjects.map(s=>`<option value="${s.id}" ${s.id===sid?'selected':''}>${s.subject_name} ${grm(s.grade_level,s.room)}</option>`).join('')}
     </select>
     <span class="badge bg-b">${attStus.length} คน | ${attSub?.total_hours||60} ชม./ภาค</span>
   </div>
@@ -2184,7 +2185,7 @@ function exportAttendance(){
   headDay.push('มา','ขาด','ลา','รวม','%','สถานะ');
   const aoa=[
     [`${S.config.school_name||''} — บันทึกเวลาเรียน`],
-    [`วิชา ${sub.subject_name} (${sub.subject_code}) ม.${sub.grade_level}/${sub.room}  ครู${sub.teacher_name||''}`],
+    [`วิชา ${sub.subject_name} (${sub.subject_code}) ${grm(sub.grade_level,sub.room)}  ครู${sub.teacher_name||''}`],
     [`ปีการศึกษา ${S.config.academic_year} ภาคเรียนที่ ${S.config.semester}  เวลาเรียน ${sub.total_hours} ชม.`],
     [],
     headMonth,
@@ -2215,7 +2216,7 @@ function printAttendance(){
   const sub=attSub;
   const months=buildAttMonths();
   const sum=attSummaryByStudent();
-  let html=`<div class="meta">วิชา ${esc(sub.subject_name)} (${esc(sub.subject_code)}) ม.${sub.grade_level}/${sub.room} &nbsp; ครูผู้สอน ${esc(sub.teacher_name||'')} &nbsp; เวลาเรียน ${sub.total_hours} ชม.</div>`;
+  let html=`<div class="meta">วิชา ${esc(sub.subject_name)} (${esc(sub.subject_code)}) ${grm(sub.grade_level,sub.room)} &nbsp; ครูผู้สอน ${esc(sub.teacher_name||'')} &nbsp; เวลาเรียน ${sub.total_hours} ชม.</div>`;
   // หัวตาราง 2 ชั้น: เดือนคร่อมวัน
   html+='<table><thead>';
   html+='<tr><th rowspan="2">เลขที่</th><th rowspan="2">เลขประจำตัว</th><th rowspan="2">ชื่อ-สกุล</th>';
@@ -2239,7 +2240,7 @@ function printAttendance(){
   html+='</tbody></table>';
   html+='<div style="font-size:11px;margin-top:6px">สัญลักษณ์: / = มา, ข = ขาด, ล = ลา &nbsp; (ตัวเลขใต้เดือนคือวันที่ • นับชั่วโมงตามจำนวนคาบของแต่ละวัน)</div>';
 
-  printHTML(`บันทึกเวลาเรียน — ${sub.subject_name} ม.${sub.grade_level}/${sub.room}`, html);
+  printHTML(`บันทึกเวลาเรียน — ${sub.subject_name} ${grm(sub.grade_level,sub.room)}`, html);
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -2290,7 +2291,7 @@ function renderScPage(){
   </div>
   <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center">
     <select class="fs" style="max-width:310px" onchange="changeScSub(this.value)">
-      ${S.subjects.map(s=>`<option value="${s.id}" ${s.id===S.selSub?'selected':''}>${s.subject_name} ม.${s.grade_level}/${s.room}</option>`).join('')}
+      ${S.subjects.map(s=>`<option value="${s.id}" ${s.id===S.selSub?'selected':''}>${s.subject_name} ${grm(s.grade_level,s.room)}</option>`).join('')}
     </select>
     ${sub?`<span class="badge bg-b">ก่อนกลาง ${sub.score_before_mid}|กลาง ${sub.score_mid}|หลังกลาง ${sub.score_after_mid}|ปลาย ${sub.score_final}</span>`:''}
   </div>
@@ -2608,11 +2609,13 @@ async function saveExam(){
     const midUsed=mn;
     const total=bef+aft+midUsed+fn;
     const ZERO_GRADE=['ร','มส','มผ','ผ'];
-    const grade=ZERO_GRADE.includes(sm.special_result||'')?0:calcGrade(total);
+    // อ่าน special_result จาก DOM (dropdown ปัจจุบัน) ไม่ใช่จาก cache
+    const sr_dom = ($('res-'+s.id)?.value)||'';
+    const grade=ZERO_GRADE.includes(sr_dom)?0:calcGrade(total);
     return{subject_id:S.selSub,student_id:s.id,
       total_before_mid:bef,total_after_mid:aft,total_unit:bef+aft,
       mid_normal:mn,mid_retake:0,mid_repeat:0,final_score:fn,
-      total_score:total,grade,special_result:sm.special_result||'',note:sm.note||''};
+      total_score:total,grade,special_result:sr_dom,note:sm.note||''};
   });
   loading(true);
   try{
@@ -2743,7 +2746,7 @@ function exportScores(){
   const mM=sub.score_mid||20, mF=sub.score_final||30;
   const hdr=[
     [`${S.config.school_name||''} — บันทึกคะแนน`],
-    [`วิชา ${sub.subject_name} (${sub.subject_code}) ม.${sub.grade_level}/${sub.room}  ครู${sub.teacher_name||''}`],
+    [`วิชา ${sub.subject_name} (${sub.subject_code}) ${grm(sub.grade_level,sub.room)}  ครู${sub.teacher_name||''}`],
     [`ปีการศึกษา ${S.config.academic_year} ภาคเรียนที่ ${S.config.semester}`],
     []
   ];
@@ -2797,7 +2800,7 @@ function exportScores(){
 }
 function printScores(){
   const sub=scSub;
-  const meta=`วิชา ${esc(sub.subject_name)} (${esc(sub.subject_code)}) ม.${sub.grade_level}/${sub.room} &nbsp; ครู${esc(sub.teacher_name||'')} &nbsp; ปีการศึกษา ${S.config.academic_year||''} ภาค ${S.config.semester||''}`;
+  const meta=`วิชา ${esc(sub.subject_name)} (${esc(sub.subject_code)}) ${grm(sub.grade_level,sub.room)} &nbsp; ครู${esc(sub.teacher_name||'')} &nbsp; ปีการศึกษา ${S.config.academic_year||''} ภาค ${S.config.semester||''}`;
   const mBef=sub.score_before_mid||25, mAft=sub.score_after_mid||25;
   const mM=sub.score_mid||20, mF=sub.score_final||30;
   const unitsBef=scU.before, unitsAft=scU.after;
@@ -2872,7 +2875,7 @@ function printScores(){
   });
   p2+='</tbody></table></div>';
 
-  printHTML(`บันทึกคะแนน — ${sub.subject_name} ม.${sub.grade_level}/${sub.room}`, p1+p2);
+  printHTML(`บันทึกคะแนน — ${sub.subject_name} ${grm(sub.grade_level,sub.room)}`, p1+p2);
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -2921,7 +2924,7 @@ function renderEvPage(){
   </div>
   <div style="display:flex;gap:10px;margin-bottom:18px">
     <select class="fs" style="max-width:310px" onchange="changeEvSub(this.value)">
-      ${S.subjects.map(s=>`<option value="${s.id}" ${s.id===sid?'selected':''}>${s.subject_name} ม.${s.grade_level}/${s.room}</option>`).join('')}
+      ${S.subjects.map(s=>`<option value="${s.id}" ${s.id===sid?'selected':''}>${s.subject_name} ${grm(s.grade_level,s.room)}</option>`).join('')}
     </select>
   </div>
   <div class="tabs">
@@ -3088,7 +3091,7 @@ function exportEval(){
   const sub=getSubject(S.selSub);
   const head=[
     [`${S.config.school_name||''} — การประเมิน`],
-    [`วิชา ${sub.subject_name} (${sub.subject_code}) ม.${sub.grade_level}/${sub.room}  ครู${sub.teacher_name||''}`],
+    [`วิชา ${sub.subject_name} (${sub.subject_code}) ${grm(sub.grade_level,sub.room)}  ครู${sub.teacher_name||''}`],
     [`ปีการศึกษา ${S.config.academic_year} ภาคเรียนที่ ${S.config.semester}`],
     []
   ];
@@ -3104,7 +3107,7 @@ function printEval(){
   const readRows=buildEvalReadRows();
   let p1='<div style="page-break-after:always">';
   p1+=`<h3 style="margin-bottom:6px">การอ่าน คิดวิเคราะห์ และเขียน</h3>`;
-  p1+=`<div class="meta" style="margin-bottom:8px">วิชา ${esc(sub.subject_name)} (${esc(sub.subject_code)}) ม.${sub.grade_level}/${sub.room} &nbsp; ครู ${esc(sub.teacher_name||'')}</div>`;
+  p1+=`<div class="meta" style="margin-bottom:8px">วิชา ${esc(sub.subject_name)} (${esc(sub.subject_code)}) ${grm(sub.grade_level,sub.room)} &nbsp; ครู ${esc(sub.teacher_name||'')}</div>`;
   p1+='<table><thead><tr>';
   readRows[0].forEach(h=>{p1+=`<th>${esc(h)}</th>`;});
   p1+='</tr></thead><tbody>';
@@ -3119,7 +3122,7 @@ function printEval(){
   const charRows=buildEvalCharRows();
   let p2='<div>';
   p2+=`<h3 style="margin-bottom:6px">คุณลักษณะอันพึงประสงค์</h3>`;
-  p2+=`<div class="meta" style="margin-bottom:8px">วิชา ${esc(sub.subject_name)} (${esc(sub.subject_code)}) ม.${sub.grade_level}/${sub.room} &nbsp; ครู ${esc(sub.teacher_name||'')}</div>`;
+  p2+=`<div class="meta" style="margin-bottom:8px">วิชา ${esc(sub.subject_name)} (${esc(sub.subject_code)}) ${grm(sub.grade_level,sub.room)} &nbsp; ครู ${esc(sub.teacher_name||'')}</div>`;
   p2+='<table><thead><tr>';
   charRows[0].forEach(h=>{p2+=`<th style="font-size:10px;padding:3px 4px">${esc(h)}</th>`;});
   p2+='</tr></thead><tbody>';
@@ -3138,7 +3141,7 @@ function printEval(){
   CHAR8.forEach((item,i)=>{p2+=`ข้อที่ ${i+1} ${item.label}<br>`;});
   p2+='</div></div>';
 
-  printHTML(`การประเมิน — ${sub.subject_name} ม.${sub.grade_level}/${sub.room}`, p1+p2);
+  printHTML(`การประเมิน — ${sub.subject_name} ${grm(sub.grade_level,sub.room)}`, p1+p2);
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -3186,7 +3189,7 @@ async function pgReport(){
     </div></div>
   <div style="display:flex;gap:10px;margin-bottom:18px" class="no-print">
     <select class="fs" style="max-width:310px" onchange="changeRptSub(this.value)">
-      ${S.subjects.map(s=>`<option value="${s.id}" ${s.id===S.selSub?'selected':''}>${s.subject_name} ม.${s.grade_level}/${s.room}</option>`).join('')}
+      ${S.subjects.map(s=>`<option value="${s.id}" ${s.id===S.selSub?'selected':''}>${s.subject_name} ${grm(s.grade_level,s.room)}</option>`).join('')}
     </select>
   </div>
   <div class="sg no-print">
@@ -3198,7 +3201,7 @@ async function pgReport(){
   <div class="card" style="margin-bottom:16px">
     <div class="ch"><div>
       <div class="ct">สรุปผลการเรียนรายบุคคล</div>
-      <div style="font-size:11.5px;color:var(--muted);margin-top:2px">${esc(sub?.subject_name||'')} (${esc(sub?.subject_code||'')}) ม.${sub?.grade_level||''}/${sub?.room||''} ครู${esc(sub?.teacher_name||'')}</div>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:2px">${esc(sub?.subject_name||'')} (${esc(sub?.subject_code||'')}) ${grm(sub?.grade_level||0,sub?.room||0)} ครู${esc(sub?.teacher_name||'')}</div>
     </div></div>
     <div class="cb"><div class="tw"><table>
       <thead><tr>
@@ -3255,7 +3258,7 @@ function exportReport(){
     'รวม(100)','ผลการเรียน','ผลพิเศษ','เวลาเรียน(%)','สถานะเวลา','อ่าน/คิด/เขียน','คุณลักษณะ'];
   const aoa=[
     [`${S.config.school_name||''} — รายงานผลการเรียน`],
-    [`วิชา ${sub.subject_name} (${sub.subject_code}) ม.${sub.grade_level}/${sub.room}  ครู${sub.teacher_name||''}`],
+    [`วิชา ${sub.subject_name} (${sub.subject_code}) ${grm(sub.grade_level,sub.room)}  ครู${sub.teacher_name||''}`],
     [`ปีการศึกษา ${S.config.academic_year} ภาคเรียนที่ ${S.config.semester}`],
     [],
     h
@@ -3318,7 +3321,7 @@ async function pgCover(){
     <button class="btn bs no-print" onclick="printCover()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>พิมพ์ปก</button></div>
   <div style="display:flex;gap:10px;margin-bottom:14px" class="no-print">
     <select class="fs" style="max-width:310px" onchange="changeCvrSub(this.value)">
-      ${S.subjects.map(s=>`<option value="${s.id}" ${s.id===S.selSub?'selected':''}>${s.subject_name} ม.${s.grade_level}/${s.room}</option>`).join('')}
+      ${S.subjects.map(s=>`<option value="${s.id}" ${s.id===S.selSub?'selected':''}>${s.subject_name} ${grm(s.grade_level,s.room)}</option>`).join('')}
     </select>
   </div>
 
@@ -4454,7 +4457,7 @@ function exportSchoolReport(){
     const st=sub._stats;
     aoa.push([
       i+1, sub.subject_code, sub.subject_name,
-      'ม.'+sub.grade_level+'/'+sub.room, st.teacherName,
+      grm(sub.grade_level,sub.room), st.teacherName,
       st.total, st.pass!=null?st.pass:'-', st.fail!=null?st.fail:'-',
       st.pct!=='—'?st.pct+'%':'-', st.avg, st.msCount||0
     ]);
