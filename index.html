@@ -1089,51 +1089,95 @@ function _avInitials(name){
   return f+l;
 }
 
-function _renderPresence(state){
-  const el = $('tb-presence');
-  if(!el) return;
-  const myId = S.user?.id;
-  // กรองตัวเองออก แล้วเรียงตาม online_at
-  const others = Object.entries(state)
-    .map(([k,v])=>v[0])
-    .filter(p=>p&&p.user_id!==myId)
-    .sort((a,b)=>new Date(b.online_at)-new Date(a.online_at));
 
+function initPresence(){
+  if(!S.user) return;
+  _showSelfPill();
+
+  if(_presenceChannel){ _presenceChannel.unsubscribe(); _presenceChannel=null; }
+  try{
+    const myInfo = {
+      user_id: S.user.id,
+      full_name: S.profile?.full_name||S.user?.email||'',
+      online_at: new Date().toISOString(),
+    };
+    // เพิ่มตัวเองเข้า map
+    _onlineUsers[S.user.id] = myInfo;
+
+    _presenceChannel = sb.channel('pp5-online', {
+      config:{ broadcast:{ self: false } }
+    });
+
+    _presenceChannel
+      // รับ join event จากคนอื่น
+      .on('broadcast',{event:'join'},(payload)=>{
+        if(payload.payload?.user_id && payload.payload.user_id !== S.user.id){
+          _onlineUsers[payload.payload.user_id] = payload.payload;
+          _renderOnline();
+          // ตอบกลับให้คนที่เพิ่ง join รู้ว่าเราอยู่
+          _presenceChannel.send({
+            type:'broadcast', event:'join', payload: myInfo
+          });
+        }
+      })
+      // รับ leave event
+      .on('broadcast',{event:'leave'},(payload)=>{
+        if(payload.payload?.user_id){
+          delete _onlineUsers[payload.payload.user_id];
+          _renderOnline();
+        }
+      })
+      .subscribe(async(status)=>{
+        if(status==='SUBSCRIBED'){
+          // ประกาศตัวเองเข้า channel
+          await _presenceChannel.send({
+            type:'broadcast', event:'join', payload: myInfo
+          });
+        }
+      });
+  }catch(e){
+    console.warn('Presence error:', e);
+  }
+}
+
+function _renderOnline(){
+  const myId = S.user?.id;
+  const others = Object.values(_onlineUsers).filter(p=>p.user_id!==myId);
+  const el=$('tb-presence');
+  if(!el) return;
   el.style.display='flex';
 
-  // คำนวณเวลา
-  const _ago = (ts)=>{
-    const d = Math.floor((Date.now()-new Date(ts))/1000);
+  const _ago=(ts)=>{
+    const d=Math.floor((Date.now()-new Date(ts))/1000);
     if(d<60) return 'เมื่อกี้';
     if(d<3600) return Math.floor(d/60)+' นาที';
     return Math.floor(d/3600)+' ชม.';
   };
 
-  const MAX_SHOW = 4;
-  const shown = others.slice(0, MAX_SHOW);
-  const extra = others.slice(MAX_SHOW);
-
-  let html = '';
+  const MAX_SHOW=4;
+  const shown=others.slice(0,MAX_SHOW);
+  const extra=others.slice(MAX_SHOW);
+  let html='';
   if(others.length){
-    html += '<div class="presence-dot"></div>';
-    html += '<span style="font-size:11.5px;color:var(--muted)">'+others.length+' คน</span>';
+    html+='<div class="presence-dot"></div>';
+    html+='<span style="font-size:11.5px;color:var(--muted)">'+others.length+' คน</span>';
   }
-  html += '<div class="av-stack">';
+  html+='<div class="av-stack">';
   shown.forEach((p,i)=>{
-    const col = _avColor(p.user_id);
-    const init = _avInitials(p.full_name||p.email||'?');
-    const ago = _ago(p.online_at);
-    html += `<div class="av-item" style="background:${col.bg};color:${col.color};z-index:${10-i}">
+    const col=_avColor(p.user_id);
+    const init=_avInitials(p.full_name||'?');
+    const ago=_ago(p.online_at);
+    html+=`<div class="av-item" style="background:${col.bg};color:${col.color};z-index:${10-i}">
       ${init}
       <div class="av-tip">
-        <div class="av-tip-name">${esc(p.full_name||p.email||'ไม่ระบุ')}</div>
+        <div class="av-tip-name">${esc(p.full_name||'ไม่ระบุ')}</div>
         <div class="av-tip-time">${ago}</div>
       </div>
     </div>`;
   });
   if(extra.length){
-    const names = extra.map(p=>esc(p.full_name||p.email||'?')).join('<br>');
-    html += `<div class="av-item" style="background:var(--bg2);color:var(--muted);z-index:1;font-size:10px;border-color:var(--bdr)">
+    const names=extra.map(p=>esc(p.full_name||'?')).join('<br>');
+    html+=`<div class="av-item" style="background:var(--bg2);color:var(--muted);z-index:1;font-size:10px">
       +${extra.length}
       <div class="av-tip" style="min-width:140px">
         <div class="av-tip-name" style="color:rgba(255,255,255,.5);font-size:11px;margin-bottom:4px">และอีก</div>
@@ -1141,54 +1185,10 @@ function _renderPresence(state){
       </div>
     </div>`;
   }
-  html += '</div>';
-  // self pill
-  const myName = S.profile?.full_name||S.user?.email||'';
-  html += `<div class="self-pill no-print"><div class="self-pill-dot"></div><span class="self-pill-name">${esc(myName)}</span></div>`;
-  el.innerHTML = html;
-}
-
-function initPresence(){
-  if(!S.user) return;
-
-  // ── แสดง self-pill ทันที ไม่รอ Realtime ──
-  _showSelfPill();
-
-  if(_presenceChannel){ _presenceChannel.unsubscribe(); _presenceChannel=null; }
-  try{
-    _presenceChannel = sb.channel('pp5-presence-v2', {
-      config:{ presence:{ key: S.user.id } }
-    });
-    _presenceChannel
-      .on('presence',{event:'sync'},()=>{
-        _renderPresence(_presenceChannel.presenceState());
-      })
-      .on('presence',{event:'join'},()=>{
-        _renderPresence(_presenceChannel.presenceState());
-      })
-      .on('presence',{event:'leave'},()=>{
-        _renderPresence(_presenceChannel.presenceState());
-      })
-      .subscribe(async(status)=>{
-        console.log('[Presence] status:', status);
-        if(status==='SUBSCRIBED'){
-          const res = await _presenceChannel.track({
-            user_id: S.user.id,
-            full_name: S.profile?.full_name||S.user?.email||'',
-            online_at: new Date().toISOString(),
-          });
-          console.log('[Presence] track result:', res);
-          // render ทันทีหลัง track
-          _renderPresence(_presenceChannel.presenceState());
-        } else if(status==='CHANNEL_ERROR'){
-          console.warn('[Presence] channel error — Realtime อาจไม่ได้เปิด');
-        } else if(status==='TIMED_OUT'){
-          console.warn('[Presence] timed out');
-        }
-      });
-  }catch(e){
-    console.warn('Presence init error:', e);
-  }
+  html+='</div>';
+  const myName=S.profile?.full_name||S.user?.email||'';
+  html+=`<div class="self-pill no-print"><div class="self-pill-dot"></div><span class="self-pill-name">${esc(myName)}</span></div>`;
+  el.innerHTML=html;
 }
 
 function _showSelfPill(){
@@ -1204,7 +1204,19 @@ function _showSelfPill(){
 }
 
 function cleanupPresence(){
-  if(_presenceChannel){ _presenceChannel.unsubscribe(); _presenceChannel=null; }
+  if(_presenceChannel){
+    // ส่ง leave event ก่อน unsubscribe
+    try{
+      _presenceChannel.send({
+        type:'broadcast', event:'leave',
+        payload:{ user_id: S.user?.id }
+      });
+    }catch(e){}
+    setTimeout(()=>{
+      if(_presenceChannel){ _presenceChannel.unsubscribe(); _presenceChannel=null; }
+    }, 300);
+  }
+  Object.keys(_onlineUsers).forEach(k=>{ if(k!==S.user?.id) delete _onlineUsers[k]; });
   const el=$('tb-presence'); if(el) el.style.display='none';
 }
 
