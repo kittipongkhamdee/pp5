@@ -4100,7 +4100,23 @@ async function pgCover(){
 }
 async function changeCvrSub(sid){S.selSub=sid;await pgCover();}
 
-// พิมพ์หน้าปก — ซ่อน browser title ชั่วคราว
+// ════ PRINT COVER ════════════════════════════════════════════════
+function printCover(){
+  const el = document.getElementById('cov-content');
+  if(!el){ toast('ไม่พบเนื้อหาปก','er'); return; }
+  const win = window.open('','_blank');
+  if(!win){ toast('เบราว์เซอร์บล็อก popup — กรุณาอนุญาต popup แล้วลองใหม่','er'); return; }
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+@page{size:A4 portrait;margin:10mm}
+*{box-sizing:border-box}
+body{margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+select,.no-print{display:none!important}
+</style></head><body>${el.innerHTML}</body></html>`);
+  win.document.close();
+  win.addEventListener('load',()=>{ win.focus(); win.print(); setTimeout(()=>win.close(),1500); });
+}
 
 // ════ EXPORT COVER PDF ═══════════════════════════════════════════
 async function exportCoverPdf(){
@@ -4114,19 +4130,19 @@ async function exportCoverPdf(){
   toast('กำลัง Export PDF...','in');
   loading(true);
 
-  // clone ใส่ container กว้าง A4 ป้องกัน 2 หน้า
+  // A4 = 794px @ 96dpi; padding:10mm ≈ 38px ทำหน้าที่เป็น page margin ใน canvas
+  // จึงตั้ง jsPDF margin:[0,0,0,0] เพื่อไม่ให้ content ล้นขอบ
   const wrap = document.createElement('div');
   wrap.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#fff;';
   const clone = covEl.cloneNode(true);
-  clone.style.cssText = 'width:794px;max-width:794px;margin:0;padding:8px;box-sizing:border-box;';
-  // ลบ select dropdown ใน clone
+  clone.style.cssText = 'width:794px;max-width:794px;margin:0;padding:10mm;box-sizing:border-box;background:#fff;';
   clone.querySelectorAll('select,.no-print').forEach(el=>el.remove());
   wrap.appendChild(clone);
   document.body.appendChild(wrap);
 
   try{
     await html2pdf().set({
-      margin: [8,8,8,8],
+      margin: [0,0,0,0],
       filename: fname,
       image: { type:'jpeg', quality:0.98 },
       html2canvas: { scale:2, useCORS:true, logging:false,
