@@ -746,6 +746,9 @@ body.dark .subc{
     <div class="ni" id="nav-settings" onclick="nav('settings')">
       <span class="ic"></span>ตั้งค่า
     </div>
+    <div class="ni" id="nav-manual" onclick="nav('manual')">
+      <span class="ic"></span>คู่มือการใช้งาน
+    </div>
   </nav>
 
   <!-- Footer -->
@@ -810,7 +813,7 @@ const S = { user:null, profile:null, config:{}, subjects:[], selSub:null };
 // ════ CACHE ════════════════════════════════════════════════════════
 // cache[key] = { data, ts }  (ts = timestamp ms)
 const _cache = {};
-const CACHE_TTL = 300000; // 30 วินาที
+const CACHE_TTL = 300000; // 5 นาที
 
 function cacheGet(key){ const c=_cache[key]; return (c&&Date.now()-c.ts<CACHE_TTL)?c.data:null; }
 function cacheSet(key,data){ _cache[key]={data,ts:Date.now()}; return data; }
@@ -1178,7 +1181,7 @@ function showApp(){
   const _navIcons={
     'nav-dashboard':IC.dash,'nav-subjects':IC.grid,'nav-students':IC.users,
     'nav-attendance':IC.calendar,'nav-scores':IC.pencil,'nav-eval':IC.star,
-    'nav-report':IC.chart,'nav-cover':IC.pp5,'nav-settings':IC.settings
+    'nav-report':IC.chart,'nav-cover':IC.pp5,'nav-settings':IC.settings,'nav-manual':IC.book
   };
   Object.entries(_navIcons).forEach(([id,svg])=>{
     const el=$(id); if(!el) return;
@@ -1514,7 +1517,7 @@ async function doLogout(){
 // ── NAV ──────────────────────────────────────────────────────────
 const TITLES={dashboard:'แดชบอร์ด',subjects:'รายวิชา',students:'นักเรียน',
   attendance:'เวลาเรียน',scores:'บันทึกคะแนน',eval:'ประเมิน อ่าน/คุณลักษณะ',
-  report:'รายงานผลการเรียน',cover:'ปก ปพ.5',settings:'ตั้งค่า'};
+  report:'รายงานผลการเรียน',cover:'ปก ปพ.5',settings:'ตั้งค่า',manual:'คู่มือการใช้งาน'};
 function openSidebar(){
   $('sidebar').classList.add('open');
   $('mob-overlay').style.display='block';
@@ -1548,7 +1551,7 @@ function nav(page,subId){
   }
   const fn={dashboard:pgDash,subjects:pgSubjects,students:pgStudents,
     attendance:pgAttendance,scores:pgScores,eval:pgEval,
-    report:pgReport,cover:pgCover,settings:pgSettings}[page];
+    report:pgReport,cover:pgCover,settings:pgSettings,manual:pgManual}[page];
   if(fn){
     // wrap ทุก page fn ให้ loadingOff() เสมอเมื่อเสร็จ ไม่ว่าจะ error หรือไม่
     Promise.resolve(fn())
@@ -1594,11 +1597,9 @@ async function pgDash(){
     await loadSubjects();
     const subjIds = S.subjects.map(s=>s.id);
     const [allSum, allStu, allAtt] = await Promise.all([
-      subjIds.length ? Promise.all(subjIds.map(id=>
-        qc('sc_sum_mini_'+id, ()=>
-          q(sb.from('score_summary').select('subject_id,grade,total_score').eq('subject_id',id))
-        )
-      )).then(arrs=>arrs.flat()) : Promise.resolve([]),
+      subjIds.length ? qc('sc_sum_all_'+S.user.id, ()=>
+        q(sb.from('score_summary').select('subject_id,grade,total_score').in('subject_id',subjIds))
+      ) : Promise.resolve([]),
       q(sb.from('students').select('grade_level,room')),
       subjIds.length ? qc('dash_att_'+S.user.id+'_'+subjIds.join(',').slice(0,40), ()=>
         q(sb.from('attendance').select('subject_id,student_id,status,periods')
@@ -1998,10 +1999,12 @@ function _updatePromotePreview(){
 }
 
 function _confirmPromote(){
-  const fromVal = document.getElementById('promo-from')?.value||'';
-  const toGrade = +document.getElementById('promo-to-grade')?.value;
-  const toRoom  = +document.getElementById('promo-to-room')?.value;
-  if(!fromVal||!toGrade||!toRoom){ toast('กรุณาเลือกข้อมูลให้ครบ','er'); return; }
+  const fromVal    = document.getElementById('promo-from')?.value||'';
+  const toGradeStr = document.getElementById('promo-to-grade')?.value??'';
+  const toRoomStr  = document.getElementById('promo-to-room')?.value??'';
+  const toGrade = +toGradeStr;
+  const toRoom  = +toRoomStr;
+  if(!fromVal || !toGradeStr || toRoomStr===''){ toast('กรุณาเลือกข้อมูลให้ครบ','er'); return; }
 
   const [fromG,fromR] = fromVal.split('_');
   const students = allStu.filter(s=>String(s.grade_level)===fromG&&String(s.room)===fromR);
@@ -2648,13 +2651,20 @@ async function saveMonth(){
   // บันทึก API เบื้องหลัง
   invalidateAtt(); cacheInv('att_sum_'+S.selSub);
   q(sb.from('attendance').upsert(rows,{onConflict:'subject_id,student_id,year_month,date_day'}))
-    .then(()=>{ cacheInv('ms_att_'+S.user.id); updateMsBadge(); }).catch(e=>{ toast('บันทึกผิดพลาด: '+e.message,'er'); });
-  // sync attData จาก server เบื้องหลัง แล้วอัปสรุปอีกครั้ง
+    .then(()=>{ cacheInv('ms_att_'+S.user.id); updateMsBadge(); })
+    .catch(e=>{
+      toast('บันทึกผิดพลาด: '+e.message,'er');
+      // rollback optimistic update ทันที
+      invalidateAtt();
+      q(sb.from('attendance').select('*').eq('subject_id',S.selSub))
+        .then(d=>{ attData=d; _refreshSummaryTab(); }).catch(()=>{});
+    });
+  // sync จาก server เบื้องหลังเพื่อยืนยัน (กรณี success)
   setTimeout(async()=>{
     try{
       invalidateAtt();
       attData=await q(sb.from('attendance').select('*').eq('subject_id',S.selSub));
-      _refreshSummaryTab(); // อัปอีกรอบหลัง server confirm
+      _refreshSummaryTab();
     }catch(e){}
   }, 1500);
 }
@@ -2896,7 +2906,7 @@ async function loadScData(){
   rebuildUnits();
   loading(false);
 }
-function invalidateSc(){ cacheInv('sc_units_'+S.selSub,'sc_sum_'+S.selSub); }
+function invalidateSc(){ cacheInv('sc_units_'+S.selSub,'sc_sum_'+S.selSub,'sc_sum_all_'+(S.user?.id||'')); }
 function rebuildUnits(){
   const um={};
   scUnits.forEach(u=>{
@@ -3079,13 +3089,21 @@ async function addUnitOnly(period){
     if(tabEl) tabEl.innerHTML=renderUnitTab(period,period==='before'?scSub?.score_before_mid||25:scSub?.score_after_mid||25);
     return;
   }
-  // มีนักเรียน: บันทึก score=0 เพื่อเก็บ meta
+  // มีนักเรียน: บันทึก score=0 เฉพาะนักเรียนที่ยังไม่มีแถวในหน่วยนี้
   loading(true);
   try{
-    const rows=scStus.map(s=>({subject_id:S.selSub,student_id:s.id,period,unit_number:un,
-      unit_name:unm,standard_ref:std,max_score:mx,score:0}));
+    const existIds = new Set(
+      scUnits.filter(u=>u.period===period&&parseInt(u.unit_number)===un)
+             .map(u=>String(u.student_id))
+    );
+    const rows = scStus
+      .filter(s=>!existIds.has(String(s.id)))
+      .map(s=>({subject_id:S.selSub,student_id:s.id,period,unit_number:un,
+        unit_name:unm,standard_ref:std,max_score:mx,score:0}));
     invalidateSc();
-    await q(sb.from('score_units').upsert(rows,{onConflict:'subject_id,student_id,period,unit_number'}));
+    if(rows.length){
+      await q(sb.from('score_units').upsert(rows,{onConflict:'subject_id,student_id,period,unit_number'}));
+    }
     scUnits=await q(sb.from('score_units').select('*').eq('subject_id',S.selSub));
     rebuildUnits();
     toast('เพิ่มหน่วย '+un+' เรียบร้อย — กดแก้ไขเพื่อกรอกคะแนน');
@@ -3230,17 +3248,19 @@ async function saveExam(){
     return mn>mM || fn>mF;
   });
   if(over){ toast('มีคะแนนสอบเกินคะแนนเต็ม (กลางภาค/'+mM+' ปลายภาค/'+mF+') กรุณาตรวจสอบ','er'); return; }
+  const maxBef = scSub?.score_before_mid ?? 25;
+  const maxAft = scSub?.score_after_mid ?? 25;
   const rows=scStus.map(s=>{
     const sm=gsum(s.id);
-    const bef=scUnits.filter(u=>u.student_id===s.id&&u.period==='before').reduce((a,b)=>a+(parseFloat(b.score)||0),0);
-    const aft=scUnits.filter(u=>u.student_id===s.id&&u.period==='after').reduce((a,b)=>a+(parseFloat(b.score)||0),0);
+    const bef=Math.min(maxBef, scUnits.filter(u=>u.student_id===s.id&&u.period==='before').reduce((a,b)=>a+(parseFloat(b.score)||0),0));
+    const aft=Math.min(maxAft, scUnits.filter(u=>u.student_id===s.id&&u.period==='after').reduce((a,b)=>a+(parseFloat(b.score)||0),0));
     const mn=Math.min(mM,parseFloat($('mid-'+s.id)?.value)||0);
     const fn=Math.min(mF,parseFloat($('fin-'+s.id)?.value)||0);
     const midUsed=mn;
     const total=bef+aft+midUsed+fn;
     const ZERO_GRADE=['ร','มส','มผ','ผ'];
-    // อ่าน special_result จาก DOM (dropdown ปัจจุบัน) ไม่ใช่จาก cache
-    const sr_dom = ($('res-'+s.id)?.value)||'';
+    // อ่าน special_result จาก DOM ถ้าแท็บสรุปเปิดอยู่ ไม่งั้นใช้ค่าเดิมจาก scSum
+    const sr_dom = $('res-'+s.id)?.value ?? (sm?.special_result||'');
     const grade=ZERO_GRADE.includes(sr_dom)?0:calcGrade(total);
     return{subject_id:S.selSub,student_id:s.id,
       total_before_mid:bef,total_after_mid:aft,total_unit:bef+aft,
@@ -3658,11 +3678,13 @@ function autoFillEv(type,val){
   toast('ตั้งค่าให้นักเรียนที่ยังไม่ได้ประเมิน');
 }
 async function saveRead(){
+  // iv: ค่าว่าง → null, ค่าตัวเลข (รวม 0) → integer
+  const iv = el => { const v=el?.value; return (v===''||v==null)?null:parseInt(v); };
   const rows=evStus.map(s=>({subject_id:S.selSub,student_id:s.id,
-    t1:parseInt($('rt1-'+s.id)?.value)||null, t2:parseInt($('rt2-'+s.id)?.value)||null,
-    t3:parseInt($('rt3-'+s.id)?.value)||null, t4:parseInt($('rt4-'+s.id)?.value)||null,
-    t5:parseInt($('rt5-'+s.id)?.value)||null,
-    result:parseInt($('rr-'+s.id)?.value)||null}));
+    t1:iv($('rt1-'+s.id)), t2:iv($('rt2-'+s.id)),
+    t3:iv($('rt3-'+s.id)), t4:iv($('rt4-'+s.id)),
+    t5:iv($('rt5-'+s.id)),
+    result:iv($('rr-'+s.id))}));
   loading(true);
   try{
     invalidateEv();
@@ -3673,7 +3695,8 @@ async function saveRead(){
 }
 async function saveChar(){
   const rows=evStus.map(s=>{
-    const g=k=>parseInt($('ch-'+k+'-'+s.id)?.value)||null;
+    // g: ค่าว่าง → null, ตัวเลข (รวม 0) → integer
+    const g=k=>{ const v=$('ch-'+k+'-'+s.id)?.value; return (v===''||v==null)?null:parseInt(v); };
     return{subject_id:S.selSub,student_id:s.id,
       c1_1:g('c1_1'),c1_2:g('c1_2'),c1_3:g('c1_3'),c1_4:g('c1_4'),
       c2_1:g('c2_1'),c2_2:g('c2_2'),c3_1:g('c3_1'),
@@ -3787,7 +3810,7 @@ async function pgReport(){
     qc('sc_sum_'+S.selSub,  ()=>q(sb.from('score_summary').select('*').eq('subject_id',S.selSub))),
     qc('ev_read_'+S.selSub, ()=>q(sb.from('eval_read').select('*').eq('subject_id',S.selSub))),
     qc('ev_char_'+S.selSub, ()=>q(sb.from('eval_char').select('*').eq('subject_id',S.selSub))),
-    qc('att_sum_'+S.selSub, ()=>qc('att_sum_'+S.selSub, ()=>q(sb.from('attendance').select('student_id,status,periods').eq('subject_id',S.selSub))))
+    qc('att_sum_'+S.selSub, ()=>q(sb.from('attendance').select('student_id,status,periods').eq('subject_id',S.selSub)))
   ]);
   loading(false);
   const sumMap=Object.fromEntries(sumRows.map(s=>[s.student_id,s]));
@@ -4100,7 +4123,23 @@ async function pgCover(){
 }
 async function changeCvrSub(sid){S.selSub=sid;await pgCover();}
 
-// พิมพ์หน้าปก — ซ่อน browser title ชั่วคราว
+// ════ PRINT COVER ════════════════════════════════════════════════
+function printCover(){
+  const el = document.getElementById('cov-content');
+  if(!el){ toast('ไม่พบเนื้อหาปก','er'); return; }
+  const win = window.open('','_blank');
+  if(!win){ toast('เบราว์เซอร์บล็อก popup — กรุณาอนุญาต popup แล้วลองใหม่','er'); return; }
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+@page{size:A4 portrait;margin:10mm}
+*{box-sizing:border-box}
+body{margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+select,.no-print{display:none!important}
+</style></head><body>${el.innerHTML}</body></html>`);
+  win.document.close();
+  win.addEventListener('load',()=>{ win.focus(); win.print(); setTimeout(()=>win.close(),1500); });
+}
 
 // ════ EXPORT COVER PDF ═══════════════════════════════════════════
 async function exportCoverPdf(){
@@ -4114,19 +4153,19 @@ async function exportCoverPdf(){
   toast('กำลัง Export PDF...','in');
   loading(true);
 
-  // clone ใส่ container กว้าง A4 ป้องกัน 2 หน้า
+  // A4 = 794px @ 96dpi; padding:10mm ≈ 38px ทำหน้าที่เป็น page margin ใน canvas
+  // จึงตั้ง jsPDF margin:[0,0,0,0] เพื่อไม่ให้ content ล้นขอบ
   const wrap = document.createElement('div');
   wrap.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#fff;';
   const clone = covEl.cloneNode(true);
-  clone.style.cssText = 'width:794px;max-width:794px;margin:0;padding:8px;box-sizing:border-box;';
-  // ลบ select dropdown ใน clone
+  clone.style.cssText = 'width:794px;max-width:794px;margin:0;padding:10mm;box-sizing:border-box;background:#fff;';
   clone.querySelectorAll('select,.no-print').forEach(el=>el.remove());
   wrap.appendChild(clone);
   document.body.appendChild(wrap);
 
   try{
     await html2pdf().set({
-      margin: [8,8,8,8],
+      margin: [0,0,0,0],
       filename: fname,
       image: { type:'jpeg', quality:0.98 },
       html2canvas: { scale:2, useCORS:true, logging:false,
@@ -4450,6 +4489,33 @@ function _addTeacherRow(){
   list.appendChild(div);
   div.querySelector('input').focus();
 }
+// ════ MANUAL ══════════════════════════════════════════════════════
+function pgManual(){
+  const FILE_ID = '1yzReDcGvEDGN9xsDpRuKJFeI9riZDpdN';
+  const previewUrl = `https://drive.google.com/file/d/${FILE_ID}/preview`;
+  const openUrl    = `https://drive.google.com/file/d/${FILE_ID}/view`;
+  $('pg').innerHTML=`
+  <div class="ph">
+    <div class="ptitle" style="display:flex;align-items:center;gap:8px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" style="opacity:.7"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      คู่มือการใช้งาน
+    </div>
+    <a href="${openUrl}" target="_blank" rel="noopener" class="btn bs" style="gap:6px;text-decoration:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      เปิดใน Google Drive
+    </a>
+  </div>
+  <div class="card" style="overflow:hidden;padding:0;border-radius:14px;">
+    <iframe
+      src="${previewUrl}"
+      style="width:100%;height:calc(100vh - 160px);min-height:500px;border:none;display:block;"
+      allow="autoplay"
+      loading="lazy"
+      title="คู่มือการใช้งาน ปพ.5">
+    </iframe>
+  </div>`;
+}
+
 async function saveSettings(){
   // รวบรวมรายชื่อครูจาก input rows
   const teacherRows = document.querySelectorAll('#teacher-list input[id^="tc-"]');
@@ -4824,7 +4890,7 @@ async function _doRestore(){
 // cacheInvAll — clear cache ทั้งหมด
 function cacheInvAll(){
   try{ Object.keys(_cache).forEach(k=>delete _cache[k]); }catch(e){}
-  invalidateSubjects(); invalidateStu(); invalidateSc(); invalidateAtt();
+  invalidateSubjects(); clearStuCache(); invalidateSc(); invalidateAtt();
 }
 
 // ════ BACKUP ALL DATA ══════════════════════════════════════════
