@@ -1610,7 +1610,17 @@ async function pgDash(){
       const pass = sum.filter(x=>parseFloat(x.grade)>0).length;
       const avg = sum.length>0?(sum.reduce((a,b)=>a+(parseFloat(b.total_score)||0),0)/sum.length).toFixed(1):0;
       const pct = total>0?((pass/total)*100).toFixed(1):0;
-      return {...s,stats:{total,pass,recorded:sum.length,avg,passPercent:pct}};
+      // นับ มส. จาก attendance (present+leave)/total < 80%
+      const attForSubj = allAtt.filter(a=>a.subject_id===s.id);
+      const stuAttMap={};
+      attForSubj.forEach(a=>{
+        if(!stuAttMap[a.student_id])stuAttMap[a.student_id]={attended:0,total:0};
+        const p=parseInt(a.periods)||1;
+        stuAttMap[a.student_id].total+=p;
+        if(a.status==='present'||a.status==='leave')stuAttMap[a.student_id].attended+=p;
+      });
+      const msCount=Object.values(stuAttMap).filter(m=>m.total>0&&(m.attended/m.total*100)<80).length;
+      return {...s,stats:{total,pass,recorded:sum.length,avg,passPercent:pct,msCount}};
     });
     S._dashStuTotal = allStu.length;
 
@@ -1704,7 +1714,6 @@ async function pgDash(){
       const _rgb=_gradeRgb[_g]||_gradeRgb[(_g%6)||6]||'0,122,255';
       const _ac=_gradeHex[_g]||_gradeHex[(_g%6)||6]||'#007AFF';
       const _pct=parseFloat(st.passPercent)||0;
-      const _msCount = st.msCount||0;
       return`<div class="subc" style="--subc-rgb:${_rgb}" onclick="nav('scores','${s.id}')">
         <!-- Header -->
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
@@ -1722,11 +1731,12 @@ async function pgDash(){
         </div>
         <!-- Tags -->
         <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">
+          <span class="subc-tag" style="background:rgba(${_rgb},.1);color:${_ac}">👤 ${st.total} คน</span>
           ${st.recorded>0
             ?`<span class="subc-tag" style="background:rgba(${_rgb},.1);color:${_ac}">ผ่าน ${st.pass}/${st.total}</span>
-               <span class="subc-tag" style="background:rgba(${_rgb},.1);color:${_ac}">เฉลี่ย ${st.avg}</span>`
+              <span class="subc-tag" style="background:rgba(${_rgb},.1);color:${_ac}">เฉลี่ย ${st.avg}</span>`
             :`<span class="subc-tag" style="background:rgba(${_rgb},.1);color:${_ac}">ยังไม่มีคะแนน</span>`}
-          ${_msCount>0?`<span class="subc-tag" style="background:rgba(255,59,48,.1);color:#FF3B30">⚠️ มส. ${_msCount} คน</span>`:''}
+          ${st.msCount>0?`<span class="subc-tag" style="background:rgba(255,59,48,.1);color:#FF3B30">⚠️ มส. ${st.msCount} คน</span>`:''}
         </div>
         <!-- Progress bar -->
         <div style="height:4px;background:rgba(${_rgb},.12);border-radius:2px;margin-bottom:10px;overflow:hidden">
