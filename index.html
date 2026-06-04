@@ -992,39 +992,72 @@ function exportExcel(sheets, fileName){
 }
 
 // printHTML: เปิดหน้าต่างใหม่ พิมพ์ตาราง พร้อม header โรงเรียน
-function printHTML(title, bodyHTML){
+function printHTML(title, bodyHTML, orient='portrait'){
   const cfg=S.config;
+  const schoolName=(cfg.school_name||'').startsWith('โรงเรียน')?cfg.school_name:'โรงเรียน'+(cfg.school_name||'');
   const w=window.open('','_blank');
-  w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>${esc(title)}</title>
+  w.document.write(`<!DOCTYPE html><html lang="th"><head>
+    <meta charset="UTF-8"><title>${esc(title)}</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-      @page{size:A4 landscape;margin:1.2cm;}
+      @page{size:A4 ${orient};margin:1cm 1.2cm;}
       *{box-sizing:border-box;}
-      body{font-family:'Sarabun','TH SarabunNew','Noto Sans Thai',sans-serif;
-           font-size:13px;color:#000;line-height:1.5;}
-      h2{text-align:center;font-size:16px;font-weight:700;margin:0 0 2px;}
-      h3{text-align:center;font-size:14px;font-weight:600;margin:0 0 2px;}
-      .meta{text-align:center;font-size:12px;color:#444;margin-bottom:10px;}
-      table{width:100%;border-collapse:collapse;margin-top:8px;}
-      th,td{border:1px solid #888;padding:4px 5px;font-size:11.5px;
-            text-align:center;font-family:'Sarabun','TH SarabunNew',sans-serif;}
-      th{font-weight:700;border:1px solid #888;}
-      td.l{text-align:left;}
-      @media print{.noprint{display:none;}}
-    </style></head><body>
-    <h2>${esc((cfg.school_name||'').startsWith('โรงเรียน')?cfg.school_name:'โรงเรียน'+(cfg.school_name||''))}</h2>
-    <h3>${esc(title)}</h3>
-    <div class="meta">ปีการศึกษา ${esc(cfg.academic_year||'')} ภาคเรียนที่ ${esc(cfg.semester||'')}</div>
-    ${bodyHTML}
-    <div class="noprint" style="text-align:center;margin-top:16px">
-      <button onclick="window.print()"
-        style="padding:8px 24px;font-size:14px;cursor:pointer;
-               font-family:'Sarabun',sans-serif;border:1px solid #888;border-radius:6px;background:#f0f0f0">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> พิมพ์
-      </button>
+      body{font-family:'Sarabun','TH SarabunNew','Noto Sans Thai',sans-serif;font-size:13px;color:#000;line-height:1.5;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      .ph{text-align:center;margin-bottom:10px;border-bottom:2px solid #000;padding-bottom:6px;}
+      .ph h1{font-size:16px;font-weight:800;margin:0 0 2px;}
+      .ph h2{font-size:14px;font-weight:600;margin:0 0 2px;}
+      .ph .meta{font-size:12px;color:#444;margin:0;}
+      table{width:100%;border-collapse:collapse;margin-top:8px;page-break-inside:auto;}
+      thead{display:table-header-group;}
+      tr{page-break-inside:avoid;}
+      th,td{border:1px solid #555;padding:4px 5px;font-size:11.5px;text-align:center;font-family:'Sarabun','TH SarabunNew',sans-serif;}
+      th{font-weight:700;background:#f0f0f0;}
+      td.l{text-align:left;padding-left:6px;}
+      .pass{color:#16803d;}.fail{color:#dc2626;font-weight:700;}.ms{color:#dc2626;font-weight:700;}
+      .action-bar{display:flex;gap:10px;justify-content:center;padding:14px;margin-top:20px;background:#f5f5f7;border-radius:10px;position:sticky;bottom:0;}
+      .btn-print{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#1d1d1f;color:#fff;font-weight:600;}
+      .btn-export{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#FF3B30;color:#fff;font-weight:600;}
+      @media print{.action-bar{display:none!important;}}
+    </style>
+    </head><body>
+    <div id="pbody">
+      <div class="ph">
+        <h1>${esc(schoolName)}</h1>
+        <h2>${esc(title)}</h2>
+        <div class="meta">ปีการศึกษา ${esc(cfg.academic_year||'')} ภาคเรียนที่ ${esc(cfg.semester||'')}</div>
+      </div>
+      ${bodyHTML}
+    </div>
+    <div class="action-bar">
+      <button class="btn-print" onclick="window.print()">🖨️ พิมพ์</button>
+      <button class="btn-export" id="ebtn" onclick="doExportPdf('${orient}')">📄 Export PDF</button>
     </div>
     </body></html>`);
   w.document.close();
+  // inject html2pdf หลัง load
+  const s1=w.document.createElement('script');
+  s1.src='https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js';
+  w.document.head.appendChild(s1);
+  const s2=w.document.createElement('script');
+  s2.textContent=[
+    'function doExportPdf(orient){',
+    '  const el=document.getElementById("pbody");',
+    '  if(!el||typeof html2pdf==="undefined"){setTimeout(()=>doExportPdf(orient),600);return;}',
+    '  const btn=document.getElementById("ebtn");',
+    '  if(btn){btn.textContent="กำลัง Export...";btn.disabled=true;}',
+    '  html2pdf().set({',
+    '    margin:[8,8,8,8],',
+    '    filename:document.title+".pdf",',
+    '    image:{type:"jpeg",quality:0.97},',
+    '    html2canvas:{scale:2,useCORS:true,backgroundColor:"#fff",logging:false},',
+    '    jsPDF:{unit:"mm",format:"a4",orientation:orient},',
+    '    pagebreak:{mode:["avoid-all","css"]}',
+    '  }).from(el).save()',
+    '  .then(()=>{if(btn){btn.textContent="✅ สำเร็จ";setTimeout(()=>{btn.textContent="📄 Export PDF";btn.disabled=false;},2000);}})',
+    '  .catch(e=>{if(btn){btn.textContent="📄 Export PDF";btn.disabled=false;}alert("ผิดพลาด: "+e.message);});',
+    '}'
+  ].join('\n');
+  w.document.body.appendChild(s2);
 }
 
 // แปลงสถานะเป็นอักษรย่อสำหรับพิมพ์
@@ -2763,7 +2796,7 @@ function printAttendance(){
   html+='</tbody></table>';
   html+='<div style="font-size:11px;margin-top:6px">สัญลักษณ์: / = มา, ข = ขาด, ล = ลา &nbsp; (ตัวเลขใต้เดือนคือวันที่ • นับชั่วโมงตามจำนวนคาบของแต่ละวัน)</div>';
 
-  printHTML(`บันทึกเวลาเรียน — ${sub.subject_name} ${grm(sub.grade_level,sub.room)}`, html);
+  printHTML(`บันทึกเวลาเรียน — ${sub.subject_name} ${grm(sub.grade_level,sub.room)}`, html, 'portrait');
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -3398,7 +3431,7 @@ function printScores(){
   });
   p2+='</tbody></table></div>';
 
-  printHTML(`บันทึกคะแนน — ${sub.subject_name} ${grm(sub.grade_level,sub.room)}`, p1+p2);
+  printHTML(`บันทึกคะแนน — ${sub.subject_name} ${grm(sub.grade_level,sub.room)}`, p1+p2, 'portrait');
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -3664,7 +3697,7 @@ function printEval(){
   CHAR8.forEach((item,i)=>{p2+=`ข้อที่ ${i+1} ${item.label}<br>`;});
   p2+='</div></div>';
 
-  printHTML(`การประเมิน — ${sub.subject_name} ${grm(sub.grade_level,sub.room)}`, p1+p2);
+  printHTML(`การประเมิน — ${sub.subject_name} ${grm(sub.grade_level,sub.room)}`, p1+p2, 'portrait');
 }
 
 // ════════════════════════════════════════════════════════════════
