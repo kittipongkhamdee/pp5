@@ -169,7 +169,8 @@ body.dark table{color:var(--txt);}
 body.dark th{background:#2c2c2e!important;color:var(--txt)!important;}
 body.dark tr:nth-child(even){background:rgba(255,255,255,.03)!important;}
 body.dark .av-item{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:600;border:2px solid var(--card);cursor:pointer;flex-shrink:0;transition:transform .15s;position:relative;}
-body.dark .self-pill{background:#2c2c2e!important;border-color:rgba(255,255,255,.1)!important;}
+.self-pill{display:flex;align-items:center;gap:5px;padding:3px 10px 3px 7px;background:#f2f2f7;border-radius:20px;border:1px solid rgba(0,0,0,.1);}
+body.dark .self-pill{background:#2c2c2e;border-color:rgba(255,255,255,.1);}
 body.dark input[type="password"], body.dark input[type="email"], body.dark input[type="text"]{
   background:#2c2c2e!important; color:var(--txt)!important;
 }
@@ -340,7 +341,7 @@ tbody tr:hover td{background:rgba(0,122,255,.04);}
 
 
 .self-pill-dot{width:7px;height:7px;border-radius:50%;background:#30d158;}
-.self-pill-name{font-size:12px;color:var(--muted);}
+.self-pill-name{font-size:12px;color:var(--txt2);}
 
 
 /* มส. badge */
@@ -377,6 +378,7 @@ body.dark .ms-badge{background:#FF453A;}
   transition:all .2s ease;
   position:relative;overflow:hidden;
   border-left:none !important;
+  display:flex;flex-direction:column;
 }
 .subc::after{
   content:'';position:absolute;bottom:-20px;left:-20px;
@@ -808,7 +810,7 @@ const S = { user:null, profile:null, config:{}, subjects:[], selSub:null };
 // ════ CACHE ════════════════════════════════════════════════════════
 // cache[key] = { data, ts }  (ts = timestamp ms)
 const _cache = {};
-const CACHE_TTL = 30000; // 30 วินาที
+const CACHE_TTL = 300000; // 30 วินาที
 
 function cacheGet(key){ const c=_cache[key]; return (c&&Date.now()-c.ts<CACHE_TTL)?c.data:null; }
 function cacheSet(key,data){ _cache[key]={data,ts:Date.now()}; return data; }
@@ -1165,7 +1167,6 @@ function showApp(){
   $('login-page').style.display='none';
   $('main-app').style.display='block';
   const n=S.profile?.full_name||S.user?.email||'';
-  // tb-user ซ่อน เพราะ presence จะแสดง self-pill แทน
   const sn=$('school-name'); if(sn) sn.textContent=S.config.school_name||'ระบบบันทึกผลการเรียน';
   const tb=$('tbb'); if(tb) tb.textContent='ปีการศึกษา '+(S.config.academic_year||'2568')+' ภาค '+(S.config.semester||'1');
   const ft=$('sb-ft-info'); if(ft) ft.textContent='ปี '+(S.config.academic_year||'2568')+' ภาค '+(S.config.semester||'1');
@@ -1205,7 +1206,9 @@ async function updateMsBadge(){
     const subjIds = S.subjects.map(s=>s.id);
     if(!subjIds.length){ _setMsBadge(0); return; }
 
-    const attRows = await qc('ms_att_'+S.user.id, ()=>
+    // ใช้ cache key เดียวกับ pgDash ถ้ามี ไม่งั้นดึงใหม่
+    const _dashKey = 'dash_att_'+S.user.id+'_'+subjIds.join(',').slice(0,40);
+    const attRows = await qc(_dashKey, ()=>
       q(sb.from('attendance')
         .select('subject_id,student_id,status,periods')
         .in('subject_id', subjIds))
@@ -1597,8 +1600,9 @@ async function pgDash(){
         )
       )).then(arrs=>arrs.flat()) : Promise.resolve([]),
       q(sb.from('students').select('grade_level,room')),
-      subjIds.length ? q(sb.from('attendance').select('subject_id,student_id,status,periods')
-        .in('subject_id',subjIds)) : Promise.resolve([])
+      subjIds.length ? qc('dash_att_'+S.user.id+'_'+subjIds.join(',').slice(0,40), ()=>
+        q(sb.from('attendance').select('subject_id,student_id,status,periods')
+        .in('subject_id',subjIds))) : Promise.resolve([])
     ]);
     const stuCount = {};
     allStu.forEach(s=>{ const k=s.grade_level+'_'+s.room; stuCount[k]=(stuCount[k]||0)+1; });
@@ -1729,9 +1733,9 @@ async function pgDash(){
           <span>👨‍🏫 ${esc(s.teacher_name||'-')}</span>
           <span>⏰ ${s.hours_per_week} ชม./สปด.</span>
         </div>
-        <!-- Tags -->
+        <!-- Tags + Progress (flex-grow ดัน buttons ลงล่างสุด) -->
+        <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end">
         <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">
-          <span class="subc-tag" style="background:rgba(${_rgb},.1);color:${_ac}">👤 ${st.total} คน</span>
           ${st.recorded>0
             ?`<span class="subc-tag" style="background:rgba(${_rgb},.1);color:${_ac}">ผ่าน ${st.pass}/${st.total}</span>
               <span class="subc-tag" style="background:rgba(${_rgb},.1);color:${_ac}">เฉลี่ย ${st.avg}</span>`
@@ -1747,6 +1751,7 @@ async function pgDash(){
           <span style="font-size:11.5px;color:var(--muted)">% ผ่าน</span>
           <span style="font-size:13px;font-weight:700;color:${_ac}">${st.recorded>0?_pct+'%':'—'}</span>
         </div>
+        </div><!-- end flex-grow -->
         <!-- Action buttons -->
         <div style="display:flex;gap:7px">
           <button class="btn btn-sm" style="background:rgba(${_rgb},.1);color:${_ac};border:none;border-radius:10px;padding:6px 10px;flex:1" onclick="event.stopPropagation();nav('attendance','${s.id}')">
