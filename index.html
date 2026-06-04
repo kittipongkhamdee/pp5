@@ -4232,116 +4232,185 @@ async function _doClearAll(){
 function pgSettings(){
   const cfg=S.config;
   $('pg').innerHTML=`
-  <div class="ph"><div class="ptitle">ตั้งค่าระบบ</div></div>
-  <div class="card" style="max-width:580px">
-    <div class="ch"><div class="ct">ข้อมูลโรงเรียนและปีการศึกษา</div></div>
-    <div class="cb">
-      <div class="fg">
-        <div style="grid-column:1/-1"><label class="fl">ชื่อโรงเรียน</label>
-          <input class="fi" id="c-school" value="${esc(cfg.school_name||'')}"></div>
-        <div><label class="fl">อำเภอ/เขต</label><input class="fi" id="c-dist" value="${esc(cfg.school_district||'')}"></div>
-        <div><label class="fl">จังหวัด</label><input class="fi" id="c-prov" value="${esc(cfg.school_province||'')}"></div>
-        <div><label class="fl">ปีการศึกษา</label><input class="fi" id="c-year" value="${esc(cfg.academic_year||'2568')}"></div>
-        <div><label class="fl">ภาคเรียนที่</label>
-          <select class="fs" id="c-sem">
-            <option ${cfg.semester=='1'?'selected':''}>1</option>
-            <option ${cfg.semester=='2'?'selected':''}>2</option>
-          </select></div>
-        <div style="grid-column:1/-1"><label class="fl">ชื่อผู้อำนวยการ</label>
-          <input class="fi" id="c-dir" value="${esc(cfg.director_name||'')}"></div>
-        <div style="grid-column:1/-1"><label class="fl">ชื่อรองผู้อำนวยการ</label>
-          <input class="fi" id="c-vdir" value="${esc(cfg.vice_director||'')}"></div>
-          <div style="grid-column:1/-1"><label class="fl">หัวหน้างานทะเบียนวัดผล</label>
+  <div class="ph">
+    <div class="ptitle">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" style="vertical-align:-3px;margin-right:6px;opacity:.7"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93A10 10 0 0 0 4.93 19.07m14.14 0A10 10 0 0 0 4.93 4.93m7.07 2.57V3m0 18v-4.5m4.5-4.5H21M3 12h4.5M17.07 17.07l-3.18-3.18M6.93 6.93l3.18 3.18m6.96-3.18L13.89 10.11M6.93 17.07l3.18-3.18"/></svg>
+      ตั้งค่าระบบ
+    </div>
+  </div>
+
+  <!-- ── แถวบน: ข้อมูลโรงเรียน + ครูผู้สอน ── -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;align-items:start;margin-bottom:16px;">
+
+    <!-- การ์ด: ข้อมูลโรงเรียนและปีการศึกษา -->
+    <div class="card" style="margin-bottom:0">
+      <div class="ch">
+        <div class="ct" style="display:flex;align-items:center;gap:7px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--ac)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          ข้อมูลโรงเรียนและปีการศึกษา
+        </div>
+      </div>
+      <div class="cb">
+        <div class="fg">
+          <div style="grid-column:1/-1">
+            <label class="fl">ชื่อโรงเรียน</label>
+            <input class="fi" id="c-school" value="${esc(cfg.school_name||'')}" placeholder="เช่น โรงเรียนตาเบาวิทยา">
+          </div>
+          <div>
+            <label class="fl">อำเภอ/เขต</label>
+            <input class="fi" id="c-dist" value="${esc(cfg.school_district||'')}" placeholder="อำเภอ">
+          </div>
+          <div>
+            <label class="fl">จังหวัด</label>
+            <input class="fi" id="c-prov" value="${esc(cfg.school_province||'')}" placeholder="จังหวัด">
+          </div>
+          <div>
+            <label class="fl">ปีการศึกษา</label>
+            <input class="fi" id="c-year" value="${esc(cfg.academic_year||'2568')}" placeholder="2568">
+          </div>
+          <div>
+            <label class="fl">ภาคเรียนที่</label>
+            <select class="fs" id="c-sem">
+              <option ${cfg.semester=='1'?'selected':''}>1</option>
+              <option ${cfg.semester=='2'?'selected':''}>2</option>
+            </select>
+          </div>
+          <div style="grid-column:1/-1">
+            <label class="fl">ชื่อผู้อำนวยการ</label>
+            <input class="fi" id="c-dir" value="${esc(cfg.director_name||'')}" placeholder="ชื่อ-สกุล ผู้อำนวยการ">
+          </div>
+          <div style="grid-column:1/-1">
+            <label class="fl">ชื่อรองผู้อำนวยการ</label>
+            <input class="fi" id="c-vdir" value="${esc(cfg.vice_director||'')}" placeholder="ชื่อ-สกุล รองผู้อำนวยการ">
+          </div>
+          <div style="grid-column:1/-1">
+            <label class="fl">หัวหน้างานทะเบียนวัดผล</label>
             <select class="fs" id="c-head-reg">
               <option value="">— เลือกครู —</option>
               ${(cfg.teachers||'').split('\n').filter(t=>t.trim()).map(t=>`<option value="${esc(t.trim())}" ${cfg.head_registrar===t.trim()?'selected':''}>${esc(t.trim())}</option>`).join('')}
             </select>
           </div>
-          <div style="grid-column:1/-1"><label class="fl">หัวหน้างานวิชาการ</label>
+          <div style="grid-column:1/-1">
+            <label class="fl">หัวหน้างานวิชาการ</label>
             <select class="fs" id="c-head-acad">
               <option value="">— เลือกครู —</option>
               ${(cfg.teachers||'').split('\n').filter(t=>t.trim()).map(t=>`<option value="${esc(t.trim())}" ${cfg.head_academic===t.trim()?'selected':''}>${esc(t.trim())}</option>`).join('')}
             </select>
           </div>
-      </div>
-      <div style="margin-top:14px">
-        <button class="btn bp" onclick="saveSettings()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>บันทึกการตั้งค่า</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── ครูผู้สอน ── -->
-  <div class="card" style="max-width:580px">
-    <div class="ch"><div class="ct">ครูผู้สอน</div></div>
-    <div class="cb">
-      <div style="font-size:12.5px;color:var(--muted);margin-bottom:10px;">
-        เพิ่มรายชื่อครูไว้ที่นี่ จะปรากฏเป็น dropdown ตอนเพิ่มรายวิชา
-      </div>
-      <div id="teacher-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
-        ${(cfg.teachers||'').split('\n').filter(t=>t.trim()).map((t,i)=>`
-        <div style="display:flex;gap:8px;align-items:center">
-          <input class="fi" style="flex:1" value="${esc(t.trim())}" id="tc-${i}" placeholder="ชื่อครู เช่น นายกิตติพงษ์ คำดี">
-          <button class="btn bs" style="padding:7px 10px;color:var(--err)" onclick="this.closest('div').remove()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+        </div>
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--bdr);">
+          <button class="btn bp" onclick="saveSettings()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            บันทึกการตั้งค่า
           </button>
-        </div>`).join('')}
+        </div>
       </div>
-      <button class="btn bs" onclick="_addTeacherRow()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        เพิ่มครู
-      </button>
     </div>
-  </div>
 
-  <div class="card" style="max-width:580px">
-    <div class="ch"><div class="ct" style="color:var(--txt)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-      รหัสผ่านผู้บริหาร
-    </div></div>
-    <div class="cb">
-      <div class="alert al-in" style="margin-bottom:14px">
-        <div class="alert-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
-        <span>ใช้สำหรับ: <strong>ดูรายงานทั้งโรงเรียน</strong> และ <strong>ลบนักเรียน</strong></span>
+    <!-- การ์ด: ครูผู้สอน -->
+    <div class="card" style="margin-bottom:0">
+      <div class="ch">
+        <div class="ct" style="display:flex;align-items:center;gap:7px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--ac)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          ครูผู้สอน
+        </div>
+        <span style="font-size:12px;color:var(--muted);font-weight:400">${(cfg.teachers||'').split('\n').filter(t=>t.trim()).length} คน</span>
       </div>
-      <div class="fg" style="grid-template-columns:1fr 1fr;max-width:400px">
-        <div><label class="fl">รหัสผ่านปัจจุบัน</label>
-          <input type="password" class="fi" id="c-admpw-old" placeholder="ใส่รหัสเดิม (ถ้ามี)"></div>
-        <div><label class="fl">รหัสผ่านใหม่</label>
-          <input type="password" class="fi" id="c-admpw" placeholder="ตั้งรหัสใหม่"></div>
+      <div class="cb">
+        <div style="font-size:12.5px;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          รายชื่อจะปรากฏเป็น dropdown ในหน้าเพิ่มรายวิชา
+        </div>
+        <div id="teacher-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
+          ${(cfg.teachers||'').split('\n').filter(t=>t.trim()).map((t,i)=>`
+          <div style="display:flex;gap:8px;align-items:center">
+            <span style="font-size:12px;color:var(--muted);min-width:20px;text-align:right">${i+1}.</span>
+            <input class="fi" style="flex:1" value="${esc(t.trim())}" id="tc-${i}" placeholder="ชื่อ-สกุล ครู">
+            <button class="btn bs" style="padding:6px 9px;color:var(--err);flex-shrink:0" onclick="this.closest('div').remove()" title="ลบ">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+            </button>
+          </div>`).join('')}
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;padding-top:12px;border-top:1px solid var(--bdr);">
+          <button class="btn bs" onclick="_addTeacherRow()" style="flex:1;justify-content:center">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            เพิ่มครู
+          </button>
+          <button class="btn bp" onclick="saveSettings()" style="flex:1;justify-content:center">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            บันทึก
+          </button>
+        </div>
       </div>
-      <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <button class="btn bp" onclick="saveAdminPassword()" style="background:rgba(180,83,9,.9);color:#fff">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          บันทึกรหัสผ่าน
-        </button>
+    </div>
+
+  </div><!-- end top grid -->
+
+  <!-- ── แถวล่าง: รหัสผ่านผู้บริหาร + โซนอันตราย ── -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start;">
+
+    <!-- การ์ด: รหัสผ่านผู้บริหาร -->
+    <div class="card" style="margin-bottom:0">
+      <div class="ch">
+        <div class="ct" style="display:flex;align-items:center;gap:7px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          รหัสผ่านผู้บริหาร
+        </div>
         <span id="admpw-status" class="badge ${cfg.admin_password?'bg-g':'bg-gr'}">
-          ${cfg.admin_password?'✓ ตั้งรหัสไว้แล้ว':'ยังไม่ได้ตั้งรหัส (ค่าเริ่มต้น: 1234)'}
+          ${cfg.admin_password?'✓ ตั้งรหัสแล้ว':'ยังไม่ได้ตั้งรหัส'}
         </span>
-  
-  <div class="card" style="max-width:580px;border:1.5px solid #fecaca;margin-top:0;">
-    <div class="ch" style="background:#fff1f0;">
-      <div class="ct" style="color:#dc2626;display:flex;align-items:center;gap:8px;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-        โซนอันตราย — ล้างข้อมูลทั้งหมด
+      </div>
+      <div class="cb">
+        <div class="alert al-in" style="margin-bottom:14px">
+          <div class="alert-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+          <span>ใช้สำหรับ: <strong>ดูรายงานทั้งโรงเรียน</strong> และ <strong>ลบนักเรียน</strong>${!cfg.admin_password?' (ค่าเริ่มต้น: <strong>1234</strong>)':''}</span>
+        </div>
+        <div class="fg" style="grid-template-columns:1fr;gap:12px">
+          <div>
+            <label class="fl">รหัสผ่านปัจจุบัน</label>
+            <input type="password" class="fi" id="c-admpw-old" placeholder="ใส่รหัสเดิม (ถ้ามี)">
+          </div>
+          <div>
+            <label class="fl">รหัสผ่านใหม่</label>
+            <input type="password" class="fi" id="c-admpw" placeholder="ตั้งรหัสใหม่ (อย่างน้อย 4 ตัว)">
+          </div>
+        </div>
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--bdr);">
+          <button class="btn bp" onclick="saveAdminPassword()" style="background:rgba(180,83,9,.9);color:#fff;width:100%;justify-content:center">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            บันทึกรหัสผ่าน
+          </button>
+        </div>
       </div>
     </div>
-    <div class="cb">
-      <div style="font-size:13px;color:#6e6e73;line-height:1.8;margin-bottom:14px;">
-        ลบข้อมูลทั้งหมดในระบบ ได้แก่ <strong>รายวิชา · นักเรียน · เวลาเรียน · คะแนน · การประเมิน</strong><br>
-        <span style="color:#dc2626;font-weight:700;">⚠️ ไม่สามารถกู้คืนได้</span> — แนะนำ <strong>Backup ข้อมูลก่อน</strong> ทุกครั้ง
+
+    <!-- การ์ด: โซนอันตราย -->
+    <div class="card" style="margin-bottom:0;border:1.5px solid #fecaca;">
+      <div class="ch" style="background:#fff1f0;">
+        <div class="ct" style="color:#dc2626;display:flex;align-items:center;gap:8px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          โซนอันตราย
+        </div>
       </div>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-        <button class="btn" onclick="openClearAllDialog()"
-          style="background:#fff1f0;color:#dc2626;border:1.5px solid #fecaca;padding:9px 18px;font-weight:700;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
-          ล้างข้อมูลทั้งหมด
-        </button>
-        <span style="font-size:12px;color:#8e8e93;">ต้องยืนยัน 3 ชั้น — ไม่สามารถย้อนกลับได้</span>
+      <div class="cb">
+        <div style="font-size:13px;color:#6e6e73;line-height:1.9;margin-bottom:14px;">
+          <strong style="color:#1d1d1f">ล้างข้อมูลทั้งหมด</strong><br>
+          ลบ <strong>รายวิชา · นักเรียน · เวลาเรียน · คะแนน · การประเมิน</strong> ทั้งหมดออกจากระบบ<br>
+          <span style="color:#dc2626;font-weight:700">⚠ ไม่สามารถกู้คืนได้</span> — แนะนำ <strong>Backup ก่อน</strong> ทุกครั้ง
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding-top:12px;border-top:1px solid #fecaca;">
+          <button class="btn" onclick="openClearAllDialog()"
+            style="background:#fff1f0;color:#dc2626;border:1.5px solid #fecaca;font-weight:700;flex:1;justify-content:center">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+            ล้างข้อมูลทั้งหมด
+          </button>
+          <span style="font-size:12px;color:#8e8e93;flex-shrink:0">ยืนยัน 3 ชั้น</span>
+        </div>
       </div>
     </div>
-  </div>    </div>
-    </div>
-  </div>`;
+
+  </div><!-- end bottom grid -->
+  `;
 }
 
 async function saveAdminPassword(){
