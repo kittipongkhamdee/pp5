@@ -3259,7 +3259,7 @@ async function saveExam(){
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
 }
 function renderSumTab(){
-  const RESULTS=['','ร','มส','มก','ผ','มผ'];
+  const RESULTS=['','ร','มส','ผ','มผ'];
   // คำนวณคะแนนหน่วยจาก scUnits (เผื่อ summary ยังไม่ได้ save)
   const unitBef={}, unitAft={};
   scUnits.forEach(u=>{
