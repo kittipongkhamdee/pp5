@@ -746,6 +746,9 @@ body.dark .subc{
     <div class="ni" id="nav-settings" onclick="nav('settings')">
       <span class="ic"></span>ตั้งค่า
     </div>
+    <div class="ni" id="nav-manual" onclick="nav('manual')">
+      <span class="ic"></span>คู่มือการใช้งาน
+    </div>
   </nav>
 
   <!-- Footer -->
@@ -1178,7 +1181,7 @@ function showApp(){
   const _navIcons={
     'nav-dashboard':IC.dash,'nav-subjects':IC.grid,'nav-students':IC.users,
     'nav-attendance':IC.calendar,'nav-scores':IC.pencil,'nav-eval':IC.star,
-    'nav-report':IC.chart,'nav-cover':IC.pp5,'nav-settings':IC.settings
+    'nav-report':IC.chart,'nav-cover':IC.pp5,'nav-settings':IC.settings,'nav-manual':IC.book
   };
   Object.entries(_navIcons).forEach(([id,svg])=>{
     const el=$(id); if(!el) return;
@@ -1514,7 +1517,7 @@ async function doLogout(){
 // ── NAV ──────────────────────────────────────────────────────────
 const TITLES={dashboard:'แดชบอร์ด',subjects:'รายวิชา',students:'นักเรียน',
   attendance:'เวลาเรียน',scores:'บันทึกคะแนน',eval:'ประเมิน อ่าน/คุณลักษณะ',
-  report:'รายงานผลการเรียน',cover:'ปก ปพ.5',settings:'ตั้งค่า'};
+  report:'รายงานผลการเรียน',cover:'ปก ปพ.5',settings:'ตั้งค่า',manual:'คู่มือการใช้งาน'};
 function openSidebar(){
   $('sidebar').classList.add('open');
   $('mob-overlay').style.display='block';
@@ -1548,7 +1551,7 @@ function nav(page,subId){
   }
   const fn={dashboard:pgDash,subjects:pgSubjects,students:pgStudents,
     attendance:pgAttendance,scores:pgScores,eval:pgEval,
-    report:pgReport,cover:pgCover,settings:pgSettings}[page];
+    report:pgReport,cover:pgCover,settings:pgSettings,manual:pgManual}[page];
   if(fn){
     // wrap ทุก page fn ให้ loadingOff() เสมอเมื่อเสร็จ ไม่ว่าจะ error หรือไม่
     Promise.resolve(fn())
@@ -4486,6 +4489,33 @@ function _addTeacherRow(){
   list.appendChild(div);
   div.querySelector('input').focus();
 }
+// ════ MANUAL ══════════════════════════════════════════════════════
+function pgManual(){
+  const FILE_ID = '1yzReDcGvEDGN9xsDpRuKJFeI9riZDpdN';
+  const previewUrl = `https://drive.google.com/file/d/${FILE_ID}/preview`;
+  const openUrl    = `https://drive.google.com/file/d/${FILE_ID}/view`;
+  $('pg').innerHTML=`
+  <div class="ph">
+    <div class="ptitle" style="display:flex;align-items:center;gap:8px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" style="opacity:.7"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      คู่มือการใช้งาน
+    </div>
+    <a href="${openUrl}" target="_blank" rel="noopener" class="btn bs" style="gap:6px;text-decoration:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      เปิดใน Google Drive
+    </a>
+  </div>
+  <div class="card" style="overflow:hidden;padding:0;border-radius:14px;">
+    <iframe
+      src="${previewUrl}"
+      style="width:100%;height:calc(100vh - 160px);min-height:500px;border:none;display:block;"
+      allow="autoplay"
+      loading="lazy"
+      title="คู่มือการใช้งาน ปพ.5">
+    </iframe>
+  </div>`;
+}
+
 async function saveSettings(){
   // รวบรวมรายชื่อครูจาก input rows
   const teacherRows = document.querySelectorAll('#teacher-list input[id^="tc-"]');
