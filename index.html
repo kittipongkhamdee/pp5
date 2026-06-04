@@ -1626,7 +1626,9 @@ async function pgDash(){
       const msCount=Object.values(stuAttMap).filter(m=>m.total>0&&(m.attended/m.total*100)<80).length;
       return {...s,stats:{total,pass,recorded:sum.length,avg,passPercent:pct,msCount}};
     });
-    S._dashStuTotal = allStu.length;
+    // นับเฉพาะนักเรียนในห้องที่ครูสอน (ตาม grade_level+room ของวิชาที่มี)
+    const _teachRooms = new Set(S.subjects.map(s=>s.grade_level+'_'+s.room));
+    S._dashStuTotal = allStu.filter(s=>_teachRooms.has(s.grade_level+'_'+s.room)).length;
 
     // ── คำนวณ % ผ่านเฉลี่ย และ มส. รอติดตาม ──
     const subjWithScore = S.subjects.filter(s=>s.stats.recorded>0);
