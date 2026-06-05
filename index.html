@@ -3287,6 +3287,7 @@ function printAttendance(){
       .btn-print{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#1d1d1f;color:#fff;font-weight:600;}
       .btn-export{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#FF3B30;color:#fff;font-weight:600;}
       @media print{.action-bar{display:none!important;}.att-page{page-break-inside:avoid;}#pbody{width:100%;padding:1cm 1.2cm;}}
+      .att-page+.att-page{padding-top:12mm;}
     </style></head><body>
     <div id="pbody">${body}</div>
     <div class="action-bar">
@@ -4012,6 +4013,7 @@ function printScores(){
       .btn-print{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#1d1d1f;color:#fff;font-weight:600;}
       .btn-export{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#FF3B30;color:#fff;font-weight:600;}
       @media print{.action-bar{display:none!important;}.sc-page{page-break-inside:avoid;}#pbody{width:100%;padding:1cm 1.2cm;}}
+      .sc-page+.sc-page{padding-top:12mm;}
     </style></head><body>
     <div id="pbody">${body}</div>
     <div class="action-bar">
