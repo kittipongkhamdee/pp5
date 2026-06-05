@@ -1169,9 +1169,10 @@ function printHTML(title, bodyHTML, orient='portrait'){
     <meta charset="UTF-8"><title>${esc(title)}</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-      @page{size:A4 ${orient};margin:1cm 1.2cm;}
+      @page{size:A4 ${orient};margin:0;}
       *{box-sizing:border-box;}
-      body{font-family:'Sarabun','TH SarabunNew','Noto Sans Thai',sans-serif;font-size:13px;color:#000;line-height:1.5;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      body{margin:0;padding:0;background:#fff;font-family:'Sarabun','TH SarabunNew','Noto Sans Thai',sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      #pbody{width:794px;padding:12mm 14mm;background:#fff;font-size:13px;color:#000;line-height:1.5;}
       .ph{text-align:center;margin-bottom:10px;border-bottom:2px solid #000;padding-bottom:6px;}
       .ph h1{font-size:16px;font-weight:800;margin:0 0 2px;}
       .ph h2{font-size:14px;font-weight:600;margin:0 0 2px;}
@@ -1186,7 +1187,7 @@ function printHTML(title, bodyHTML, orient='portrait'){
       .action-bar{display:flex;gap:10px;justify-content:center;padding:14px;margin-top:20px;background:#f5f5f7;border-radius:10px;position:sticky;bottom:0;}
       .btn-print{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#1d1d1f;color:#fff;font-weight:600;}
       .btn-export{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#FF3B30;color:#fff;font-weight:600;}
-      @media print{.action-bar{display:none!important;}}
+      @media print{.action-bar{display:none!important;}#pbody{width:100%;padding:1cm 1.2cm;}}
     </style>
     </head><body>
     <div id="pbody">
@@ -1203,7 +1204,6 @@ function printHTML(title, bodyHTML, orient='portrait'){
     </div>
     </body></html>`);
   w.document.close();
-  // inject html2pdf หลัง load
   const s1=w.document.createElement('script');
   s1.src='https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js';
   w.document.head.appendChild(s1);
@@ -1215,7 +1215,7 @@ function printHTML(title, bodyHTML, orient='portrait'){
     '  const btn=document.getElementById("ebtn");',
     '  if(btn){btn.textContent="กำลัง Export...";btn.disabled=true;}',
     '  html2pdf().set({',
-    '    margin:[8,8,8,8],',
+    '    margin:[0,0,0,0],',
     '    filename:document.title+".pdf",',
     '    image:{type:"jpeg",quality:0.97},',
     '    html2canvas:{scale:2,useCORS:true,backgroundColor:"#fff",logging:false},',
@@ -3267,9 +3267,10 @@ function printAttendance(){
     <meta charset="UTF-8"><title>${esc(pageTitle)}</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-      @page{size:A4 portrait;margin:1cm 1.2cm;}
+      @page{size:A4 portrait;margin:0;}
       *{box-sizing:border-box;}
-      body{font-family:'Sarabun','TH SarabunNew','Noto Sans Thai',sans-serif;font-size:13px;color:#000;line-height:1.5;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      body{margin:0;padding:0;background:#fff;font-family:'Sarabun','TH SarabunNew','Noto Sans Thai',sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      #pbody{width:794px;padding:12mm 14mm;background:#fff;font-size:13px;color:#000;line-height:1.5;}
       .ph{text-align:center;margin-bottom:6px;border-bottom:2px solid #000;padding-bottom:5px;}
       .ph h1{font-size:16px;font-weight:800;margin:0 0 2px;}
       .ph h2{font-size:14px;font-weight:600;margin:0 0 2px;}
@@ -3285,9 +3286,9 @@ function printAttendance(){
       .action-bar{display:flex;gap:10px;justify-content:center;padding:14px;margin-top:20px;background:#f5f5f7;border-radius:10px;position:sticky;bottom:0;}
       .btn-print{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#1d1d1f;color:#fff;font-weight:600;}
       .btn-export{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#FF3B30;color:#fff;font-weight:600;}
-      @media print{.action-bar{display:none!important;}.att-page{page-break-inside:avoid;}}
+      @media print{.action-bar{display:none!important;}.att-page{page-break-inside:avoid;}#pbody{width:100%;padding:1cm 1.2cm;}}
     </style></head><body>
-    ${body}
+    <div id="pbody">${body}</div>
     <div class="action-bar">
       <button class="btn-print" onclick="window.print()">🖨️ พิมพ์</button>
       <button class="btn-export" id="ebtn" onclick="doExportPdf('portrait')">📄 Export PDF</button>
@@ -3300,12 +3301,10 @@ function printAttendance(){
   const s2=w.document.createElement('script');
   s2.textContent=[
     'function doExportPdf(orient){',
-    '  const el=document.body;',
+    '  const el=document.getElementById("pbody");',
     '  if(!el||typeof html2pdf==="undefined"){setTimeout(()=>doExportPdf(orient),600);return;}',
     '  const btn=document.getElementById("ebtn");',
     '  if(btn){btn.textContent="กำลัง Export...";btn.disabled=true;}',
-    '  const pages=document.querySelectorAll(".att-page");',
-    '  const target=pages.length?document.body:el;',
     '  html2pdf().set({',
     '    margin:[0,0,0,0],',
     '    filename:document.title+".pdf",',
@@ -3313,7 +3312,7 @@ function printAttendance(){
     '    html2canvas:{scale:2,useCORS:true,backgroundColor:"#fff",logging:false},',
     '    jsPDF:{unit:"mm",format:"a4",orientation:orient},',
     '    pagebreak:{mode:["css"],before:".att-page[style*=page-break]"}',
-    '  }).from(document.body).save()',
+    '  }).from(el).save()',
     '  .then(()=>{if(btn){btn.textContent="✅ สำเร็จ";setTimeout(()=>{btn.textContent="📄 Export PDF";btn.disabled=false;},2000);}})',
     '  .catch(e=>{if(btn){btn.textContent="📄 Export PDF";btn.disabled=false;}alert("ผิดพลาด: "+e.message);});',
     '}'
@@ -3888,82 +3887,161 @@ function exportScores(){
 }
 function printScores(){
   const sub=scSub;
-  const meta=`วิชา ${esc(sub.subject_name)} (${esc(sub.subject_code)}) ${grm(sub.grade_level,sub.room)} &nbsp; ครู${esc(sub.teacher_name||'')} &nbsp; ปีการศึกษา ${S.config.academic_year||''} ภาค ${S.config.semester||''}`;
+  const cfg=S.config;
   const mBef=sub.score_before_mid||25, mAft=sub.score_after_mid||25;
   const mM=sub.score_mid||20, mF=sub.score_final||30;
-  const unitsBef=scU.before, unitsAft=scU.after;
+  const COLS_PER_PAGE=6;
+  const schoolName=(cfg.school_name||'').startsWith('โรงเรียน')?cfg.school_name:'โรงเรียน'+(cfg.school_name||'');
+  const pageTitle=`บันทึกคะแนน — ${sub.subject_name} ${grm(sub.grade_level,sub.room)}`;
+  const metaStr=`วิชา ${esc(sub.subject_name)} (${esc(sub.subject_code)}) ${grm(sub.grade_level,sub.room)} &nbsp; ครู${esc(sub.teacher_name||'')} &nbsp; ปีการศึกษา ${cfg.academic_year||''} ภาค ${cfg.semester||''}`;
 
-  // ══ หน้า 1: หน่วยการเรียนทั้งหมด + รวมแต่ละช่วง ══
-  let p1=`<div style="page-break-after:always">
-    <h3 style="margin:0 0 4px">บันทึกคะแนนหน่วยการเรียน</h3>
-    <div class="meta" style="margin-bottom:8px">${meta}</div>
-    <table><thead>
-      <tr>
-        <th rowspan="2">เลขที่</th>
-        <th rowspan="2">เลขประจำตัว</th>
-        <th rowspan="2" style="text-align:left">ชื่อ-สกุล</th>`;
-  if(unitsBef.length) p1+=`<th colspan="${unitsBef.length}">ก่อนกลางภาค</th>`;
-  p1+=`<th rowspan="2">รวมก่อนกลาง<br>(/${mBef})</th>`;
-  if(unitsAft.length) p1+=`<th colspan="${unitsAft.length}">หลังกลางภาค</th>`;
-  p1+=`<th rowspan="2">รวมหลังกลาง<br>(/${mAft})</th>
-      </tr><tr>`;
-  unitsBef.forEach(u=>{ p1+=`<th>${u.unit_number}${u.unit_name?'<br><span style="font-size:9px;font-weight:400">'+esc(u.unit_name.slice(0,12))+'</span>':''}<br><span style="font-size:9px;opacity:.6">/${u.max_score}</span></th>`; });
-  unitsAft.forEach(u=>{ p1+=`<th>${u.unit_number}${u.unit_name?'<br><span style="font-size:9px;font-weight:400">'+esc(u.unit_name.slice(0,12))+'</span>':''}<br><span style="font-size:9px;opacity:.6">/${u.max_score}</span></th>`; });
-  p1+='</tr></thead><tbody>';
-  scStus.forEach((s,i)=>{
-    let bef=0,aft=0;
-    let befCells='', aftCells='';
-    unitsBef.forEach(u=>{ const sc=gsc(s.id,'before',u.unit_number); bef+=sc??0; befCells+=`<td>${sc!=null?sc:''}</td>`; });
-    unitsAft.forEach(u=>{ const sc=gsc(s.id,'after',u.unit_number);  aft+=sc??0; aftCells+=`<td>${sc!=null?sc:''}</td>`; });
-    p1+=`<tr><td>${i+1}</td><td>${esc(s.student_code)}</td><td class="l">${esc(s.student_name)}</td>
-      ${befCells}<td><strong>${bef||''}</strong></td>
-      ${aftCells}<td><strong>${aft||''}</strong></td></tr>`;
+  // รวม unit columns ทั้งหมด
+  const allUnits=[
+    ...scU.before.map(u=>({...u,period:'before'})),
+    ...scU.after.map(u=>({...u,period:'after'}))
+  ];
+
+  // แบ่ง chunks ทีละ COLS_PER_PAGE
+  const chunks=[];
+  for(let i=0;i<allUnits.length||chunks.length===0;i+=COLS_PER_PAGE)
+    chunks.push(allUnits.slice(i,i+COLS_PER_PAGE));
+
+  function pageHeader(ci,total){
+    let h=`<div class="ph"><h1>${esc(schoolName)}</h1><h2>${esc(pageTitle)}</h2>
+      <div class="meta">ปีการศึกษา ${esc(cfg.academic_year||'')} ภาคเรียนที่ ${esc(cfg.semester||'')}</div></div>`;
+    h+=`<div class="meta2">${metaStr}`;
+    if(total>1) h+=` &nbsp; <strong>(หน้า ${ci+1}/${total+1})</strong>`;
+    h+='</div>';
+    return h;
+  }
+
+  let body='';
+
+  // ── หน้าหน่วยการเรียน ──
+  chunks.forEach((cols,ci)=>{
+    const isLastUnit=ci===chunks.length-1;
+    const pb=ci>0?'style="page-break-before:always"':'';
+
+    // จัดกลุ่ม period header
+    const pGroups=[];
+    cols.forEach(u=>{
+      const lbl=u.period==='before'?'ก่อนกลางภาค':'หลังกลางภาค';
+      if(!pGroups.length||pGroups[pGroups.length-1].name!==lbl) pGroups.push({name:lbl,count:1});
+      else pGroups[pGroups.length-1].count++;
+    });
+
+    body+=`<div class="sc-page" ${pb}>${pageHeader(ci,chunks.length)}`;
+    body+=`<h3 style="margin:0 0 4px">บันทึกคะแนนหน่วยการเรียน</h3>`;
+    body+=`<table><thead><tr>`;
+    body+=`<th rowspan="2">เลขที่</th><th rowspan="2">เลขประจำตัว</th><th rowspan="2" class="l">ชื่อ-สกุล</th>`;
+    pGroups.forEach(g=>{ body+=`<th colspan="${g.count}">${g.name}</th>`; });
+    if(isLastUnit){
+      body+=`<th rowspan="2">รวมก่อนกลาง<br>(/${mBef})</th>`;
+      body+=`<th rowspan="2">รวมหลังกลาง<br>(/${mAft})</th>`;
+    }
+    body+=`</tr><tr>`;
+    cols.forEach(u=>{
+      body+=`<th>${u.unit_number}${u.unit_name?'<br><span style="font-size:9px;font-weight:400">'+esc(u.unit_name.slice(0,12))+'</span>':''}<br><span style="font-size:9px;opacity:.6">/${u.max_score}</span></th>`;
+    });
+    body+=`</tr></thead><tbody>`;
+    scStus.forEach((s,i)=>{
+      body+=`<tr><td>${i+1}</td><td>${esc(s.student_code)}</td><td class="l">${esc(s.student_name)}</td>`;
+      cols.forEach(u=>{ const sc=gsc(s.id,u.period,u.unit_number); body+=`<td>${sc!=null?sc:''}</td>`; });
+      if(isLastUnit){
+        const sid=String(s.id);
+        const bef=scU.before.reduce((a,u)=>a+(gsc(s.id,'before',u.unit_number)??0),0);
+        const aft=scU.after.reduce((a,u)=>a+(gsc(s.id,'after',u.unit_number)??0),0);
+        body+=`<td><strong>${bef||''}</strong></td><td><strong>${aft||''}</strong></td>`;
+      }
+      body+=`</tr>`;
+    });
+    body+=`</tbody></table></div>`;
   });
-  p1+='</tbody></table></div>';
 
-  // ══ หน้า 2: รวมก่อนกลาง + หลังกลาง + สอบกลาง + ปลาย + รวม + เกรด ══
-  let p2=`<div>
-    <h3 style="margin:0 0 4px">สรุปคะแนนและผลการเรียน</h3>
-    <div class="meta" style="margin-bottom:8px">${meta}</div>
-    <table><thead><tr>
-      <th>เลขที่</th>
-      <th>เลขประจำตัว</th>
-      <th style="text-align:left">ชื่อ-สกุล</th>
-      <th >รวมก่อนกลาง<br>(/${mBef})</th>
-      <th >รวมหลังกลาง<br>(/${mAft})</th>
-      <th >สอบกลางภาค<br>(/${mM})</th>
-      <th >รวมคะแนน<br>ระหว่างภาค</th>
-      <th >ปลายภาค<br>(/${mF})</th>
-      <th >คะแนนรวม<br>(100)</th>
-      <th >ผลการเรียน</th>
-    </tr></thead><tbody>`;
+  // ── หน้าสรุปคะแนนและผลการเรียน ──
+  const pbSum=`style="page-break-before:always"`;
+  body+=`<div class="sc-page" ${pbSum}>${pageHeader(chunks.length,chunks.length)}`;
+  body+=`<h3 style="margin:0 0 4px">สรุปคะแนนและผลการเรียน</h3>`;
+  body+=`<table><thead><tr>
+    <th>เลขที่</th><th>เลขประจำตัว</th><th class="l">ชื่อ-สกุล</th>
+    <th>รวมก่อนกลาง<br>(/${mBef})</th><th>รวมหลังกลาง<br>(/${mAft})</th>
+    <th>สอบกลางภาค<br>(/${mM})</th><th>รวมระหว่างภาค</th>
+    <th>ปลายภาค<br>(/${mF})</th><th>คะแนนรวม<br>(100)</th>
+    <th>ผลการเรียน</th>
+  </tr></thead><tbody>`;
   scStus.forEach((s,i)=>{
-    const sm=gsum(s.id);
-    // คำนวณจาก scUnits ถ้า summary ยังไม่มี
-    const sid=String(s.id);
-    const bef2=sm.total_before_mid!=null?parseFloat(sm.total_before_mid)
-      :scUnits.filter(u=>u.period==='before'&&String(u.student_id)===sid).reduce((a,b)=>a+(parseFloat(b.score)||0),0);
-    const aft2=sm.total_after_mid!=null?parseFloat(sm.total_after_mid)
-      :scUnits.filter(u=>u.period==='after'&&String(u.student_id)===sid).reduce((a,b)=>a+(parseFloat(b.score)||0),0);
-    const mid=parseFloat(sm.mid_normal)||0;
+    const sm=gsum(s.id); const sid=String(s.id);
+    const bef=sm.total_before_mid!=null?parseFloat(sm.total_before_mid):scUnits.filter(u=>u.period==='before'&&String(u.student_id)===sid).reduce((a,b)=>a+(parseFloat(b.score)||0),0);
+    const aft=sm.total_after_mid!=null?parseFloat(sm.total_after_mid):scUnits.filter(u=>u.period==='after'&&String(u.student_id)===sid).reduce((a,b)=>a+(parseFloat(b.score)||0),0);
     const midUsed=Math.max(parseFloat(sm.mid_normal)||0,parseFloat(sm.mid_retake)||0,parseFloat(sm.mid_repeat)||0);
     const fin=parseFloat(sm.final_score)||0;
-    const tot=sm.total_score!=null?parseFloat(sm.total_score):(bef2+aft2+midUsed+fin);
+    const tot=sm.total_score!=null?parseFloat(sm.total_score):(bef+aft+midUsed+fin);
     const g=sm.grade!=null&&sm.grade!==''?sm.grade:(tot>0?calcGrade(tot):'-');
-    p2+=`<tr>
+    body+=`<tr>
       <td>${i+1}</td><td>${esc(s.student_code)}</td><td class="l">${esc(s.student_name)}</td>
-      <td><strong>${bef2||''}</strong></td>
-      <td><strong>${aft2||''}</strong></td>
-      <td>${midUsed||''}</td>
-      <td>${bef2+aft2+midUsed||''}</td>
-      <td>${fin||''}</td>
-      <td><strong>${tot||''}</strong></td>
+      <td><strong>${bef||''}</strong></td><td><strong>${aft||''}</strong></td>
+      <td>${midUsed||''}</td><td>${bef+aft+midUsed||''}</td>
+      <td>${fin||''}</td><td><strong>${tot||''}</strong></td>
       <td><strong>${['ร','มส','มผ','ผ'].includes(sm.special_result||'')?sm.special_result:g}</strong></td>
     </tr>`;
   });
-  p2+='</tbody></table></div>';
+  body+=`</tbody></table></div>`;
 
-  printHTML(`บันทึกคะแนน — ${sub.subject_name} ${grm(sub.grade_level,sub.room)}`, p1+p2, 'portrait');
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html lang="th"><head>
+    <meta charset="UTF-8"><title>${esc(pageTitle)}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+      @page{size:A4 portrait;margin:0;}
+      *{box-sizing:border-box;}
+      body{margin:0;padding:0;background:#fff;font-family:'Sarabun','TH SarabunNew','Noto Sans Thai',sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      #pbody{width:794px;padding:12mm 14mm;background:#fff;font-size:13px;color:#000;line-height:1.5;}
+      .ph{text-align:center;margin-bottom:6px;border-bottom:2px solid #000;padding-bottom:5px;}
+      .ph h1{font-size:16px;font-weight:800;margin:0 0 2px;}
+      .ph h2{font-size:14px;font-weight:600;margin:0 0 2px;}
+      .ph .meta{font-size:12px;color:#444;margin:0;}
+      .meta2{font-size:11.5px;color:#444;margin:4px 0 4px;}
+      h3{font-size:13px;font-weight:700;}
+      table{width:100%;border-collapse:collapse;margin-top:4px;}
+      thead{display:table-header-group;}
+      tr{page-break-inside:avoid;}
+      th,td{border:1px solid #555;padding:3px 4px;font-size:11px;text-align:center;font-family:'Sarabun','TH SarabunNew',sans-serif;}
+      th{font-weight:700;background:#f0f0f0;}
+      td.l,th.l{text-align:left;padding-left:6px;}
+      .action-bar{display:flex;gap:10px;justify-content:center;padding:14px;margin-top:20px;background:#f5f5f7;border-radius:10px;position:sticky;bottom:0;}
+      .btn-print{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#1d1d1f;color:#fff;font-weight:600;}
+      .btn-export{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#FF3B30;color:#fff;font-weight:600;}
+      @media print{.action-bar{display:none!important;}.sc-page{page-break-inside:avoid;}#pbody{width:100%;padding:1cm 1.2cm;}}
+    </style></head><body>
+    <div id="pbody">${body}</div>
+    <div class="action-bar">
+      <button class="btn-print" onclick="window.print()">🖨️ พิมพ์</button>
+      <button class="btn-export" id="ebtn" onclick="doExportPdf('portrait')">📄 Export PDF</button>
+    </div>
+    </body></html>`);
+  w.document.close();
+  const s1=w.document.createElement('script');
+  s1.src='https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js';
+  w.document.head.appendChild(s1);
+  const s2=w.document.createElement('script');
+  s2.textContent=[
+    'function doExportPdf(orient){',
+    '  const el=document.getElementById("pbody");',
+    '  if(!el||typeof html2pdf==="undefined"){setTimeout(()=>doExportPdf(orient),600);return;}',
+    '  const btn=document.getElementById("ebtn");',
+    '  if(btn){btn.textContent="กำลัง Export...";btn.disabled=true;}',
+    '  html2pdf().set({',
+    '    margin:[0,0,0,0],filename:document.title+".pdf",',
+    '    image:{type:"jpeg",quality:0.97},',
+    '    html2canvas:{scale:2,useCORS:true,backgroundColor:"#fff",logging:false},',
+    '    jsPDF:{unit:"mm",format:"a4",orientation:orient},',
+    '    pagebreak:{mode:["css"]}',
+    '  }).from(el).save()',
+    '  .then(()=>{if(btn){btn.textContent="✅ สำเร็จ";setTimeout(()=>{btn.textContent="📄 Export PDF";btn.disabled=false;},2000);}})',
+    '  .catch(e=>{if(btn){btn.textContent="📄 Export PDF";btn.disabled=false;}alert("ผิดพลาด: "+e.message);});',
+    '}'
+  ].join('\n');
+  w.document.body.appendChild(s2);
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -4265,11 +4343,13 @@ async function pgReport(){
   Object.values(attMap).forEach(m=>{m.pct=m.totalH>0?Math.round(m.attended/m.totalH*100):0;m.ms=m.pct<80;});
   // เก็บไว้ใน state เพื่อให้ export ใช้ได้
   S._rpt={sub,stus,sumMap,erMap,ecMap,attMap};
-  // stats
-  const pass=sumRows.filter(s=>parseFloat(s.grade)>0).length;
-  const avg=sumRows.length>0?(sumRows.reduce((a,b)=>a+(parseFloat(b.total_score)||0),0)/sumRows.length).toFixed(1):0;
+  // stats — filter เฉพาะนักเรียนในห้องจริง
+  const stuIds=new Set(stus.map(s=>String(s.id)));
+  const stuSumRows=sumRows.filter(s=>stuIds.has(String(s.student_id)));
+  const pass=stuSumRows.filter(s=>parseFloat(s.grade)>0).length;
+  const avg=stuSumRows.length>0?(stuSumRows.reduce((a,b)=>a+(parseFloat(b.total_score)||0),0)/stuSumRows.length).toFixed(1):0;
   const gradeCount={4:0,3.5:0,3:0,2.5:0,2:0,1.5:0,1:0,0:0};
-  sumRows.forEach(s=>{const g=parseFloat(s.grade);if(gradeCount[g]!==undefined)gradeCount[g]++;});
+  stuSumRows.forEach(s=>{const g=parseFloat(s.grade);if(gradeCount[g]!==undefined)gradeCount[g]++;});
   const pct=stus.length>0?((pass/stus.length)*100).toFixed(1):0;
 
   $('pg').innerHTML=`
@@ -4286,7 +4366,7 @@ async function pgReport(){
   <div class="sg no-print">
     <div class="sc"><div class="si" style="background:linear-gradient(135deg,#34aadc,#007AFF)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div><div class="sv">${stus.length}</div><div class="sl">นักเรียน</div></div></div>
     <div class="sc"><div class="si" style="background:linear-gradient(135deg,#34c759,#28a745)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="20 6 9 17 4 12"/></svg></div><div><div class="sv">${pass}<small style="font-size:13px"> (${pct}%)</small></div><div class="sl">ผ่าน</div></div></div>
-    <div class="sc"><div class="si" style="background:linear-gradient(135deg,#ff453a,#dc2626)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div><div><div class="sv">${sumRows.length-pass}</div><div class="sl">ไม่ผ่าน</div></div></div>
+    <div class="sc"><div class="si" style="background:linear-gradient(135deg,#ff453a,#dc2626)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div><div><div class="sv">${stus.length-pass}</div><div class="sl">ไม่ผ่าน</div></div></div>
     <div class="sc"><div class="si" style="background:linear-gradient(135deg,#bf5af2,#9b59b6)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><div><div class="sv">${avg}</div><div class="sl">คะแนนเฉลี่ย</div></div></div>
   </div>
   <div class="card" style="margin-bottom:16px">
@@ -4382,11 +4462,12 @@ async function pgCover(){
   const cfg=S.config;
   const cvStus=await getStudentsBySubject(S.selSub);
   const totalN=cvStus.length;
+  const cvStuIds=new Set(cvStus.map(s=>String(s.id)));
 
-  // ── ระดับผลการเรียน ──
+  // ── ระดับผลการเรียน (filter เฉพาะนักเรียนในห้อง) ──
   const gc={4:0,3.5:0,3:0,2.5:0,2:0,1.5:0,1:0,0:0};
   let rC=0,msC=0;
-  sumRows.forEach(s=>{
+  sumRows.filter(s=>cvStuIds.has(String(s.student_id))).forEach(s=>{
     const g=parseFloat(s.grade);
     if(gc[g]!==undefined) gc[g]++;
     if(s.special_result==='ร')  rC++;
@@ -4395,13 +4476,15 @@ async function pgCover(){
 
   // ── ประเมินการอ่าน ──
   const erLv={3:0,2:0,1:0,0:0};
-  erRows.forEach(e=>{ const v=parseInt(e.result); if(v in erLv) erLv[v]++; });
-  const erTotal=erRows.length;
+  const erFiltered=erRows.filter(e=>cvStuIds.has(String(e.student_id)));
+  erFiltered.forEach(e=>{ const v=parseInt(e.result); if(v in erLv) erLv[v]++; });
+  const erTotal=erFiltered.length;
 
   // ── คุณลักษณะ ──
   const ecLv={3:0,2:0,1:0,0:0};
-  ecRows.forEach(e=>{ const v=parseInt(e.overall_result); if(v in ecLv) ecLv[v]++; });
-  const ecTotal=ecRows.length;
+  const ecFiltered=ecRows.filter(e=>cvStuIds.has(String(e.student_id)));
+  ecFiltered.forEach(e=>{ const v=parseInt(e.overall_result); if(v in ecLv) ecLv[v]++; });
+  const ecTotal=ecFiltered.length;
 
   const td=(c,ex='')=>`<td style="border:1px solid #000;padding:4px;text-align:center;font-size:12px;${ex}">${c}</td>`;
   const th=(c,ex='')=>`<td style="border:1px solid #000;padding:3px 4px;text-align:center;font-size:11px;font-weight:600;background:#f0f0f0;${ex}">${c}</td>`;
