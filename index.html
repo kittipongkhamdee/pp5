@@ -1933,7 +1933,7 @@ async function pgDash(){
     // ใช้ .eq() ต่อ subject เหมือน Report เพื่อหลีกเลี่ยงปัญหา RLS กับ .in()
     const [allSumArrays, allStu, allAtt] = await Promise.all([
       subjIds.length ?
-        Promise.all(subjIds.map(id=>q(sb.from('score_summary').select('subject_id,grade,total_score').eq('subject_id',id))))
+        Promise.all(subjIds.map(id=>q(sb.from('score_summary').select('subject_id,student_id,grade,total_score').eq('subject_id',id))))
         : Promise.resolve([[]]),
       q(sb.from('students').select('id,grade_level,room')),
       subjIds.length ? qc('dash_att_'+S.user.id+'_'+subjIds.join(',').slice(0,40), ()=>
