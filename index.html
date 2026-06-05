@@ -3189,31 +3189,109 @@ function printAttendance(){
   const sub=attSub;
   const months=buildAttMonths();
   const sum=attSummaryByStudent();
-  let html=`<div class="meta">วิชา ${esc(sub.subject_name)} (${esc(sub.subject_code)}) ${grm(sub.grade_level,sub.room)} &nbsp; ครูผู้สอน ${esc(sub.teacher_name||'')} &nbsp; เวลาเรียน ${sub.total_hours} ชม.</div>`;
-  // หัวตาราง 2 ชั้น: เดือนคร่อมวัน
-  html+='<table><thead>';
-  html+='<tr><th rowspan="2">เลขที่</th><th rowspan="2">เลขประจำตัว</th><th rowspan="2">ชื่อ-สกุล</th>';
-  months.forEach(M=>{ if(M.days.length) html+=`<th colspan="${M.days.length}">${esc(M.monthName)}</th>`; });
-  html+='<th rowspan="2">มา</th><th rowspan="2">ขาด</th><th rowspan="2">ลา</th><th rowspan="2">รวม</th><th rowspan="2">%</th><th rowspan="2">สถานะ</th></tr>';
-  html+='<tr>';
-  months.forEach(M=>{ M.days.forEach(d=>html+=`<th title="${d.periods} คาบ">${d.day}</th>`); });
-  html+='</tr></thead><tbody>';
-  attStus.forEach((s,i)=>{
-    let cells='';
-    months.forEach(M=>{
-      M.days.forEach(d=>{
-        const st=(M.cells[s.id]||{})[d.day]||'';
-        cells+=`<td>${st?ATT_ABBR[st]:''}</td>`;
-      });
-    });
-    const m=sum[s.id]||{present:0,absent:0,leave:0,attended:0,pct:0,ms:false};
-    html+=`<tr><td>${i+1}</td><td>${esc(s.student_code)}</td><td class="l">${esc(s.student_name)}</td>${cells}
-      <td>${m.present}</td><td>${m.absent}</td><td>${m.leave}</td><td>${m.attended}</td><td>${m.pct}%</td><td>${m.ms?'มส':'-'}</td></tr>`;
-  });
-  html+='</tbody></table>';
-  html+='<div style="font-size:11px;margin-top:6px">สัญลักษณ์: / = มา, ข = ขาด, ล = ลา &nbsp; (ตัวเลขใต้เดือนคือวันที่ • นับชั่วโมงตามจำนวนคาบของแต่ละวัน)</div>';
+  const cfg=S.config;
+  const COLS_PER_PAGE=15;
 
-  printHTML(`บันทึกเวลาเรียน — ${sub.subject_name} ${grm(sub.grade_level,sub.room)}`, html, 'portrait');
+  // รวม day columns ทั้งหมดเรียงตามเดือน
+  const allCols=[]; // [{monthName, day, periods, cells}]
+  months.forEach(M=>{
+    M.days.forEach(d=>{
+      allCols.push({monthName:M.monthName, day:d.day, periods:d.periods, cells:M.cells});
+    });
+  });
+
+  // แบ่งเป็น chunk ทีละ COLS_PER_PAGE
+  const chunks=[];
+  for(let i=0;i<allCols.length||chunks.length===0;i+=COLS_PER_PAGE){
+    chunks.push(allCols.slice(i,i+COLS_PER_PAGE));
+  }
+
+  const schoolName=(cfg.school_name||'').startsWith('โรงเรียน')?cfg.school_name:'โรงเรียน'+(cfg.school_name||'');
+  const pageTitle=`บันทึกเวลาเรียน — ${sub.subject_name} ${grm(sub.grade_level,sub.room)}`;
+
+  // สร้าง HTML สำหรับแต่ละ chunk
+  let body='';
+  chunks.forEach((cols,ci)=>{
+    // จัดกลุ่ม header เดือน (colspan ต่อเนื่อง)
+    const mGroups=[];
+    cols.forEach(c=>{
+      if(!mGroups.length||mGroups[mGroups.length-1].name!==c.monthName)
+        mGroups.push({name:c.monthName,count:1});
+      else mGroups[mGroups.length-1].count++;
+    });
+    const isLast=ci===chunks.length-1;
+    const pageBreak=ci>0?'style="page-break-before:always"':'';
+
+    body+=`<div class="att-page" ${pageBreak}>`;
+    // หัว
+    body+=`<div class="ph">
+      <h1>${esc(schoolName)}</h1>
+      <h2>${esc(pageTitle)}</h2>
+      <div class="meta">ปีการศึกษา ${esc(cfg.academic_year||'')} ภาคเรียนที่ ${esc(cfg.semester||'')}</div>
+    </div>`;
+    body+=`<div class="meta2">วิชา ${esc(sub.subject_name)} (${esc(sub.subject_code)}) ${grm(sub.grade_level,sub.room)} &nbsp; ครูผู้สอน ${esc(sub.teacher_name||'')} &nbsp; เวลาเรียน ${sub.total_hours} ชม.`;
+    if(chunks.length>1) body+=` &nbsp; <strong>(หน้า ${ci+1}/${chunks.length})</strong>`;
+    body+='</div>';
+
+    body+='<table><thead>';
+    // row 1: fixed cols + เดือน + summary (เฉพาะหน้าสุดท้าย)
+    body+='<tr>';
+    body+='<th rowspan="2">เลขที่</th><th rowspan="2">เลขประจำตัว</th><th rowspan="2" class="l">ชื่อ-สกุล</th>';
+    mGroups.forEach(g=>{ body+=`<th colspan="${g.count}">${esc(g.name)}</th>`; });
+    if(isLast) body+='<th rowspan="2">มา</th><th rowspan="2">ขาด</th><th rowspan="2">ลา</th><th rowspan="2">รวม</th><th rowspan="2">%</th><th rowspan="2">สถานะ</th>';
+    body+='</tr>';
+    // row 2: วันที่
+    body+='<tr>';
+    cols.forEach(c=>{ body+=`<th title="${c.periods} คาบ">${c.day}</th>`; });
+    body+='</tr></thead><tbody>';
+
+    attStus.forEach((s,i)=>{
+      body+=`<tr><td>${i+1}</td><td>${esc(s.student_code)}</td><td class="l">${esc(s.student_name)}</td>`;
+      cols.forEach(c=>{
+        const st=(c.cells[s.id]||{})[c.day]||'';
+        body+=`<td>${st?ATT_ABBR[st]:''}</td>`;
+      });
+      if(isLast){
+        const m=sum[s.id]||{present:0,absent:0,leave:0,attended:0,pct:0,ms:false};
+        body+=`<td>${m.present}</td><td>${m.absent}</td><td>${m.leave}</td><td>${m.attended}</td><td>${m.pct}%</td><td>${m.ms?'มส':'-'}</td>`;
+      }
+      body+='</tr>';
+    });
+    body+='</tbody></table>';
+    if(isLast) body+='<div class="legend">สัญลักษณ์: / = มา, ข = ขาด, ล = ลา &nbsp; (ตัวเลขใต้เดือนคือวันที่ • นับชั่วโมงตามจำนวนคาบของแต่ละวัน)</div>';
+    body+='</div>';
+  });
+
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html lang="th"><head>
+    <meta charset="UTF-8"><title>${esc(pageTitle)}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+      @page{size:A4 portrait;margin:1cm 1.2cm;}
+      *{box-sizing:border-box;}
+      body{font-family:'Sarabun','TH SarabunNew','Noto Sans Thai',sans-serif;font-size:13px;color:#000;line-height:1.5;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      .ph{text-align:center;margin-bottom:6px;border-bottom:2px solid #000;padding-bottom:5px;}
+      .ph h1{font-size:16px;font-weight:800;margin:0 0 2px;}
+      .ph h2{font-size:14px;font-weight:600;margin:0 0 2px;}
+      .ph .meta{font-size:12px;color:#444;margin:0;}
+      .meta2{font-size:11.5px;color:#444;margin:4px 0 4px;}
+      table{width:100%;border-collapse:collapse;margin-top:4px;}
+      thead{display:table-header-group;}
+      tr{page-break-inside:avoid;}
+      th,td{border:1px solid #555;padding:3px 4px;font-size:11px;text-align:center;font-family:'Sarabun','TH SarabunNew',sans-serif;}
+      th{font-weight:700;background:#f0f0f0;}
+      td.l,th.l{text-align:left;padding-left:6px;}
+      .legend{font-size:10.5px;margin-top:5px;color:#555;}
+      .action-bar{display:flex;gap:10px;justify-content:center;padding:14px;margin-top:20px;background:#f5f5f7;border-radius:10px;position:sticky;bottom:0;}
+      .btn-print{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#1d1d1f;color:#fff;font-weight:600;}
+      @media print{.action-bar{display:none!important;}.att-page{page-break-inside:avoid;}}
+    </style></head><body>
+    ${body}
+    <div class="action-bar">
+      <button class="btn-print" onclick="window.print()">🖨️ พิมพ์</button>
+    </div>
+    </body></html>`);
+  w.document.close();
 }
 
 // ════════════════════════════════════════════════════════════════
