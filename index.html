@@ -4179,10 +4179,10 @@ async function pgReport(){
     </select>
   </div>
   <div class="sg no-print">
-    <div class="sc"><div class="si bl">👥</div><div><div class="sv">${stus.length}</div><div class="sl">นักเรียน</div></div></div>
-    <div class="sc"><div class="si gr">✅</div><div><div class="sv">${pass}<small style="font-size:13px"> (${pct}%)</small></div><div class="sl">ผ่าน</div></div></div>
-    <div class="sc"><div class="si re">❌</div><div><div class="sv">${sumRows.length-pass}</div><div class="sl">ไม่ผ่าน</div></div></div>
-    <div class="sc"><div class="si or">📈</div><div><div class="sv">${avg}</div><div class="sl">คะแนนเฉลี่ย</div></div></div>
+    <div class="sc"><div class="si" style="background:linear-gradient(135deg,#34aadc,#007AFF)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div><div class="sv">${stus.length}</div><div class="sl">นักเรียน</div></div></div>
+    <div class="sc"><div class="si" style="background:linear-gradient(135deg,#34c759,#28a745)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="20 6 9 17 4 12"/></svg></div><div><div class="sv">${pass}<small style="font-size:13px"> (${pct}%)</small></div><div class="sl">ผ่าน</div></div></div>
+    <div class="sc"><div class="si" style="background:linear-gradient(135deg,#ff453a,#dc2626)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div><div><div class="sv">${sumRows.length-pass}</div><div class="sl">ไม่ผ่าน</div></div></div>
+    <div class="sc"><div class="si" style="background:linear-gradient(135deg,#bf5af2,#9b59b6)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><div><div class="sv">${avg}</div><div class="sl">คะแนนเฉลี่ย</div></div></div>
   </div>
   <div class="card" style="margin-bottom:16px">
     <div class="ch"><div>
