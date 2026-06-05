@@ -3220,7 +3220,7 @@ function printAttendance(){
       else mGroups[mGroups.length-1].count++;
     });
     const isLast=ci===chunks.length-1;
-    const pageBreak=ci>0?'style="page-break-before:always"':'';
+    const pageBreak=ci>0?'style="page-break-before:always;padding-top:12mm"':'';
 
     body+=`<div class="att-page" ${pageBreak}>`;
     // หัว
@@ -3921,7 +3921,7 @@ function printScores(){
   // ── หน้าหน่วยการเรียน ──
   chunks.forEach((cols,ci)=>{
     const isLastUnit=ci===chunks.length-1;
-    const pb=ci>0?'style="page-break-before:always"':'';
+    const pb=ci>0?'style="page-break-before:always;padding-top:12mm"':'';
 
     // จัดกลุ่ม period header
     const pGroups=[];
@@ -3960,7 +3960,7 @@ function printScores(){
   });
 
   // ── หน้าสรุปคะแนนและผลการเรียน ──
-  const pbSum=`style="page-break-before:always"`;
+  const pbSum=`style="page-break-before:always;padding-top:12mm"`;
   body+=`<div class="sc-page" ${pbSum}>${pageHeader(chunks.length,chunks.length)}`;
   body+=`<h3 style="margin:0 0 4px">สรุปคะแนนและผลการเรียน</h3>`;
   body+=`<table><thead><tr>
