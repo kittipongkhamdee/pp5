@@ -1927,20 +1927,20 @@ async function pgDash(){
   if(_pgDashRunning) return;
   _pgDashRunning=true;
   loading(true);
-  // force-refresh คะแนนทุกครั้งที่เปิดหน้าแดชบอร์ด
-  if(S.user) cacheInv('sc_sum_all_'+S.user.id);
   try{
     await loadSubjects();
     const subjIds = S.subjects.map(s=>s.id);
-    const [allSum, allStu, allAtt] = await Promise.all([
-      subjIds.length ? qc('sc_sum_all_'+S.user.id, ()=>
-        q(sb.from('score_summary').select('subject_id,grade,total_score').in('subject_id',subjIds))
-      ) : Promise.resolve([]),
+    // ใช้ .eq() ต่อ subject เหมือน Report เพื่อหลีกเลี่ยงปัญหา RLS กับ .in()
+    const [allSumArrays, allStu, allAtt] = await Promise.all([
+      subjIds.length ?
+        Promise.all(subjIds.map(id=>q(sb.from('score_summary').select('subject_id,grade,total_score').eq('subject_id',id))))
+        : Promise.resolve([[]]),
       q(sb.from('students').select('id,grade_level,room')),
       subjIds.length ? qc('dash_att_'+S.user.id+'_'+subjIds.join(',').slice(0,40), ()=>
         q(sb.from('attendance').select('subject_id,student_id,status,periods')
         .in('subject_id',subjIds))) : Promise.resolve([])
     ]);
+    const allSum = allSumArrays.flat();
     const stuCount = {};
     const stuIdsByRoom = {};
     allStu.forEach(s=>{
