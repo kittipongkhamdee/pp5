@@ -1171,7 +1171,7 @@ function printHTML(title, bodyHTML, orient='portrait'){
     <style>
       @page{size:A4 ${orient};margin:1cm 1.2cm;}
       *{box-sizing:border-box;}
-      body{font-family:'Sarabun','TH SarabunNew','Noto Sans Thai',sans-serif;font-size:13px;color:#000;line-height:1.5;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      body{font-family:'Sarabun','TH SarabunNew','Noto Sans Thai',sans-serif;font-size:13px;color:#000;line-height:1.5;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;max-width:794px;margin:0 auto;}
       .ph{text-align:center;margin-bottom:10px;border-bottom:2px solid #000;padding-bottom:6px;}
       .ph h1{font-size:16px;font-weight:800;margin:0 0 2px;}
       .ph h2{font-size:14px;font-weight:600;margin:0 0 2px;}
@@ -1215,10 +1215,10 @@ function printHTML(title, bodyHTML, orient='portrait'){
     '  const btn=document.getElementById("ebtn");',
     '  if(btn){btn.textContent="กำลัง Export...";btn.disabled=true;}',
     '  html2pdf().set({',
-    '    margin:[8,8,8,8],',
+    '    margin:[10,10,10,10],',
     '    filename:document.title+".pdf",',
     '    image:{type:"jpeg",quality:0.97},',
-    '    html2canvas:{scale:2,useCORS:true,backgroundColor:"#fff",logging:false},',
+    '    html2canvas:{scale:2,useCORS:true,backgroundColor:"#fff",logging:false,windowWidth:794},',
     '    jsPDF:{unit:"mm",format:"a4",orientation:orient},',
     '    pagebreak:{mode:["avoid-all","css"]}',
     '  }).from(el).save()',
@@ -3269,7 +3269,7 @@ function printAttendance(){
     <style>
       @page{size:A4 portrait;margin:1cm 1.2cm;}
       *{box-sizing:border-box;}
-      body{font-family:'Sarabun','TH SarabunNew','Noto Sans Thai',sans-serif;font-size:13px;color:#000;line-height:1.5;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      body{font-family:'Sarabun','TH SarabunNew','Noto Sans Thai',sans-serif;font-size:13px;color:#000;line-height:1.5;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;max-width:794px;margin:0 auto;}
       .ph{text-align:center;margin-bottom:6px;border-bottom:2px solid #000;padding-bottom:5px;}
       .ph h1{font-size:16px;font-weight:800;margin:0 0 2px;}
       .ph h2{font-size:14px;font-weight:600;margin:0 0 2px;}
@@ -3307,10 +3307,10 @@ function printAttendance(){
     '  const pages=document.querySelectorAll(".att-page");',
     '  const target=pages.length?document.body:el;',
     '  html2pdf().set({',
-    '    margin:[0,0,0,0],',
+    '    margin:[10,10,10,10],',
     '    filename:document.title+".pdf",',
     '    image:{type:"jpeg",quality:0.97},',
-    '    html2canvas:{scale:2,useCORS:true,backgroundColor:"#fff",logging:false},',
+    '    html2canvas:{scale:2,useCORS:true,backgroundColor:"#fff",logging:false,windowWidth:794},',
     '    jsPDF:{unit:"mm",format:"a4",orientation:orient},',
     '    pagebreak:{mode:["css"],before:".att-page[style*=page-break]"}',
     '  }).from(document.body).save()',
@@ -3995,7 +3995,7 @@ function printScores(){
     <style>
       @page{size:A4 portrait;margin:1cm 1.2cm;}
       *{box-sizing:border-box;}
-      body{font-family:'Sarabun','TH SarabunNew','Noto Sans Thai',sans-serif;font-size:13px;color:#000;line-height:1.5;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      body{font-family:'Sarabun','TH SarabunNew','Noto Sans Thai',sans-serif;font-size:13px;color:#000;line-height:1.5;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;max-width:794px;margin:0 auto;}
       .ph{text-align:center;margin-bottom:6px;border-bottom:2px solid #000;padding-bottom:5px;}
       .ph h1{font-size:16px;font-weight:800;margin:0 0 2px;}
       .ph h2{font-size:14px;font-weight:600;margin:0 0 2px;}
@@ -4030,9 +4030,9 @@ function printScores(){
     '  const btn=document.getElementById("ebtn");',
     '  if(btn){btn.textContent="กำลัง Export...";btn.disabled=true;}',
     '  html2pdf().set({',
-    '    margin:[0,0,0,0],filename:document.title+".pdf",',
+    '    margin:[10,10,10,10],filename:document.title+".pdf",',
     '    image:{type:"jpeg",quality:0.97},',
-    '    html2canvas:{scale:2,useCORS:true,backgroundColor:"#fff",logging:false},',
+    '    html2canvas:{scale:2,useCORS:true,backgroundColor:"#fff",logging:false,windowWidth:794},',
     '    jsPDF:{unit:"mm",format:"a4",orientation:orient},',
     '    pagebreak:{mode:["css"]}',
     '  }).from(document.body).save()',
