@@ -1169,9 +1169,10 @@ function printHTML(title, bodyHTML, orient='portrait'){
     <meta charset="UTF-8"><title>${esc(title)}</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-      @page{size:A4 ${orient};margin:1cm 1.2cm;}
+      @page{size:A4 ${orient};margin:0;}
       *{box-sizing:border-box;}
-      body{font-family:'Sarabun','TH SarabunNew','Noto Sans Thai',sans-serif;font-size:13px;color:#000;line-height:1.5;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;max-width:794px;margin:0 auto;}
+      body{margin:0;padding:0;background:#fff;font-family:'Sarabun','TH SarabunNew','Noto Sans Thai',sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      #pbody{width:794px;padding:12mm 14mm;background:#fff;font-size:13px;color:#000;line-height:1.5;}
       .ph{text-align:center;margin-bottom:10px;border-bottom:2px solid #000;padding-bottom:6px;}
       .ph h1{font-size:16px;font-weight:800;margin:0 0 2px;}
       .ph h2{font-size:14px;font-weight:600;margin:0 0 2px;}
@@ -1186,7 +1187,7 @@ function printHTML(title, bodyHTML, orient='portrait'){
       .action-bar{display:flex;gap:10px;justify-content:center;padding:14px;margin-top:20px;background:#f5f5f7;border-radius:10px;position:sticky;bottom:0;}
       .btn-print{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#1d1d1f;color:#fff;font-weight:600;}
       .btn-export{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#FF3B30;color:#fff;font-weight:600;}
-      @media print{.action-bar{display:none!important;}}
+      @media print{.action-bar{display:none!important;}#pbody{width:100%;padding:1cm 1.2cm;}}
     </style>
     </head><body>
     <div id="pbody">
@@ -1203,7 +1204,6 @@ function printHTML(title, bodyHTML, orient='portrait'){
     </div>
     </body></html>`);
   w.document.close();
-  // inject html2pdf หลัง load
   const s1=w.document.createElement('script');
   s1.src='https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js';
   w.document.head.appendChild(s1);
@@ -1215,10 +1215,10 @@ function printHTML(title, bodyHTML, orient='portrait'){
     '  const btn=document.getElementById("ebtn");',
     '  if(btn){btn.textContent="กำลัง Export...";btn.disabled=true;}',
     '  html2pdf().set({',
-    '    margin:[10,10,10,10],',
+    '    margin:[0,0,0,0],',
     '    filename:document.title+".pdf",',
     '    image:{type:"jpeg",quality:0.97},',
-    '    html2canvas:{scale:2,useCORS:true,backgroundColor:"#fff",logging:false,windowWidth:794},',
+    '    html2canvas:{scale:2,useCORS:true,backgroundColor:"#fff",logging:false},',
     '    jsPDF:{unit:"mm",format:"a4",orientation:orient},',
     '    pagebreak:{mode:["avoid-all","css"]}',
     '  }).from(el).save()',
@@ -3267,9 +3267,10 @@ function printAttendance(){
     <meta charset="UTF-8"><title>${esc(pageTitle)}</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-      @page{size:A4 portrait;margin:1cm 1.2cm;}
+      @page{size:A4 portrait;margin:0;}
       *{box-sizing:border-box;}
-      body{font-family:'Sarabun','TH SarabunNew','Noto Sans Thai',sans-serif;font-size:13px;color:#000;line-height:1.5;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;max-width:794px;margin:0 auto;}
+      body{margin:0;padding:0;background:#fff;font-family:'Sarabun','TH SarabunNew','Noto Sans Thai',sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      #pbody{width:794px;padding:12mm 14mm;background:#fff;font-size:13px;color:#000;line-height:1.5;}
       .ph{text-align:center;margin-bottom:6px;border-bottom:2px solid #000;padding-bottom:5px;}
       .ph h1{font-size:16px;font-weight:800;margin:0 0 2px;}
       .ph h2{font-size:14px;font-weight:600;margin:0 0 2px;}
@@ -3285,9 +3286,9 @@ function printAttendance(){
       .action-bar{display:flex;gap:10px;justify-content:center;padding:14px;margin-top:20px;background:#f5f5f7;border-radius:10px;position:sticky;bottom:0;}
       .btn-print{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#1d1d1f;color:#fff;font-weight:600;}
       .btn-export{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#FF3B30;color:#fff;font-weight:600;}
-      @media print{.action-bar{display:none!important;}.att-page{page-break-inside:avoid;}}
+      @media print{.action-bar{display:none!important;}.att-page{page-break-inside:avoid;}#pbody{width:100%;padding:1cm 1.2cm;}}
     </style></head><body>
-    ${body}
+    <div id="pbody">${body}</div>
     <div class="action-bar">
       <button class="btn-print" onclick="window.print()">🖨️ พิมพ์</button>
       <button class="btn-export" id="ebtn" onclick="doExportPdf('portrait')">📄 Export PDF</button>
@@ -3300,20 +3301,18 @@ function printAttendance(){
   const s2=w.document.createElement('script');
   s2.textContent=[
     'function doExportPdf(orient){',
-    '  const el=document.body;',
+    '  const el=document.getElementById("pbody");',
     '  if(!el||typeof html2pdf==="undefined"){setTimeout(()=>doExportPdf(orient),600);return;}',
     '  const btn=document.getElementById("ebtn");',
     '  if(btn){btn.textContent="กำลัง Export...";btn.disabled=true;}',
-    '  const pages=document.querySelectorAll(".att-page");',
-    '  const target=pages.length?document.body:el;',
     '  html2pdf().set({',
-    '    margin:[10,10,10,10],',
+    '    margin:[0,0,0,0],',
     '    filename:document.title+".pdf",',
     '    image:{type:"jpeg",quality:0.97},',
-    '    html2canvas:{scale:2,useCORS:true,backgroundColor:"#fff",logging:false,windowWidth:794},',
+    '    html2canvas:{scale:2,useCORS:true,backgroundColor:"#fff",logging:false},',
     '    jsPDF:{unit:"mm",format:"a4",orientation:orient},',
     '    pagebreak:{mode:["css"],before:".att-page[style*=page-break]"}',
-    '  }).from(document.body).save()',
+    '  }).from(el).save()',
     '  .then(()=>{if(btn){btn.textContent="✅ สำเร็จ";setTimeout(()=>{btn.textContent="📄 Export PDF";btn.disabled=false;},2000);}})',
     '  .catch(e=>{if(btn){btn.textContent="📄 Export PDF";btn.disabled=false;}alert("ผิดพลาด: "+e.message);});',
     '}'
@@ -3993,9 +3992,10 @@ function printScores(){
     <meta charset="UTF-8"><title>${esc(pageTitle)}</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-      @page{size:A4 portrait;margin:1cm 1.2cm;}
+      @page{size:A4 portrait;margin:0;}
       *{box-sizing:border-box;}
-      body{font-family:'Sarabun','TH SarabunNew','Noto Sans Thai',sans-serif;font-size:13px;color:#000;line-height:1.5;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;max-width:794px;margin:0 auto;}
+      body{margin:0;padding:0;background:#fff;font-family:'Sarabun','TH SarabunNew','Noto Sans Thai',sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      #pbody{width:794px;padding:12mm 14mm;background:#fff;font-size:13px;color:#000;line-height:1.5;}
       .ph{text-align:center;margin-bottom:6px;border-bottom:2px solid #000;padding-bottom:5px;}
       .ph h1{font-size:16px;font-weight:800;margin:0 0 2px;}
       .ph h2{font-size:14px;font-weight:600;margin:0 0 2px;}
@@ -4011,9 +4011,9 @@ function printScores(){
       .action-bar{display:flex;gap:10px;justify-content:center;padding:14px;margin-top:20px;background:#f5f5f7;border-radius:10px;position:sticky;bottom:0;}
       .btn-print{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#1d1d1f;color:#fff;font-weight:600;}
       .btn-export{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#FF3B30;color:#fff;font-weight:600;}
-      @media print{.action-bar{display:none!important;}.sc-page{page-break-inside:avoid;}}
+      @media print{.action-bar{display:none!important;}.sc-page{page-break-inside:avoid;}#pbody{width:100%;padding:1cm 1.2cm;}}
     </style></head><body>
-    ${body}
+    <div id="pbody">${body}</div>
     <div class="action-bar">
       <button class="btn-print" onclick="window.print()">🖨️ พิมพ์</button>
       <button class="btn-export" id="ebtn" onclick="doExportPdf('portrait')">📄 Export PDF</button>
@@ -4026,16 +4026,17 @@ function printScores(){
   const s2=w.document.createElement('script');
   s2.textContent=[
     'function doExportPdf(orient){',
-    '  if(typeof html2pdf==="undefined"){setTimeout(()=>doExportPdf(orient),600);return;}',
+    '  const el=document.getElementById("pbody");',
+    '  if(!el||typeof html2pdf==="undefined"){setTimeout(()=>doExportPdf(orient),600);return;}',
     '  const btn=document.getElementById("ebtn");',
     '  if(btn){btn.textContent="กำลัง Export...";btn.disabled=true;}',
     '  html2pdf().set({',
-    '    margin:[10,10,10,10],filename:document.title+".pdf",',
+    '    margin:[0,0,0,0],filename:document.title+".pdf",',
     '    image:{type:"jpeg",quality:0.97},',
-    '    html2canvas:{scale:2,useCORS:true,backgroundColor:"#fff",logging:false,windowWidth:794},',
+    '    html2canvas:{scale:2,useCORS:true,backgroundColor:"#fff",logging:false},',
     '    jsPDF:{unit:"mm",format:"a4",orientation:orient},',
     '    pagebreak:{mode:["css"]}',
-    '  }).from(document.body).save()',
+    '  }).from(el).save()',
     '  .then(()=>{if(btn){btn.textContent="✅ สำเร็จ";setTimeout(()=>{btn.textContent="📄 Export PDF";btn.disabled=false;},2000);}})',
     '  .catch(e=>{if(btn){btn.textContent="📄 Export PDF";btn.disabled=false;}alert("ผิดพลาด: "+e.message);});',
     '}'
