@@ -1934,19 +1934,27 @@ async function pgDash(){
       subjIds.length ? qc('sc_sum_all_'+S.user.id, ()=>
         q(sb.from('score_summary').select('subject_id,grade,total_score').in('subject_id',subjIds))
       ) : Promise.resolve([]),
-      q(sb.from('students').select('grade_level,room')),
+      q(sb.from('students').select('id,grade_level,room')),
       subjIds.length ? qc('dash_att_'+S.user.id+'_'+subjIds.join(',').slice(0,40), ()=>
         q(sb.from('attendance').select('subject_id,student_id,status,periods')
         .in('subject_id',subjIds))) : Promise.resolve([])
     ]);
     const stuCount = {};
-    allStu.forEach(s=>{ const k=s.grade_level+'_'+s.room; stuCount[k]=(stuCount[k]||0)+1; });
+    const stuIdsByRoom = {};
+    allStu.forEach(s=>{
+      const k=s.grade_level+'_'+s.room;
+      stuCount[k]=(stuCount[k]||0)+1;
+      if(!stuIdsByRoom[k]) stuIdsByRoom[k]=new Set();
+      stuIdsByRoom[k].add(String(s.id));
+    });
     const sumBySubj = {};
     allSum.forEach(r=>{ (sumBySubj[r.subject_id]=sumBySubj[r.subject_id]||[]).push(r); });
     S.subjects = S.subjects.map(s=>{
-      const sum = sumBySubj[s.id]||[];
-      const total = stuCount[s.grade_level+'_'+s.room]||0;
-      const pass = sum.filter(x=>parseFloat(x.grade)>0).length;
+      const roomKey=s.grade_level+'_'+s.room;
+      const roomStuIds=stuIdsByRoom[roomKey]||new Set();
+      const sum=(sumBySubj[s.id]||[]).filter(x=>roomStuIds.has(String(x.student_id)));
+      const total = stuCount[roomKey]||0;
+      const pass = sum.filter(x=>x.grade!=null&&x.grade!==''&&parseFloat(x.grade)>0).length;
       const avg = sum.length>0?(sum.reduce((a,b)=>a+(parseFloat(b.total_score)||0),0)/sum.length).toFixed(1):0;
       const pct = total>0?((pass/total)*100).toFixed(1):0;
       // นับ มส. จาก attendance (present+leave)/total < 80%
