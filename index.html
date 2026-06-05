@@ -464,6 +464,13 @@ body.dark .subc{
   .mc{margin-left:0!important;}
   .mob-menu-btn{display:flex!important;}
   .pg{padding:14px;}
+  /* Topbar mobile: hide verbose text, keep icons */
+  .self-pill-name{display:none!important;}
+  .self-pill{padding:4px 6px!important;gap:4px!important;}
+  #tbb{display:none!important;}
+  .tb-logout-text{display:none!important;}
+  header.tb{padding:0 10px!important;gap:1.5px!important;}
+  #tb-presence{gap:4px!important;}
 }
 </style>
 </head>
@@ -905,7 +912,7 @@ body.dark .subc{
     </button>
     <button onclick="doLogout()" class="btn bd btn-sm no-print flex items-center gap-1.5">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-      ออกจากระบบ
+      <span class="tb-logout-text">ออกจากระบบ</span>
     </button>
   </header>
 
