@@ -4342,11 +4342,13 @@ async function pgReport(){
   Object.values(attMap).forEach(m=>{m.pct=m.totalH>0?Math.round(m.attended/m.totalH*100):0;m.ms=m.pct<80;});
   // เก็บไว้ใน state เพื่อให้ export ใช้ได้
   S._rpt={sub,stus,sumMap,erMap,ecMap,attMap};
-  // stats
-  const pass=sumRows.filter(s=>parseFloat(s.grade)>0).length;
-  const avg=sumRows.length>0?(sumRows.reduce((a,b)=>a+(parseFloat(b.total_score)||0),0)/sumRows.length).toFixed(1):0;
+  // stats — filter เฉพาะนักเรียนในห้องจริง
+  const stuIds=new Set(stus.map(s=>String(s.id)));
+  const stuSumRows=sumRows.filter(s=>stuIds.has(String(s.student_id)));
+  const pass=stuSumRows.filter(s=>parseFloat(s.grade)>0).length;
+  const avg=stuSumRows.length>0?(stuSumRows.reduce((a,b)=>a+(parseFloat(b.total_score)||0),0)/stuSumRows.length).toFixed(1):0;
   const gradeCount={4:0,3.5:0,3:0,2.5:0,2:0,1.5:0,1:0,0:0};
-  sumRows.forEach(s=>{const g=parseFloat(s.grade);if(gradeCount[g]!==undefined)gradeCount[g]++;});
+  stuSumRows.forEach(s=>{const g=parseFloat(s.grade);if(gradeCount[g]!==undefined)gradeCount[g]++;});
   const pct=stus.length>0?((pass/stus.length)*100).toFixed(1):0;
 
   $('pg').innerHTML=`
@@ -4363,7 +4365,7 @@ async function pgReport(){
   <div class="sg no-print">
     <div class="sc"><div class="si" style="background:linear-gradient(135deg,#34aadc,#007AFF)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div><div class="sv">${stus.length}</div><div class="sl">นักเรียน</div></div></div>
     <div class="sc"><div class="si" style="background:linear-gradient(135deg,#34c759,#28a745)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="20 6 9 17 4 12"/></svg></div><div><div class="sv">${pass}<small style="font-size:13px"> (${pct}%)</small></div><div class="sl">ผ่าน</div></div></div>
-    <div class="sc"><div class="si" style="background:linear-gradient(135deg,#ff453a,#dc2626)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div><div><div class="sv">${sumRows.length-pass}</div><div class="sl">ไม่ผ่าน</div></div></div>
+    <div class="sc"><div class="si" style="background:linear-gradient(135deg,#ff453a,#dc2626)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div><div><div class="sv">${stus.length-pass}</div><div class="sl">ไม่ผ่าน</div></div></div>
     <div class="sc"><div class="si" style="background:linear-gradient(135deg,#bf5af2,#9b59b6)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><div><div class="sv">${avg}</div><div class="sl">คะแนนเฉลี่ย</div></div></div>
   </div>
   <div class="card" style="margin-bottom:16px">
@@ -4459,11 +4461,12 @@ async function pgCover(){
   const cfg=S.config;
   const cvStus=await getStudentsBySubject(S.selSub);
   const totalN=cvStus.length;
+  const cvStuIds=new Set(cvStus.map(s=>String(s.id)));
 
-  // ── ระดับผลการเรียน ──
+  // ── ระดับผลการเรียน (filter เฉพาะนักเรียนในห้อง) ──
   const gc={4:0,3.5:0,3:0,2.5:0,2:0,1.5:0,1:0,0:0};
   let rC=0,msC=0;
-  sumRows.forEach(s=>{
+  sumRows.filter(s=>cvStuIds.has(String(s.student_id))).forEach(s=>{
     const g=parseFloat(s.grade);
     if(gc[g]!==undefined) gc[g]++;
     if(s.special_result==='ร')  rC++;
@@ -4472,13 +4475,15 @@ async function pgCover(){
 
   // ── ประเมินการอ่าน ──
   const erLv={3:0,2:0,1:0,0:0};
-  erRows.forEach(e=>{ const v=parseInt(e.result); if(v in erLv) erLv[v]++; });
-  const erTotal=erRows.length;
+  const erFiltered=erRows.filter(e=>cvStuIds.has(String(e.student_id)));
+  erFiltered.forEach(e=>{ const v=parseInt(e.result); if(v in erLv) erLv[v]++; });
+  const erTotal=erFiltered.length;
 
   // ── คุณลักษณะ ──
   const ecLv={3:0,2:0,1:0,0:0};
-  ecRows.forEach(e=>{ const v=parseInt(e.overall_result); if(v in ecLv) ecLv[v]++; });
-  const ecTotal=ecRows.length;
+  const ecFiltered=ecRows.filter(e=>cvStuIds.has(String(e.student_id)));
+  ecFiltered.forEach(e=>{ const v=parseInt(e.overall_result); if(v in ecLv) ecLv[v]++; });
+  const ecTotal=ecFiltered.length;
 
   const td=(c,ex='')=>`<td style="border:1px solid #000;padding:4px;text-align:center;font-size:12px;${ex}">${c}</td>`;
   const th=(c,ex='')=>`<td style="border:1px solid #000;padding:3px 4px;text-align:center;font-size:11px;font-weight:600;background:#f0f0f0;${ex}">${c}</td>`;
