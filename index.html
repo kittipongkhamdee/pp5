@@ -1718,9 +1718,10 @@ function _showSelfPill(){
   const myName = S.profile?.full_name||S.user?.email||'';
   el.style.display='flex';
   el.innerHTML=
-    '<div class="self-pill">'+
+    '<div class="self-pill" onclick="openProfilePopup(event)" style="cursor:pointer" title="โปรไฟล์ของฉัน">'+
       '<div class="self-pill-dot"></div>'+
       '<span class="self-pill-name">'+esc(myName)+'</span>'+
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="10" height="10" style="margin-left:2px;opacity:.5"><polyline points="6 9 12 15 18 9"/></svg>'+
     '</div>';
 }
 
