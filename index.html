@@ -1585,6 +1585,7 @@ function openProfilePopup(ev){
 
   _profPopEl = document.createElement('div');
   _profPopEl.className = 'prof-popup';
+  _profPopEl.addEventListener('click',e=>e.stopPropagation());
   _profPopEl.innerHTML = `
     <div class="prof-hd">
       <div class="prof-av" style="background:linear-gradient(135deg,${col.bg},${col.bg}cc)">${ini}</div>
@@ -3202,9 +3203,7 @@ function printAttendance(){
 
   // แบ่งเป็น chunk ทีละ COLS_PER_PAGE
   const chunks=[];
-  for(let i=0;i<allCols.length||chunks.length===0;i+=COLS_PER_PAGE){
-    chunks.push(allCols.slice(i,i+COLS_PER_PAGE));
-  }
+  if(!allCols.length){ chunks.push([]); } else { for(let i=0;i<allCols.length;i+=COLS_PER_PAGE) chunks.push(allCols.slice(i,i+COLS_PER_PAGE)); }
 
   const schoolName=(cfg.school_name||'').startsWith('โรงเรียน')?cfg.school_name:'โรงเรียน'+(cfg.school_name||'');
   const pageTitle=`บันทึกเวลาเรียน — ${sub.subject_name} ${grm(sub.grade_level,sub.room)}`;
@@ -3512,7 +3511,7 @@ async function addUnitOnly(period){
   const unm=($(period+'-unm')?.value||'').trim()||('หน่วยที่ '+un);
   const std=($(period+'-std')?.value||'').trim();
   const mx=parseFloat($(period+'-mx')?.value)||20;
-  if(scU[period].find(u=>u.unit_number===un)){
+  if(scU[period].find(u=>parseInt(u.unit_number)===parseInt(un))){
     toast('หน่วย '+un+' มีอยู่แล้ว','er'); return;
   }
   // สร้าง row เดียวสำหรับ student แรก เพื่อ upsert ชื่อหน่วยลง DB
@@ -4189,8 +4188,8 @@ async function saveRead(){
 }
 async function saveChar(){
   const rows=evStus.map(s=>{
-    // g: ค่าว่าง → null, ตัวเลข (รวม 0) → integer
-    const g=k=>{ const v=$('ch-'+k+'-'+s.id)?.value; return (v===''||v==null)?null:parseInt(v); };
+    const iv=el=>{const v=el?.value;return(v===''||v==null)?null:parseInt(v);};
+    const g=k=>iv($('ch-'+k+'-'+s.id));
     return{subject_id:S.selSub,student_id:s.id,
       c1_1:g('c1_1'),c1_2:g('c1_2'),c1_3:g('c1_3'),c1_4:g('c1_4'),
       c2_1:g('c2_1'),c2_2:g('c2_2'),c3_1:g('c3_1'),
@@ -4199,7 +4198,7 @@ async function saveChar(){
       c8_1:g('c8_1'),c8_2:g('c8_2'),
       r1:g('r1'),r2:g('r2'),r3:g('r3'),r4:g('r4'),
       r5:g('r5'),r6:g('r6'),r7:g('r7'),r8:g('r8'),
-      overall_result:parseInt($('ch-res-'+s.id)?.value)||null};
+      overall_result:iv($('ch-res-'+s.id))};
   });
   loading(true);
   try{
@@ -4324,7 +4323,7 @@ async function pgReport(){
   // stats — filter เฉพาะนักเรียนในห้องจริง
   const stuIds=new Set(stus.map(s=>String(s.id)));
   const stuSumRows=sumRows.filter(s=>stuIds.has(String(s.student_id)));
-  const pass=stuSumRows.filter(s=>parseFloat(s.grade)>0).length;
+  const pass=stuSumRows.filter(s=>s.grade!=null&&s.grade!==''&&parseFloat(s.grade)>0).length;
   const avg=stuSumRows.length>0?(stuSumRows.reduce((a,b)=>a+(parseFloat(b.total_score)||0),0)/stuSumRows.length).toFixed(1):0;
   const gradeCount={4:0,3.5:0,3:0,2.5:0,2:0,1.5:0,1:0,0:0};
   stuSumRows.forEach(s=>{const g=parseFloat(s.grade);if(gradeCount[g]!==undefined)gradeCount[g]++;});
@@ -5390,6 +5389,7 @@ async function _doRestore(){
 function cacheInvAll(){
   try{ Object.keys(_cache).forEach(k=>delete _cache[k]); }catch(e){}
   invalidateSubjects(); clearStuCache(); invalidateSc(); invalidateAtt();
+  cacheInvPrefix('ev_read_'); cacheInvPrefix('ev_char_');
 }
 
 // ════ BACKUP ALL DATA ══════════════════════════════════════════
