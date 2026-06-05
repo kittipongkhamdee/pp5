@@ -1182,7 +1182,7 @@ function printHTML(title, bodyHTML, orient='portrait'){
       tr{page-break-inside:avoid;}
       th,td{border:1px solid #555;padding:4px 5px;font-size:11.5px;text-align:center;font-family:'Sarabun','TH SarabunNew',sans-serif;}
       th{font-weight:700;background:#f0f0f0;}
-      td.l{text-align:left;padding-left:6px;}
+      td.l{text-align:left;padding-left:6px;white-space:nowrap;}
       .pass{color:#16803d;}.fail{color:#dc2626;font-weight:700;}.ms{color:#dc2626;font-weight:700;}
       .action-bar{display:flex;gap:10px;justify-content:center;padding:14px;margin-top:20px;background:#f5f5f7;border-radius:10px;position:sticky;bottom:0;}
       .btn-print{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#1d1d1f;color:#fff;font-weight:600;}
@@ -3220,7 +3220,7 @@ function printAttendance(){
       else mGroups[mGroups.length-1].count++;
     });
     const isLast=ci===chunks.length-1;
-    const pageBreak=ci>0?'style="page-break-before:always"':'';
+    const pageBreak=ci>0?'style="page-break-before:always;padding-top:12mm"':'';
 
     body+=`<div class="att-page" ${pageBreak}>`;
     // หัว
@@ -3287,6 +3287,7 @@ function printAttendance(){
       .btn-print{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#1d1d1f;color:#fff;font-weight:600;}
       .btn-export{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#FF3B30;color:#fff;font-weight:600;}
       @media print{.action-bar{display:none!important;}.att-page{page-break-inside:avoid;}#pbody{width:100%;padding:1cm 1.2cm;}}
+      .att-page+.att-page{padding-top:12mm;}
     </style></head><body>
     <div id="pbody">${body}</div>
     <div class="action-bar">
@@ -3895,72 +3896,49 @@ function printScores(){
   const pageTitle=`บันทึกคะแนน — ${sub.subject_name} ${grm(sub.grade_level,sub.room)}`;
   const metaStr=`วิชา ${esc(sub.subject_name)} (${esc(sub.subject_code)}) ${grm(sub.grade_level,sub.room)} &nbsp; ครู${esc(sub.teacher_name||'')} &nbsp; ปีการศึกษา ${cfg.academic_year||''} ภาค ${cfg.semester||''}`;
 
-  // รวม unit columns ทั้งหมด
-  const allUnits=[
-    ...scU.before.map(u=>({...u,period:'before'})),
-    ...scU.after.map(u=>({...u,period:'after'}))
+  // แบ่ง chunk แยกตาม period — ก่อนกลางภาคก่อน แล้วหลังกลางภาค
+  function makeChunks(units){ const c=[]; for(let i=0;i<units.length||c.length===0;i+=COLS_PER_PAGE) c.push(units.slice(i,i+COLS_PER_PAGE)); return c; }
+  const befChunks=makeChunks(scU.before.map(u=>({...u,period:'before'})));
+  const aftChunks=makeChunks(scU.after.map(u=>({...u,period:'after'})));
+  const allChunks=[
+    ...befChunks.map((c,i)=>({cols:c,isLastBef:i===befChunks.length-1,isLastAft:false})),
+    ...aftChunks.map((c,i)=>({cols:c,isLastBef:false,isLastAft:i===aftChunks.length-1}))
   ];
+  const totalPages=allChunks.length+1; // +1 สำหรับหน้าสรุป
 
-  // แบ่ง chunks ทีละ COLS_PER_PAGE
-  const chunks=[];
-  for(let i=0;i<allUnits.length||chunks.length===0;i+=COLS_PER_PAGE)
-    chunks.push(allUnits.slice(i,i+COLS_PER_PAGE));
-
-  function pageHeader(ci,total){
+  function pageHeader(pageNum){
     let h=`<div class="ph"><h1>${esc(schoolName)}</h1><h2>${esc(pageTitle)}</h2>
       <div class="meta">ปีการศึกษา ${esc(cfg.academic_year||'')} ภาคเรียนที่ ${esc(cfg.semester||'')}</div></div>`;
-    h+=`<div class="meta2">${metaStr}`;
-    if(total>1) h+=` &nbsp; <strong>(หน้า ${ci+1}/${total+1})</strong>`;
-    h+='</div>';
+    h+=`<div class="meta2">${metaStr} &nbsp; <strong>(หน้า ${pageNum}/${totalPages})</strong></div>`;
     return h;
   }
 
   let body='';
-
-  // ── หน้าหน่วยการเรียน ──
-  chunks.forEach((cols,ci)=>{
-    const isLastUnit=ci===chunks.length-1;
-    const pb=ci>0?'style="page-break-before:always"':'';
-
-    // จัดกลุ่ม period header
-    const pGroups=[];
-    cols.forEach(u=>{
-      const lbl=u.period==='before'?'ก่อนกลางภาค':'หลังกลางภาค';
-      if(!pGroups.length||pGroups[pGroups.length-1].name!==lbl) pGroups.push({name:lbl,count:1});
-      else pGroups[pGroups.length-1].count++;
-    });
-
-    body+=`<div class="sc-page" ${pb}>${pageHeader(ci,chunks.length)}`;
+  allChunks.forEach(({cols,isLastBef,isLastAft},ci)=>{
+    const pb=ci>0?'style="page-break-before:always;padding-top:12mm"':'';
+    const periodLabel=cols[0]?.period==='before'?'ก่อนกลางภาค':'หลังกลางภาค';
+    body+=`<div class="sc-page" ${pb}>${pageHeader(ci+1)}`;
     body+=`<h3 style="margin:0 0 4px">บันทึกคะแนนหน่วยการเรียน</h3>`;
     body+=`<table><thead><tr>`;
     body+=`<th rowspan="2">เลขที่</th><th rowspan="2">เลขประจำตัว</th><th rowspan="2" class="l">ชื่อ-สกุล</th>`;
-    pGroups.forEach(g=>{ body+=`<th colspan="${g.count}">${g.name}</th>`; });
-    if(isLastUnit){
-      body+=`<th rowspan="2">รวมก่อนกลาง<br>(/${mBef})</th>`;
-      body+=`<th rowspan="2">รวมหลังกลาง<br>(/${mAft})</th>`;
-    }
+    body+=`<th colspan="${cols.length}">${periodLabel}</th>`;
+    if(isLastBef) body+=`<th rowspan="2">รวมก่อนกลาง<br>(/${mBef})</th>`;
+    if(isLastAft) body+=`<th rowspan="2">รวมหลังกลาง<br>(/${mAft})</th>`;
     body+=`</tr><tr>`;
-    cols.forEach(u=>{
-      body+=`<th>${u.unit_number}${u.unit_name?'<br><span style="font-size:9px;font-weight:400">'+esc(u.unit_name.slice(0,12))+'</span>':''}<br><span style="font-size:9px;opacity:.6">/${u.max_score}</span></th>`;
-    });
+    cols.forEach(u=>{ body+=`<th>${u.unit_number}${u.unit_name?'<br><span style="font-size:9px;font-weight:400">'+esc(u.unit_name.slice(0,12))+'</span>':''}<br><span style="font-size:9px;opacity:.6">/${u.max_score}</span></th>`; });
     body+=`</tr></thead><tbody>`;
     scStus.forEach((s,i)=>{
       body+=`<tr><td>${i+1}</td><td>${esc(s.student_code)}</td><td class="l">${esc(s.student_name)}</td>`;
       cols.forEach(u=>{ const sc=gsc(s.id,u.period,u.unit_number); body+=`<td>${sc!=null?sc:''}</td>`; });
-      if(isLastUnit){
-        const sid=String(s.id);
-        const bef=scU.before.reduce((a,u)=>a+(gsc(s.id,'before',u.unit_number)??0),0);
-        const aft=scU.after.reduce((a,u)=>a+(gsc(s.id,'after',u.unit_number)??0),0);
-        body+=`<td><strong>${bef||''}</strong></td><td><strong>${aft||''}</strong></td>`;
-      }
+      if(isLastBef){ const bef=scU.before.reduce((a,u)=>a+(gsc(s.id,'before',u.unit_number)??0),0); body+=`<td><strong>${bef||''}</strong></td>`; }
+      if(isLastAft){ const aft=scU.after.reduce((a,u)=>a+(gsc(s.id,'after',u.unit_number)??0),0); body+=`<td><strong>${aft||''}</strong></td>`; }
       body+=`</tr>`;
     });
     body+=`</tbody></table></div>`;
   });
 
   // ── หน้าสรุปคะแนนและผลการเรียน ──
-  const pbSum=`style="page-break-before:always"`;
-  body+=`<div class="sc-page" ${pbSum}>${pageHeader(chunks.length,chunks.length)}`;
+  body+=`<div class="sc-page" style="page-break-before:always;padding-top:12mm">${pageHeader(totalPages)}`;
   body+=`<h3 style="margin:0 0 4px">สรุปคะแนนและผลการเรียน</h3>`;
   body+=`<table><thead><tr>
     <th>เลขที่</th><th>เลขประจำตัว</th><th class="l">ชื่อ-สกุล</th>
@@ -4007,7 +3985,7 @@ function printScores(){
       tr{page-break-inside:avoid;}
       th,td{border:1px solid #555;padding:3px 4px;font-size:11px;text-align:center;font-family:'Sarabun','TH SarabunNew',sans-serif;}
       th{font-weight:700;background:#f0f0f0;}
-      td.l,th.l{text-align:left;padding-left:6px;}
+      td.l,th.l{text-align:left;padding-left:6px;white-space:nowrap;}
       .action-bar{display:flex;gap:10px;justify-content:center;padding:14px;margin-top:20px;background:#f5f5f7;border-radius:10px;position:sticky;bottom:0;}
       .btn-print{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#1d1d1f;color:#fff;font-weight:600;}
       .btn-export{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#FF3B30;color:#fff;font-weight:600;}
