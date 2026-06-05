@@ -1927,6 +1927,8 @@ async function pgDash(){
   if(_pgDashRunning) return;
   _pgDashRunning=true;
   loading(true);
+  // force-refresh คะแนนทุกครั้งที่เปิดหน้าแดชบอร์ด
+  if(S.user) cacheInv('sc_sum_all_'+S.user.id);
   try{
     await loadSubjects();
     const subjIds = S.subjects.map(s=>s.id);
@@ -1977,9 +1979,9 @@ async function pgDash(){
     const subjWithScore = S.subjects.filter(s=>s.stats.recorded>0);
     let _dashPassAvg = 0, _dashMsCount = 0;
     if(subjWithScore.length){
-      // % ผ่านรวม = นักเรียนที่ผ่านทุกวิชารวมกัน ÷ นักเรียนทั้งหมดทุกวิชารวมกัน
+      // % ผ่านรวม = นักเรียนที่ผ่านทุกวิชารวมกัน ÷ นักเรียนทั้งหมดในห้อง (ตรงกับ Report)
       const totalPass = subjWithScore.reduce((a,s)=>a+(s.stats.pass||0), 0);
-      const totalAll  = subjWithScore.reduce((a,s)=>a+(s.stats.recorded||0), 0);
+      const totalAll  = subjWithScore.reduce((a,s)=>a+(s.stats.total||0), 0);
       _dashPassAvg = totalAll>0 ? Math.round(totalPass/totalAll*100) : 0;
     }
     // นับ มส. จาก attendance (< 80% เข้าเรียน)
