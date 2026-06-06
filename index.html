@@ -5078,6 +5078,49 @@ async function pgSettings(){
 
   </div><!-- end top grid -->
 
+  <!-- ── รายวิชาตามครู ── -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="ch">
+      <div class="ct" style="display:flex;align-items:center;gap:7px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--ac)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        รายวิชา
+      </div>
+      <span style="font-size:12px;color:var(--muted);font-weight:400">${S.subjects.length} วิชา</span>
+    </div>
+    <div class="cb">
+      ${(()=>{
+        if(!S.subjects.length) return '<div class="empty" style="padding:20px 0">ยังไม่มีรายวิชา</div>';
+        const byTeacher={};
+        S.subjects.forEach(s=>{
+          const t=s.teacher_name||'— ไม่ระบุครู —';
+          if(!byTeacher[t]) byTeacher[t]=[];
+          byTeacher[t].push(s);
+        });
+        return Object.entries(byTeacher).sort(([a],[b])=>a.localeCompare(b,'th')).map(([teacher,subs])=>`
+          <div style="margin-bottom:16px">
+            <div style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.3px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:6px">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+              ${esc(teacher)}
+              <span style="font-weight:400;font-size:11px">(${subs.length} วิชา)</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              ${subs.map(s=>`
+              <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:var(--bg2)">
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:13px;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(s.subject_name)}</div>
+                  <div style="font-size:11.5px;color:var(--muted);margin-top:1px">${esc(s.subject_code)} &nbsp;·&nbsp; ${grm(s.grade_level,s.room)}</div>
+                </div>
+                <button onclick="deleteSubjectFromSettings(${s.id})" style="padding:6px 9px;border-radius:8px;border:none;cursor:pointer;background:rgba(255,59,48,.08);color:#FF3B30;flex-shrink:0;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;font-family:var(--font)" title="ลบวิชานี้">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                  ลบ
+                </button>
+              </div>`).join('')}
+            </div>
+          </div>`).join('');
+      })()}
+    </div>
+  </div>
+
   <!-- ── ค่าเป้าหมาย IQA ── -->
   <div class="card">
     <div class="ch">
@@ -5103,34 +5146,8 @@ async function pgSettings(){
     </div>
   </div>
 
-  <!-- ── แถวล่าง: Backup/Restore + รหัสผ่านแอดมิน + โซนอันตราย ── -->
+  <!-- ── แถวล่าง: รหัสผ่านแอดมิน + Backup/Restore + โซนอันตราย ── -->
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start;">
-
-    <!-- การ์ด: สำรองและกู้คืนข้อมูล -->
-    <div class="card" style="margin-bottom:0">
-      <div class="ch">
-        <div class="ct" style="display:flex;align-items:center;gap:7px;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="var(--ac)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          สำรองและกู้คืนข้อมูล
-        </div>
-      </div>
-      <div class="cb">
-        <div style="font-size:13px;color:#6e6e73;line-height:1.8;margin-bottom:14px">
-          <strong style="color:#1d1d1f">Backup</strong> — ดาวน์โหลดข้อมูลทั้งหมดเป็นไฟล์ .xlsx<br>
-          <strong style="color:#1d1d1f">Restore</strong> — นำเข้าข้อมูลจากไฟล์ Backup (จะแทนที่ข้อมูลปัจจุบัน)
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn bs" onclick="backupAllData()" style="background:rgba(52,199,89,.12);color:#16803d;flex:1;justify-content:center">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Backup
-          </button>
-          <button class="btn bs" onclick="openRestoreDialog()" style="background:rgba(255,59,48,.1);color:#dc2626;flex:1;justify-content:center">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-            Restore
-          </button>
-        </div>
-      </div>
-    </div>
 
     <!-- การ์ด: รหัสผ่านแอดมิน -->
     <div class="card" style="margin-bottom:0">
@@ -5167,6 +5184,32 @@ async function pgSettings(){
       </div>
     </div>
 
+    <!-- การ์ด: สำรองและกู้คืนข้อมูล -->
+    <div class="card" style="margin-bottom:0">
+      <div class="ch">
+        <div class="ct" style="display:flex;align-items:center;gap:7px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--ac)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          สำรองและกู้คืนข้อมูล
+        </div>
+      </div>
+      <div class="cb">
+        <div style="font-size:13px;color:#6e6e73;line-height:1.8;margin-bottom:14px">
+          <strong style="color:#1d1d1f">Backup</strong> — ดาวน์โหลดข้อมูลทั้งหมดเป็นไฟล์ .xlsx<br>
+          <strong style="color:#1d1d1f">Restore</strong> — นำเข้าข้อมูลจากไฟล์ Backup (จะแทนที่ข้อมูลปัจจุบัน)
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn bs" onclick="backupAllData()" style="background:rgba(52,199,89,.12);color:#16803d;flex:1;justify-content:center">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Backup
+          </button>
+          <button class="btn bs" onclick="openRestoreDialog()" style="background:rgba(255,59,48,.1);color:#dc2626;flex:1;justify-content:center">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Restore
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- การ์ด: โซนอันตราย -->
     <div class="card" style="margin-bottom:0;border:1.5px solid #fecaca;">
       <div class="ch" style="background:#fff1f0;">
@@ -5193,50 +5236,6 @@ async function pgSettings(){
     </div>
 
   </div><!-- end bottom grid -->
-
-  <!-- ── จัดการรายวิชาตามครู ── -->
-  <div class="card" style="margin-top:16px">
-    <div class="ch">
-      <div class="ct" style="display:flex;align-items:center;gap:7px">
-        <svg viewBox="0 0 24 24" fill="none" stroke="var(--ac)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-        จัดการรายวิชา
-      </div>
-      <span style="font-size:12px;color:var(--muted);font-weight:400">${S.subjects.length} วิชา</span>
-    </div>
-    <div class="cb">
-      ${(()=>{
-        if(!S.subjects.length) return '<div class="empty" style="padding:20px 0">ยังไม่มีรายวิชา</div>';
-        // จัดกลุ่มตามครู
-        const byTeacher={};
-        S.subjects.forEach(s=>{
-          const t=s.teacher_name||'— ไม่ระบุครู —';
-          if(!byTeacher[t]) byTeacher[t]=[];
-          byTeacher[t].push(s);
-        });
-        return Object.entries(byTeacher).sort(([a],[b])=>a.localeCompare(b,'th')).map(([teacher,subs])=>`
-          <div style="margin-bottom:16px">
-            <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:6px">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-              ${esc(teacher)}
-              <span style="font-weight:400;font-size:11px">(${subs.length} วิชา)</span>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:6px">
-              ${subs.map(s=>`
-              <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:var(--bg2)">
-                <div style="flex:1;min-width:0">
-                  <div style="font-size:13px;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(s.subject_name)}</div>
-                  <div style="font-size:11.5px;color:var(--muted);margin-top:1px">${esc(s.subject_code)} &nbsp;·&nbsp; ${grm(s.grade_level,s.room)}</div>
-                </div>
-                <button onclick="deleteSubjectFromSettings(${s.id})" style="padding:6px 9px;border-radius:8px;border:none;cursor:pointer;background:rgba(255,59,48,.08);color:#FF3B30;flex-shrink:0;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;font-family:var(--font)" title="ลบวิชานี้">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
-                  ลบ
-                </button>
-              </div>`).join('')}
-            </div>
-          </div>`).join('');
-      })()}
-    </div>
-  </div>
 
   `;
 }
