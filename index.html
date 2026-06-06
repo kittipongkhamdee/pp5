@@ -1342,33 +1342,30 @@ async function updateMsBadge(){
     const subjIds = S.subjects.map(s=>s.id);
     if(!subjIds.length){ _setMsBadge(0); return; }
 
-    // ใช้ cache key เดียวกับ pgDash ถ้ามี ไม่งั้นดึงใหม่
-    const _dashKey = 'dash_att_'+S.user.id+'_'+subjIds.join(',').slice(0,40);
-    const attRows = await qc(_dashKey, ()=>
-      q(sb.from('attendance')
-        .select('subject_id,student_id,status,periods')
-        .in('subject_id', subjIds))
+    // ดึง attendance ด้วย .eq() ต่อ subject (หลีกเลี่ยง RLS ปัญหากับ .in())
+    const attArrays = await Promise.all(
+      subjIds.map(id=>q(sb.from('attendance').select('subject_id,student_id,status,periods').eq('subject_id',id)))
     );
+    const attRows = attArrays.flat();
 
-    // สรุปต่อ student ต่อ subject
-    // attended = present + leave, total = present + absent + leave
-    const stuSubMap = {}; // key: student_id+subject_id
+    // สรุปต่อ student ต่อ subject (attended = present + leave)
+    const attBySub = {};
     attRows.forEach(a=>{
-      const key = a.student_id+'|'+a.subject_id;
-      if(!stuSubMap[key]) stuSubMap[key]={attended:0,total:0};
+      if(!attBySub[a.subject_id]) attBySub[a.subject_id]={};
+      const sid = String(a.student_id);
+      if(!attBySub[a.subject_id][sid]) attBySub[a.subject_id][sid]={attended:0};
       const p = parseInt(a.periods)||1;
-      stuSubMap[key].total += p;
-      if(a.status==='present'||a.status==='leave')
-        stuSubMap[key].attended += p;
+      if(a.status==='present'||a.status==='leave') attBySub[a.subject_id][sid].attended += p;
     });
 
-    // นับนักเรียนที่มี % < 80% (มีข้อมูลแล้ว)
+    // นับนักเรียนที่มี % < 80% โดยใช้ total_hours เป็นตัวหาร (ตรงกับหน้าเวลาเรียน)
     const msSet = new Set();
-    Object.entries(stuSubMap).forEach(([key,m])=>{
-      if(m.total > 0 && (m.attended/m.total*100) < 80){
-        const sid = key.split('|')[0];
-        msSet.add(sid);
-      }
+    S.subjects.forEach(sub=>{
+      const totalH = sub.total_hours||60;
+      const stuMap = attBySub[sub.id]||{};
+      Object.entries(stuMap).forEach(([sid,m])=>{
+        if(totalH>0 && (m.attended/totalH*100)<80) msSet.add(sid);
+      });
     });
 
     _setMsBadge(msSet.size);
@@ -1931,16 +1928,17 @@ async function pgDash(){
     await loadSubjects();
     const subjIds = S.subjects.map(s=>s.id);
     // ใช้ .eq() ต่อ subject เหมือน Report เพื่อหลีกเลี่ยงปัญหา RLS กับ .in()
-    const [allSumArrays, allStu, allAtt] = await Promise.all([
+    const [allSumArrays, allStu, allAttArrays] = await Promise.all([
       subjIds.length ?
         Promise.all(subjIds.map(id=>q(sb.from('score_summary').select('subject_id,student_id,grade,total_score').eq('subject_id',id))))
         : Promise.resolve([[]]),
       q(sb.from('students').select('id,grade_level,room')),
-      subjIds.length ? qc('dash_att_'+S.user.id+'_'+subjIds.join(',').slice(0,40), ()=>
-        q(sb.from('attendance').select('subject_id,student_id,status,periods')
-        .in('subject_id',subjIds))) : Promise.resolve([])
+      subjIds.length ?
+        Promise.all(subjIds.map(id=>q(sb.from('attendance').select('subject_id,student_id,status,periods').eq('subject_id',id))))
+        : Promise.resolve([[]])
     ]);
     const allSum = allSumArrays.flat();
+    const allAtt = allAttArrays.flat();
     const stuCount = {};
     const stuIdsByRoom = {};
     allStu.forEach(s=>{
