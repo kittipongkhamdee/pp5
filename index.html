@@ -5973,12 +5973,19 @@ async function pgSchoolReport(){
       const pass = sumRows.filter(r=>parseFloat(r.grade)>0&&!['ร','มส','มผ','ผ'].includes(r.special_result||'')).length;
       const avg = sumRows.length>0?(sumRows.reduce((a,b)=>a+(parseFloat(b.total_score)||0),0)/sumRows.length).toFixed(1):'—';
       const pct = total>0?((sumRows.length>0?pass/sumRows.length:0)*100).toFixed(1):'—';
-      // หา ms (มส)
+      // หา ms (มส) — เฉพาะนักเรียนที่มี attendance record และ < 80%
+      const stuAttMapSub={};
+      attRows.forEach(a=>{
+        const sid=String(a.student_id);
+        if(!stuAttMapSub[sid])stuAttMapSub[sid]={attended:0};
+        const p=parseInt(a.periods)||1;
+        if(a.status==='present'||a.status==='leave')stuAttMapSub[sid].attended+=p;
+      });
+      const totalH = sub.total_hours||60;
       const msCount = stuIds.filter(sid=>{
-        const att = attRows.filter(a=>String(a.student_id)===String(sid));
-        const totalH = sub.total_hours||60;
-        const attended = att.filter(a=>a.status!=='absent').reduce((a,b)=>a+(parseInt(b.periods)||1),0);
-        return totalH>0 && (attended/totalH*100)<80;
+        const m=stuAttMapSub[String(sid)];
+        if(!m) return false; // ยังไม่มี record → ไม่นับเป็น มส
+        return totalH>0&&(m.attended/totalH*100)<80;
       }).length;
       const teacherName = profileMap[sub.user_id] || sub.teacher_name || '—';
       const passNum = sumRows.length>0?pass:null;
