@@ -1958,17 +1958,17 @@ async function pgDash(){
       const avg = sum.length>0?(sum.reduce((a,b)=>a+(parseFloat(b.total_score)||0),0)/sum.length).toFixed(1):0;
       const pct = total>0?((pass/total)*100).toFixed(1):0;
       // นับ มส. จาก attendance (present+leave)/total_hours < 80% (ตรงกับหน้าเวลาเรียน)
+      // กรองเฉพาะนักเรียนที่อยู่ในห้องนี้จริง (roomStuIds) เพื่อไม่นับ ghost records
       const attForSubj = allAtt.filter(a=>a.subject_id===s.id);
       const stuAttMap={};
       attForSubj.forEach(a=>{
+        if(!roomStuIds.has(String(a.student_id))) return;
         if(!stuAttMap[a.student_id])stuAttMap[a.student_id]={attended:0};
         const p=parseInt(a.periods)||1;
         if(a.status==='present'||a.status==='leave')stuAttMap[a.student_id].attended+=p;
       });
       const subTotalH = s.total_hours||60;
-      const msStudents=Object.entries(stuAttMap).filter(([,m])=>subTotalH>0&&(m.attended/subTotalH*100)<80);
-      const msCount=msStudents.length;
-      console.log('[DEBUG dash มส.]',s.subject_name,'total_hours='+subTotalH,'attRecords='+attForSubj.length,'stuCount='+Object.keys(stuAttMap).length,'msCount='+msCount, msStudents.map(([sid,m])=>sid+':'+m.attended+'/'+subTotalH+'='+(m.attended/subTotalH*100).toFixed(1)+'%'));
+      const msCount=Object.values(stuAttMap).filter(m=>subTotalH>0&&(m.attended/subTotalH*100)<80).length;
       return {...s,stats:{total,pass,recorded:sum.length,avg,passPercent:pct,msCount}};
     });
     // นับเฉพาะนักเรียนในห้องที่ครูสอน (ตาม grade_level+room ของวิชาที่มี)
@@ -1997,8 +1997,11 @@ async function pgDash(){
       const msSet = new Set();
       S.subjects.forEach(sub=>{
         const totalH = sub.total_hours||60;
+        const rKey = sub.grade_level+'_'+sub.room;
+        const enrolledIds = stuIdsByRoom[rKey]||new Set();
         const stuMap = attBySub[sub.id]||{};
         Object.entries(stuMap).forEach(([sid,m])=>{
+          if(!enrolledIds.has(String(sid))) return;
           if(totalH>0 && (m.attended/totalH*100)<80) msSet.add(sid);
         });
       });
