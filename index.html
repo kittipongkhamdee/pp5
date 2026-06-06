@@ -5343,7 +5343,7 @@ async function pgIQA(){
         <div class="ch"><div class="ct">สรุปผลการวิเคราะห์</div></div>
         <div class="cb" style="font-size:13.5px;line-height:2;color:#1d1d1f">
           จากการสรุปผลสัมฤทธิ์ทางการเรียนของนักเรียน ปีการศึกษา ${esc(yr)} ภาคเรียนที่ ${esc(sm)}
-          ${esc(cfg.school_name||'')}
+          โรงเรียน${esc(cfg.school_name||'')}
           พบว่า ค่าเฉลี่ยผลสัมฤทธิ์ทางการเรียนรวมของทุกกลุ่มสาระการเรียนรู้ เท่ากับ
           <strong>${overallAvg!==null?overallAvg.toFixed(2):'—'}</strong>
           ${overallDiff!==null&&overallDiff>=0
