@@ -4930,15 +4930,41 @@ function pgSettings(){
 
   </div><!-- end top grid -->
 
-  <!-- ── แถวล่าง: รหัสผ่านผู้บริหาร + โซนอันตราย ── -->
+  <!-- ── แถวล่าง: Backup/Restore + รหัสผ่านแอดมิน + โซนอันตราย ── -->
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start;">
 
-    <!-- การ์ด: รหัสผ่านผู้บริหาร -->
+    <!-- การ์ด: สำรองและกู้คืนข้อมูล -->
+    <div class="card" style="margin-bottom:0">
+      <div class="ch">
+        <div class="ct" style="display:flex;align-items:center;gap:7px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--ac)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          สำรองและกู้คืนข้อมูล
+        </div>
+      </div>
+      <div class="cb">
+        <div style="font-size:13px;color:#6e6e73;line-height:1.8;margin-bottom:14px">
+          <strong style="color:#1d1d1f">Backup</strong> — ดาวน์โหลดข้อมูลทั้งหมดเป็นไฟล์ .xlsx<br>
+          <strong style="color:#1d1d1f">Restore</strong> — นำเข้าข้อมูลจากไฟล์ Backup (จะแทนที่ข้อมูลปัจจุบัน)
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn bs" onclick="backupAllData()" style="background:rgba(52,199,89,.12);color:#16803d;flex:1;justify-content:center">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Backup
+          </button>
+          <button class="btn bs" onclick="openRestoreDialog()" style="background:rgba(255,59,48,.1);color:#dc2626;flex:1;justify-content:center">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Restore
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- การ์ด: รหัสผ่านแอดมิน -->
     <div class="card" style="margin-bottom:0">
       <div class="ch">
         <div class="ct" style="display:flex;align-items:center;gap:7px;">
           <svg viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          รหัสผ่านผู้บริหาร
+          รหัสผ่านแอดมิน
         </div>
         <span id="admpw-status" class="badge ${cfg.admin_password?'bg-g':'bg-gr'}">
           ${cfg.admin_password?'✓ ตั้งรหัสแล้ว':'ยังไม่ได้ตั้งรหัส'}
@@ -5013,7 +5039,7 @@ async function saveAdminPassword(){
   try{
     await q(sb.from('config').upsert([{key:'admin_password',value:newPw}],{onConflict:'key'}));
     await loadConfig();
-    toast('บันทึกรหัสผ่านผู้บริหารเรียบร้อย');
+    toast('บันทึกรหัสผ่านแอดมินเรียบร้อย');
     const inp1=$('c-admpw-old'),inp2=$('c-admpw');
     if(inp1)inp1.value='';if(inp2)inp2.value='';
     const st=$('admpw-status');
@@ -5830,14 +5856,6 @@ async function pgSchoolReport(){
           '<div class="psub">'+esc(S.config.school_name||'')+'&nbsp;·&nbsp;ปีการศึกษา '+esc(S.config.academic_year||'')+'&nbsp;ภาค&nbsp;'+esc(S.config.semester||'')+'</div>'+
         '</div>'+
         '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
-          '<button class="btn bs no-print" onclick="backupAllData()" style="background:rgba(52,199,89,.12);color:#16803d">'+
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'+
-            'Backup'+
-          '</button>'+
-          '<button class="btn bs no-print" onclick="openRestoreDialog()" style="background:rgba(255,59,48,.1);color:#dc2626">'+
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>'+
-            'Restore'+
-          '</button>'+
           '<button class="btn bs no-print" onclick="exportSchoolReport()">'+
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>'+
             'Excel'+
