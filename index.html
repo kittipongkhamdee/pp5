@@ -6003,6 +6003,13 @@ async function pgSchoolReport(){
     const schoolPassAvg = allPassPcts.length>0?(allPassPcts.reduce((a,b)=>a+b,0)/allPassPcts.length).toFixed(1):'—';
     const allAvgs = subjectsWithStats.filter(s=>s._stats.avg!=='—').map(s=>parseFloat(s._stats.avg)||0);
     const schoolScoreAvg = allAvgs.length>0?(allAvgs.reduce((a,b)=>a+b,0)/allAvgs.length).toFixed(1):'—';
+    // ── สถิติเพิ่มเติม ──
+    const totalPassStudents = subjectsWithStats.reduce((a,s)=>a+(s._stats.pass||0),0);
+    const totalFailStudents = subjectsWithStats.reduce((a,s)=>a+(s._stats.fail||0),0);
+    const totalMsStudents   = subjectsWithStats.reduce((a,s)=>a+s._stats.msCount,0);
+    const noScoreSubjects   = subjectsWithStats.filter(s=>s._stats.pass===null).length;
+    const aboveThreshold    = subjectsWithStats.filter(s=>s._stats.pass!==null&&parseFloat(s._stats.pct)>=80).length;
+    const totalRStudents    = allSumRows.filter(r=>r.special_result==='ร').length;
 
     // เก็บไว้ใน state เพื่อให้ exportSchoolReport ใช้ได้
     S._schoolReport = subjectsWithStats;
@@ -6124,12 +6131,21 @@ async function pgSchoolReport(){
         '</div>'+
       '</div>'+
 
-      // summary stats
+      // summary stats — row 1
       '<div class="sg" style="grid-template-columns:repeat(4,1fr)">'+
         '<div class="sc"><div class="si bl"><svg viewBox="0 0 24 24" fill="none" stroke="#007AFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div><div><div class="sv">'+schoolTotal+'</div><div class="sl">รายวิชา</div></div></div>'+
         '<div class="sc"><div class="si gr"><svg viewBox="0 0 24 24" fill="none" stroke="#16803d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div><div class="sv">'+schoolTeachers+'</div><div class="sl">ครูผู้สอน</div></div></div>'+
         '<div class="sc"><div class="si gr"><svg viewBox="0 0 24 24" fill="none" stroke="#16803d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg></div><div><div class="sv" style="color:#16803d">'+schoolPassAvg+'%</div><div class="sl">ผ่านเฉลี่ย</div></div></div>'+
         '<div class="sc"><div class="si or"><svg viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div><div><div class="sv">'+schoolScoreAvg+'</div><div class="sl">คะแนนเฉลี่ย</div></div></div>'+
+      '</div>'+
+      // summary stats — row 2
+      '<div class="sg" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-top:0">'+
+        '<div class="sc"><div class="si gr"><svg viewBox="0 0 24 24" fill="none" stroke="#16803d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg></div><div><div class="sv" style="color:#16803d">'+totalPassStudents+'</div><div class="sl">นักเรียนที่ผ่าน</div></div></div>'+
+        '<div class="sc"><div class="si" style="background:rgba(220,38,38,.1)"><svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div><div><div class="sv" style="color:#dc2626">'+totalFailStudents+'</div><div class="sl">นักเรียนที่ไม่ผ่าน</div></div></div>'+
+        '<div class="sc"><div class="si" style="background:rgba(255,59,48,.1)"><svg viewBox="0 0 24 24" fill="none" stroke="#FF3B30" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div><div class="sv" style="color:#FF3B30">'+totalMsStudents+'</div><div class="sl">นักเรียน มส.</div></div></div>'+
+        '<div class="sc"><div class="si" style="background:rgba(142,142,147,.12)"><svg viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div><div class="sv" style="color:#8e8e93">'+noScoreSubjects+'</div><div class="sl">วิชายังไม่มีคะแนน</div></div></div>'+
+        '<div class="sc"><div class="si bl"><svg viewBox="0 0 24 24" fill="none" stroke="#007AFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div><div><div class="sv" style="color:#007AFF">'+aboveThreshold+'/'+schoolTotal+'</div><div class="sl">วิชาผ่านเกณฑ์ ≥80%</div></div></div>'+
+        '<div class="sc"><div class="si or"><svg viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div><div class="sv" style="color:#b45309">'+totalRStudents+'</div><div class="sl">นักเรียน ร (รอผล)</div></div></div>'+
       '</div>'+
 
       // filter bar
