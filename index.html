@@ -1209,6 +1209,7 @@ function printHTML(title, bodyHTML, orient='portrait'){
   const cfg=S.config;
   const schoolName=(cfg.school_name||'').startsWith('โรงเรียน')?cfg.school_name:'โรงเรียน'+(cfg.school_name||'');
   const w=window.open('','_blank');
+  if(!w){toast('เบราว์เซอร์บล็อก Popup — กรุณาอนุญาต Popup แล้วลองใหม่','er');return;}
   w.document.write(`<!DOCTYPE html><html lang="th"><head>
     <meta charset="UTF-8"><title>${esc(title)}</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
@@ -2707,8 +2708,8 @@ function parseExcelRows(rows){
     // หา columns: รองรับทั้ง format [เลขที่,รหัส,ชื่อ,ชั้น,ห้อง] และ [รหัส,ชื่อ,ชั้น,ห้อง]
     let code='',name='',grade='',room='';
 
-    if(r.length>=5 && !isNaN(r[0]) && !isNaN(r[3])){
-      // format: เลขที่ | รหัส | ชื่อ | ชั้น | ห้อง
+    if(r.length>=5 && !isNaN(r[0]) && !isNaN(r[1]) && !isNaN(r[3])){
+      // format: เลขที่(ตัวเลข) | รหัส(ตัวเลข) | ชื่อ | ชั้น | ห้อง
       code=r[1]; name=r[2]; grade=r[3]; room=r[4];
     } else if(r.length>=4 && !isNaN(r[2])){
       // format: รหัส | ชื่อ | ชั้น | ห้อง
@@ -3341,6 +3342,7 @@ function printAttendance(){
   });
 
   const w=window.open('','_blank');
+  if(!w){toast('เบราว์เซอร์บล็อก Popup — กรุณาอนุญาต Popup แล้วลองใหม่','er');return;}
   w.document.write(`<!DOCTYPE html><html lang="th"><head>
     <meta charset="UTF-8"><title>${esc(pageTitle)}</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
@@ -3975,7 +3977,7 @@ function printScores(){
   const metaStr=`วิชา ${esc(sub.subject_name)} (${esc(sub.subject_code)}) ${grm(sub.grade_level,sub.room)} &nbsp; ครู${esc(sub.teacher_name||'')} &nbsp; ปีการศึกษา ${cfg.academic_year||''} ภาค ${cfg.semester||''}`;
 
   // แบ่ง chunk แยกตาม period — ก่อนกลางภาคก่อน แล้วหลังกลางภาค
-  function makeChunks(units){ const c=[]; for(let i=0;i<units.length||c.length===0;i+=COLS_PER_PAGE) c.push(units.slice(i,i+COLS_PER_PAGE)); return c; }
+  function makeChunks(units){ const c=[]; for(let i=0;i<units.length;i+=COLS_PER_PAGE) c.push(units.slice(i,i+COLS_PER_PAGE)); return c; }
   const befChunks=makeChunks(scU.before.map(u=>({...u,period:'before'})));
   const aftChunks=makeChunks(scU.after.map(u=>({...u,period:'after'})));
   const allChunks=[
@@ -4044,6 +4046,7 @@ function printScores(){
   body+=`</tbody></table></div>`;
 
   const w=window.open('','_blank');
+  if(!w){toast('เบราว์เซอร์บล็อก Popup — กรุณาอนุญาต Popup แล้วลองใหม่','er');return;}
   w.document.write(`<!DOCTYPE html><html lang="th"><head>
     <meta charset="UTF-8"><title>${esc(pageTitle)}</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
@@ -4534,6 +4537,7 @@ function printReport(){
   });
 
   const w=window.open('','_blank');
+  if(!w){toast('เบราว์เซอร์บล็อก Popup — กรุณาอนุญาต Popup แล้วลองใหม่','er');return;}
   w.document.write(`<!DOCTYPE html><html lang="th"><head>
     <meta charset="UTF-8"><title>รายงานผลการเรียน — ${esc(sub.subject_name)}</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
@@ -4596,9 +4600,9 @@ async function pgCover(){
   loading(true);
   const sub=getSubject(S.selSub);
   const [sumRows,erRows,ecRows]=await Promise.all([
-    qc('sc_sum_'+S.selSub,  ()=>q(sb.from('score_summary').select('grade,special_result').eq('subject_id',S.selSub))),
-    qc('ev_read_'+S.selSub, ()=>q(sb.from('eval_read').select('student_id,result').eq('subject_id',S.selSub))),
-    qc('ev_char_'+S.selSub, ()=>q(sb.from('eval_char').select('student_id,overall_result').eq('subject_id',S.selSub)))
+    qc('sc_sum_cvr_'+S.selSub,  ()=>q(sb.from('score_summary').select('grade,special_result').eq('subject_id',S.selSub))),
+    qc('ev_read_cvr_'+S.selSub, ()=>q(sb.from('eval_read').select('student_id,result').eq('subject_id',S.selSub))),
+    qc('ev_char_cvr_'+S.selSub, ()=>q(sb.from('eval_char').select('student_id,overall_result').eq('subject_id',S.selSub)))
   ]);
   loading(false);
   const cfg=S.config;
@@ -5277,7 +5281,7 @@ async function pgIQA(){
       const g=sub.subject_group||''; if(!g) return;
       if(!groupGrades[g]) groupGrades[g]=[];
       allSum.filter(r=>r.subject_id===sub.id&&r.grade!=null&&r.grade!=='').forEach(r=>{
-        const gv=parseFloat(r.grade); if(!isNaN(gv)) groupGrades[g].push(gv);
+        const gv=parseFloat(r.grade); if(!isNaN(gv)&&gv>0) groupGrades[g].push(gv);
       });
     });
 
