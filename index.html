@@ -4538,7 +4538,7 @@ async function pgCover(){
       <tr><td style="padding:4px 6px">ชั้นมัธยมศึกษาปีที่</td>
           <td style="padding:4px 6px;border-bottom:1px solid #666">${sub.grade_level}</td>
           <td style="padding:4px 6px">ห้อง</td>
-          <td style="padding:4px 6px;border-bottom:1px solid #666">${sub.room}</td></tr>
+          <td style="padding:4px 6px;border-bottom:1px solid #666">${+sub.room===0?'':sub.room}</td></tr>
       <tr><td style="padding:4px 6px">ภาคเรียนที่</td>
           <td style="padding:4px 6px;border-bottom:1px solid #666;white-space:nowrap">${cfg.semester||''}</td>
           <td style="padding:4px 6px;white-space:nowrap">ปีการศึกษา</td>
@@ -6043,7 +6043,7 @@ async function pgSchoolReport(){
           '<div style="flex:1;min-width:0">'+
             '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">'+
               '<div style="font-size:15px;font-weight:700;color:var(--txt)">'+esc(sub.subject_name)+'</div>'+
-              '<span class="badge bg-b">ม.'+sub.grade_level+'/'+sub.room+'</span>'+
+              '<span class="badge bg-b">'+grm(sub.grade_level,sub.room)+'</span>'+
               (hasWarn?'<span class="badge bg-r" style="font-size:10px">⚠ ผ่านต่ำกว่า 80%</span>':'')+
             '</div>'+
             '<div style="font-size:11.5px;color:var(--muted);margin-bottom:8px">'+
