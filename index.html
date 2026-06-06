@@ -2092,14 +2092,13 @@ async function pgDash(){
             :`<span class="subc-tag" style="background:rgba(${_rgb},.1);color:${_ac}">ยังไม่มีคะแนน</span>`}
           ${st.msCount>0?`<span class="subc-tag" style="background:rgba(255,59,48,.1);color:#FF3B30">⚠️ มส. ${st.msCount} คน</span>`:''}
         </div>
-        <!-- Progress bar -->
-        <div style="height:4px;background:rgba(${_rgb},.12);border-radius:2px;margin-bottom:10px;overflow:hidden">
-          <div style="height:100%;width:${_pct}%;background:${_ac};border-radius:2px;transition:width .4s ease"></div>
-        </div>
-        <!-- % label -->
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <span style="font-size:11.5px;color:var(--muted)">% ผ่าน</span>
-          <span style="font-size:13px;font-weight:700;color:${_ac}">${st.recorded>0?_pct+'%':'—'}</span>
+        <!-- Progress bar with % overlay -->
+        <div style="position:relative;height:20px;background:rgba(${_rgb},.12);border-radius:10px;margin-bottom:10px;overflow:hidden">
+          <div style="height:100%;width:${_pct}%;background:${_ac};border-radius:10px;transition:width .4s ease"></div>
+          <div style="position:absolute;inset:0;display:flex;justify-content:space-between;align-items:center;padding:0 9px">
+            <span style="font-size:10.5px;color:var(--muted);font-weight:500">% ผ่าน</span>
+            <span style="font-size:11.5px;font-weight:700;color:${_ac};background:rgba(255,255,255,.85);padding:1px 7px;border-radius:8px;line-height:1.5">${st.recorded>0?_pct+'%':'—'}</span>
+          </div>
         </div>
         </div><!-- end flex-grow -->
         <!-- Action buttons -->
