@@ -5117,7 +5117,7 @@ async function pgSettings(){
                   <div style="font-size:13px;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(s.subject_name)}</div>
                   <div style="font-size:11.5px;color:var(--muted);margin-top:1px">${esc(s.subject_code)} &nbsp;·&nbsp; ${grm(s.grade_level,s.room)}</div>
                 </div>
-                <button onclick="deleteSubjectFromSettings(${s.id})" style="padding:6px 9px;border-radius:8px;border:none;cursor:pointer;background:rgba(255,59,48,.08);color:#FF3B30;flex-shrink:0;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;font-family:var(--font)" title="ลบวิชานี้">
+                <button onclick="deleteSubjectFromSettings(${s.id},'${escJs(s.subject_name)}','${grm(s.grade_level,s.room)}')" style="padding:6px 9px;border-radius:8px;border:none;cursor:pointer;background:rgba(255,59,48,.08);color:#FF3B30;flex-shrink:0;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;font-family:var(--font)" title="ลบวิชานี้">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
                   ลบ
                 </button>
@@ -5247,18 +5247,16 @@ async function pgSettings(){
   `;
 }
 
-async function deleteSubjectFromSettings(id){
-  const sub=S.subjects.find(s=>s.id===id);
-  if(!sub) return;
+async function deleteSubjectFromSettings(id, name, room){
   confirm2({
     type:'danger',
     title:'ลบรายวิชา',
-    msg:`ลบ <strong>${esc(sub.subject_name)}</strong> ${grm(sub.grade_level,sub.room)}<br><span style="font-size:12px;color:#6e6e73">ข้อมูลคะแนน เวลาเรียน และการประเมินของวิชานี้จะถูกลบด้วย</span>`,
+    msg:`ลบ <strong>${esc(name||'')}</strong> ${room||''}<br><span style="font-size:12px;color:#6e6e73">ข้อมูลคะแนน เวลาเรียน และการประเมินของวิชานี้จะถูกลบด้วย</span>`,
     confirmText:'ลบวิชานี้',
     onConfirm: async()=>{
       loading(true);
       try{
-        await q(sb.from('subjects').delete().eq('id',id).eq('user_id',S.user.id));
+        await q(sb.from('subjects').delete().eq('id',id));
         invalidateSubjects();
         await pgSettings();
         toast('ลบวิชาเรียบร้อย');
