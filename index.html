@@ -4362,7 +4362,7 @@ async function pgReport(){
   <div class="ph"><div class="ptitle">รายงานผลการเรียน</div>
     <div style="display:flex;gap:8px">
       <button class="btn bs no-print" onclick="exportReport()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>Excel</button>
-      <button class="btn bs no-print" onclick="window.print()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>พิมพ์</button>
+      <button class="btn bs no-print" onclick="printReport()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>พิมพ์</button>
     </div></div>
   <div style="display:flex;gap:10px;margin-bottom:18px" class="no-print">
     <select class="fs" style="max-width:310px" onchange="changeRptSub(this.value)">
@@ -4449,6 +4449,92 @@ function exportReport(){
   });
   exportExcel([{name:'รายงานผล',aoa,colWidths:[6,10,28,14,14,12,12,10,8,10,12,10,14,14]}],
     `รายงานผล_${sub.subject_code}_ม${sub.grade_level}-${sub.room}.xlsx`);
+}
+
+function printReport(){
+  if(!S._rpt){toast('ไม่มีข้อมูล','er');return;}
+  const {sub,stus,sumMap,erMap,ecMap,attMap}=S._rpt;
+  const cfg=S.config||{};
+  const schoolName=cfg.school_name||'';
+  const _elb=v=>{const n=parseInt(v);return[0,1,2,3].includes(n)?String(n):'-';};
+  const _gcol=g=>{const n=parseFloat(g);if(n>=3.5)return'#15803d';if(n>=2.5)return'#0284c7';if(n>=1.5)return'#e6940a';if(n>=1)return'#c0392b';return'#922b21';};
+
+  let rows='';
+  stus.forEach((s,i)=>{
+    const sm=sumMap[s.id]||{};
+    const er=erMap[s.id]||{};
+    const ec=ecMap[s.id]||{};
+    const att=attMap[s.id]||{pct:0,ms:false};
+    const g=sm.grade??'-';
+    const gCol=parseFloat(g)>0?_gcol(g):'#555';
+    rows+=`<tr>
+      <td>${i+1}</td>
+      <td class="l">${esc(s.student_name)}</td>
+      <td>${sm.total_before_mid??0}</td>
+      <td>${sm.total_after_mid??0}</td>
+      <td>${sm.mid_normal??0}</td>
+      <td>${sm.final_score??0}</td>
+      <td><strong>${sm.total_score??0}</strong></td>
+      <td style="font-size:15px;font-weight:700;color:${gCol}">${g}</td>
+      <td>${sm.special_result||'-'}</td>
+      <td>${att.pct}%${att.ms?' <span style="color:#c0392b">(มส)</span>':''}</td>
+      <td>${_elb(er.result)}</td>
+      <td>${_elb(ec.overall_result)}</td>
+    </tr>`;
+  });
+
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html lang="th"><head>
+    <meta charset="UTF-8"><title>รายงานผลการเรียน — ${esc(sub.subject_name)}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+      @page{size:A4 landscape;margin:1cm;}
+      *{box-sizing:border-box;}
+      body{margin:0;padding:0;background:#fff;font-family:'Sarabun','TH SarabunNew','Noto Sans Thai',sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      #pbody{width:100%;padding:0;background:#fff;font-size:13px;color:#000;line-height:1.5;}
+      .ph{text-align:center;margin-bottom:8px;border-bottom:2px solid #000;padding-bottom:6px;}
+      .ph h1{font-size:16px;font-weight:800;margin:0 0 2px;}
+      .ph h2{font-size:13px;font-weight:600;margin:0 0 2px;}
+      .meta{font-size:11.5px;color:#444;}
+      table{width:100%;border-collapse:collapse;margin-top:6px;}
+      thead{display:table-header-group;}
+      tr{page-break-inside:avoid;}
+      th,td{border:1px solid #666;padding:4px 5px;font-size:11.5px;text-align:center;font-family:'Sarabun','TH SarabunNew',sans-serif;}
+      th{font-weight:700;background:#f0f0f0;}
+      td.l{text-align:left;padding-left:6px;white-space:nowrap;}
+      .action-bar{display:flex;gap:10px;justify-content:center;padding:14px;margin-top:20px;background:#f5f5f7;border-radius:10px;position:sticky;bottom:0;}
+      .btn-print{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#1d1d1f;color:#fff;font-weight:600;}
+      @media print{.action-bar{display:none!important;}}
+    </style></head><body>
+    <div id="pbody">
+      <div class="ph">
+        <h1>${esc(schoolName)}</h1>
+        <h2>รายงานผลการเรียน — ${esc(sub.subject_name)} (${esc(sub.subject_code)}) ${grm(sub.grade_level,sub.room)}</h2>
+        <div class="meta">ครูผู้สอน: ${esc(sub.teacher_name||'')} &nbsp;|&nbsp; ปีการศึกษา ${esc(cfg.academic_year||'')} ภาคเรียนที่ ${esc(cfg.semester||'')} &nbsp;|&nbsp; นักเรียน ${stus.length} คน</div>
+      </div>
+      <table>
+        <thead><tr>
+          <th style="width:32px">ที่</th>
+          <th class="l">ชื่อ-สกุล</th>
+          <th>ก่อนกลาง<br>(${sub.score_before_mid||0})</th>
+          <th>หลังกลาง<br>(${sub.score_after_mid||0})</th>
+          <th>กลางภาค<br>(${sub.score_mid||0})</th>
+          <th>ปลายภาค<br>(${sub.score_final||0})</th>
+          <th>รวม<br>(100)</th>
+          <th>ผลการเรียน</th>
+          <th>ผลพิเศษ</th>
+          <th>เวลาเรียน</th>
+          <th>อ่าน/คิด/เขียน</th>
+          <th>คุณลักษณะ</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <div class="action-bar">
+      <button class="btn-print" onclick="window.print()">🖨️ พิมพ์</button>
+    </div>
+    </body></html>`);
+  w.document.close();
 }
 
 // ════════════════════════════════════════════════════════════════
