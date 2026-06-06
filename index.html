@@ -4925,6 +4925,13 @@ async function _doClearAll(){
 
 async function pgSettings(){
   await loadSubjects();
+  // ดึงวิชาทุกวิชาในระบบ (ไม่กรอง user_id) สำหรับแสดงในหน้าแอดมิน
+  let allSubjectsForAdmin=[];
+  try{
+    allSubjectsForAdmin=await q(
+      sb.from('subjects').select('*').order('teacher_name').order('grade_level').order('room').order('subject_name')
+    );
+  }catch(e){ allSubjectsForAdmin=S.subjects; }
   const cfg=S.config;
   $('pg').innerHTML=`
   <div class="ph">
@@ -5085,13 +5092,13 @@ async function pgSettings(){
         <svg viewBox="0 0 24 24" fill="none" stroke="var(--ac)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
         รายวิชา
       </div>
-      <span style="font-size:12px;color:var(--muted);font-weight:400">${S.subjects.length} วิชา</span>
+      <span style="font-size:12px;color:var(--muted);font-weight:400">${allSubjectsForAdmin.length} วิชา</span>
     </div>
     <div class="cb">
       ${(()=>{
-        if(!S.subjects.length) return '<div class="empty" style="padding:20px 0">ยังไม่มีรายวิชา</div>';
+        if(!allSubjectsForAdmin.length) return '<div class="empty" style="padding:20px 0">ยังไม่มีรายวิชา</div>';
         const byTeacher={};
-        S.subjects.forEach(s=>{
+        allSubjectsForAdmin.forEach(s=>{
           const t=s.teacher_name||'— ไม่ระบุครู —';
           if(!byTeacher[t]) byTeacher[t]=[];
           byTeacher[t].push(s);
