@@ -1966,7 +1966,9 @@ async function pgDash(){
         if(a.status==='present'||a.status==='leave')stuAttMap[a.student_id].attended+=p;
       });
       const subTotalH = s.total_hours||60;
-      const msCount=Object.values(stuAttMap).filter(m=>subTotalH>0&&(m.attended/subTotalH*100)<80).length;
+      const msStudents=Object.entries(stuAttMap).filter(([,m])=>subTotalH>0&&(m.attended/subTotalH*100)<80);
+      const msCount=msStudents.length;
+      console.log('[DEBUG dash มส.]',s.subject_name,'total_hours='+subTotalH,'attRecords='+attForSubj.length,'stuCount='+Object.keys(stuAttMap).length,'msCount='+msCount, msStudents.map(([sid,m])=>sid+':'+m.attended+'/'+subTotalH+'='+(m.attended/subTotalH*100).toFixed(1)+'%'));
       return {...s,stats:{total,pass,recorded:sum.length,avg,passPercent:pct,msCount}};
     });
     // นับเฉพาะนักเรียนในห้องที่ครูสอน (ตาม grade_level+room ของวิชาที่มี)
