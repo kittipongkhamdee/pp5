@@ -1871,7 +1871,7 @@ function nav(page,subId){
   if(page==='settings'){
     adminAuth({
       title:'เข้าสู่หน้าตั้งค่า',
-      msg:'หน้าตั้งค่าระบบสามารถเข้าถึงได้เฉพาะผู้บริหารเท่านั้น',
+      msg:'หน้าตั้งค่าระบบสามารถเข้าถึงได้เฉพาะแอดมินเท่านั้น',
       icon:'lock',
       onSuccess:()=>{
         document.querySelectorAll('.ni').forEach(e=>e.classList.remove('active'));
@@ -5222,7 +5222,7 @@ function adminAuth(opts){
   const pwInput = document.createElement('input');
   pwInput.type = 'password';
   pwInput.id = id + '-pw';
-  pwInput.placeholder = 'รหัสผ่านผู้บริหาร';
+  pwInput.placeholder = 'รหัสผ่านแอดมิน';
   pwInput.style.cssText = 'width:100%;padding:11px 14px;border:1.5px solid #fde68a;border-radius:11px;font-size:15px;text-align:center;letter-spacing:3px;background:#fffbeb;font-family:var(--font);outline:none;transition:border-color .15s;margin-bottom:6px';
   pwInput.addEventListener('input', function(){ this.style.borderColor='#fde68a'; errDiv.style.display='none'; });
   pwInput.addEventListener('keydown', function(e){ if(e.key==='Enter') doCheck(); });
