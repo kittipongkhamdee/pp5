@@ -1124,6 +1124,37 @@ function confirm2(opts){
   document.getElementById(id+'-no').onclick=()=>close(false);
 }
 
+function alert2(opts){
+  const type=opts.type||'ok';
+  const iconSvg=type==='ok'?IC.check:type==='warn'?IC.warn:IC.info;
+  const iconColor=type==='ok'?'#34C759':type==='warn'?'#FF9500':'#007AFF';
+  const iconBg=type==='ok'?'rgba(52,199,89,.12)':type==='warn'?'rgba(255,149,0,.12)':'rgba(0,122,255,.12)';
+  const btnColor=type==='ok'?'#007AFF':type==='warn'?'#FF9500':'#007AFF';
+  const wrap=document.createElement('div');
+  wrap.className='fixed inset-0 z-[2000] flex items-center justify-center p-5';
+  wrap.style.cssText='background:rgba(0,0,0,.25);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);animation:fadeIn .15s ease';
+  wrap.onclick=e=>{if(e.target===wrap)close();};
+  wrap.innerHTML=
+    '<div style="background:rgba(255,255,255,.82);backdrop-filter:blur(40px) saturate(200%);-webkit-backdrop-filter:blur(40px) saturate(200%);border-radius:22px;width:100%;max-width:320px;overflow:hidden;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.12),0 0 0 0.5px rgba(255,255,255,.6);animation:dlgPop .22s cubic-bezier(.34,1.56,.64,1)">'+
+      '<div style="padding:28px 24px 20px">'+
+        '<div style="width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;background:'+iconBg+'">'+
+          iconSvg.replace('viewBox','style="width:26px;height:26px;stroke:'+iconColor+'" viewBox')+'</div>'+
+        '<div style="font-size:17px;font-weight:700;color:#1d1d1f;margin-bottom:8px">'+(opts.title||'เสร็จแล้ว')+'</div>'+
+        '<div style="font-size:13.5px;color:#6e6e73;line-height:1.7">'+(opts.msg||'')+'</div>'+
+      '</div>'+
+      '<div style="border-top:0.5px solid rgba(0,0,0,.1)">'+
+        '<button style="width:100%;padding:15px;font-size:16px;font-weight:600;color:'+btnColor+';background:none;border:none;cursor:pointer;font-family:var(--font);letter-spacing:-.1px">'+(opts.okText||'ตกลง')+'</button>'+
+      '</div>'+
+    '</div>';
+  document.body.appendChild(wrap);
+  function close(){
+    wrap.style.animation='fadeIn .12s ease reverse forwards';
+    setTimeout(()=>{if(wrap.parentNode)wrap.remove();},120);
+    if(opts.onOk) opts.onOk();
+  }
+  wrap.querySelector('button').onclick=close;
+}
+
 function rmModal(id){const el=$(id);if(el)el.remove();}
 function gcls(g){
   const n=parseFloat(g);
@@ -2410,7 +2441,7 @@ async function _doPromote(students, toGrade, toRoom, fromG, fromR){
     const skipped = students.length - toUpdate.length;
 
     if(toUpdate.length === 0){
-      toast('นักเรียนทุกคนอยู่ในห้องปลายทางแล้ว', 'er');
+      alert2({title:'ไม่มีรายการที่ต้องย้าย',msg:'นักเรียนทุกคนมีรหัสซ้ำในห้องปลายทางแล้ว',type:'warn'});
       return;
     }
 
@@ -2422,11 +2453,15 @@ async function _doPromote(students, toGrade, toRoom, fromG, fromR){
     }
     allStu = allStu.map(s=>ids.includes(s.id)?{...s,grade_level:toGrade,room:toRoom}:s);
     clearStuCache();
-    const msg = skipped>0
-      ? `เลื่อนชั้น ${toUpdate.length} คน เสร็จแล้ว (${grm(fromG,fromR)} → ${grm(toGrade,toRoom)}) · ข้าม ${skipped} คน ที่มีในห้องปลายทางแล้ว`
-      : `เลื่อนชั้น ${toUpdate.length} คน เสร็จแล้ว (${grm(fromG,fromR)} → ${grm(toGrade,toRoom)})`;
-    toast(msg);
-    filterStu();
+    const detail = skipped>0
+      ? `ย้ายสำเร็จ <strong>${toUpdate.length} คน</strong><br>ข้าม <strong>${skipped} คน</strong> ที่มีรหัสซ้ำในห้องปลายทางแล้ว`
+      : `ย้ายนักเรียน <strong>${toUpdate.length} คน</strong> เรียบร้อยแล้ว`;
+    alert2({
+      title: `เลื่อนชั้นสำเร็จ ${grm(fromG,fromR)} → ${grm(toGrade,toRoom)}`,
+      msg: detail,
+      type: skipped>0?'warn':'ok',
+      onOk: filterStu
+    });
   }catch(e){
     toast('เกิดข้อผิดพลาด: '+e.message,'er');
   }finally{
