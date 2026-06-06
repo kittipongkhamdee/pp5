@@ -1959,16 +1959,16 @@ async function pgDash(){
       const pass = sum.filter(x=>x.grade!=null&&x.grade!==''&&parseFloat(x.grade)>0).length;
       const avg = sum.length>0?(sum.reduce((a,b)=>a+(parseFloat(b.total_score)||0),0)/sum.length).toFixed(1):0;
       const pct = total>0?((pass/total)*100).toFixed(1):0;
-      // นับ มส. จาก attendance (present+leave)/total < 80%
+      // นับ มส. จาก attendance (present+leave)/total_hours < 80% (ตรงกับหน้าเวลาเรียน)
       const attForSubj = allAtt.filter(a=>a.subject_id===s.id);
       const stuAttMap={};
       attForSubj.forEach(a=>{
-        if(!stuAttMap[a.student_id])stuAttMap[a.student_id]={attended:0,total:0};
+        if(!stuAttMap[a.student_id])stuAttMap[a.student_id]={attended:0};
         const p=parseInt(a.periods)||1;
-        stuAttMap[a.student_id].total+=p;
         if(a.status==='present'||a.status==='leave')stuAttMap[a.student_id].attended+=p;
       });
-      const msCount=Object.values(stuAttMap).filter(m=>m.total>0&&(m.attended/m.total*100)<80).length;
+      const subTotalH = s.total_hours||60;
+      const msCount=Object.values(stuAttMap).filter(m=>subTotalH>0&&(m.attended/subTotalH*100)<80).length;
       return {...s,stats:{total,pass,recorded:sum.length,avg,passPercent:pct,msCount}};
     });
     // นับเฉพาะนักเรียนในห้องที่ครูสอน (ตาม grade_level+room ของวิชาที่มี)
@@ -1992,7 +1992,7 @@ async function pgDash(){
         if(!attBySub[a.subject_id]) attBySub[a.subject_id]={};
         const sid=String(a.student_id);
         if(!attBySub[a.subject_id][sid]) attBySub[a.subject_id][sid]={attended:0};
-        if(a.status!=='absent') attBySub[a.subject_id][sid].attended+=(parseInt(a.periods)||1);
+        if(a.status==='present'||a.status==='leave') attBySub[a.subject_id][sid].attended+=(parseInt(a.periods)||1);
       });
       const msSet = new Set();
       S.subjects.forEach(sub=>{
