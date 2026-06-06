@@ -5256,7 +5256,7 @@ async function deleteSubjectFromSettings(id, name, room){
     onConfirm: async()=>{
       loading(true);
       try{
-        await q(sb.from('subjects').delete().eq('id',id));
+        await q(sb.from('subjects').delete().eq('id',id).eq('user_id',S.user.id));
         invalidateSubjects();
         await pgSettings();
         toast('ลบวิชาเรียบร้อย');
