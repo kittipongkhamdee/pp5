@@ -5967,9 +5967,10 @@ async function pgSchoolReport(){
     // คำนวณ stats ต่อวิชา
     const subjectsWithStats = allSubjects.map(sub=>{
       const stuIds = stuCountMap[sub.grade_level+'_'+sub.room]||[];
+      const stuIdSet = new Set(stuIds.map(String));
       const total = stuIds.length;
-      const sumRows = sumBySubj[sub.id]||[];
-      const attRows = attBySubj[sub.id]||[];
+      const sumRows = (sumBySubj[sub.id]||[]).filter(r=>stuIdSet.has(String(r.student_id)));
+      const attRows = (attBySubj[sub.id]||[]).filter(a=>stuIdSet.has(String(a.student_id)));
       const pass = sumRows.filter(r=>parseFloat(r.grade)>0&&!['ร','มส','มผ','ผ'].includes(r.special_result||'')).length;
       const avg = sumRows.length>0?(sumRows.reduce((a,b)=>a+(parseFloat(b.total_score)||0),0)/sumRows.length).toFixed(1):'—';
       const pct = total>0?((sumRows.length>0?pass/sumRows.length:0)*100).toFixed(1):'—';
