@@ -3760,8 +3760,8 @@ function renderSumTab(){
     <div class="tw"><table>
       <thead><tr>
         <th>เลขที่</th><th class="tl">ชื่อ-สกุล</th>
-        <th>ก่อนกลาง<br><span style="font-size:10px;font-weight:400">/${scSub?.score_before_mid||25}</span></th>
-        <th>หลังกลาง<br><span style="font-size:10px;font-weight:400">/${scSub?.score_after_mid||25}</span></th>
+        <th>รวมก่อนกลาง<br><span style="font-size:10px;font-weight:400">/${scSub?.score_before_mid||25}</span></th>
+        <th>รวมหลังกลาง<br><span style="font-size:10px;font-weight:400">/${scSub?.score_after_mid||25}</span></th>
         <th>กลางภาค<br><span style="font-size:10px;font-weight:400">/${scSub?.score_mid||20}</span></th>
         <th>ปลายภาค<br><span style="font-size:10px;font-weight:400">/${scSub?.score_final||30}</span></th>
         <th>รวม</th><th>ผลการเรียน</th><th>ผลพิเศษ</th>
@@ -3985,7 +3985,7 @@ function printScores(){
     const g=sm.grade!=null&&sm.grade!==''?sm.grade:(tot>0?calcGrade(tot):'-');
     body+=`<tr>
       <td>${i+1}</td><td>${esc(s.student_code)}</td><td class="l">${esc(s.student_name)}</td>
-      <td><strong>${bef||''}</strong></td><td><strong>${aft||''}</strong></td>
+      <td>${bef||''}</td><td>${aft||''}</td>
       <td>${midUsed||''}</td><td>${bef+aft+midUsed||''}</td>
       <td>${fin||''}</td><td><strong>${tot||''}</strong></td>
       <td><strong>${['ร','มส','มผ','ผ'].includes(sm.special_result||'')?sm.special_result:g}</strong></td>
