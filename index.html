@@ -1304,6 +1304,7 @@ function showApp(){
   $('main-app').style.display='block';
   const n=S.profile?.full_name||S.user?.email||'';
   const sn=$('school-name'); if(sn) sn.textContent=S.config.school_name||'ระบบบันทึกผลการเรียน';
+  if(S.config.logo_url) updateLogoDisplay(S.config.logo_url);
   const tb=$('tbb'); if(tb) tb.textContent='ปีการศึกษา '+(S.config.academic_year||'2568')+' ภาค '+(S.config.semester||'1');
   const ft=$('sb-ft-info'); if(ft) ft.textContent='ปี '+(S.config.academic_year||'2568')+' ภาค '+(S.config.semester||'1');
 
@@ -4497,7 +4498,7 @@ async function pgCover(){
 
     <!-- ตราโรงเรียน — กึ่งกลาง -->
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;margin:8px 0 10px;text-align:center">
-      <img src="https://lh5.googleusercontent.com/d/1IjjamxeQ9VaeAao8PtmR7RCwioE4hndi"
+      <img src="${S.config.logo_url||'https://lh5.googleusercontent.com/d/1IjjamxeQ9VaeAao8PtmR7RCwioE4hndi'}"
            alt="ตราโรงเรียน"
            style="height:80px;width:auto;object-fit:contain;display:block;margin:0 auto"
            onerror="this.style.display='none'">
@@ -4785,6 +4786,43 @@ function pgSettings(){
     </div>
   </div>
 
+  <!-- ── โลโก้โรงเรียน ── -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="ch">
+      <div class="ct" style="display:flex;align-items:center;gap:7px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--ac)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        โลโก้โรงเรียน
+      </div>
+    </div>
+    <div class="cb">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
+        <div style="width:72px;height:72px;border-radius:16px;overflow:hidden;background:#f5f5f7;border:1px solid rgba(0,0,0,.08);flex-shrink:0;display:flex;align-items:center;justify-content:center">
+          <img id="logo-preview"
+            src="${S.config.logo_url||'https://lh5.googleusercontent.com/d/1IjjamxeQ9VaeAao8PtmR7RCwioE4hndi'}"
+            style="width:72px;height:72px;object-fit:contain"
+            onerror="this.style.opacity='.25'">
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--txt);margin-bottom:3px">${S.config.logo_url?'ใช้โลโก้ที่อัพโหลด':'ใช้โลโก้เริ่มต้น'}</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:2px">PNG / JPG แนะนำ 400×400px ขึ้นไป ไม่เกิน 5MB</div>
+          <div style="font-size:11.5px;color:var(--muted)">แสดงใน: หน้า Login · แถบข้าง · รายงาน ปพ.5</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <label class="btn bs" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin:0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          เลือกรูปภาพ
+          <input type="file" accept="image/*" style="display:none" onchange="uploadLogo(this)">
+        </label>
+        ${S.config.logo_url?`
+        <button class="btn" onclick="removeLogo()" style="color:#FF3B30;border-color:rgba(255,59,48,.3)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          คืนค่าโลโก้เริ่มต้น
+        </button>`:''}
+      </div>
+    </div>
+  </div>
+
   <!-- ── แถวบน: ข้อมูลโรงเรียน + ครูผู้สอน ── -->
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;align-items:start;margin-bottom:16px;">
 
@@ -5050,6 +5088,70 @@ async function saveSettings(){
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
 }
 
+
+// ════ LOGO UPLOAD ════════════════════════════════════════════════
+const _DEFAULT_LOGO = 'https://lh5.googleusercontent.com/d/1IjjamxeQ9VaeAao8PtmR7RCwioE4hndi';
+
+function updateLogoDisplay(url){
+  const src = url || _DEFAULT_LOGO;
+  const sbLogo = document.getElementById('sb-logo');
+  if(sbLogo){
+    sbLogo.src = src; sbLogo.style.display = 'block'; sbLogo.style.opacity = '1';
+    const fb = document.getElementById('sb-logo-fallback');
+    if(fb) fb.style.display = 'none';
+  }
+  const prev = document.getElementById('logo-preview');
+  if(prev){ prev.src = src; prev.style.opacity = '1'; }
+}
+
+async function uploadLogo(input){
+  const file = input.files?.[0];
+  if(!file) return;
+  if(file.size > 5*1024*1024){ toast('ไฟล์ใหญ่เกิน 5MB กรุณาเลือกไฟล์ที่เล็กกว่า','er'); return; }
+  loading(true);
+  try{
+    const dataUrl = await new Promise((res,rej)=>{
+      const reader = new FileReader();
+      reader.onerror = rej;
+      reader.onload = e=>{
+        const img = new Image();
+        img.onerror = rej;
+        img.onload = ()=>{
+          const MAX = 512;
+          let w = img.width, h = img.height;
+          if(w > MAX || h > MAX){
+            if(w >= h){ h = Math.round(h*MAX/w); w = MAX; }
+            else { w = Math.round(w*MAX/h); h = MAX; }
+          }
+          const cv = document.createElement('canvas');
+          cv.width = w; cv.height = h;
+          cv.getContext('2d').drawImage(img, 0, 0, w, h);
+          res(cv.toDataURL('image/png', 0.9));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+    await q(sb.from('config').upsert([{key:'logo_url', value:dataUrl}], {onConflict:'key'}));
+    S.config.logo_url = dataUrl;
+    updateLogoDisplay(dataUrl);
+    toast('บันทึกโลโก้เรียบร้อย');
+    pgSettings();
+  }catch(e){ toast('เกิดข้อผิดพลาด: '+e.message,'er'); }
+  finally{ loading(false); }
+}
+
+async function removeLogo(){
+  loading(true);
+  try{
+    await q(sb.from('config').delete().eq('key','logo_url'));
+    delete S.config.logo_url;
+    updateLogoDisplay(_DEFAULT_LOGO);
+    toast('คืนค่าโลโก้เริ่มต้นแล้ว');
+    pgSettings();
+  }catch(e){ toast('เกิดข้อผิดพลาด: '+e.message,'er'); }
+  finally{ loading(false); }
+}
 
 // ════ ADMIN AUTH ═══════════════════════════════════════════════
 // adminAuth(opts) — dialog ใส่รหัสผู้บริหาร (ใช้ DOM แทน string concat)
