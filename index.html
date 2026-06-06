@@ -1131,9 +1131,21 @@ function alert2(opts){
   const iconBg=type==='ok'?'rgba(52,199,89,.12)':type==='warn'?'rgba(255,149,0,.12)':'rgba(0,122,255,.12)';
   const btnColor=type==='ok'?'#007AFF':type==='warn'?'#FF9500':'#007AFF';
   const wrap=document.createElement('div');
+  wrap.id='adlg_'+Date.now();
   wrap.className='fixed inset-0 z-[2000] flex items-center justify-center p-5';
   wrap.style.cssText='background:rgba(0,0,0,.25);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);animation:fadeIn .15s ease';
-  wrap.onclick=e=>{if(e.target===wrap)close();};
+  let closed=false;
+  function dismiss(){
+    if(closed)return;
+    closed=true;
+    wrap.style.animation='fadeIn .12s ease reverse forwards';
+    setTimeout(()=>{if(wrap.parentNode)wrap.remove();},120);
+  }
+  function close(){
+    dismiss();
+    if(opts.onOk) opts.onOk();
+  }
+  wrap.onclick=e=>{if(e.target===wrap)dismiss();};
   wrap.innerHTML=
     '<div style="background:rgba(255,255,255,.82);backdrop-filter:blur(40px) saturate(200%);-webkit-backdrop-filter:blur(40px) saturate(200%);border-radius:22px;width:100%;max-width:320px;overflow:hidden;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.12),0 0 0 0.5px rgba(255,255,255,.6);animation:dlgPop .22s cubic-bezier(.34,1.56,.64,1)">'+
       '<div style="padding:28px 24px 20px">'+
@@ -1147,11 +1159,6 @@ function alert2(opts){
       '</div>'+
     '</div>';
   document.body.appendChild(wrap);
-  function close(){
-    wrap.style.animation='fadeIn .12s ease reverse forwards';
-    setTimeout(()=>{if(wrap.parentNode)wrap.remove();},120);
-    if(opts.onOk) opts.onOk();
-  }
   wrap.querySelector('button').onclick=close;
 }
 
@@ -2441,6 +2448,7 @@ async function _doPromote(students, toGrade, toRoom, fromG, fromR){
     const skipped = students.length - toUpdate.length;
 
     if(toUpdate.length === 0){
+      loading(false);
       alert2({title:'ไม่มีรายการที่ต้องย้าย',msg:'นักเรียนทุกคนมีรหัสซ้ำในห้องปลายทางแล้ว',type:'warn'});
       return;
     }
