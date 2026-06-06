@@ -5258,7 +5258,7 @@ async function pgIQA(){
     <div class="ph" style="margin-bottom:0">
       <div>
         <div class="ptitle">รายงาน IQA กลุ่มสาระ</div>
-        <div class="psub">${esc(cfg.school_name||'')} · ปีการศึกษา ${esc(yr)} ภาค ${esc(sm)}</div>
+        <div class="psub">โรงเรียน${esc(cfg.school_name||'')} · ปีการศึกษา ${esc(yr)} ภาค ${esc(sm)}</div>
       </div>
       <div style="display:flex;gap:8px">
         <button class="btn bs no-print" onclick="exportIQA()">
@@ -5277,7 +5277,7 @@ async function pgIQA(){
       <div class="print-only" style="text-align:center;margin-bottom:16px">
         <div style="font-weight:700;font-size:16px;margin-bottom:4px">รายงานสรุปผลสัมฤทธิ์ทางการเรียนของนักเรียนรายกลุ่มสาระการเรียนรู้</div>
         <div style="font-size:14px">ปีการศึกษา ${esc(yr)} ภาคเรียนที่ ${esc(sm)}</div>
-        <div style="font-size:14px">${esc(cfg.school_name||'')}</div>
+        <div style="font-size:14px">โรงเรียน${esc(cfg.school_name||'')}</div>
       </div>
 
       <div class="card" style="margin-top:16px;overflow-x:auto">
@@ -5369,7 +5369,7 @@ function exportIQA(){
   const school=cfg.school_name||'';
   const diffFmt=(d,avg)=>d===null?'ไม่มีข้อมูล':avg>=0?`+${d}`:String(d);
   const aoa=[
-    [school+' — '+title],
+    ['โรงเรียน'+school+' — '+title],
     [],
     ['ที่','กลุ่มสาระการเรียนรู้','ค่าเป้าหมาย',`ค่าเฉลี่ยภาค ${sm}/${yr}`,'ผลต่าง (+/-)','ผล','จำนวนวิชา'],
     ...rows.map((r,i)=>[
