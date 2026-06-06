@@ -5160,13 +5160,13 @@ async function pgIQA(){
       const subjCount=groupSubjCount[g]||0;
       return{g,target,avgGrade,diff,pass,subjCount,count:grades.length};
     });
-    window._iqaRows=rows;
-    window._iqaOverall={target:+overallTarget,avg:overallAvg,diff:overallDiff};
-
     const overallTarget=(SUBJECT_GROUPS.reduce((a,g)=>a+(targets[g]||IQA_DEFAULT_TARGETS[g]||0),0)/SUBJECT_GROUPS.length).toFixed(2);
     const allGradesFlat=rows.flatMap(r=>groupGrades[r.g]||[]);
     const overallAvg=avg(allGradesFlat);
     const overallDiff=overallAvg!==null?+(overallAvg-overallTarget).toFixed(2):null;
+
+    window._iqaRows=rows;
+    window._iqaOverall={target:+overallTarget,avg:overallAvg,diff:overallDiff};
 
     $('pg').innerHTML=`
     <div class="ph" style="margin-bottom:0">
