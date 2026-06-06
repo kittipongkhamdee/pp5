@@ -6153,11 +6153,11 @@ async function pgSchoolReport(){
         '<div class="cb" style="padding:10px 16px">'+
           '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">'+
             '<select class="fs" style="max-width:130px" id="sr-grade" onchange="window._gradeFilter=this.value;window._renderCards&&window._renderCards()" style="font-family:var(--font)">'+
-              '<option value=""></option>'+
+              '<option value="">ทุกชั้น</option>'+
               grades.map(g=>'<option value="'+g+'">ม.'+g+'</option>').join('')+
             '</select>'+
             '<select class="fs" style="max-width:220px" id="sr-teacher" onchange="window._teacherFilter=this.value;window._renderCards&&window._renderCards()">'+
-              '<option value=""></option>'+
+              '<option value="">ครูทุกคน</option>'+
               teachers.map(t=>'<option value="'+esc(t)+'">'+esc(t)+'</option>').join('')+
             '</select>'+
             '<div style="margin-left:auto;font-size:12px;color:var(--muted)" id="school-count">แสดง '+subjectsWithStats.length+' วิชา</div>'+
