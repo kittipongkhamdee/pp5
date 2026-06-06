@@ -4383,7 +4383,7 @@ async function pgReport(){
     <div class="cb"><div class="tw"><table>
       <thead><tr>
         <th>เลขที่</th><th class="tl">ชื่อ-สกุล</th>
-        <th>ก่อนกลาง</th><th>หลังกลาง</th><th>กลางภาค</th><th>ปลายภาค</th>
+        <th>รวมก่อนกลาง</th><th>รวมหลังกลาง</th><th>กลางภาค</th><th>ปลายภาค</th>
         <th>รวม</th><th>ผลการเรียน</th><th>ผลพิเศษ</th>
         <th>เวลาเรียน</th><th>อ่าน/คิด/เขียน</th><th>คุณลักษณะ</th>
       </tr></thead>
@@ -4399,7 +4399,7 @@ async function pgReport(){
           <td class="tr2">${sm.total_after_mid??0}</td>
           <td class="tr2">${sm.mid_normal??0}</td>
           <td class="tr2">${sm.final_score??0}</td>
-          <td class="tr2"><strong>${sm.total_score??0}</strong></td>
+          <td class="tr2">${sm.total_score??0}</td>
           <td class="tc"><span class="${gcls(g)}" style="font-size:15px;font-weight:700">${g}</span></td>
           <td class="tc">${sm.special_result?`<span class="badge bg-r">${esc(sm.special_result)}</span>`:`<span class="badge bg-g">ปกติ</span>`}</td>
           <td class="tc"><span class="badge ${att.ms?'bg-r':'bg-g'}">${att.pct}%${att.ms?' (มส)':''}</span></td>
@@ -4474,8 +4474,8 @@ function printReport(){
       <td>${sm.total_after_mid??0}</td>
       <td>${sm.mid_normal??0}</td>
       <td>${sm.final_score??0}</td>
-      <td><strong>${sm.total_score??0}</strong></td>
-      <td style="font-size:15px;font-weight:700;color:${gCol}">${g}</td>
+      <td>${sm.total_score??0}</td>
+      <td style="color:${gCol}">${g}</td>
       <td>${sm.special_result||'-'}</td>
       <td>${att.pct}%${att.ms?' <span style="color:#c0392b">(มส)</span>':''}</td>
       <td>${_elb(er.result)}</td>
@@ -4516,8 +4516,8 @@ function printReport(){
         <thead><tr>
           <th style="width:32px">ที่</th>
           <th class="l">ชื่อ-สกุล</th>
-          <th>ก่อนกลาง<br>(${sub.score_before_mid||0})</th>
-          <th>หลังกลาง<br>(${sub.score_after_mid||0})</th>
+          <th>รวมก่อนกลาง<br>(${sub.score_before_mid||0})</th>
+          <th>รวมหลังกลาง<br>(${sub.score_after_mid||0})</th>
           <th>กลางภาค<br>(${sub.score_mid||0})</th>
           <th>ปลายภาค<br>(${sub.score_final||0})</th>
           <th>รวม<br>(100)</th>
