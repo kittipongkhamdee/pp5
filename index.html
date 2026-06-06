@@ -1016,6 +1016,7 @@ const IC = {
   pencil:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
   star:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
   chart:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>',
+  iqa:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>',
   pp5:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>',
   settings:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
   dash:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>',
@@ -1320,7 +1321,7 @@ function showApp(){
   const _navIcons={
     'nav-dashboard':IC.dash,'nav-subjects':IC.grid,'nav-students':IC.users,
     'nav-attendance':IC.calendar,'nav-scores':IC.pencil,'nav-eval':IC.star,
-    'nav-report':IC.chart,'nav-cover':IC.pp5,'nav-settings':IC.settings,'nav-manual':IC.book
+    'nav-report':IC.chart,'nav-cover':IC.pp5,'nav-iqa':IC.iqa,'nav-settings':IC.settings,'nav-manual':IC.book
   };
   Object.entries(_navIcons).forEach(([id,svg])=>{
     const el=$(id); if(!el) return;
@@ -5149,6 +5150,7 @@ async function pgIQA(){
     const groupSubjCount={};
     S.subjects.forEach(sub=>{ const g=sub.subject_group||''; if(g) groupSubjCount[g]=(groupSubjCount[g]||0)+1; });
 
+    window._iqaMeta={yr,sm,cfg};
     const rows=SUBJECT_GROUPS.map((g,i)=>{
       const grades=groupGrades[g]||[];
       const avgGrade=avg(grades);
@@ -5158,6 +5160,8 @@ async function pgIQA(){
       const subjCount=groupSubjCount[g]||0;
       return{g,target,avgGrade,diff,pass,subjCount,count:grades.length};
     });
+    window._iqaRows=rows;
+    window._iqaOverall={target:+overallTarget,avg:overallAvg,diff:overallDiff};
 
     const overallTarget=(SUBJECT_GROUPS.reduce((a,g)=>a+(targets[g]||IQA_DEFAULT_TARGETS[g]||0),0)/SUBJECT_GROUPS.length).toFixed(2);
     const allGradesFlat=rows.flatMap(r=>groupGrades[r.g]||[]);
@@ -5171,6 +5175,10 @@ async function pgIQA(){
         <div class="psub">${esc(cfg.school_name||'')} · ปีการศึกษา ${esc(yr)} ภาค ${esc(sm)}</div>
       </div>
       <div style="display:flex;gap:8px">
+        <button class="btn bs no-print" onclick="exportIQA()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+          Excel
+        </button>
         <button class="btn bs no-print" onclick="printIQA()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
           พิมพ์
@@ -5265,6 +5273,40 @@ async function pgIQA(){
 
 function printIQA(){
   window.print();
+}
+
+function exportIQA(){
+  const rows=window._iqaRows; const ov=window._iqaOverall; const m=window._iqaMeta;
+  if(!rows){ toast('กรุณาเปิดหน้า IQA ก่อน','er'); return; }
+  const cfg=m?.cfg||S.config; const yr=m?.yr||''; const sm=m?.sm||'';
+  const title=`รายงานสรุปผลสัมฤทธิ์ทางการเรียน ปีการศึกษา ${yr} ภาค ${sm}`;
+  const school=cfg.school_name||'';
+  const diffFmt=(d,avg)=>d===null?'ไม่มีข้อมูล':avg>=0?`+${d}`:String(d);
+  const aoa=[
+    [school+' — '+title],
+    [],
+    ['ที่','กลุ่มสาระการเรียนรู้','ค่าเป้าหมาย',`ค่าเฉลี่ยภาค ${sm}/${yr}`,'ผลต่าง (+/-)','ผล','จำนวนวิชา'],
+    ...rows.map((r,i)=>[
+      i+1, r.g,
+      r.target.toFixed(2),
+      r.avgGrade!==null?r.avgGrade.toFixed(2):'—',
+      r.diff!==null?(r.diff>=0?'+':'')+r.diff:'—',
+      r.pass===null?'ไม่มีข้อมูล':r.pass?'สูงกว่าเป้าหมาย':'ต่ำกว่าเป้าหมาย',
+      r.subjCount||0
+    ]),
+    ['','ค่าเฉลี่ยรวมทุกกลุ่มสาระ',
+      ov.target.toFixed(2),
+      ov.avg!==null?ov.avg.toFixed(2):'—',
+      ov.diff!==null?(ov.diff>=0?'+':'')+ov.diff:'—',
+      ov.diff===null?'ไม่มีข้อมูล':ov.diff>=0?'สูงกว่าเป้าหมาย':'ต่ำกว่าเป้าหมาย',
+      ''
+    ]
+  ];
+  exportExcel([{
+    name:'IQA',
+    aoa,
+    colWidths:[4,32,14,18,14,20,12]
+  }], `IQA_${school}_${yr}_${sm}.xlsx`);
 }
 
 // ════ MANUAL ══════════════════════════════════════════════════════
