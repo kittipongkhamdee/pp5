@@ -2401,24 +2401,31 @@ function _confirmPromote(){
 async function _doPromote(students, toGrade, toRoom, fromG, fromR){
   loading(true);
   try{
-    const ids = students.map(s=>s.id);
-    // Update ทีละ batch 50 คน
+    // ตรวจสอบ student_code ที่มีอยู่แล้วในห้องปลายทาง เพื่อหลีกเลี่ยง duplicate key
+    const existingInTarget = await q(
+      sb.from('students').select('student_code').eq('grade_level', toGrade).eq('room', toRoom)
+    );
+    const existingCodes = new Set(existingInTarget.map(s=>String(s.student_code)));
+    const toUpdate = students.filter(s=>!existingCodes.has(String(s.student_code)));
+    const skipped = students.length - toUpdate.length;
+
+    if(toUpdate.length === 0){
+      toast('นักเรียนทุกคนอยู่ในห้องปลายทางแล้ว', 'er');
+      return;
+    }
+
+    const ids = toUpdate.map(s=>s.id);
     const batchSize = 50;
     for(let i=0; i<ids.length; i+=batchSize){
       const batch = ids.slice(i, i+batchSize);
-      await q(
-        sb.from('students')
-          .update({ grade_level: toGrade, room: toRoom })
-          .in('id', batch)
-      );
+      await q(sb.from('students').update({grade_level:toGrade, room:toRoom}).in('id', batch));
     }
-    // อัป allStu local
-    allStu = allStu.map(s=>
-      ids.includes(s.id) ? {...s, grade_level:toGrade, room:toRoom} : s
-    );
+    allStu = allStu.map(s=>ids.includes(s.id)?{...s,grade_level:toGrade,room:toRoom}:s);
     clearStuCache();
-    toast('เลื่อนชั้น '+students.length+' คน เสร็จแล้ว ('+grm(fromG,fromR)+' → '+grm(toGrade,toRoom)+')');
-    // re-render ตาราง
+    const msg = skipped>0
+      ? `เลื่อนชั้น ${toUpdate.length} คน เสร็จแล้ว (${grm(fromG,fromR)} → ${grm(toGrade,toRoom)}) · ข้าม ${skipped} คน ที่มีในห้องปลายทางแล้ว`
+      : `เลื่อนชั้น ${toUpdate.length} คน เสร็จแล้ว (${grm(fromG,fromR)} → ${grm(toGrade,toRoom)})`;
+    toast(msg);
     filterStu();
   }catch(e){
     toast('เกิดข้อผิดพลาด: '+e.message,'er');
