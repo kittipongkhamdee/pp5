@@ -2035,7 +2035,8 @@ async function pgDash(){
       });
       const subTotalH = s.total_hours||60;
       const msCount=Object.values(stuAttMap).filter(m=>subTotalH>0&&(m.attended/subTotalH*100)<80).length;
-      return {...s,stats:{total,pass,recorded:sum.length,avg,passPercent:pct,msCount}};
+      const recorded=sum.filter(r=>(parseFloat(r.total_score)||0)>0).length;
+      return {...s,stats:{total,pass,recorded,avg,passPercent:pct,msCount}};
     });
     // นับเฉพาะนักเรียนในห้องที่ครูสอน (ตาม grade_level+room ของวิชาที่มี)
     const _teachRooms = new Set(S.subjects.map(s=>s.grade_level+'_'+s.room));
