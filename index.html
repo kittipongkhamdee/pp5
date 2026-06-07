@@ -3479,7 +3479,18 @@ function rebuildUnits(){
 function gsc(sid,period,un){const r=scUnits.find(s=>String(s.student_id)===String(sid)&&s.period===period&&parseInt(s.unit_number)===parseInt(un));return r!=null?parseFloat(r.score):null;}
 function gsum(sid){return scSum.find(s=>String(s.student_id)===String(sid))||{};}
 
+function _markScDirty(){
+  _scDirty=true;
+  const b=$('sc-dirty-bar'); if(b) b.style.display='flex';
+}
+function _clearScDirty(){
+  _scDirty=false;
+  const b=$('sc-dirty-bar'); if(b) b.style.display='none';
+}
+let _scDirty=false;
+
 function renderScPage(){
+  _scDirty=false;
   const sub=scSub;
   $('pg').innerHTML=`
   <div class="ph"><div class="ptitle">บันทึกคะแนน</div>
@@ -3499,6 +3510,11 @@ function renderScPage(){
     <button class="tab" data-tg="sc" data-ti="sc-af" onclick="swTab('sc','sc-af')">หลังกลางภาค (/${sub?.score_after_mid||25})</button>
     <button class="tab" data-tg="sc" data-ti="sc-ex" onclick="swTab('sc','sc-ex')">คะแนนสอบ</button>
     <button class="tab" data-tg="sc" data-ti="sc-sm" onclick="swTab('sc','sc-sm')">สรุปผล</button>
+  </div>
+  <div id="sc-dirty-bar" style="display:none;align-items:center;gap:10px;background:rgba(255,149,0,.1);border:1.5px solid rgba(255,149,0,.45);border-radius:12px;padding:11px 14px;margin-bottom:12px">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#FF9500" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" style="flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <span style="font-size:13px;color:#c2410c;flex:1">คะแนนหน่วยมีการเปลี่ยนแปลง — กด <strong>"บันทึกคะแนนสอบ"</strong> เพื่ออัปเดตสรุปผล</span>
+    <button onclick="swTab('sc','sc-ex')" style="font-family:var(--font);font-size:12px;font-weight:600;padding:6px 14px;border-radius:8px;border:none;background:#FF9500;color:#fff;cursor:pointer;white-space:nowrap">ไปบันทึก →</button>
   </div>
   <div class="tp active" id="sc-bf" data-tp="sc">${renderUnitTab('before',sub?.score_before_mid||25)}</div>
   <div class="tp" id="sc-af" data-tp="sc">${renderUnitTab('after',sub?.score_after_mid||25)}</div>
@@ -3775,6 +3791,7 @@ async function saveUnitSc(){
     const tabId='sc-'+(period==='before'?'bf':'af');
     const tabEl=$(tabId);
     if(tabEl) tabEl.innerHTML=renderUnitTab(period,period==='before'?scSub?.score_before_mid||25:scSub?.score_after_mid||25);
+    _markScDirty();
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
 }
 function renderExamTab(){
@@ -3833,6 +3850,7 @@ async function saveExam(){
     await q(sb.from('score_summary').upsert(rows,{onConflict:'subject_id,student_id'}));
     scSum=await q(sb.from('score_summary').select('*').eq('subject_id',S.selSub));
     toast('บันทึกคะแนนสอบเรียบร้อย');
+    _clearScDirty();
     // อัปเฉพาะแท็บสรุปผล ไม่ render ทั้งหน้า (กันข้อมูลที่กรอกหาย)
     const smEl=$('sc-sm');
     if(smEl) smEl.innerHTML=renderSumTab();
