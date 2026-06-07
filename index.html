@@ -2554,7 +2554,7 @@ function renderStuTbl(list){
     <thead><tr><th>ลำดับ</th><th>รหัส</th><th class="tl">ชื่อ-สกุล</th><th>ชั้น/ห้อง</th><th>เพศ</th><th>จัดการ</th></tr></thead>
     <tbody>${list.map((s,i)=>`<tr>
       <td class="tc">${i+1}</td><td class="tc">${esc(s.student_code)}</td>
-      <td>${esc(s.student_name)}</td>
+      <td style="white-space:nowrap">${esc(s.student_name)}</td>
       <td class="tc">${grm(s.grade_level,s.room)}</td>
       <td class="tc">${s.gender==='ช'?'ชาย':s.gender==='ญ'?'หญิง':esc(s.gender||'-')}</td>
       <td class="tc">
@@ -2960,7 +2960,7 @@ function renderAttPage(){
         <tbody>${attStus.map((s,i)=>{
           const m=sumMap[s.id]||{present:0,absent:0,leave:0,attended:0,totalH:60,pct:0,ms:false};
           return`<tr>
-            <td class="tc">${i+1}</td><td>${esc(s.student_name)}</td>
+            <td class="tc">${i+1}</td><td style="white-space:nowrap">${esc(s.student_name)}</td>
             <td class="tc"><span class="badge bg-g">${m.present}</span></td>
             <td class="tc"><span class="badge bg-r">${m.absent}</span></td>
             <td class="tc"><span class="badge bg-b">${m.leave}</span></td>
@@ -3073,7 +3073,7 @@ function renderMonthGrid(){
       <tr>${attDays.map(d=>`<th style="cursor:pointer;min-width:36px" onclick="removeAttDay(${d.day})" title="คาบ: ${d.periods} • คลิกเพื่อลบ">${d.day}<br><span style="font-size:9px;font-weight:400;opacity:.7">${d.periods}คาบ</span></th>`).join('')}</tr>
     </thead>
     <tbody>${attStus.map((s,i)=>`<tr>
-      <td class="tc">${i+1}</td><td>${esc(s.student_name)}</td>
+      <td class="tc">${i+1}</td><td style="white-space:nowrap">${esc(s.student_name)}</td>
       ${attDays.map(d=>{
         const st=getCell(s.id,d.day);
         return `<td class="tc"><div class="${ATT_K[st]}" data-sid="${s.id}" data-day="${d.day}" onclick="cycleAtt(this)" style="width:28px;height:28px;margin:auto">${ATT_I[st]}</div></td>`;
@@ -3158,7 +3158,7 @@ function _refreshSummaryTab(overrideSumMap){
       <tbody>${attStus.map((s,i)=>{
         const m=sumMap[s.id]||{present:0,absent:0,leave:0,attended:0,totalH,pct:0,ms:false};
         return`<tr>
-          <td class="tc">${i+1}</td><td>${esc(s.student_name)}</td>
+          <td class="tc">${i+1}</td><td style="white-space:nowrap">${esc(s.student_name)}</td>
           <td class="tc"><span class="badge bg-g">${m.present}</span></td>
           <td class="tc"><span class="badge bg-r">${m.absent}</span></td>
           <td class="tc"><span class="badge bg-b">${m.leave}</span></td>
@@ -3570,7 +3570,7 @@ function renderUnitTab(period,maxTotal){
             });
             return`<tr>
               <td class="tc">${i+1}</td>
-              <td>${esc(s.student_name)}</td>
+              <td style="white-space:nowrap">${esc(s.student_name)}</td>
               ${cells.join('')}
               <td class="tr2"><strong>${tot>0?tot:'-'}</strong></td>
             </tr>`;
@@ -3613,7 +3613,7 @@ function openUnitModal(period){
       <div class="tw"><table>
         <thead><tr><th>เลขที่</th><th class="tl">ชื่อ-สกุล</th><th>คะแนน (/${mx})</th></tr></thead>
         <tbody>${scStus.map((s,i)=>`
-          <tr><td class="tc">${i+1}</td><td>${esc(s.student_name)}</td>
+          <tr><td class="tc">${i+1}</td><td style="white-space:nowrap">${esc(s.student_name)}</td>
           <td class="tc"><input type="number" class="si2" id="usc-${s.id}"
             value="${existSc[String(s.id)]??''}" min="0" max="${mx}" step="0.5"
             oninput="this.classList.toggle('over',parseFloat(this.value)>parseFloat(this.max))"></td></tr>`).join('')}
@@ -3698,7 +3698,7 @@ function openUnitModalEdit(period,unitNum){
       <div class="tw"><table>
         <thead><tr><th>เลขที่</th><th class="tl">ชื่อ-สกุล</th><th>คะแนน (/${u.max_score})</th></tr></thead>
         <tbody>${scStus.map((s,i)=>`
-          <tr><td class="tc">${i+1}</td><td>${esc(s.student_name)}</td>
+          <tr><td class="tc">${i+1}</td><td style="white-space:nowrap">${esc(s.student_name)}</td>
           <td class="tc"><input type="number" class="si2" id="usc-${s.id}"
             value="${existSc[String(s.id)]??''}" min="0" max="${u.max_score}" step="0.5"
             oninput="this.classList.toggle('over',parseFloat(this.value)>parseFloat(this.max))"></td></tr>`).join('')}
@@ -3787,7 +3787,7 @@ function renderExamTab(){
       </tr></thead>
       <tbody>${scStus.map((s,i)=>{
         const sm=gsum(s.id);
-        return`<tr><td class="tc">${i+1}</td><td>${esc(s.student_name)}</td>
+        return`<tr><td class="tc">${i+1}</td><td style="white-space:nowrap">${esc(s.student_name)}</td>
           <td class="tc"><input type="number" class="si2" id="mid-${s.id}" value="${sm.mid_normal??''}" min="0" max="${mM}" step="0.5" oninput="this.classList.toggle('over',+this.value>+this.max)"></td>
           <td class="tc"><input type="number" class="si2" id="fin-${s.id}" value="${sm.final_score??''}" min="0" max="${mF}" step="0.5" oninput="this.classList.toggle('over',+this.value>+this.max)"></td>
         </tr>`;
@@ -3871,7 +3871,7 @@ function renderSumTab(){
         const tot=sm.total_score!=null?parseFloat(sm.total_score):0;
         const g=sm.grade!=null&&sm.grade!==''?sm.grade:(tot>0?calcGrade(tot):'-');
         return`<tr>
-          <td class="tc">${i+1}</td><td>${esc(s.student_name)}</td>
+          <td class="tc">${i+1}</td><td style="white-space:nowrap">${esc(s.student_name)}</td>
           <td class="tr2">${bef||'-'}</td><td class="tr2">${aft||'-'}</td>
           <td class="tr2">${mid||'-'}</td><td class="tr2">${fin||'-'}</td>
           <td class="tr2"><strong>${tot||'-'}</strong></td>
