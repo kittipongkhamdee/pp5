@@ -2247,39 +2247,47 @@ function openSubModal(id){
     <div class="mh"><div class="mt">${s?'แก้ไขรายวิชา':'เพิ่มรายวิชาใหม่'}</div>
     <button class="mx" onclick="rmModal('subMod')">✕</button></div>
     <div class="mb">
-      <div class="fg">
-        <div><label class="fl">รหัสวิชา <span class="req">*</span></label>
-          <input class="fi" id="f-code" value="${esc(s?.subject_code||'')}"></div>
-        <div style="grid-column:span 2"><label class="fl">ชื่อวิชา <span class="req">*</span></label>
-          <input class="fi" id="f-name" value="${esc(s?.subject_name||'')}"></div>
-        <div style="grid-column:span 3"><label class="fl">กลุ่มสาระการเรียนรู้</label>
+        <div class="fg" style="grid-template-columns:1fr 2fr">
+          <div><label class="fl">รหัสวิชา <span class="req">*</span></label>
+            <input class="fi" id="f-code" value="${esc(s?.subject_code||'')}"></div>
+          <div><label class="fl">ชื่อวิชา <span class="req">*</span></label>
+            <input class="fi" id="f-name" value="${esc(s?.subject_name||'')}"></div>
+        </div>
+        <div style="margin-top:14px">
+          <label class="fl">กลุ่มสาระการเรียนรู้</label>
           <select class="fs" id="f-sg">
             <option value="">— ไม่ระบุ —</option>
             ${SUBJECT_GROUPS.map(g=>`<option value="${esc(g)}" ${s?.subject_group===g?'selected':''}>${esc(g)}</option>`).join('')}
-          </select></div>
-        <div><label class="fl">ชั้น ม.</label>
-          <select class="fs" id="f-gr">${[1,2,3,4,5,6].map(g=>`<option ${s?.grade_level==g?'selected':''}>${g}</option>`).join('')}</select></div>
-        <div><label class="fl">ห้อง</label><input class="fi" id="f-rm" value="${esc(s?.room||'')}"></div>
-        <div><label class="fl">หน่วยกิต</label><input type="number" class="fi" id="f-cr" value="${s?.credits||1.5}" step="0.5" min="0.5"></div>
-        <div><label class="fl">ชั่วโมง/สัปดาห์</label><input type="number" class="fi" id="f-hw" value="${s?.hours_per_week||3}" min="1"></div>
-        <div><label class="fl">ชั่วโมง/ภาค</label><input type="number" class="fi" id="f-th" value="${s?.total_hours||60}" min="1"></div>
-        <div><label class="fl">ครูผู้สอน</label>
+          </select>
+        </div>
+        <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:14px;margin-top:14px">
+          <div><label class="fl">ชั้น ม.</label>
+            <select class="fs" id="f-gr">${[1,2,3,4,5,6].map(g=>`<option ${s?.grade_level==g?'selected':''}>${g}</option>`).join('')}</select></div>
+          <div><label class="fl">ห้อง</label><input class="fi" id="f-rm" value="${esc(s?.room||'')}"></div>
+          <div><label class="fl">หน่วยกิต</label><input type="number" class="fi" id="f-cr" value="${s?.credits||1.5}" step="0.5" min="0.5"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
+          <div><label class="fl">ชั่วโมง/สัปดาห์</label><input type="number" class="fi" id="f-hw" value="${s?.hours_per_week||3}" min="1"></div>
+          <div><label class="fl">ชั่วโมง/ภาค</label><input type="number" class="fi" id="f-th" value="${s?.total_hours||60}" min="1"></div>
+        </div>
+        <div style="margin-top:14px">
+          <label class="fl">ครูผู้สอน</label>
           <select class="fs" id="f-tch">
             <option value="">— เลือกหรือพิมพ์ —</option>
             ${(S.config.teachers||'').split('\n').filter(t=>t.trim()).map(t=>`<option value="${esc(t.trim())}" ${s?.teacher_name===t.trim()?'selected':''}>${esc(t.trim())}</option>`).join('')}
             ${s?.teacher_name&&!(S.config.teachers||'').split('\n').map(t=>t.trim()).includes(s.teacher_name)?`<option value="${esc(s.teacher_name)}" selected>${esc(s.teacher_name)}</option>`:''}
           </select>
         </div>
-        <div><label class="fl">หัวหน้ากลุ่มสาระการเรียนรู้</label>
+        <div style="margin-top:14px">
+          <label class="fl">หัวหน้ากลุ่มสาระการเรียนรู้</label>
           <select class="fs" id="f-hog">
             <option value="">— เลือก —</option>
             ${(S.config.teachers||'').split('\n').filter(t=>t.trim()).map(t=>`<option value="${esc(t.trim())}" ${s?.head_of_group===t.trim()?'selected':''}>${esc(t.trim())}</option>`).join('')}
           </select>
         </div>
-      </div>
-      <div class="score-box">
+      <div class="score-box" style="margin-top:14px">
         <div class="score-box-title">📊 โครงสร้างคะแนน (รวม = <span id="f-tot">${(s?.score_before_mid||25)+(s?.score_mid||20)+(s?.score_after_mid||25)+(s?.score_final||30)}</span> / 100)</div>
-        <div class="fg">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
           <div><label class="fl">ก่อนกลางภาค</label><input type="number" class="fi" id="f-sbm" value="${s?.score_before_mid||25}" min="0" max="100" oninput="updTot()"></div>
           <div><label class="fl">กลางภาค</label><input type="number" class="fi" id="f-sm" value="${s?.score_mid||20}" min="0" max="100" oninput="updTot()"></div>
           <div><label class="fl">หลังกลางภาค</label><input type="number" class="fi" id="f-sam" value="${s?.score_after_mid||25}" min="0" max="100" oninput="updTot()"></div>
@@ -4197,18 +4205,18 @@ function renderEvPage(){
 function renderReadTab(){
   const gR=id=>evRead.find(e=>e.student_id===id)||{};
   return`<div class="card"><div class="ch"><div class="ct">การอ่าน คิดวิเคราะห์และเขียน</div></div><div class="cb">
-    <div class="tw"><table style="table-layout:fixed;width:100%">
+    <div class="tw"><table>
       <thead><tr>
         <th style="width:40px">ที่</th>
-        <th class="tl" style="min-width:160px">ชื่อ-สกุล</th>
-        <th style="width:62px">ครั้ง 1</th><th style="width:62px">ครั้ง 2</th>
-        <th style="width:62px">ครั้ง 3</th><th style="width:62px">ครั้ง 4</th>
-        <th style="width:62px">ครั้ง 5</th>
-        <th style="width:72px">ผลสรุป</th>
+        <th class="tl" style="min-width:130px">ชื่อ-สกุล</th>
+        <th style="min-width:60px">ครั้ง 1</th><th style="min-width:60px">ครั้ง 2</th>
+        <th style="min-width:60px">ครั้ง 3</th><th style="min-width:60px">ครั้ง 4</th>
+        <th style="min-width:60px">ครั้ง 5</th>
+        <th style="min-width:70px">ผลสรุป</th>
       </tr></thead>
       <tbody>${evStus.map((s,i)=>{const ev=gR(s.id);return`<tr>
         <td class="tc">${i+1}</td>
-        <td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:0">${esc(s.student_name)}</td>
+        <td style="white-space:nowrap">${esc(s.student_name)}</td>
         ${[1,2,3,4,5].map(t=>`<td class="tc" style="padding:6px 4px">${evSel('rt'+t+'-'+s.id,ev['t'+t])}</td>`).join('')}
         <td class="tc" style="padding:6px 4px">${evSel('rr-'+s.id,ev.result)}</td>
       </tr>`;}).join('')}</tbody>
@@ -5370,7 +5378,7 @@ async function pgIQA(){
           <thead>
             <tr style="background:rgba(0,122,255,.06)">
               <th style="padding:10px 12px;text-align:left;border-bottom:2px solid #e5e7eb;font-weight:600;white-space:nowrap">ที่</th>
-              <th style="padding:10px 12px;text-align:left;border-bottom:2px solid #e5e7eb;font-weight:600">กลุ่มสาระการเรียนรู้</th>
+              <th style="padding:10px 12px;text-align:left;border-bottom:2px solid #e5e7eb;font-weight:600;white-space:nowrap">กลุ่มสาระการเรียนรู้</th>
               <th style="padding:10px 12px;text-align:center;border-bottom:2px solid #e5e7eb;font-weight:600;white-space:nowrap">ค่าเป้าหมาย</th>
               <th style="padding:10px 12px;text-align:center;border-bottom:2px solid #e5e7eb;font-weight:600;white-space:nowrap">ค่าเฉลี่ยภาค ${esc(sm)}/${esc(yr)}</th>
               <th style="padding:10px 12px;text-align:center;border-bottom:2px solid #e5e7eb;font-weight:600;white-space:nowrap">ผลต่าง (+/-)</th>
@@ -5390,7 +5398,7 @@ async function pgIQA(){
                   :`<span style="background:#fee2e2;color:#dc2626;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600">ต่ำกว่าเป้าหมาย</span>`;
               return`<tr style="border-bottom:1px solid #f3f4f6;${i%2===1?'background:rgba(0,0,0,.015)':''}">
                 <td style="padding:10px 12px;text-align:center;color:#8e8e93">${i+1}</td>
-                <td style="padding:10px 12px;font-weight:500">${esc(r.g)}</td>
+                <td style="padding:10px 12px;font-weight:500;white-space:nowrap">${esc(r.g)}</td>
                 <td style="padding:10px 12px;text-align:center">${r.target.toFixed(2)}</td>
                 <td style="padding:10px 12px;text-align:center;font-weight:600">${avgStr}</td>
                 <td style="padding:10px 12px;text-align:center;font-weight:700;color:${diffColor}">${diffStr}</td>
