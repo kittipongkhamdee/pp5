@@ -2719,7 +2719,7 @@ function parseExcelRows(rows){
       skipped++; continue;
     } else { skipped++; continue; }
 
-    if(!name||!grade||!room){ skipped++; continue; }
+    if(!code||!name||!grade||!room){ skipped++; continue; }
     // normalize grade: "1", "ม.1", "ม1" → "1"
     grade=String(grade).replace(/[^0-9]/g,'');
     room=String(room).replace(/[^0-9]/g,'');
@@ -3064,44 +3064,46 @@ async function saveMonth(){
   _refreshSummaryTab();
   // บันทึก API เบื้องหลัง
   invalidateAtt(); cacheInv('att_sum_'+S.selSub);
-  q(sb.from('attendance').upsert(rows,{onConflict:'subject_id,student_id,year_month,date_day'}))
-    .then(()=>{ cacheInv('ms_att_'+S.user.id); updateMsBadge(); })
-    .catch(e=>{
-      toast('บันทึกผิดพลาด: '+e.message,'er');
-      // rollback optimistic update ทันที
-      invalidateAtt();
-      q(sb.from('attendance').select('*').eq('subject_id',S.selSub))
-        .then(d=>{ attData=d; _refreshSummaryTab(); }).catch(()=>{});
-    });
-  // sync จาก server เบื้องหลังเพื่อยืนยัน (กรณี success)
-  setTimeout(async()=>{
+  let _syncTimer=setTimeout(async()=>{
     try{
       invalidateAtt();
       attData=await q(sb.from('attendance').select('*').eq('subject_id',S.selSub));
       _refreshSummaryTab();
     }catch(e){}
   }, 1500);
+  q(sb.from('attendance').upsert(rows,{onConflict:'subject_id,student_id,year_month,date_day'}))
+    .then(()=>{ cacheInv('ms_att_'+S.user.id); updateMsBadge(); })
+    .catch(e=>{
+      clearTimeout(_syncTimer);
+      toast('บันทึกผิดพลาด: '+e.message,'er');
+      // rollback optimistic update ทันที
+      invalidateAtt();
+      q(sb.from('attendance').select('*').eq('subject_id',S.selSub))
+        .then(d=>{ attData=d; _refreshSummaryTab(); }).catch(()=>{});
+    });
 }
 
 // อัปเฉพาะแท็บสรุปโดยไม่ render ทั้งหน้า
-function _refreshSummaryTab(){
+function _refreshSummaryTab(overrideSumMap){
   const tab=$('att-sum'); if(!tab) return;
   const totalH=attSub?.total_hours||60;
-  const sumMap={};
-  attStus.forEach(s=>{ sumMap[s.id]={present:0,absent:0,leave:0,attended:0,totalH,pct:0,ms:false}; });
-  attData.forEach(a=>{
-    const m=sumMap[a.student_id]; if(!m) return;
-    const p=parseInt(a.periods)||1;
-    if(a.status==='present')m.present+=p;
-    else if(a.status==='absent')m.absent+=p;
-    // late removed
-    else if(a.status==='leave')m.leave+=p;
-  });
-  Object.values(sumMap).forEach(m=>{
-    m.attended=m.present+m.leave;
-    m.pct=m.totalH>0?Math.round(m.attended/m.totalH*100):0;
-    m.ms=m.pct<80;
-  });
+  let sumMap=overrideSumMap;
+  if(!sumMap){
+    sumMap={};
+    attStus.forEach(s=>{ sumMap[s.id]={present:0,absent:0,leave:0,attended:0,totalH,pct:0,ms:false}; });
+    attData.forEach(a=>{
+      const m=sumMap[a.student_id]; if(!m) return;
+      const p=parseInt(a.periods)||1;
+      if(a.status==='present')m.present+=p;
+      else if(a.status==='absent')m.absent+=p;
+      else if(a.status==='leave')m.leave+=p;
+    });
+    Object.values(sumMap).forEach(m=>{
+      m.attended=m.present+m.leave;
+      m.pct=m.totalH>0?Math.round(m.attended/m.totalH*100):0;
+      m.ms=m.pct<80;
+    });
+  }
   tab.innerHTML=`<div class="card"><div class="ch"><div class="ct">สรุปเวลาเรียนรายคน</div></div><div class="cb">
     <div class="tw"><table>
       <thead><tr><th>เลขที่</th><th class="tl">ชื่อ-สกุล</th>
@@ -3172,16 +3174,10 @@ function _refreshSummaryFromDOM(){
     m.ms=m.pct<80;
   });
   // อัป DOM ของแท็บสรุปถ้าเปิดอยู่
-  const tab=$('att-sum');
-  if(tab&&tab.classList.contains('active')){
-    // แท็บสรุปเปิดอยู่: อัปตัวเลขโดยตรง
-    attStus.forEach(s=>{
-      const m=sumMap[s.id]||{};
-      // หา row ตาม index
-    });
+  // ถ้าแท็บสรุปเปิดอยู่ ให้ re-render ด้วย sumMap จาก DOM ทันที
+  if($('att-sum')?.classList.contains('active')){
+    _refreshSummaryTab(sumMap);
   }
-  // เก็บค่าไว้ใน state สำหรับ _refreshSummaryTab
-  attStus._sumCache=sumMap;
 }
 async function changeAttSub(sid){S.selSub=sid;attDays=[];attMonthIdx=null;await loadAttData();syncAttDaysFromData();renderAttPage();}
 
@@ -5410,6 +5406,7 @@ async function pgIQA(){
 }
 
 function printIQA(){
+  if(!window._iqaRows){toast('ไม่มีข้อมูล IQA — กรุณารอให้หน้าโหลดสำเร็จก่อน','er');return;}
   window.print();
 }
 
@@ -5681,7 +5678,8 @@ function adminAuth(opts){
 // ลำดับการ restore (child ก่อน parent เพื่อหลีกเลี่ยง FK conflict)
 const RESTORE_ORDER = [
   'eval_char','eval_read','score_summary','score_units',
-  'attendance','students','subjects','config'
+  'attendance','students','subjects'
+  // config ใช้ primary key 'key' (ไม่ใช่ uuid) — จัดการแยกในขั้นตอน delete/insert
 ];
 // tables ที่ไม่ restore (profiles = user accounts, ไม่ควรเขียนทับ)
 const RESTORE_SKIP = ['profiles','README'];
@@ -5877,6 +5875,24 @@ async function _doRestore(){
             try{
               await q(sb.from(tbl).insert(batch));
             }catch(e){ errors.push('insert '+tbl+' batch '+(i/batchSize+1)+': '+e.message); }
+          }
+        }
+        // insert config แยกต่างหาก (primary key = 'key' ไม่ใช่ 'id')
+        if(wb.SheetNames.includes('config')){
+          const cfgWs=wb.Sheets['config'];
+          const cfgRows=XLSX.utils.sheet_to_json(cfgWs,{header:1,defval:''});
+          if(cfgRows.length>=2){
+            const cfgHeaders=cfgRows[0].map(h=>String(h));
+            const cfgData=cfgRows.slice(1).filter(r=>r.some(v=>v!=='')).map(r=>{
+              const obj={};
+              cfgHeaders.forEach((h,i)=>{ if(h&&!['created_at','updated_at'].includes(h)) obj[h]=r[i]===''?null:r[i]; });
+              return obj;
+            }).filter(o=>o.key);
+            if(cfgData.length){
+              try{
+                await q(sb.from('config').upsert(cfgData,{onConflict:'key'}));
+              }catch(e){ errors.push('insert config: '+e.message); }
+            }
           }
         }
 
