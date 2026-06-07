@@ -3164,7 +3164,7 @@ function _refreshSummaryFromDOM(){
   attStus.forEach(s=>{
     const dm=domMap[s.id]||{}; const sm=sumMap[s.id];
     sm.present+=dm.present||0; sm.absent+=dm.absent||0;
-    // late removed sm.leave+=dm.leave||0;
+    sm.leave+=dm.leave||0;
   });
   Object.values(sumMap).forEach(m=>{
     m.attended=m.present+m.leave;
@@ -3768,25 +3768,26 @@ async function saveExam(){
   if(over){ toast('มีคะแนนสอบเกินคะแนนเต็ม (กลางภาค/'+mM+' ปลายภาค/'+mF+') กรุณาตรวจสอบ','er'); return; }
   const maxBef = scSub?.score_before_mid ?? 25;
   const maxAft = scSub?.score_after_mid ?? 25;
-  const rows=scStus.map(s=>{
-    const sm=gsum(s.id);
-    const bef=Math.min(maxBef, scUnits.filter(u=>u.student_id===s.id&&u.period==='before').reduce((a,b)=>a+(parseFloat(b.score)||0),0));
-    const aft=Math.min(maxAft, scUnits.filter(u=>u.student_id===s.id&&u.period==='after').reduce((a,b)=>a+(parseFloat(b.score)||0),0));
-    const mn=Math.min(mM,parseFloat($('mid-'+s.id)?.value)||0);
-    const fn=Math.min(mF,parseFloat($('fin-'+s.id)?.value)||0);
-    const midUsed=mn;
-    const total=bef+aft+midUsed+fn;
-    const ZERO_GRADE=['ร','มส','มผ','ผ'];
-    // อ่าน special_result จาก DOM ถ้าแท็บสรุปเปิดอยู่ ไม่งั้นใช้ค่าเดิมจาก scSum
-    const sr_dom = $('res-'+s.id)?.value ?? (sm?.special_result||'');
-    const grade=ZERO_GRADE.includes(sr_dom)?0:calcGrade(total);
-    return{subject_id:S.selSub,student_id:s.id,
-      total_before_mid:bef,total_after_mid:aft,total_unit:bef+aft,
-      mid_normal:mn,mid_retake:0,mid_repeat:0,final_score:fn,
-      total_score:total,grade,special_result:sr_dom,note:sm.note||''};
-  });
   loading(true);
   try{
+    // ดึง score_units สดๆ ก่อนคำนวณ เพื่อป้องกัน stale data จากเซสชันอื่น
+    const freshUnits=await q(sb.from('score_units').select('*').eq('subject_id',S.selSub));
+    scUnits=freshUnits;
+    const rows=scStus.map(s=>{
+      const sm=gsum(s.id);
+      const bef=Math.min(maxBef, freshUnits.filter(u=>u.student_id===s.id&&u.period==='before').reduce((a,b)=>a+(parseFloat(b.score)||0),0));
+      const aft=Math.min(maxAft, freshUnits.filter(u=>u.student_id===s.id&&u.period==='after').reduce((a,b)=>a+(parseFloat(b.score)||0),0));
+      const mn=Math.min(mM,parseFloat($('mid-'+s.id)?.value)||0);
+      const fn=Math.min(mF,parseFloat($('fin-'+s.id)?.value)||0);
+      const total=bef+aft+mn+fn;
+      const ZERO_GRADE=['ร','มส','มผ','ผ'];
+      const sr_dom=$('res-'+s.id)?.value??(sm?.special_result||'');
+      const grade=ZERO_GRADE.includes(sr_dom)?0:calcGrade(total);
+      return{subject_id:S.selSub,student_id:s.id,
+        total_before_mid:bef,total_after_mid:aft,total_unit:bef+aft,
+        mid_normal:mn,mid_retake:0,mid_repeat:0,final_score:fn,
+        total_score:total,grade,special_result:sr_dom,note:sm.note||''};
+    });
     invalidateSc(); invalidateSubjects();
     await q(sb.from('score_summary').upsert(rows,{onConflict:'subject_id,student_id'}));
     scSum=await q(sb.from('score_summary').select('*').eq('subject_id',S.selSub));
@@ -4273,11 +4274,6 @@ async function saveChar(){
     const iv=el=>{const v=el?.value;return(v===''||v==null)?null:parseInt(v);};
     const g=k=>iv($('ch-'+k+'-'+s.id));
     return{subject_id:S.selSub,student_id:s.id,
-      c1_1:g('c1_1'),c1_2:g('c1_2'),c1_3:g('c1_3'),c1_4:g('c1_4'),
-      c2_1:g('c2_1'),c2_2:g('c2_2'),c3_1:g('c3_1'),
-      c4_1:g('c4_1'),c4_2:g('c4_2'),c5_1:g('c5_1'),c5_2:g('c5_2'),
-      c6_1:g('c6_1'),c6_2:g('c6_2'),c7_1:g('c7_1'),c7_2:g('c7_2'),c7_3:g('c7_3'),
-      c8_1:g('c8_1'),c8_2:g('c8_2'),
       r1:g('r1'),r2:g('r2'),r3:g('r3'),r4:g('r4'),
       r5:g('r5'),r6:g('r6'),r7:g('r7'),r8:g('r8'),
       overall_result:iv($('ch-res-'+s.id))};
