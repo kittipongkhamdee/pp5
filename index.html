@@ -2023,9 +2023,15 @@ async function pgDash(){
     }
     S._dashPassAvg = _dashPassAvg;
     S._dashMsCount = _dashMsCount;
+    // งานที่ยังค้าง
+    const _attSubjHas = new Set(allAtt.map(a=>a.subject_id));
+    S._dashNoScore  = S.subjects.filter(s=>s.stats.recorded===0);
+    S._dashNoAtt    = S.subjects.filter(s=>!_attSubjHas.has(s.id));
+    S._dashPartial  = S.subjects.filter(s=>s.stats.recorded>0&&s.stats.recorded<s.stats.total);
   }catch(e){
     S.subjects = S.subjects.map(s=>({...s,stats:{total:0,pass:0,recorded:0,avg:0,passPercent:0}}));
     S._dashPassAvg=0; S._dashMsCount=0;
+    S._dashNoScore=[]; S._dashNoAtt=[]; S._dashPartial=[];
   }finally{
     loading(false); // ← ปิดเสมอ ไม่ว่าจะ error หรือไม่
     _pgDashRunning=false;
@@ -2056,6 +2062,19 @@ async function pgDash(){
     <div class="sc"><div class="si" style="background:${S._dashMsCount>0?'linear-gradient(135deg,#ff6b6b,#FF3B30)':' linear-gradient(135deg,#30d158,#34C759)'}"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div><div class="sv" style="${S._dashMsCount>0?'color:#FF3B30':'color:#16803d'}">${S._dashMsCount}</div><div class="sl">มส. รอติดตาม</div></div></div>
 
   </div>
+  ${(()=>{
+    const _ns=S._dashNoScore||[], _na=S._dashNoAtt||[], _np=S._dashPartial||[];
+    const _tot=_ns.length+_na.length+_np.length;
+    if(!S.subjects.length) return '';
+    if(_tot===0) return '<div class="card" style="display:flex;align-items:center;gap:12px;padding:16px 18px"><div style="width:36px;height:36px;border-radius:50%;background:rgba(52,199,89,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg viewBox="0 0 24 24" fill="none" stroke="#34C759" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="20 6 9 17 4 12"/></svg></div><div style="font-size:14px;font-weight:600;color:#16803d">ทุกวิชาบันทึกข้อมูลครบแล้ว</div></div>';
+    const chip=(s,page,r,g,b)=>'<button onclick="nav(\''+page+'\',\''+s.id+'\')" style="font-family:var(--font);font-size:12px;padding:4px 10px;border-radius:20px;border:1.5px solid rgba('+r+','+g+','+b+',.3);background:rgba('+r+','+g+','+b+',.08);color:var(--fg);cursor:pointer">'+esc(s.subject_name)+' '+grm(s.grade_level,s.room)+'</button>';
+    let html='<div class="card"><div class="ch"><div class="ct">งานที่ยังค้าง</div><div style="font-size:12px;color:var(--muted)">'+_tot+' รายการ</div></div><div class="cb" style="display:flex;flex-direction:column;gap:14px">';
+    if(_ns.length) html+='<div><div style="font-size:12px;font-weight:600;color:#FF3B30;margin-bottom:6px">📊 ยังไม่มีคะแนน ('+_ns.length+' วิชา)</div><div style="display:flex;flex-wrap:wrap;gap:6px">'+_ns.map(s=>chip(s,'scores',255,59,48)).join('')+'</div></div>';
+    if(_na.length) html+='<div><div style="font-size:12px;font-weight:600;color:#FF9500;margin-bottom:6px">📅 ยังไม่มีเวลาเรียน ('+_na.length+' วิชา)</div><div style="display:flex;flex-wrap:wrap;gap:6px">'+_na.map(s=>chip(s,'attendance',255,149,0)).join('')+'</div></div>';
+    if(_np.length) html+='<div><div style="font-size:12px;font-weight:600;color:#007AFF;margin-bottom:6px">✏️ คะแนนไม่ครบทุกคน ('+_np.length+' วิชา)</div><div style="display:flex;flex-wrap:wrap;gap:6px">'+_np.map(s=>chip(s,'scores',0,122,255)).join('')+'</div></div>';
+    html+='</div></div>';
+    return html;
+  })()}
   ${!S.subjects.length?`<div class="card"><div class="empty"><div class="ei">📚</div>
     <div style="font-weight:600;margin-bottom:10px">ยังไม่มีรายวิชา</div>
     <button class="btn bp" onclick="nav('subjects')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>เพิ่มรายวิชาแรก</button></div></div>`:`
