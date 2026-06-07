@@ -6226,7 +6226,7 @@ async function pgSchoolReport(){
         // ── detail panel (hidden) ──
         '<div class="school-detail" style="display:none;border-top:1px solid var(--bdr)">'+
           // stats row
-          '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;background:var(--card2)">'+
+          '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(75px,1fr));gap:0;background:var(--card2)">'+
             _schoolStatCell(st.total,'นักเรียน','#007AFF')+
             _schoolStatCell(passOk?st.pass+' ('+passRate+'%)':'—','ผ่าน','#16803d')+
             _schoolStatCell(passOk?st.fail:'—','ไม่ผ่าน','#dc2626')+
@@ -6286,7 +6286,7 @@ async function pgSchoolReport(){
       '</div>'+
 
       // summary stats — row 1
-      '<div class="sg" style="grid-template-columns:repeat(4,1fr)">'+
+      '<div class="sg" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr))">'+
         '<div class="sc"><div class="si bl"><svg viewBox="0 0 24 24" fill="none" stroke="#007AFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div><div><div class="sv">'+schoolTotal+'</div><div class="sl">รายวิชา</div></div></div>'+
         '<div class="sc"><div class="si gr"><svg viewBox="0 0 24 24" fill="none" stroke="#16803d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div><div class="sv">'+schoolTeachers+'</div><div class="sl">ครูผู้สอน</div></div></div>'+
         '<div class="sc"><div class="si gr"><svg viewBox="0 0 24 24" fill="none" stroke="#16803d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg></div><div><div class="sv" style="color:#16803d">'+schoolPassAvg+'%</div><div class="sl">ผ่านเฉลี่ย</div></div></div>'+
