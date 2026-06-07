@@ -1,0 +1,24 @@
+{
+  "name": "ระบบบันทึกผลการเรียน ปพ.5",
+  "short_name": "ปพ.5",
+  "description": "ระบบบันทึกผลการเรียน ปพ.5 ออนไลน์สำหรับครู",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#007AFF",
+  "icons": [
+    {
+      "src": "https://lh5.googleusercontent.com/d/1IjjamxeQ9VaeAao8PtmR7RCwioE4hndi",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://lh5.googleusercontent.com/d/1IjjamxeQ9VaeAao8PtmR7RCwioE4hndi",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
