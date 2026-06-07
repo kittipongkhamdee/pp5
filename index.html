@@ -4232,16 +4232,16 @@ function renderReadTab(){
 function renderCharTab(){
   const gC=id=>evChar.find(e=>e.student_id===id)||{};
   return`<div class="card"><div class="ch"><div class="ct">คุณลักษณะอันพึงประสงค์ 8 ด้าน</div></div><div class="cb">
-    <div class="tw"><table style="table-layout:fixed;width:100%">
+    <div class="tw"><table>
       <thead><tr>
         <th style="width:40px">ที่</th>
-        <th class="tl" style="min-width:160px">ชื่อ-สกุล</th>
-        ${CHAR8.map((ch,i)=>`<th style="font-size:10.5px;width:52px;padding:6px 3px;line-height:1.3">ข้อ ${i+1}</th>`).join('')}
-        <th style="width:60px;font-size:11px">ผลสรุป</th>
+        <th class="tl" style="min-width:130px">ชื่อ-สกุล</th>
+        ${CHAR8.map((ch,i)=>`<th style="font-size:10.5px;min-width:50px;padding:6px 3px;line-height:1.3">ข้อ ${i+1}</th>`).join('')}
+        <th style="min-width:60px;font-size:11px">ผลสรุป</th>
       </tr></thead>
       <tbody>${evStus.map((s,i)=>{const ev=gC(s.id);return`<tr>
         <td class="tc">${i+1}</td>
-        <td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:0">${esc(s.student_name)}</td>
+        <td style="white-space:nowrap">${esc(s.student_name)}</td>
         ${CHAR8.map(ch=>`<td class="tc" style="padding:5px 2px">${evSel('ch-'+ch.key+'-'+s.id,ev[ch.key])}</td>`).join('')}
         <td class="tc" style="padding:5px 2px">${evSel('ch-res-'+s.id,ev.overall_result)}</td>
       </tr>`;}).join('')}</tbody>
