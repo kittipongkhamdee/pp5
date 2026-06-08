@@ -6574,10 +6574,9 @@ function printMsReport(){
   if(!subjectsWithMs.length){toast('ไม่พบนักเรียน มส. ในทุกวิชา','in');return;}
 
   const totalMs=subjectsWithMs.reduce((a,s)=>a+s._stats.msStudentIds.length,0);
-  const schoolLine=`<div style="text-align:center;margin-bottom:14px;border-bottom:2px solid #000;padding-bottom:8px">
+  const schoolLine=`<div style="text-align:center;margin-bottom:12px;border-bottom:2px solid #000;padding-bottom:8px">
     <div style="font-size:16px;font-weight:800">รายงานนักเรียนที่มีเวลาเรียนไม่ผ่านเกณฑ์ (มส.)</div>
-    <div style="font-size:14px;font-weight:600;margin-top:2px">${esc(cfg.school_name||'')} &nbsp; ปีการศึกษา ${esc(cfg.academic_year||'')} ภาคเรียนที่ ${esc(cfg.semester||'')}</div>
-    <div style="font-size:12px;color:#444;margin-top:2px">เกณฑ์: มีเวลาเรียนไม่ถึง 80% &nbsp;|&nbsp; ${subjectsWithMs.length} วิชา &nbsp;|&nbsp; มส. รวม ${totalMs} รายการ</div>
+    <div style="font-size:14px;font-weight:600;margin-top:4px">${esc(cfg.school_name||'')} &nbsp;&nbsp;&nbsp; ปีการศึกษา ${esc(cfg.academic_year||'')} ภาคเรียนที่ ${esc(cfg.semester||'')}</div>
   </div>`;
 
   let pages='';
@@ -6589,8 +6588,9 @@ function printMsReport(){
       const sb2=stuMap[String(b)]?.student_code||'';
       return sa.localeCompare(sb2,'th');
     });
+    const isFirst=i===0;
     const isLast=i===subjectsWithMs.length-1;
-    pages+=`<div style="page-break-after:${isLast?'auto':'always'}">
+    pages+=`<div style="page-break-after:${isLast?'auto':'always'};${isFirst?'':'padding-top:12mm'}">
       ${schoolLine}
       <div style="background:#fef2f2;border-left:4px solid #dc2626;padding:7px 12px;font-weight:700;font-size:14px;margin-bottom:8px;border-radius:0 6px 6px 0">
         วิชา ${esc(sub.subject_name)} (${esc(sub.subject_code)}) ${grm(sub.grade_level,sub.room)}
