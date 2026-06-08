@@ -6338,8 +6338,9 @@ async function pgSchoolReport(){
 
     // นับนักเรียนต่อ ชั้น/ห้อง
     const stuCountMap = {};
-    const allStus = await q(sb.from('students').select('id,grade_level,room'));
+    const allStus = await q(sb.from('students').select('id,grade_level,room,student_name,student_code').order('grade_level').order('room').order('student_code'));
     allStus.forEach(s=>{ const k=s.grade_level+'_'+s.room; stuCountMap[k]=(stuCountMap[k]||[]).concat(s.id); });
+    S._schoolStudents = allStus;
 
     // คำนวณ stats ต่อวิชา
     const subjectsWithStats = allSubjects.map(sub=>{
@@ -6360,17 +6361,18 @@ async function pgSchoolReport(){
         if(a.status==='present'||a.status==='leave')stuAttMapSub[sid].attended+=p;
       });
       const totalH = sub.total_hours||60;
-      const msCount = stuIds.filter(sid=>{
+      const msStudentIds = stuIds.filter(sid=>{
         const m=stuAttMapSub[String(sid)];
-        if(!m) return false; // ยังไม่มี record → ไม่นับเป็น มส
+        if(!m) return false;
         return totalH>0&&(m.attended/totalH*100)<80;
-      }).length;
+      });
+      const msCount = msStudentIds.length;
       const teacherName = profileMap[sub.user_id] || sub.teacher_name || '—';
       const passNum = sumRows.length>0?pass:null;
       const failNum = sumRows.length>0?sumRows.length-pass:null;
       const gradeCount={4:0,3.5:0,3:0,2.5:0,2:0,1.5:0,1:0,0:0};
       sumRows.forEach(r=>{ const g=parseFloat(r.grade); if(gradeCount[g]!==undefined)gradeCount[g]++; });
-      return {...sub,_stats:{total,pass:passNum,fail:failNum,avg,pct,msCount,teacherName,gradeCount,sumRows,stuIds}};
+      return {...sub,_stats:{total,pass:passNum,fail:failNum,avg,pct,msCount,teacherName,gradeCount,sumRows,stuIds,msStudentIds,attMap:stuAttMapSub}};
     });
 
     // ── รวมสถิติโรงเรียน ──
@@ -6497,6 +6499,10 @@ async function pgSchoolReport(){
           '<div class="psub">'+esc(S.config.school_name||'')+'&nbsp;·&nbsp;ปีการศึกษา '+esc(S.config.academic_year||'')+'&nbsp;ภาค&nbsp;'+esc(S.config.semester||'')+'</div>'+
         '</div>'+
         '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+          '<button class="btn bs no-print" onclick="printMsReport()">'+
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>'+
+            'พิมพ์ มส.'+
+          '</button>'+
           '<button class="btn bs no-print" onclick="exportSchoolReport()">'+
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>'+
             'Excel'+
@@ -6557,6 +6563,71 @@ async function pgSchoolReport(){
     loading(false);
     toast('โหลดข้อมูลไม่สำเร็จ: '+e.message,'er');
   }
+}
+
+function printMsReport(){
+  const data=S._schoolReport;
+  if(!data){toast('กรุณาโหลดหน้ารายงานก่อน','er');return;}
+  const stuMap=Object.fromEntries((S._schoolStudents||[]).map(s=>[String(s.id),s]));
+  const cfg=S.config;
+  const subjectsWithMs=data.filter(s=>s._stats.msStudentIds&&s._stats.msStudentIds.length>0);
+  if(!subjectsWithMs.length){toast('ไม่พบนักเรียน มส. ในทุกวิชา','in');return;}
+
+  let rows='';
+  subjectsWithMs.forEach((sub,i)=>{
+    const st=sub._stats;
+    const totalH=sub.total_hours||60;
+    // เรียงนักเรียนตาม student_code
+    const sorted=[...st.msStudentIds].sort((a,b)=>{
+      const sa=stuMap[String(a)]?.student_code||'';
+      const sb2=stuMap[String(b)]?.student_code||'';
+      return sa.localeCompare(sb2,'th');
+    });
+    rows+=`<div style="margin-bottom:18px;page-break-inside:avoid">
+      <div style="background:#fef2f2;border-left:4px solid #dc2626;padding:6px 10px;font-weight:700;font-size:13px;border-radius:0 6px 6px 0">
+        ${i+1}. ${esc(sub.subject_name)} (${esc(sub.subject_code)}) ${grm(sub.grade_level,sub.room)}
+        &nbsp;—&nbsp; ครู${esc(st.teacherName)} &nbsp;|&nbsp; มส. ${sorted.length} คน
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:4px">
+        <thead>
+          <tr style="background:#f5f5f7">
+            <th style="width:32px;padding:4px 6px;border:1px solid #ddd">ที่</th>
+            <th style="text-align:left;padding:4px 8px;border:1px solid #ddd">ชื่อ-นามสกุล</th>
+            <th style="width:60px;padding:4px 6px;border:1px solid #ddd">ชม.ที่มา</th>
+            <th style="width:60px;padding:4px 6px;border:1px solid #ddd">ชม.รวม</th>
+            <th style="width:60px;padding:4px 6px;border:1px solid #ddd;color:#dc2626">%เวลา</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${sorted.map((sid,j)=>{
+            const stu=stuMap[String(sid)];
+            const att=st.attMap?.[String(sid)];
+            const attended=att?.attended||0;
+            const pct=totalH>0?(attended/totalH*100).toFixed(0):0;
+            return `<tr style="border-bottom:1px solid #eee">
+              <td style="text-align:center;padding:3px 6px;border:1px solid #ddd">${j+1}</td>
+              <td style="padding:3px 8px;border:1px solid #ddd;white-space:nowrap">${esc(stu?.student_name||'(ไม่พบชื่อ)')}</td>
+              <td style="text-align:center;padding:3px 6px;border:1px solid #ddd">${attended}</td>
+              <td style="text-align:center;padding:3px 6px;border:1px solid #ddd">${totalH}</td>
+              <td style="text-align:center;padding:3px 6px;border:1px solid #ddd;color:#dc2626;font-weight:700">${pct}%</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  });
+
+  const totalMs=subjectsWithMs.reduce((a,s)=>a+s._stats.msStudentIds.length,0);
+  printHTML(
+    'รายงานนักเรียน มส.',
+    `<div class="ph">
+      <h1>รายงานนักเรียนที่มีเวลาเรียนไม่ผ่านเกณฑ์ (มส.)</h1>
+      <h2>${esc(cfg.school_name||'')} ปีการศึกษา ${esc(cfg.academic_year||'')} ภาคเรียนที่ ${esc(cfg.semester||'')}</h2>
+      <p class="meta">เกณฑ์: มีเวลาเรียนไม่ถึง 80% ของเวลาเรียนทั้งหมด &nbsp;|&nbsp; ${subjectsWithMs.length} วิชา &nbsp;|&nbsp; นักเรียน มส. รวม ${totalMs} รายการ</p>
+    </div>
+    ${rows}`,
+    'portrait'
+  );
 }
 
 function _toggleSchoolCard(cardId){
