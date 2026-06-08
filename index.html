@@ -878,7 +878,7 @@ body.dark .subc{
       <svg viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" style="margin-left:auto;flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
     </div>
     <div class="ni" id="nav-settings" onclick="nav('settings')">
-      <span class="ic"></span>ตั้งค่า
+      <span class="ic"></span>ตั้งค่า<span style="font-size:9px;color:var(--ac);font-weight:700;margin-left:4px;opacity:.8">Admin</span>
     </div>
     <div class="ni" id="nav-manual" onclick="nav('manual')">
       <span class="ic"></span>คู่มือการใช้งาน
@@ -1919,18 +1919,22 @@ function nav(page,subId){
   document.querySelectorAll('.ni').forEach(e=>e.classList.remove('active'));
   const el=$('nav-'+page);if(el)el.classList.add('active');
   $('tbt').textContent=TITLES[page]||page;
-  // settings ต้องผ่าน adminAuth ก่อน
+  // settings: admin เข้าได้เลย, ครูคนอื่นต้องใส่รหัส
   if(page==='settings'){
-    adminAuth({
-      title:'เข้าสู่หน้าตั้งค่า',
-      msg:'หน้าตั้งค่าระบบสามารถเข้าถึงได้เฉพาะแอดมินเท่านั้น',
-      icon:'lock',
-      onSuccess:()=>{
-        document.querySelectorAll('.ni').forEach(e=>e.classList.remove('active'));
-        const el=$('nav-settings');if(el)el.classList.add('active');
-        pgSettings();
-      }
-    });
+    if(S.profile?.is_admin){
+      pgSettings();
+    } else {
+      adminAuth({
+        title:'เข้าสู่หน้าตั้งค่า',
+        msg:'หน้าตั้งค่าระบบสามารถเข้าถึงได้เฉพาะแอดมินเท่านั้น',
+        icon:'lock',
+        onSuccess:()=>{
+          document.querySelectorAll('.ni').forEach(e=>e.classList.remove('active'));
+          const el=$('nav-settings');if(el)el.classList.add('active');
+          pgSettings();
+        }
+      });
+    }
     return;
   }
   const fn={dashboard:pgDash,subjects:pgSubjects,students:pgStudents,
