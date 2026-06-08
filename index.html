@@ -5035,13 +5035,10 @@ async function deleteTeacherData(userId, name){
     onConfirm: async()=>{
       loading(true);
       try{
-        // ดึง subject_ids ของครูคนนี้ก่อน (ตารางอื่นๆ ไม่มี user_id ตรง)
+        // ดึง subject_ids ของครูคนนี้ก่อน
         const subjRows = await q(sb.from('subjects').select('id').eq('user_id',userId));
         const sids = subjRows.map(r=>r.id);
-        // ลบตารางที่มี user_id โดยตรง
-        await q(sb.from('subjects').delete().eq('user_id',userId));
-        await q(sb.from('students').delete().eq('user_id',userId));
-        // ลบตารางที่ผูกกับ subject_id
+        // ลบข้อมูลที่ผูกกับ subject_id ก่อน แล้วค่อยลบ subjects
         if(sids.length){
           await Promise.all([
             q(sb.from('attendance').delete().in('subject_id',sids)),
@@ -5051,6 +5048,7 @@ async function deleteTeacherData(userId, name){
             q(sb.from('eval_char').delete().in('subject_id',sids)),
           ]);
         }
+        await q(sb.from('subjects').delete().eq('user_id',userId));
         document.getElementById('admin-panel-wrap')?.remove();
         toast('ลบข้อมูลของ '+name+' เรียบร้อยแล้ว ✅');
         setTimeout(openAdminPanel, 600);
