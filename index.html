@@ -2231,6 +2231,54 @@ async function pgSubjects(){
   </div></div>`;
 }
 
+// ── Subject Autocomplete ──────────────────────────────────────────
+let _subCat=null;
+async function _loadSubCat(){
+  if(_subCat) return;
+  try{
+    const rows=await q(sb.from('subjects').select('subject_code,subject_name,subject_group'));
+    const seen=new Set();
+    _subCat=rows.filter(r=>{
+      const k=r.subject_code+'|'+r.subject_name;
+      if(seen.has(k)) return false;
+      seen.add(k); return true;
+    }).sort((a,b)=>a.subject_code.localeCompare(b.subject_code,'th'));
+  }catch(e){ _subCat=[]; }
+}
+function _subSearch(val){
+  const dd=$('f-sub-dd'); if(!dd) return;
+  if(!val.trim()){ dd.style.display='none'; return; }
+  const v=val.toLowerCase();
+  const matches=(_subCat||[]).filter(s=>
+    s.subject_code.toLowerCase().includes(v)||s.subject_name.toLowerCase().includes(v)
+  ).slice(0,10);
+  if(!matches.length){ dd.style.display='none'; return; }
+  dd.innerHTML=matches.map((s,i)=>`
+    <div class="_sac" data-i="${i}" style="padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--bdr,#eee);display:flex;align-items:center;gap:10px">
+      <div style="font-size:11.5px;font-weight:700;color:var(--ac);flex-shrink:0;min-width:68px">${esc(s.subject_code)}</div>
+      <div style="min-width:0;flex:1">
+        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(s.subject_name)}</div>
+        ${s.subject_group?`<div style="font-size:11px;color:var(--muted)">${esc(s.subject_group)}</div>`:''}
+      </div>
+    </div>`).join('');
+  dd._m=matches;
+  dd.querySelectorAll('._sac').forEach(el=>{
+    el.addEventListener('mousedown',e=>{
+      e.preventDefault();
+      const s=dd._m[+el.dataset.i]; if(!s) return;
+      const ce=$('f-code'),ne=$('f-name'),ge=$('f-sg'),se=$('f-sub-search');
+      if(ce) ce.value=s.subject_code;
+      if(ne) ne.value=s.subject_name;
+      if(ge&&s.subject_group) ge.value=s.subject_group;
+      if(se) se.value='';
+      dd.style.display='none';
+    });
+    el.addEventListener('mouseover',()=>el.style.background='rgba(0,122,255,.07)');
+    el.addEventListener('mouseout',()=>el.style.background='');
+  });
+  dd.style.display='block';
+}
+
 function openSubModal(id){
   const s=id?S.subjects.find(x=>x.id===id):null;
   document.body.insertAdjacentHTML('beforeend',`
@@ -2238,6 +2286,18 @@ function openSubModal(id){
     <div class="mh"><div class="mt">${s?'แก้ไขรายวิชา':'เพิ่มรายวิชาใหม่'}</div>
     <button class="mx" onclick="rmModal('subMod')">✕</button></div>
     <div class="mb">
+        <div style="margin-bottom:14px">
+          <label class="fl" style="display:flex;align-items:center;gap:5px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--ac)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            ค้นหาจากวิชาที่เคยบันทึก
+          </label>
+          <div style="position:relative">
+            <input class="fi" id="f-sub-search" placeholder="พิมพ์รหัสหรือชื่อวิชา เพื่อ auto-fill..." autocomplete="off"
+              oninput="_subSearch(this.value)"
+              onblur="setTimeout(()=>{const d=$('f-sub-dd');if(d)d.style.display='none'},200)">
+            <div id="f-sub-dd" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:200;background:var(--card-bg,#fff);border:1.5px solid var(--bdr);border-radius:10px;box-shadow:0 4px 24px rgba(0,0,0,.13);max-height:220px;overflow-y:auto"></div>
+          </div>
+        </div>
         <div class="fg" style="grid-template-columns:1fr 2fr">
           <div><label class="fl">รหัสวิชา <span class="req">*</span></label>
             <input class="fi" id="f-code" value="${esc(s?.subject_code||'')}"></div>
@@ -2291,6 +2351,7 @@ function openSubModal(id){
       <button class="btn bp" onclick="saveSubForm('${id||''}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>บันทึก</button>
     </div>
   </div></div>`);
+  _loadSubCat();
 }
 function updTot(){
   const t=['f-sbm','f-sm','f-sam','f-sf'].reduce((a,i)=>a+(+$(i)?.value||0),0);
@@ -2314,6 +2375,7 @@ async function saveSubForm(id){
   try{
     if(id){ await q(sb.from('subjects').update(payload).eq('id',id).eq('user_id',S.user.id)); }
     else   { await q(sb.from('subjects').insert(payload)); }
+    _subCat=null;
     invalidateSubjects(); await loadSubjects();
     rmModal('subMod');toast(id?'แก้ไขเรียบร้อย':'เพิ่มรายวิชาเรียบร้อย');pgSubjects();
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
