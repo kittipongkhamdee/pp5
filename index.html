@@ -6573,29 +6573,38 @@ function printMsReport(){
   const subjectsWithMs=data.filter(s=>s._stats.msStudentIds&&s._stats.msStudentIds.length>0);
   if(!subjectsWithMs.length){toast('ไม่พบนักเรียน มส. ในทุกวิชา','in');return;}
 
-  let rows='';
+  const totalMs=subjectsWithMs.reduce((a,s)=>a+s._stats.msStudentIds.length,0);
+  const schoolLine=`<div style="text-align:center;margin-bottom:14px;border-bottom:2px solid #000;padding-bottom:8px">
+    <div style="font-size:16px;font-weight:800">รายงานนักเรียนที่มีเวลาเรียนไม่ผ่านเกณฑ์ (มส.)</div>
+    <div style="font-size:14px;font-weight:600;margin-top:2px">${esc(cfg.school_name||'')} &nbsp; ปีการศึกษา ${esc(cfg.academic_year||'')} ภาคเรียนที่ ${esc(cfg.semester||'')}</div>
+    <div style="font-size:12px;color:#444;margin-top:2px">เกณฑ์: มีเวลาเรียนไม่ถึง 80% &nbsp;|&nbsp; ${subjectsWithMs.length} วิชา &nbsp;|&nbsp; มส. รวม ${totalMs} รายการ</div>
+  </div>`;
+
+  let pages='';
   subjectsWithMs.forEach((sub,i)=>{
     const st=sub._stats;
     const totalH=sub.total_hours||60;
-    // เรียงนักเรียนตาม student_code
     const sorted=[...st.msStudentIds].sort((a,b)=>{
       const sa=stuMap[String(a)]?.student_code||'';
       const sb2=stuMap[String(b)]?.student_code||'';
       return sa.localeCompare(sb2,'th');
     });
-    rows+=`<div style="margin-bottom:18px;page-break-inside:avoid">
-      <div style="background:#fef2f2;border-left:4px solid #dc2626;padding:6px 10px;font-weight:700;font-size:13px;border-radius:0 6px 6px 0">
-        ${i+1}. ${esc(sub.subject_name)} (${esc(sub.subject_code)}) ${grm(sub.grade_level,sub.room)}
-        &nbsp;—&nbsp; ครู${esc(st.teacherName)} &nbsp;|&nbsp; มส. ${sorted.length} คน
+    const isLast=i===subjectsWithMs.length-1;
+    pages+=`<div style="page-break-after:${isLast?'auto':'always'}">
+      ${schoolLine}
+      <div style="background:#fef2f2;border-left:4px solid #dc2626;padding:7px 12px;font-weight:700;font-size:14px;margin-bottom:8px;border-radius:0 6px 6px 0">
+        วิชา ${esc(sub.subject_name)} (${esc(sub.subject_code)}) ${grm(sub.grade_level,sub.room)}
+        &nbsp;—&nbsp; ครูผู้สอน ${esc(st.teacherName)} &nbsp;|&nbsp; มส. ${sorted.length} คน
       </div>
-      <table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:4px">
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
         <thead>
           <tr style="background:#f5f5f7">
-            <th style="width:32px;padding:4px 6px;border:1px solid #ddd">ที่</th>
-            <th style="text-align:left;padding:4px 8px;border:1px solid #ddd">ชื่อ-นามสกุล</th>
-            <th style="width:60px;padding:4px 6px;border:1px solid #ddd">ชม.ที่มา</th>
-            <th style="width:60px;padding:4px 6px;border:1px solid #ddd">ชม.รวม</th>
-            <th style="width:60px;padding:4px 6px;border:1px solid #ddd;color:#dc2626">%เวลา</th>
+            <th style="width:30px;padding:5px 6px;border:1px solid #ccc;text-align:center">ที่</th>
+            <th style="width:90px;padding:5px 8px;border:1px solid #ccc;text-align:center">เลขประจำตัว</th>
+            <th style="padding:5px 8px;border:1px solid #ccc;text-align:left">ชื่อ-นามสกุล</th>
+            <th style="width:62px;padding:5px 6px;border:1px solid #ccc;text-align:center">ชม.ที่มา</th>
+            <th style="width:62px;padding:5px 6px;border:1px solid #ccc;text-align:center">ชม.รวม</th>
+            <th style="width:62px;padding:5px 6px;border:1px solid #ccc;text-align:center;color:#dc2626">%เวลา</th>
           </tr>
         </thead>
         <tbody>
@@ -6605,11 +6614,12 @@ function printMsReport(){
             const attended=att?.attended||0;
             const pct=totalH>0?(attended/totalH*100).toFixed(0):0;
             return `<tr style="border-bottom:1px solid #eee">
-              <td style="text-align:center;padding:3px 6px;border:1px solid #ddd">${j+1}</td>
-              <td style="padding:3px 8px;border:1px solid #ddd;white-space:nowrap">${esc(stu?.student_name||'(ไม่พบชื่อ)')}</td>
-              <td style="text-align:center;padding:3px 6px;border:1px solid #ddd">${attended}</td>
-              <td style="text-align:center;padding:3px 6px;border:1px solid #ddd">${totalH}</td>
-              <td style="text-align:center;padding:3px 6px;border:1px solid #ddd;color:#dc2626;font-weight:700">${pct}%</td>
+              <td style="text-align:center;padding:4px 6px;border:1px solid #ddd">${j+1}</td>
+              <td style="text-align:center;padding:4px 8px;border:1px solid #ddd">${esc(stu?.student_code||'')}</td>
+              <td style="text-align:left;padding:4px 8px;border:1px solid #ddd;white-space:nowrap">${esc(stu?.student_name||'(ไม่พบชื่อ)')}</td>
+              <td style="text-align:center;padding:4px 6px;border:1px solid #ddd">${attended}</td>
+              <td style="text-align:center;padding:4px 6px;border:1px solid #ddd">${totalH}</td>
+              <td style="text-align:center;padding:4px 6px;border:1px solid #ddd;color:#dc2626;font-weight:700">${pct}%</td>
             </tr>`;
           }).join('')}
         </tbody>
@@ -6617,17 +6627,7 @@ function printMsReport(){
     </div>`;
   });
 
-  const totalMs=subjectsWithMs.reduce((a,s)=>a+s._stats.msStudentIds.length,0);
-  printHTML(
-    'รายงานนักเรียน มส.',
-    `<div class="ph">
-      <h1>รายงานนักเรียนที่มีเวลาเรียนไม่ผ่านเกณฑ์ (มส.)</h1>
-      <h2>${esc(cfg.school_name||'')} ปีการศึกษา ${esc(cfg.academic_year||'')} ภาคเรียนที่ ${esc(cfg.semester||'')}</h2>
-      <p class="meta">เกณฑ์: มีเวลาเรียนไม่ถึง 80% ของเวลาเรียนทั้งหมด &nbsp;|&nbsp; ${subjectsWithMs.length} วิชา &nbsp;|&nbsp; นักเรียน มส. รวม ${totalMs} รายการ</p>
-    </div>
-    ${rows}`,
-    'portrait'
-  );
+  printHTML('รายงานนักเรียน มส.',pages,'portrait');
 }
 
 function _toggleSchoolCard(cardId){
