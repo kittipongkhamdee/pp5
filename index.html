@@ -1513,38 +1513,30 @@ function initPresence(){
       full_name: S.profile?.full_name||S.user?.email||'',
       online_at: new Date().toISOString(),
     };
-    // เพิ่มตัวเองเข้า map
     _onlineUsers[S.user.id] = myInfo;
 
-    _presenceChannel = sb.channel('pp5-online', {
-      config:{ broadcast:{ self: false } }
-    });
+    _presenceChannel = sb.channel('pp5-presence');
 
     _presenceChannel
-      // รับ join event จากคนอื่น
-      .on('broadcast',{event:'join'},(payload)=>{
-        if(payload.payload?.user_id && payload.payload.user_id !== S.user.id){
-          _onlineUsers[payload.payload.user_id] = payload.payload;
-          _renderOnline();
-          // ตอบกลับให้คนที่เพิ่ง join รู้ว่าเราอยู่
-          _presenceChannel.send({
-            type:'broadcast', event:'join', payload: myInfo
-          });
-        }
+      .on('presence',{event:'sync'},()=>{
+        const state=_presenceChannel.presenceState();
+        Object.keys(_onlineUsers).forEach(k=>{ if(k!==S.user.id) delete _onlineUsers[k]; });
+        Object.values(state).forEach(list=>{
+          list.forEach(p=>{ if(p.user_id && p.user_id!==S.user.id) _onlineUsers[p.user_id]=p; });
+        });
+        _renderOnline();
       })
-      // รับ leave event
-      .on('broadcast',{event:'leave'},(payload)=>{
-        if(payload.payload?.user_id){
-          delete _onlineUsers[payload.payload.user_id];
-          _renderOnline();
-        }
+      .on('presence',{event:'join'},({newPresences})=>{
+        newPresences.forEach(p=>{ if(p.user_id && p.user_id!==S.user.id) _onlineUsers[p.user_id]=p; });
+        _renderOnline();
+      })
+      .on('presence',{event:'leave'},({leftPresences})=>{
+        leftPresences.forEach(p=>{ if(p.user_id) delete _onlineUsers[p.user_id]; });
+        _renderOnline();
       })
       .subscribe(async(status)=>{
         if(status==='SUBSCRIBED'){
-          // ประกาศตัวเองเข้า channel
-          await _presenceChannel.send({
-            type:'broadcast', event:'join', payload: myInfo
-          });
+          await _presenceChannel.track(myInfo);
         }
       });
   }catch(e){
@@ -1784,13 +1776,7 @@ function _showSelfPill(){
 
 function cleanupPresence(){
   if(_presenceChannel){
-    // ส่ง leave event ก่อน unsubscribe
-    try{
-      _presenceChannel.send({
-        type:'broadcast', event:'leave',
-        payload:{ user_id: S.user?.id }
-      });
-    }catch(e){}
+    try{ _presenceChannel.untrack(); }catch(e){}
     setTimeout(()=>{
       if(_presenceChannel){ _presenceChannel.unsubscribe(); _presenceChannel=null; }
     }, 300);
