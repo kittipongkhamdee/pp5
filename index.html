@@ -5626,7 +5626,62 @@ async function pgIQA(){
 
 function printIQA(){
   if(!window._iqaRows){toast('ไม่มีข้อมูล IQA — กรุณารอให้หน้าโหลดสำเร็จก่อน','er');return;}
-  window.print();
+  const rows=window._iqaRows, ov=window._iqaOverall, m=window._iqaMeta;
+  const yr=m?.yr||S.config.academic_year||'';
+  const sm=m?.sm||S.config.semester||'';
+  const cfg=m?.cfg||S.config;
+  const diffFmt=d=>d===null?'—':(d>=0?'+':'')+d;
+  const diffColor=d=>d===null?'#555':d>=0?'#16803d':'#dc2626';
+  const passStr=p=>p===null?'ไม่มีข้อมูล':p?'สูงกว่าเป้าหมาย':'ต่ำกว่าเป้าหมาย';
+  const passColor=p=>p===null?'#555':p?'#16803d':'#dc2626';
+  const trs=rows.map((r,i)=>`
+    <tr style="${i%2===1?'background:#f8f8f8':''}">
+      <td>${i+1}</td>
+      <td class="l">${esc(r.g)}</td>
+      <td>${r.target.toFixed(2)}</td>
+      <td style="font-weight:700">${r.avgGrade!==null?r.avgGrade.toFixed(2):'—'}</td>
+      <td style="font-weight:700;color:${diffColor(r.diff)}">${diffFmt(r.diff)}</td>
+      <td style="font-weight:700;color:${passColor(r.pass)}">${passStr(r.pass)}</td>
+      <td>${r.subjCount>0?r.subjCount+' วิชา':'—'}</td>
+    </tr>`).join('');
+  const bodyHTML=`
+    <table>
+      <thead>
+        <tr>
+          <th style="width:32px">ที่</th>
+          <th class="l">กลุ่มสาระการเรียนรู้</th>
+          <th>ค่าเป้าหมาย</th>
+          <th>ค่าเฉลี่ยภาค ${esc(sm)}/${esc(yr)}</th>
+          <th>ผลต่าง (+/-)</th>
+          <th>ผล</th>
+          <th>จำนวนวิชา</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${trs}
+        <tr style="background:#dbeafe;font-weight:700;border-top:2px solid #333">
+          <td colspan="2" class="l" style="font-weight:700">ค่าเฉลี่ยรวมทุกกลุ่มสาระ</td>
+          <td>${ov.target.toFixed(2)}</td>
+          <td style="font-weight:700">${ov.avg!==null?ov.avg.toFixed(2):'—'}</td>
+          <td style="font-weight:700;color:${diffColor(ov.diff)}">${diffFmt(ov.diff)}</td>
+          <td style="font-weight:700;color:${passColor(ov.diff===null?null:ov.diff>=0)}">${passStr(ov.diff===null?null:ov.diff>=0)}</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-top:14px;padding:10px 14px;border:1px solid #bbb;border-radius:4px;font-size:12px;line-height:2">
+      <strong>สรุปผลการวิเคราะห์</strong><br>
+      จากการสรุปผลสัมฤทธิ์ทางการเรียนของนักเรียน ปีการศึกษา ${esc(yr)} ภาคเรียนที่ ${esc(sm)}
+      โรงเรียน${esc(cfg.school_name||'')}
+      พบว่า ค่าเฉลี่ยผลสัมฤทธิ์ทางการเรียนรวมของทุกกลุ่มสาระการเรียนรู้ เท่ากับ
+      <strong>${ov.avg!==null?ov.avg.toFixed(2):'—'}</strong>
+      ${ov.diff!==null&&ov.diff>=0
+        ?`ซึ่ง<strong>สูงกว่า</strong>ค่าเป้าหมายที่สถานศึกษากำหนดไว้เฉลี่ยเท่ากับ ${ov.target.toFixed(2)} โดยมีผลต่างเฉลี่ยเท่ากับ <strong>+${ov.diff}</strong>`
+        :ov.diff!==null
+        ?`ซึ่ง<strong>ต่ำกว่า</strong>ค่าเป้าหมายที่สถานศึกษากำหนดไว้เฉลี่ยเท่ากับ ${ov.target.toFixed(2)} โดยมีผลต่างเฉลี่ยเท่ากับ <strong>${ov.diff}</strong>`
+        :''}
+    </div>`;
+  printHTML('รายงานสรุปผลสัมฤทธิ์ทางการเรียนของนักเรียนรายกลุ่มสาระการเรียนรู้', bodyHTML);
 }
 
 function exportIQA(){
