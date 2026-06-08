@@ -5635,7 +5635,7 @@ function printIQA(){
   const passStr=p=>p===null?'ไม่มีข้อมูล':p?'สูงกว่าเป้าหมาย':'ต่ำกว่าเป้าหมาย';
   const passColor=p=>p===null?'#555':p?'#16803d':'#dc2626';
   const trs=rows.map((r,i)=>`
-    <tr style="${i%2===1?'background:#f8f8f8':''}">
+    <tr>
       <td>${i+1}</td>
       <td class="l">${esc(r.g)}</td>
       <td>${r.target.toFixed(2)}</td>
@@ -5659,7 +5659,7 @@ function printIQA(){
       </thead>
       <tbody>
         ${trs}
-        <tr style="background:#dbeafe;font-weight:700;border-top:2px solid #333">
+        <tr style="font-weight:700;border-top:2px solid #333">
           <td colspan="2" class="l" style="font-weight:700">ค่าเฉลี่ยรวมทุกกลุ่มสาระ</td>
           <td>${ov.target.toFixed(2)}</td>
           <td style="font-weight:700">${ov.avg!==null?ov.avg.toFixed(2):'—'}</td>
