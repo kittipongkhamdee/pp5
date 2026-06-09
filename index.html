@@ -6883,7 +6883,7 @@ async function sendAIMsg(){
 
 async function _callGemini(userMsg,context,apiKey,retry=0){
   const sys=`คุณเป็นผู้ช่วยวิเคราะห์ข้อมูลนักเรียนสำหรับครูผู้สอน ตอบเป็นภาษาไทย กระชับ ชัดเจน มีประโยชน์กับครู ใช้ข้อมูลที่ให้มาตอบคำถามเท่านั้น\n\nข้อมูล:\n${context}`;
-  const models=['gemini-1.5-flash','gemini-1.5-flash-8b','gemini-2.0-flash'];
+  const models=['gemini-2.5-flash','gemini-2.0-flash','gemini-1.5-flash'];
   const model=models[Math.min(retry,models.length-1)];
   const res=await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
