@@ -6894,12 +6894,13 @@ async function _callGemini(userMsg,context,apiKey,retry=0){
     const e=await res.json().catch(()=>({}));
     const msg=e.error?.message||'HTTP '+res.status;
     // quota error — ลอง model ถัดไปอัตโนมัติ
-    if((res.status===429||msg.includes('quota')||msg.includes('RESOURCE_EXHAUSTED'))&&retry<models.length-1){
-      await new Promise(r=>setTimeout(r,1500));
+    const isRetryable=res.status===429||res.status===503||msg.includes('quota')||msg.includes('RESOURCE_EXHAUSTED')||msg.includes('high demand')||msg.includes('overloaded');
+    if(isRetryable&&retry<models.length-1){
+      await new Promise(r=>setTimeout(r,2000));
       return _callGemini(userMsg,context,apiKey,retry+1);
     }
-    if(res.status===429||msg.includes('quota')){
-      throw new Error('Quota หมดสำหรับทุก model\nโปรดตรวจสอบ API Key หรือรอสักครู่แล้วลองใหม่\nหรือดูการใช้งานที่ aistudio.google.com');
+    if(isRetryable){
+      throw new Error('server ของ Gemini ไม่พร้อมใช้งานตอนนี้\nโปรดรอสักครู่แล้วลองใหม่');
     }
     throw new Error(msg);
   }
