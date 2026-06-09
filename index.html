@@ -6780,7 +6780,7 @@ function installPWA(){
 
 // ════ AI CHAT (GEMINI) ══════════════════════════════════════════════════
 
-let _aiOpen=false, _aiCtx=null, _aiLoading=false;
+let _aiOpen=false, _aiCtx=null, _aiLoading=false, _aiLastMsg='';
 
 function toggleAIChat(){
   _aiOpen=!_aiOpen;
@@ -6841,18 +6841,16 @@ async function buildAIContext(){
   return ctx;
 }
 
-async function sendAIMsg(){
+async function sendAIMsg(retryMsg){
   const inp=$('ai-input');
-  if(!inp||_aiLoading) return;
-  const msg=inp.value.trim();
+  if(_aiLoading) return;
+  const msg=retryMsg||(inp?inp.value.trim():'');
   if(!msg) return;
   const apiKey=S.config.gemini_api_key;
-  if(!apiKey){
-    toast('กรุณาใส่ Gemini API Key ในหน้าตั้งค่าก่อน','er');
-    return;
-  }
-  inp.value='';
-  _aiAddMsg('user',msg);
+  if(!apiKey){ toast('กรุณาใส่ Gemini API Key ในหน้าตั้งค่าก่อน','er'); return; }
+  if(inp) inp.value='';
+  if(!retryMsg) _aiAddMsg('user',msg);
+  _aiLastMsg=msg;
   _aiLoading=true;
   const btn=$('ai-send-btn'); if(btn){btn.disabled=true;btn.style.opacity='.4';}
   const tid='ai-t'+Date.now(); _aiAddTyping(tid);
@@ -6863,17 +6861,39 @@ async function sendAIMsg(){
     _aiAddMsg('ai',reply);
   }catch(e){
     _aiRemoveEl(tid);
-    _aiAddMsg('ai','⚠️ เกิดข้อผิดพลาด: '+(e.message||'ไม่ทราบสาเหตุ'));
+    const isRate=e.message&&(e.message.includes('server')||e.message.includes('quota')||e.message.includes('demand'));
+    const errText=isRate
+      ?'⏳ Gemini server ยุ่งอยู่ กรุณารอสักครู่'
+      :'⚠️ '+(e.message||'ไม่ทราบสาเหตุ');
+    _aiAddErrMsg(errText, isRate);
   }finally{
     _aiLoading=false;
     if(btn){btn.disabled=false;btn.style.opacity='1';}
   }
 }
 
+function _aiAddErrMsg(text, showRetry){
+  const msgs=$('ai-msgs'); if(!msgs) return;
+  const d=document.createElement('div');
+  d.style.cssText='display:flex;flex-direction:column;align-items:flex-start;gap:3px';
+  d.innerHTML=`<div style="max-width:90%;padding:9px 13px;border-radius:16px 16px 16px 4px;
+    background:#fff3cd;color:#856404;font-size:13px;line-height:1.6;border:1px solid #ffc107">
+    ${text.replace(/\n/g,'<br>')}
+    ${showRetry?`<br><button onclick="sendAIMsg(_aiLastMsg)" style="margin-top:8px;padding:5px 14px;
+      background:#667eea;color:#fff;border:none;border-radius:20px;cursor:pointer;font-size:12px;
+      font-family:var(--font)">↩ ลองใหม่</button>`:''}
+  </div>
+  <div style="font-size:10px;color:#c7c7cc;padding:0 4px">✨ AI · ${new Date().toLocaleTimeString('th',{hour:'2-digit',minute:'2-digit'})}</div>`;
+  msgs.appendChild(d);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
 async function _callGemini(userMsg,context,apiKey,retry=0){
   const sys=`คุณเป็นผู้ช่วยวิเคราะห์ข้อมูลนักเรียนสำหรับครูผู้สอน ตอบเป็นภาษาไทย กระชับ ชัดเจน มีประโยชน์กับครู ใช้ข้อมูลที่ให้มาตอบคำถามเท่านั้น\n\nข้อมูล:\n${context}`;
+  // แต่ละ model ลอง 2 ครั้ง: retry 0,1 = model 0 | retry 2,3 = model 1 | retry 4,5 = model 2
   const models=['gemini-2.5-flash','gemini-2.0-flash','gemini-2.0-flash-lite'];
-  const model=models[Math.min(retry,models.length-1)];
+  const model=models[Math.min(Math.floor(retry/2),models.length-1)];
+  const maxRetry=models.length*2-1;
   const res=await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
     {method:'POST',headers:{'Content-Type':'application/json'},
@@ -6882,15 +6902,13 @@ async function _callGemini(userMsg,context,apiKey,retry=0){
   if(!res.ok){
     const e=await res.json().catch(()=>({}));
     const msg=e.error?.message||'HTTP '+res.status;
-    // quota error — ลอง model ถัดไปอัตโนมัติ
-    const isRetryable=res.status===429||res.status===503||msg.includes('quota')||msg.includes('RESOURCE_EXHAUSTED')||msg.includes('high demand')||msg.includes('overloaded');
-    if(isRetryable&&retry<models.length-1){
-      await new Promise(r=>setTimeout(r,2000));
+    const isRetryable=res.status===429||res.status===503||msg.includes('quota')||msg.includes('RESOURCE_EXHAUSTED')||msg.includes('high demand')||msg.includes('overloaded')||msg.includes('not found');
+    if(isRetryable&&retry<maxRetry){
+      const delay=retry%2===0?3000:6000; // สลับ 3s / 6s
+      await new Promise(r=>setTimeout(r,delay));
       return _callGemini(userMsg,context,apiKey,retry+1);
     }
-    if(isRetryable){
-      throw new Error('server ของ Gemini ไม่พร้อมใช้งานตอนนี้\nโปรดรอสักครู่แล้วลองใหม่');
-    }
+    if(isRetryable) throw new Error('server ยุ่งมาก กรุณากดลองใหม่');
     throw new Error(msg);
   }
   const data=await res.json();
