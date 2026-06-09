@@ -6428,7 +6428,8 @@ async function pgSchoolReport(){
 
     // ── รวมสถิติโรงเรียน ──
     const schoolTotal = allSubjects.length;
-    const schoolTeachers = new Set(allSubjects.map(s=>s.user_id)).size;
+    const profileIdSet = new Set(allProfiles.map(p=>p.id));
+    const schoolTeachers = new Set(allSubjects.map(s=>s.user_id).filter(id=>profileIdSet.has(id))).size;
     const allPassPcts = subjectsWithStats.filter(s=>s._stats.pass!==null).map(s=>parseFloat(s._stats.pct)||0);
     const schoolPassAvg = allPassPcts.length>0?(allPassPcts.reduce((a,b)=>a+b,0)/allPassPcts.length).toFixed(1):'—';
     const allAvgs = subjectsWithStats.filter(s=>s._stats.avg!=='—').map(s=>parseFloat(s._stats.avg)||0);
