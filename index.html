@@ -6979,8 +6979,22 @@ function _aiAddMsg(role,text){
   const bubbleStyle=isUser
     ?`background:linear-gradient(145deg,#001a4d,#0353a4 60%,#0466c8);color:#fff;border-radius:18px 18px 4px 18px;box-shadow:0 2px 8px rgba(4,102,200,.3)`
     :`background:#fff;color:#1d1d1f;border-radius:18px 18px 18px 4px;box-shadow:0 1px 4px rgba(0,0,0,.08)`;
+  const copyBtnHtml = isUser ? '' :
+    `<button class="ai-copy-btn" style="background:none;border:none;cursor:pointer;color:#c7c7cc;
+      padding:2px 5px;border-radius:6px;display:flex;align-items:center;gap:3px;
+      transition:color .15s;line-height:1" title="คัดลอก"
+      onmouseover="this.style.color='#0466c8'" onmouseout="if(!this.dataset.copied)this.style.color='#c7c7cc'">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+    </button>`;
   d.innerHTML=`<div style="max-width:85%;padding:10px 14px;font-size:13.5px;line-height:1.65;word-break:break-word;${bubbleStyle}">${fmt}</div>
-    <div style="font-size:10px;color:#aeaeb2;padding:0 5px">${isUser?'คุณ':'✦ AI'} · ${new Date().toLocaleTimeString('th',{hour:'2-digit',minute:'2-digit'})}</div>`;
+    <div style="font-size:10px;color:#aeaeb2;padding:0 5px;display:flex;align-items:center;gap:4px">
+      <span>${isUser?'คุณ':'✦ AI'} · ${new Date().toLocaleTimeString('th',{hour:'2-digit',minute:'2-digit'})}</span>
+      ${copyBtnHtml}
+    </div>`;
+  if(!isUser){
+    const btn=d.querySelector('.ai-copy-btn');
+    if(btn) btn.addEventListener('click',()=>_aiCopy(btn,text));
+  }
   msgs.appendChild(d);
   msgs.scrollTop=msgs.scrollHeight;
 }
@@ -7000,6 +7014,19 @@ function _aiAddTyping(id){
 }
 
 function _aiRemoveEl(id){ const e=$(id); if(e) e.remove(); }
+
+function _aiCopy(btn,text){
+  navigator.clipboard.writeText(text).then(()=>{
+    btn.dataset.copied='1';
+    btn.style.color='#34c759';
+    btn.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span style="font-size:10px">คัดลอกแล้ว</span>`;
+    setTimeout(()=>{
+      btn.dataset.copied='';
+      btn.style.color='#c7c7cc';
+      btn.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+    },2000);
+  }).catch(()=>toast('ไม่สามารถคัดลอกได้','er'));
+}
 
 function clearAIChat(){
   _aiCtx=null;
