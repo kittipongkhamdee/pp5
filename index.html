@@ -6921,13 +6921,22 @@ async function sendAIMsg(retryMsg){
     _aiHistory.push({role:'model',parts:[{text:fullReply}]});
     if(_aiHistory.length>30) _aiHistory=_aiHistory.slice(-30);
   }catch(e){
+    console.error('[AI] sendAIMsg error:', e);
     _aiHistory.pop();
-    wrapper.remove();
+    try{ wrapper.remove(); }catch(_){}
     const isRate=e.message==='rate'||e.message==='server';
-    _aiAddErrMsg(
-      isRate?'⏳ Gemini server ยุ่งอยู่ กำลังลองใหม่อัตโนมัติ...':_ico.warning+' '+(e.message||'ไม่ทราบสาเหตุ'),
-      isRate, isRate?20:0
-    );
+    try{
+      _aiAddErrMsg(
+        isRate?'⏳ Gemini server ยุ่งอยู่ กำลังลองใหม่อัตโนมัติ...':'⚠ '+(e.message||'ไม่ทราบสาเหตุ'),
+        isRate, isRate?20:0
+      );
+    }catch(e2){
+      console.error('[AI] _aiAddErrMsg failed:', e2);
+      // fallback: inject error directly into chat
+      const msgs=$('ai-msgs');
+      if(msgs) msgs.insertAdjacentHTML('beforeend',
+        `<div style="color:#856404;background:#fff3cd;border:1px solid #ffc107;border-radius:12px;padding:8px 12px;font-size:13px;max-width:90%">⚠ ${e.message||'เกิดข้อผิดพลาด'}</div>`);
+    }
   }finally{
     _aiLoading=false;
     if(sendBtn){sendBtn.disabled=false;sendBtn.style.opacity='1';}
@@ -7056,29 +7065,40 @@ async function _callGeminiStream(history,context,apiKey,onChunk,retry=0){
   const sys=`คุณเป็นผู้ช่วยวิเคราะห์ข้อมูลนักเรียนสำหรับครูผู้สอน ตอบเป็นภาษาไทย กระชับ ชัดเจน มีประโยชน์กับครู\nใช้ข้อมูลต่อไปนี้ในการตอบ:\n\n${context}\n\nหลังตอบทุกครั้ง ให้ต่อท้ายด้วย [SUGGEST: คำถาม1|คำถาม2] เสมอ (2 คำถามที่ครูน่าจะถามต่อ)`;
   const model='gemini-2.5-flash';
   const maxRetry=2; // retry สูงสุด 2 ครั้งสำหรับ transient error (503)
-  const res=await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-    {method:'POST',headers:{'Content-Type':'application/json'},
-     body:JSON.stringify({
-       system_instruction:{parts:[{text:sys}]},
-       contents:history,
-       generationConfig:{temperature:0.5,maxOutputTokens:8192}
-     })}
-  );
+  console.log('[AI] calling', model, 'retry='+retry, 'history='+history.length);
+  let res;
+  try{
+    res=await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+      {method:'POST',headers:{'Content-Type':'application/json'},
+       body:JSON.stringify({
+         system_instruction:{parts:[{text:sys}]},
+         contents:history,
+         generationConfig:{temperature:0.5,maxOutputTokens:8192}
+       })}
+    );
+  }catch(netErr){
+    console.error('[AI] fetch network error:', netErr);
+    throw new Error('เครือข่ายขัดข้อง: '+netErr.message);
+  }
+  console.log('[AI] HTTP', res.status);
   if(!res.ok){
     const e=await res.json().catch(()=>({}));
     const msg=e.error?.message||'HTTP '+res.status;
+    console.error('[AI] API error:', msg);
     const isQuota=res.status===429||msg.includes('quota')||msg.includes('RESOURCE_EXHAUSTED');
     const isTransient=res.status===503||msg.includes('overloaded')||msg.includes('high demand');
     if(isTransient&&retry<maxRetry){
-      await new Promise(r=>setTimeout(r,(retry+1)*5000)); // 5s, 10s
+      console.log('[AI] transient, retry in', (retry+1)*5, 's');
+      await new Promise(r=>setTimeout(r,(retry+1)*5000));
       return _callGeminiStream(history,context,apiKey,onChunk,retry+1);
     }
-    if(isQuota) throw new Error('rate');   // → auto-retry countdown 20s
-    if(isTransient) throw new Error('server'); // → auto-retry countdown 20s
+    if(isQuota) throw new Error('rate');
+    if(isTransient) throw new Error('server');
     throw new Error(msg);
   }
   const data=await res.json();
+  console.log('[AI] response OK, candidates:', data.candidates?.length);
   const fullText=data.candidates?.[0]?.content?.parts?.[0]?.text||'ไม่มีการตอบกลับ';
   // Typewriter effect — reveal text progressively at ~60fps
   await new Promise(resolve=>{
