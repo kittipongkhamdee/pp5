@@ -6853,32 +6853,110 @@ async function sendAIMsg(retryMsg){
   if(inp){inp.value='';inp.style.height='auto';}
   if(!retryMsg) _aiAddMsg('user',msg);
   _aiLastMsg=msg;
-  // เพิ่มข้อความใน history ก่อนส่ง
   _aiHistory.push({role:'user',parts:[{text:msg}]});
   _aiLoading=true;
-  const btn=$('ai-send-btn'); if(btn){btn.disabled=true;btn.style.opacity='.4';}
-  const tid='ai-t'+Date.now(); _aiAddTyping(tid);
+  const sendBtn=$('ai-send-btn'); if(sendBtn){sendBtn.disabled=true;sendBtn.style.opacity='.4';}
+  // สร้าง streaming bubble ทันที (ไม่ต้องรอ typing indicator)
+  const {wrapper,bubble}=_aiCreateStreamBubble();
   try{
     if(!_aiCtx) _aiCtx=await buildAIContext();
-    const reply=await _callGemini(_aiHistory,_aiCtx,apiKey);
-    _aiRemoveEl(tid);
-    _aiAddMsg('ai',reply);
-    // บันทึก reply ใน history
-    _aiHistory.push({role:'model',parts:[{text:reply}]});
-    // จำกัด history ไม่เกิน 30 messages (15 turns) ไม่ให้ token เกิน
+    let fullReply='';
+    await _callGeminiStream(_aiHistory,_aiCtx,apiKey,(chunk)=>{
+      fullReply=chunk;
+      bubble.textContent=chunk+'▌';
+      const msgs=$('ai-msgs'); if(msgs) msgs.scrollTop=msgs.scrollHeight;
+    });
+    const {text,suggestions}=_aiParseSuggestions(fullReply);
+    _aiFinalizeBubble(wrapper,bubble,text,fullReply);
+    if(suggestions.length) _aiShowSuggestions(suggestions);
+    _aiHistory.push({role:'model',parts:[{text:fullReply}]});
     if(_aiHistory.length>30) _aiHistory=_aiHistory.slice(-30);
   }catch(e){
-    // ถ้า error ให้เอา user message ออกจาก history (ยังไม่สำเร็จ)
     _aiHistory.pop();
-    _aiRemoveEl(tid);
+    wrapper.remove();
     const isRate=e.message&&(e.message.includes('server')||e.message.includes('quota')||e.message.includes('demand'));
-    const errText=isRate
-      ?'⏳ Gemini server ยุ่งอยู่ กรุณารอสักครู่'
-      :'⚠️ '+(e.message||'ไม่ทราบสาเหตุ');
-    _aiAddErrMsg(errText, isRate);
+    _aiAddErrMsg(isRate?'⏳ Gemini server ยุ่งอยู่ กรุณารอสักครู่':'⚠️ '+(e.message||'ไม่ทราบสาเหตุ'),isRate);
   }finally{
     _aiLoading=false;
-    if(btn){btn.disabled=false;btn.style.opacity='1';}
+    if(sendBtn){sendBtn.disabled=false;sendBtn.style.opacity='1';}
+  }
+}
+
+function _aiCreateStreamBubble(){
+  const msgs=$('ai-msgs');
+  const wrapper=document.createElement('div');
+  wrapper.style.cssText='display:flex;flex-direction:column;align-items:flex-start;gap:3px';
+  const bubble=document.createElement('div');
+  bubble.style.cssText=`max-width:85%;padding:10px 14px;font-size:13.5px;line-height:1.65;
+    word-break:break-word;background:#fff;color:#1d1d1f;white-space:pre-wrap;
+    border-radius:18px 18px 18px 4px;box-shadow:0 1px 4px rgba(0,0,0,.08)`;
+  bubble.textContent='▌';
+  wrapper.appendChild(bubble);
+  if(msgs){ msgs.appendChild(wrapper); msgs.scrollTop=msgs.scrollHeight; }
+  return {wrapper,bubble};
+}
+
+function _aiFinalizeBubble(wrapper,bubble,displayText,rawText){
+  const fmt=displayText
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>')
+    .replace(/\n/g,'<br>');
+  bubble.style.whiteSpace='';
+  bubble.innerHTML=fmt;
+  const time=new Date().toLocaleTimeString('th',{hour:'2-digit',minute:'2-digit'});
+  const meta=document.createElement('div');
+  meta.style.cssText='font-size:10px;color:#aeaeb2;padding:0 5px;display:flex;align-items:center;gap:4px';
+  meta.innerHTML=`<span>✦ AI · ${time}</span>
+    <button class="ai-copy-btn" style="background:none;border:none;cursor:pointer;color:#c7c7cc;
+      padding:2px 5px;border-radius:6px;display:flex;align-items:center;gap:3px;transition:color .15s" title="คัดลอก"
+      onmouseover="this.style.color='#0466c8'" onmouseout="if(!this.dataset.copied)this.style.color='#c7c7cc'">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+    </button>`;
+  const copyBtn=meta.querySelector('.ai-copy-btn');
+  if(copyBtn) copyBtn.addEventListener('click',()=>_aiCopy(copyBtn,rawText));
+  wrapper.appendChild(meta);
+  const msgs=$('ai-msgs'); if(msgs) msgs.scrollTop=msgs.scrollHeight;
+}
+
+function _aiParseSuggestions(text){
+  const m=text.match(/\[SUGGEST:\s*([\s\S]*?)\]/);
+  if(!m) return {text,suggestions:[]};
+  const cleanText=text.replace(/\[SUGGEST:[\s\S]*?\]/,'').trim();
+  const suggestions=m[1].split('|').map(s=>s.trim()).filter(Boolean).slice(0,3);
+  return {text:cleanText,suggestions};
+}
+
+function _aiShowSuggestions(suggestions){
+  const msgs=$('ai-msgs'); if(!msgs||!suggestions.length) return;
+  const d=document.createElement('div');
+  d.style.cssText='display:flex;flex-wrap:wrap;gap:6px;padding:2px 0 4px';
+  suggestions.forEach(q=>{
+    const btn=document.createElement('button');
+    btn.style.cssText=`background:#eef4ff;border:1.5px solid #d0e4ff;border-radius:20px;
+      padding:6px 13px;font-size:12px;color:#0466c8;cursor:pointer;font-family:var(--font);
+      transition:background .12s,border-color .12s;line-height:1.4`;
+    btn.onmouseover=()=>{btn.style.background='#d6eaff';btn.style.borderColor='#0466c8';};
+    btn.onmouseout=()=>{btn.style.background='#eef4ff';btn.style.borderColor='#d0e4ff';};
+    btn.textContent=q;
+    btn.onclick=()=>{ d.remove(); sendAIMsg(q); };
+    d.appendChild(btn);
+  });
+  msgs.appendChild(d);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+async function refreshAICtx(){
+  const btn=$('ai-refresh-btn'), ic=$('ai-refresh-ic');
+  if(btn){btn.style.opacity='.5';btn.style.pointerEvents='none';}
+  if(ic) ic.style.animation='spin .7s linear infinite';
+  _aiCtx=null;
+  try{
+    _aiCtx=await buildAIContext();
+    toast('โหลดข้อมูลนักเรียนใหม่แล้ว');
+  }catch(e){ toast('โหลดข้อมูลไม่สำเร็จ','er'); }
+  finally{
+    if(btn){btn.style.opacity='1';btn.style.pointerEvents='';}
+    if(ic) ic.style.animation='';
   }
 }
 
@@ -6898,13 +6976,13 @@ function _aiAddErrMsg(text, showRetry){
   msgs.scrollTop=msgs.scrollHeight;
 }
 
-async function _callGemini(history,context,apiKey,retry=0){
-  const sys=`คุณเป็นผู้ช่วยวิเคราะห์ข้อมูลนักเรียนสำหรับครูผู้สอน ตอบเป็นภาษาไทย กระชับ ชัดเจน มีประโยชน์กับครู\nใช้ข้อมูลต่อไปนี้ในการตอบ:\n\n${context}`;
+async function _callGeminiStream(history,context,apiKey,onChunk,retry=0){
+  const sys=`คุณเป็นผู้ช่วยวิเคราะห์ข้อมูลนักเรียนสำหรับครูผู้สอน ตอบเป็นภาษาไทย กระชับ ชัดเจน มีประโยชน์กับครู\nใช้ข้อมูลต่อไปนี้ในการตอบ:\n\n${context}\n\nหลังตอบทุกครั้ง ให้ต่อท้ายด้วย [SUGGEST: คำถาม1|คำถาม2] เสมอ (2 คำถามที่ครูน่าจะถามต่อ)`;
   const models=['gemini-2.5-flash','gemini-2.0-flash','gemini-2.0-flash-lite'];
   const model=models[Math.min(Math.floor(retry/2),models.length-1)];
   const maxRetry=models.length*2-1;
   const res=await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${apiKey}`,
     {method:'POST',headers:{'Content-Type':'application/json'},
      body:JSON.stringify({
        system_instruction:{parts:[{text:sys}]},
@@ -6917,15 +6995,32 @@ async function _callGemini(history,context,apiKey,retry=0){
     const msg=e.error?.message||'HTTP '+res.status;
     const isRetryable=res.status===429||res.status===503||msg.includes('quota')||msg.includes('RESOURCE_EXHAUSTED')||msg.includes('high demand')||msg.includes('overloaded')||msg.includes('not found');
     if(isRetryable&&retry<maxRetry){
-      const delay=retry%2===0?3000:6000; // สลับ 3s / 6s
-      await new Promise(r=>setTimeout(r,delay));
-      return _callGemini(userMsg,context,apiKey,retry+1);
+      await new Promise(r=>setTimeout(r,retry%2===0?3000:6000));
+      return _callGeminiStream(history,context,apiKey,onChunk,retry+1);
     }
     if(isRetryable) throw new Error('server ยุ่งมาก กรุณากดลองใหม่');
     throw new Error(msg);
   }
-  const data=await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text||'ไม่มีการตอบกลับ';
+  const reader=res.body.getReader();
+  const decoder=new TextDecoder();
+  let fullText='', buf='';
+  while(true){
+    const {done,value}=await reader.read();
+    if(done) break;
+    buf+=decoder.decode(value,{stream:true});
+    const lines=buf.split('\n'); buf=lines.pop()||'';
+    for(const line of lines){
+      if(!line.startsWith('data: ')) continue;
+      const json=line.slice(6).trim();
+      if(json==='[DONE]') break;
+      try{
+        const data=JSON.parse(json);
+        const chunk=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
+        if(chunk){ fullText+=chunk; onChunk(fullText); }
+      }catch(_){}
+    }
+  }
+  return fullText||'ไม่มีการตอบกลับ';
 }
 
 function _aiWelcomeHTML(){
@@ -7064,6 +7159,13 @@ function clearAIChat(){
         <div style="font-weight:700;font-size:15px;letter-spacing:-.3px">ผู้ช่วย AI</div>
         <div style="font-size:11px;opacity:.6;letter-spacing:.1px">Gemini · วิเคราะห์ข้อมูลนักเรียน</div>
       </div>
+      <button id="ai-refresh-btn" onclick="refreshAICtx()" title="โหลดข้อมูลนักเรียนใหม่"
+        style="width:32px;height:32px;background:rgba(255,255,255,.1);border:none;
+        color:rgba(255,255,255,.75);border-radius:50%;cursor:pointer;
+        display:flex;align-items:center;justify-content:center;transition:background .15s"
+        onmouseover="this.style.background='rgba(255,255,255,.2)'" onmouseout="this.style.background='rgba(255,255,255,.1)'">
+        <svg id="ai-refresh-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      </button>
       <button onclick="clearAIChat()" title="ล้างการสนทนา"
         style="width:32px;height:32px;background:rgba(255,255,255,.1);border:none;
         color:rgba(255,255,255,.75);border-radius:50%;cursor:pointer;
