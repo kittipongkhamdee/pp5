@@ -6962,16 +6962,28 @@ async function refreshAICtx(){
 
 function _aiAddErrMsg(text, showRetry){
   const msgs=$('ai-msgs'); if(!msgs) return;
+  // ลบ error bubble เก่าทั้งหมดก่อนแสดงอันใหม่
+  msgs.querySelectorAll('.ai-err-bubble').forEach(el=>el.remove());
   const d=document.createElement('div');
+  d.className='ai-err-bubble';
   d.style.cssText='display:flex;flex-direction:column;align-items:flex-start;gap:3px';
+  const retryBtn = showRetry
+    ? `<br><button id="ai-retry-btn" style="margin-top:8px;padding:5px 14px;
+        background:#0466c8;color:#fff;border:none;border-radius:20px;cursor:pointer;font-size:12px;
+        font-family:var(--font)">↩ ลองใหม่</button>`
+    : '';
   d.innerHTML=`<div style="max-width:90%;padding:9px 13px;border-radius:16px 16px 16px 4px;
     background:#fff3cd;color:#856404;font-size:13px;line-height:1.6;border:1px solid #ffc107">
-    ${text.replace(/\n/g,'<br>')}
-    ${showRetry?`<br><button onclick="sendAIMsg(_aiLastMsg)" style="margin-top:8px;padding:5px 14px;
-      background:#0466c8;color:#fff;border:none;border-radius:20px;cursor:pointer;font-size:12px;
-      font-family:var(--font)">↩ ลองใหม่</button>`:''}
+    ${text.replace(/\n/g,'<br>')}${retryBtn}
   </div>
   <div style="font-size:10px;color:#c7c7cc;padding:0 4px">✨ AI · ${new Date().toLocaleTimeString('th',{hour:'2-digit',minute:'2-digit'})}</div>`;
+  if(showRetry){
+    const btn=d.querySelector('#ai-retry-btn');
+    if(btn) btn.addEventListener('click',()=>{
+      btn.disabled=true; btn.textContent='กำลังลอง...'; btn.style.opacity='.6';
+      sendAIMsg(_aiLastMsg);
+    });
+  }
   msgs.appendChild(d);
   msgs.scrollTop=msgs.scrollHeight;
 }
@@ -6979,8 +6991,8 @@ function _aiAddErrMsg(text, showRetry){
 async function _callGeminiStream(history,context,apiKey,onChunk,retry=0){
   const sys=`คุณเป็นผู้ช่วยวิเคราะห์ข้อมูลนักเรียนสำหรับครูผู้สอน ตอบเป็นภาษาไทย กระชับ ชัดเจน มีประโยชน์กับครู\nใช้ข้อมูลต่อไปนี้ในการตอบ:\n\n${context}\n\nหลังตอบทุกครั้ง ให้ต่อท้ายด้วย [SUGGEST: คำถาม1|คำถาม2] เสมอ (2 คำถามที่ครูน่าจะถามต่อ)`;
   const models=['gemini-2.5-flash','gemini-2.0-flash','gemini-2.0-flash-lite'];
-  const model=models[Math.min(Math.floor(retry/2),models.length-1)];
-  const maxRetry=models.length*2-1;
+  const model=models[Math.min(retry,models.length-1)];
+  const maxRetry=models.length-1;
   const res=await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
     {method:'POST',headers:{'Content-Type':'application/json'},
