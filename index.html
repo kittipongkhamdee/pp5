@@ -6801,6 +6801,7 @@ const _ico={
 // ════ AI CHAT (GEMINI) ══════════════════════════════════════════════════
 
 let _aiOpen=false, _aiCtx=null, _aiLoading=false, _aiLastMsg='', _aiHistory=[];
+let _aiLastCallMs=0, _aiThrottleTimer=null;
 
 function toggleAIChat(){
   _aiOpen=!_aiOpen;
@@ -6863,6 +6864,27 @@ async function buildAIContext(){
   return ctx;
 }
 
+const _AI_SEND_SVG=`<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>`;
+const _AI_THROTTLE_MS=6000;
+
+function _aiShowSendCountdown(sec){
+  const btn=$('ai-send-btn'); if(!btn) return;
+  clearTimeout(_aiThrottleTimer);
+  btn.disabled=true;
+  btn.style.background='linear-gradient(145deg,#636366,#8e8e93)';
+  btn.style.opacity='1';
+  btn.innerHTML=`<span style="font-size:11px;font-weight:700;letter-spacing:-.5px">${sec}</span>`;
+  if(sec>1){
+    _aiThrottleTimer=setTimeout(()=>_aiShowSendCountdown(sec-1),1000);
+  }else{
+    _aiThrottleTimer=setTimeout(()=>{
+      btn.disabled=false;
+      btn.style.background='linear-gradient(145deg,#001a4d,#0353a4 55%,#0466c8)';
+      btn.innerHTML=_AI_SEND_SVG;
+    },1000);
+  }
+}
+
 async function sendAIMsg(retryMsg){
   const inp=$('ai-input');
   if(_aiLoading) return;
@@ -6870,13 +6892,20 @@ async function sendAIMsg(retryMsg){
   if(!msg) return;
   const apiKey=S.config.gemini_api_key;
   if(!apiKey){ toast('กรุณาใส่ Gemini API Key ในหน้าตั้งค่าก่อน','er'); return; }
+
+  // Throttle: manual sends only — ป้องกันส่งถี่เกินไป
+  if(!retryMsg&&_aiLastCallMs>0){
+    const wait=_AI_THROTTLE_MS-(Date.now()-_aiLastCallMs);
+    if(wait>0){ _aiShowSendCountdown(Math.ceil(wait/1000)); return; }
+  }
+
   if(inp){inp.value='';inp.style.height='auto';}
   if(!retryMsg) _aiAddMsg('user',msg);
   _aiLastMsg=msg;
   _aiHistory.push({role:'user',parts:[{text:msg}]});
   _aiLoading=true;
+  _aiLastCallMs=Date.now();
   const sendBtn=$('ai-send-btn'); if(sendBtn){sendBtn.disabled=true;sendBtn.style.opacity='.4';}
-  // สร้าง streaming bubble ทันที (ไม่ต้องรอ typing indicator)
   const {wrapper,bubble}=_aiCreateStreamBubble();
   try{
     if(!_aiCtx) _aiCtx=await buildAIContext();
@@ -6894,8 +6923,11 @@ async function sendAIMsg(retryMsg){
   }catch(e){
     _aiHistory.pop();
     wrapper.remove();
-    const isRate=e.message&&(e.message.includes('server')||e.message.includes('quota')||e.message.includes('demand'));
-    _aiAddErrMsg(isRate?'⏳ Gemini server ยุ่งอยู่ กรุณารอสักครู่':_ico.warning+' '+(e.message||'ไม่ทราบสาเหตุ'),isRate);
+    const isRate=e.message==='rate'||e.message==='server';
+    _aiAddErrMsg(
+      isRate?'⏳ Gemini server ยุ่งอยู่ กำลังลองใหม่อัตโนมัติ...':_ico.warning+' '+(e.message||'ไม่ทราบสาเหตุ'),
+      isRate, isRate?20:0
+    );
   }finally{
     _aiLoading=false;
     if(sendBtn){sendBtn.disabled=false;sendBtn.style.opacity='1';}
@@ -6980,9 +7012,8 @@ async function refreshAICtx(){
   }
 }
 
-function _aiAddErrMsg(text, showRetry){
+function _aiAddErrMsg(text, showRetry, autoRetryAfterSec=0){
   const msgs=$('ai-msgs'); if(!msgs) return;
-  // ลบ error bubble เก่าทั้งหมดก่อนแสดงอันใหม่
   msgs.querySelectorAll('.ai-err-bubble').forEach(el=>el.remove());
   const d=document.createElement('div');
   d.className='ai-err-bubble';
@@ -6990,7 +7021,7 @@ function _aiAddErrMsg(text, showRetry){
   const retryBtn = showRetry
     ? `<br><button id="ai-retry-btn" style="margin-top:8px;padding:5px 14px;
         background:#0466c8;color:#fff;border:none;border-radius:20px;cursor:pointer;font-size:12px;
-        font-family:var(--font)">↩ ลองใหม่</button>`
+        font-family:var(--font)">↩ ลองใหม่ (${autoRetryAfterSec>0?autoRetryAfterSec+'s':''})</button>`
     : '';
   d.innerHTML=`<div style="max-width:90%;padding:9px 13px;border-radius:16px 16px 16px 4px;
     background:#fff3cd;color:#856404;font-size:13px;line-height:1.6;border:1px solid #ffc107">
@@ -6999,10 +7030,23 @@ function _aiAddErrMsg(text, showRetry){
   <div style="font-size:10px;color:#c7c7cc;padding:0 4px">${_ico.sparkle} AI · ${new Date().toLocaleTimeString('th',{hour:'2-digit',minute:'2-digit'})}</div>`;
   if(showRetry){
     const btn=d.querySelector('#ai-retry-btn');
-    if(btn) btn.addEventListener('click',()=>{
-      btn.disabled=true; btn.textContent='กำลังลอง...'; btn.style.opacity='.6';
-      sendAIMsg(_aiLastMsg);
-    });
+    if(btn){
+      let timer=null;
+      const doRetry=()=>{
+        clearInterval(timer);
+        btn.disabled=true; btn.textContent='กำลังลอง...'; btn.style.opacity='.6';
+        sendAIMsg(_aiLastMsg);
+      };
+      btn.addEventListener('click', doRetry);
+      if(autoRetryAfterSec>0){
+        let remaining=autoRetryAfterSec;
+        timer=setInterval(()=>{
+          remaining--;
+          if(remaining<=0){ doRetry(); }
+          else{ btn.textContent=`↩ ลองใหม่ (${remaining}s)`; }
+        },1000);
+      }
+    }
   }
   msgs.appendChild(d);
   msgs.scrollTop=msgs.scrollHeight;
@@ -7010,9 +7054,8 @@ function _aiAddErrMsg(text, showRetry){
 
 async function _callGeminiStream(history,context,apiKey,onChunk,retry=0){
   const sys=`คุณเป็นผู้ช่วยวิเคราะห์ข้อมูลนักเรียนสำหรับครูผู้สอน ตอบเป็นภาษาไทย กระชับ ชัดเจน มีประโยชน์กับครู\nใช้ข้อมูลต่อไปนี้ในการตอบ:\n\n${context}\n\nหลังตอบทุกครั้ง ให้ต่อท้ายด้วย [SUGGEST: คำถาม1|คำถาม2] เสมอ (2 คำถามที่ครูน่าจะถามต่อ)`;
-  const models=['gemini-2.5-flash','gemini-2.0-flash','gemini-2.0-flash-lite'];
-  const model=models[Math.min(retry,models.length-1)];
-  const maxRetry=models.length-1;
+  const model='gemini-2.5-flash';
+  const maxRetry=2; // retry สูงสุด 2 ครั้งสำหรับ transient error (503)
   const res=await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
     {method:'POST',headers:{'Content-Type':'application/json'},
@@ -7025,12 +7068,14 @@ async function _callGeminiStream(history,context,apiKey,onChunk,retry=0){
   if(!res.ok){
     const e=await res.json().catch(()=>({}));
     const msg=e.error?.message||'HTTP '+res.status;
-    const isRetryable=res.status===429||res.status===503||msg.includes('quota')||msg.includes('RESOURCE_EXHAUSTED')||msg.includes('high demand')||msg.includes('overloaded')||msg.includes('not found');
-    if(isRetryable&&retry<maxRetry){
-      await new Promise(r=>setTimeout(r,retry%2===0?3000:6000));
+    const isQuota=res.status===429||msg.includes('quota')||msg.includes('RESOURCE_EXHAUSTED');
+    const isTransient=res.status===503||msg.includes('overloaded')||msg.includes('high demand');
+    if(isTransient&&retry<maxRetry){
+      await new Promise(r=>setTimeout(r,(retry+1)*5000)); // 5s, 10s
       return _callGeminiStream(history,context,apiKey,onChunk,retry+1);
     }
-    if(isRetryable) throw new Error('server ยุ่งมาก กรุณากดลองใหม่');
+    if(isQuota) throw new Error('rate');   // → auto-retry countdown 20s
+    if(isTransient) throw new Error('server'); // → auto-retry countdown 20s
     throw new Error(msg);
   }
   const data=await res.json();
