@@ -6780,7 +6780,7 @@ function installPWA(){
 
 // ════ AI CHAT (GEMINI) ══════════════════════════════════════════════════
 
-let _aiOpen=false, _aiCtx=null, _aiLoading=false, _aiLastMsg='';
+let _aiOpen=false, _aiCtx=null, _aiLoading=false, _aiLastMsg='', _aiHistory=[];
 
 function toggleAIChat(){
   _aiOpen=!_aiOpen;
@@ -6850,18 +6850,26 @@ async function sendAIMsg(retryMsg){
   if(!msg) return;
   const apiKey=S.config.gemini_api_key;
   if(!apiKey){ toast('กรุณาใส่ Gemini API Key ในหน้าตั้งค่าก่อน','er'); return; }
-  if(inp) inp.value='';
+  if(inp){inp.value='';inp.style.height='auto';}
   if(!retryMsg) _aiAddMsg('user',msg);
   _aiLastMsg=msg;
+  // เพิ่มข้อความใน history ก่อนส่ง
+  _aiHistory.push({role:'user',parts:[{text:msg}]});
   _aiLoading=true;
   const btn=$('ai-send-btn'); if(btn){btn.disabled=true;btn.style.opacity='.4';}
   const tid='ai-t'+Date.now(); _aiAddTyping(tid);
   try{
     if(!_aiCtx) _aiCtx=await buildAIContext();
-    const reply=await _callGemini(msg,_aiCtx,apiKey);
+    const reply=await _callGemini(_aiHistory,_aiCtx,apiKey);
     _aiRemoveEl(tid);
     _aiAddMsg('ai',reply);
+    // บันทึก reply ใน history
+    _aiHistory.push({role:'model',parts:[{text:reply}]});
+    // จำกัด history ไม่เกิน 30 messages (15 turns) ไม่ให้ token เกิน
+    if(_aiHistory.length>30) _aiHistory=_aiHistory.slice(-30);
   }catch(e){
+    // ถ้า error ให้เอา user message ออกจาก history (ยังไม่สำเร็จ)
+    _aiHistory.pop();
     _aiRemoveEl(tid);
     const isRate=e.message&&(e.message.includes('server')||e.message.includes('quota')||e.message.includes('demand'));
     const errText=isRate
@@ -6890,16 +6898,19 @@ function _aiAddErrMsg(text, showRetry){
   msgs.scrollTop=msgs.scrollHeight;
 }
 
-async function _callGemini(userMsg,context,apiKey,retry=0){
-  const sys=`คุณเป็นผู้ช่วยวิเคราะห์ข้อมูลนักเรียนสำหรับครูผู้สอน ตอบเป็นภาษาไทย กระชับ ชัดเจน มีประโยชน์กับครู ใช้ข้อมูลที่ให้มาตอบคำถามเท่านั้น\n\nข้อมูล:\n${context}`;
-  // แต่ละ model ลอง 2 ครั้ง: retry 0,1 = model 0 | retry 2,3 = model 1 | retry 4,5 = model 2
+async function _callGemini(history,context,apiKey,retry=0){
+  const sys=`คุณเป็นผู้ช่วยวิเคราะห์ข้อมูลนักเรียนสำหรับครูผู้สอน ตอบเป็นภาษาไทย กระชับ ชัดเจน มีประโยชน์กับครู\nใช้ข้อมูลต่อไปนี้ในการตอบ:\n\n${context}`;
   const models=['gemini-2.5-flash','gemini-2.0-flash','gemini-2.0-flash-lite'];
   const model=models[Math.min(Math.floor(retry/2),models.length-1)];
   const maxRetry=models.length*2-1;
   const res=await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
     {method:'POST',headers:{'Content-Type':'application/json'},
-     body:JSON.stringify({contents:[{parts:[{text:sys+'\n\nคำถาม: '+userMsg}]}],generationConfig:{temperature:0.5,maxOutputTokens:8192}})}
+     body:JSON.stringify({
+       system_instruction:{parts:[{text:sys}]},
+       contents:history,
+       generationConfig:{temperature:0.5,maxOutputTokens:8192}
+     })}
   );
   if(!res.ok){
     const e=await res.json().catch(()=>({}));
@@ -6992,6 +7003,7 @@ function _aiRemoveEl(id){ const e=$(id); if(e) e.remove(); }
 
 function clearAIChat(){
   _aiCtx=null;
+  _aiHistory=[];
   const msgs=$('ai-msgs'); if(!msgs) return;
   msgs.innerHTML=_aiWelcomeHTML();
 }
