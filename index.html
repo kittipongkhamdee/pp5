@@ -199,6 +199,8 @@ button{font-family:var(--font);}
 @keyframes toastIn {from{transform:translateX(110%) scale(.9);opacity:0}to{transform:translateX(0) scale(1);opacity:1}}
 @keyframes toastOut{from{opacity:1;transform:translateX(0) scale(1)}to{opacity:0;transform:translateX(20px) scale(.95)}}
 @keyframes shimmer {0%{background-position:200% 0}100%{background-position:-200% 0}}
+@keyframes ai-dot  {0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1}}
+@keyframes ai-fab-pulse{0%,100%{box-shadow:0 4px 16px rgba(102,126,234,.5)}50%{box-shadow:0 4px 24px rgba(102,126,234,.8)}}
 @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
 
 /* ── JS-built components (Tailwind can't scan these dynamically) ── */
@@ -1345,6 +1347,7 @@ function showLogin(){
   $('login-page').style.display='block';
   $('main-app').style.display='none';
   const err=$('login-err'); if(err) err.style.display='none';
+  const fab=$('ai-fab'); if(fab) fab.style.display='none';
 }
 
 function showApp(){
@@ -1376,6 +1379,7 @@ function showApp(){
   nav('dashboard');
   initPresence();
   updateMsBadge();
+  const fab=$('ai-fab'); if(fab){fab.style.display='flex';}
 }
 
 
@@ -5228,6 +5232,17 @@ function pgSettings(){
               ${(cfg.teachers||'').split('\n').filter(t=>t.trim()).map(t=>`<option value="${esc(t.trim())}" ${cfg.head_academic===t.trim()?'selected':''}>${esc(t.trim())}</option>`).join('')}
             </select>
           </div>
+          <div style="grid-column:1/-1">
+            <label class="fl" style="display:flex;align-items:center;gap:6px">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M12 8v4l3 3"/></svg>
+              Gemini API Key <span style="font-weight:400;color:var(--muted)">(สำหรับผู้ช่วย AI)</span>
+            </label>
+            <div style="position:relative">
+              <input class="fi" id="c-gemini-key" type="password" value="${esc(cfg.gemini_api_key||'')}" placeholder="AIzaSy..." style="padding-right:42px">
+              <button type="button" onclick="const i=$('c-gemini-key');i.type=i.type==='password'?'text':'password'" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px">👁</button>
+            </div>
+            <div style="font-size:11.5px;color:var(--muted);margin-top:4px">รับฟรีได้ที่ <strong>aistudio.google.com</strong> → Get API Key</div>
+          </div>
         </div>
         <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--bdr);">
           <button class="btn bp" onclick="saveSettings()">
@@ -5760,6 +5775,7 @@ async function saveSettings(){
     {key:'teachers',       value:teacherVal},
     {key:'head_registrar', value:$('c-head-reg')?.value||''},
     {key:'head_academic',  value:$('c-head-acad')?.value||''},
+    {key:'gemini_api_key', value:$('c-gemini-key')?.value.trim()||''},
   ];
   loading(true);
   try{
@@ -6761,6 +6777,236 @@ function installPWA(){
   _deferredInstall.prompt();
   _deferredInstall.userChoice.then(()=>{ _deferredInstall = null; });
 }
+
+// ════ AI CHAT (GEMINI) ══════════════════════════════════════════════════
+
+let _aiOpen=false, _aiCtx=null, _aiLoading=false;
+
+function toggleAIChat(){
+  _aiOpen=!_aiOpen;
+  const panel=$('ai-panel');
+  if(!panel) return;
+  panel.style.display=_aiOpen?'flex':'none';
+  if(_aiOpen){
+    if(!_aiCtx) _loadAIContext();
+    setTimeout(()=>{ const i=$('ai-input'); if(i) i.focus(); },120);
+  }
+}
+
+async function _loadAIContext(){
+  try{ _aiCtx=await buildAIContext(); }
+  catch(e){ _aiCtx='ไม่สามารถโหลดข้อมูลได้: '+e.message; }
+}
+
+async function buildAIContext(){
+  await loadSubjects();
+  const cfg=S.config;
+  const subjIds=S.subjects.map(s=>s.id);
+  let ctx=`ครูผู้สอน: ${S.profile?.full_name||S.user?.email||'ไม่ระบุ'}\n`;
+  ctx+=`โรงเรียน: ${cfg.school_name||''}\n`;
+  ctx+=`ปีการศึกษา: ${cfg.academic_year||''} ภาคเรียนที่ ${cfg.semester||''}\n`;
+  if(!subjIds.length){ ctx+='ยังไม่มีรายวิชา\n'; return ctx; }
+  const [allStudents,allSum,allAtt]=await Promise.all([
+    q(sb.from('students').select('id,student_code,student_name,grade_level,room').order('grade_level').order('room').order('student_code')),
+    q(sb.from('score_summary').select('subject_id,student_id,grade,total_score,special_result').in('subject_id',subjIds)),
+    q(sb.from('attendance').select('subject_id,student_id,status,periods').in('subject_id',subjIds)),
+  ]);
+  const sumBySubj={}, attBySubj={};
+  allSum.forEach(r=>{ (sumBySubj[r.subject_id]||(sumBySubj[r.subject_id]=[])).push(r); });
+  allAtt.forEach(r=>{ (attBySubj[r.subject_id]||(attBySubj[r.subject_id]=[])).push(r); });
+  ctx+=`\n=== รายวิชาที่สอนทั้งหมด ${S.subjects.length} วิชา ===`;
+  for(const sub of S.subjects){
+    const stuInClass=allStudents.filter(s=>String(s.grade_level)===String(sub.grade_level)&&String(s.room)===String(sub.room));
+    const sumRows=sumBySubj[sub.id]||[];
+    const attRows=attBySubj[sub.id]||[];
+    const passCount=sumRows.filter(r=>parseFloat(r.grade)>0&&!['ร','มส','มผ','ผ'].includes(r.special_result||'')).length;
+    const msCount=sumRows.filter(r=>r.special_result==='มส').length;
+    const gradeArr=sumRows.map(r=>parseFloat(r.grade)).filter(g=>!isNaN(g)&&g>=0);
+    const avgGrade=gradeArr.length?(gradeArr.reduce((a,b)=>a+b,0)/gradeArr.length).toFixed(2):'—';
+    ctx+=`\n\n[${sub.subject_code||''}] ${sub.subject_name} ม.${sub.grade_level}/${sub.room}`;
+    ctx+=`\n  นักเรียน: ${stuInClass.length} คน | มีคะแนน: ${sumRows.length} คน`;
+    ctx+=`\n  ผ่าน: ${passCount} คน | มส.: ${msCount} คน | เกรดเฉลี่ย: ${avgGrade}`;
+    if(stuInClass.length){
+      ctx+=`\n  รายชื่อ:`;
+      stuInClass.forEach(stu=>{
+        const sr=sumRows.find(r=>String(r.student_id)===String(stu.id));
+        const stuAtt=attRows.filter(r=>String(r.student_id)===String(stu.id));
+        const tot=stuAtt.filter(r=>r.status==='present'||r.status==='absent').reduce((a,r)=>a+(r.periods||0),0);
+        const pres=stuAtt.filter(r=>r.status==='present').reduce((a,r)=>a+(r.periods||0),0);
+        const pct=tot>0?Math.round(pres/tot*100):null;
+        let line=`\n    ${stu.student_code||'—'} ${stu.student_name}`;
+        if(sr){ line+=`: เกรด ${sr.grade||'—'}`;  if(sr.total_score!=null) line+=' คะแนน '+sr.total_score; if(sr.special_result) line+=' ('+sr.special_result+')'; }
+        else { line+=': ยังไม่มีคะแนน'; }
+        if(pct!==null) line+=` เวลาเรียน ${pct}%`;
+        ctx+=line;
+      });
+    }
+  }
+  return ctx;
+}
+
+async function sendAIMsg(){
+  const inp=$('ai-input');
+  if(!inp||_aiLoading) return;
+  const msg=inp.value.trim();
+  if(!msg) return;
+  const apiKey=S.config.gemini_api_key;
+  if(!apiKey){
+    toast('กรุณาใส่ Gemini API Key ในหน้าตั้งค่าก่อน','er');
+    return;
+  }
+  inp.value='';
+  _aiAddMsg('user',msg);
+  _aiLoading=true;
+  const btn=$('ai-send-btn'); if(btn){btn.disabled=true;btn.style.opacity='.4';}
+  const tid='ai-t'+Date.now(); _aiAddTyping(tid);
+  try{
+    if(!_aiCtx) _aiCtx=await buildAIContext();
+    const reply=await _callGemini(msg,_aiCtx,apiKey);
+    _aiRemoveEl(tid);
+    _aiAddMsg('ai',reply);
+  }catch(e){
+    _aiRemoveEl(tid);
+    _aiAddMsg('ai','⚠️ เกิดข้อผิดพลาด: '+(e.message||'ไม่ทราบสาเหตุ'));
+  }finally{
+    _aiLoading=false;
+    if(btn){btn.disabled=false;btn.style.opacity='1';}
+  }
+}
+
+async function _callGemini(userMsg,context,apiKey){
+  const sys=`คุณเป็นผู้ช่วยวิเคราะห์ข้อมูลนักเรียนสำหรับครูผู้สอน ตอบเป็นภาษาไทย กระชับ ชัดเจน มีประโยชน์กับครู ใช้ข้อมูลที่ให้มาตอบคำถามเท่านั้น\n\nข้อมูลนักเรียน:\n${context}`;
+  const res=await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    {method:'POST',headers:{'Content-Type':'application/json'},
+     body:JSON.stringify({contents:[{parts:[{text:sys+'\n\nคำถาม: '+userMsg}]}],generationConfig:{temperature:0.5,maxOutputTokens:1500}})}
+  );
+  if(!res.ok){ const e=await res.json().catch(()=>({})); throw new Error(e.error?.message||'HTTP '+res.status); }
+  const data=await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text||'ไม่มีการตอบกลับ';
+}
+
+function _aiAddMsg(role,text){
+  const msgs=$('ai-msgs'); if(!msgs) return;
+  const w=$('ai-welcome'); if(w) w.style.display='none';
+  const isUser=role==='user';
+  const d=document.createElement('div');
+  d.style.cssText=`display:flex;flex-direction:column;align-items:${isUser?'flex-end':'flex-start'};gap:3px`;
+  const fmt=text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>')
+    .replace(/\n/g,'<br>');
+  d.innerHTML=`<div style="max-width:90%;padding:9px 13px;border-radius:${isUser?'16px 16px 4px 16px':'16px 16px 16px 4px'};
+    background:${isUser?'linear-gradient(135deg,#667eea,#764ba2)':'var(--bg2,#f3f4f6)'};
+    color:${isUser?'#fff':'var(--txt,#1d1d1f)'};font-size:13px;line-height:1.65;word-break:break-word">${fmt}</div>
+    <div style="font-size:10px;color:#c7c7cc;padding:0 4px">${isUser?'คุณ':'✨ AI'} · ${new Date().toLocaleTimeString('th',{hour:'2-digit',minute:'2-digit'})}</div>`;
+  msgs.appendChild(d);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+function _aiAddTyping(id){
+  const msgs=$('ai-msgs'); if(!msgs) return;
+  const d=document.createElement('div');
+  d.id=id; d.style.cssText='display:flex;align-items:flex-start';
+  d.innerHTML=`<div style="padding:10px 14px;border-radius:16px 16px 16px 4px;background:var(--bg2,#f3f4f6);display:inline-flex;gap:5px;align-items:center">
+    <span style="width:7px;height:7px;background:#9ca3af;border-radius:50%;animation:ai-dot 1.2s infinite 0s;display:inline-block"></span>
+    <span style="width:7px;height:7px;background:#9ca3af;border-radius:50%;animation:ai-dot 1.2s infinite .2s;display:inline-block"></span>
+    <span style="width:7px;height:7px;background:#9ca3af;border-radius:50%;animation:ai-dot 1.2s infinite .4s;display:inline-block"></span>
+  </div>`;
+  msgs.appendChild(d);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+function _aiRemoveEl(id){ const e=$(id); if(e) e.remove(); }
+
+function clearAIChat(){
+  _aiCtx=null;
+  const msgs=$('ai-msgs'); if(!msgs) return;
+  msgs.innerHTML='';
+  const w=document.createElement('div');
+  w.id='ai-welcome';
+  w.style.cssText='text-align:center;padding:24px 12px;color:#8e8e93';
+  w.innerHTML=`<div style="font-size:36px;margin-bottom:10px">✨</div>
+    <div style="font-weight:700;color:var(--txt,#1d1d1f);margin-bottom:8px;font-size:15px">สวัสดีครับ! ฉันช่วยวิเคราะห์ข้อมูลนักเรียนได้</div>
+    <div style="font-size:12.5px;line-height:1.8;color:#8e8e93">ลองถามเช่น:<br>📋 "สรุปผลการเรียนทุกวิชา"<br>⚠️ "นักเรียนคนไหนมีผล มส.?"<br>📊 "วิชาไหนอัตราผ่านต่ำสุด?"<br>🎯 "นักเรียนที่ควรช่วยเหลือมีใครบ้าง?"</div>`;
+  msgs.appendChild(w);
+}
 </script>
+
+<!-- ══ AI CHAT FAB ══ -->
+<button id="ai-fab" class="no-print" onclick="toggleAIChat()"
+  style="display:none;position:fixed;bottom:24px;right:20px;width:52px;height:52px;border-radius:50%;
+  background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;cursor:pointer;
+  z-index:9400;align-items:center;justify-content:center;
+  animation:ai-fab-pulse 2.5s ease-in-out infinite;transition:transform .2s,opacity .2s"
+  onmouseover="this.style.transform='scale(1.12)';this.style.animationPlayState='paused'"
+  onmouseout="this.style.transform='scale(1)';this.style.animationPlayState='running'"
+  title="ผู้ช่วย AI">
+  <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
+</button>
+
+<!-- ══ AI CHAT PANEL ══ -->
+<div id="ai-panel" class="no-print" style="display:none;position:fixed;right:0;top:0;bottom:0;width:370px;
+  background:var(--card,#fff);z-index:9500;
+  box-shadow:-6px 0 32px rgba(0,0,0,.18);flex-direction:column;
+  border-left:1px solid rgba(102,126,234,.2)">
+
+  <!-- Header -->
+  <div style="padding:14px 16px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;
+    display:flex;align-items:center;gap:10px;flex-shrink:0">
+    <div style="width:34px;height:34px;background:rgba(255,255,255,.2);border-radius:50%;
+      display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <svg viewBox="0 0 24 24" fill="currentColor" width="17" height="17"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+    </div>
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:700;font-size:14px">ผู้ช่วย AI</div>
+      <div style="font-size:11px;opacity:.8">Gemini · วิเคราะห์ข้อมูลนักเรียน</div>
+    </div>
+    <button onclick="clearAIChat()" title="ล้างการสนทนา"
+      style="background:rgba(255,255,255,.15);border:none;color:#fff;
+      width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:12px;
+      display:flex;align-items:center;justify-content:center;margin-right:4px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+    </button>
+    <button onclick="toggleAIChat()"
+      style="background:rgba(255,255,255,.15);border:none;color:#fff;
+      width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:18px;
+      display:flex;align-items:center;justify-content:center">×</button>
+  </div>
+
+  <!-- Messages -->
+  <div id="ai-msgs" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth">
+    <div id="ai-welcome" style="text-align:center;padding:24px 12px;color:#8e8e93">
+      <div style="font-size:36px;margin-bottom:10px">✨</div>
+      <div style="font-weight:700;color:var(--txt,#1d1d1f);margin-bottom:8px;font-size:15px">สวัสดีครับ! ฉันช่วยวิเคราะห์ข้อมูลนักเรียนได้</div>
+      <div style="font-size:12.5px;line-height:1.8;color:#8e8e93">ลองถามเช่น:<br>
+        📋 "สรุปผลการเรียนทุกวิชา"<br>
+        ⚠️ "นักเรียนคนไหนมีผล มส.?"<br>
+        📊 "วิชาไหนอัตราผ่านต่ำสุด?"<br>
+        🎯 "นักเรียนที่ควรช่วยเหลือมีใครบ้าง?"
+      </div>
+    </div>
+  </div>
+
+  <!-- Input area -->
+  <div style="padding:10px 12px;border-top:1px solid var(--bdr,#e5e7eb);background:var(--bg2,#f8f9fa);flex-shrink:0">
+    <div style="display:flex;gap:8px;align-items:flex-end">
+      <textarea id="ai-input" rows="2"
+        placeholder="ถามเกี่ยวกับนักเรียนของคุณ... (Enter = ส่ง, Shift+Enter = ขึ้นบรรทัดใหม่)"
+        style="flex:1;border:1.5px solid var(--bdr,#e5e7eb);border-radius:12px;padding:9px 12px;
+        font-size:13px;font-family:var(--font);resize:none;outline:none;
+        background:#fff;line-height:1.5;color:var(--txt,#1d1d1f);transition:border-color .15s"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAIMsg();}"
+        onfocus="this.style.borderColor='#667eea'" onblur="this.style.borderColor='var(--bdr,#e5e7eb)'"></textarea>
+      <button id="ai-send-btn" onclick="sendAIMsg()"
+        style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);
+        border:none;color:#fff;cursor:pointer;flex-shrink:0;
+        display:flex;align-items:center;justify-content:center;transition:opacity .15s,transform .15s"
+        onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+    <div style="font-size:10px;color:#c7c7cc;text-align:center;margin-top:5px">Gemini AI · ข้อมูลนักเรียนจะถูกส่งไปยัง Google</div>
+  </div>
+</div>
 </body>
 </html>
