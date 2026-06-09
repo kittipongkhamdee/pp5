@@ -6982,7 +6982,7 @@ async function _callGeminiStream(history,context,apiKey,onChunk,retry=0){
   const model=models[Math.min(Math.floor(retry/2),models.length-1)];
   const maxRetry=models.length*2-1;
   const res=await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
     {method:'POST',headers:{'Content-Type':'application/json'},
      body:JSON.stringify({
        system_instruction:{parts:[{text:sys}]},
@@ -7001,26 +7001,21 @@ async function _callGeminiStream(history,context,apiKey,onChunk,retry=0){
     if(isRetryable) throw new Error('server ยุ่งมาก กรุณากดลองใหม่');
     throw new Error(msg);
   }
-  const reader=res.body.getReader();
-  const decoder=new TextDecoder();
-  let fullText='', buf='';
-  while(true){
-    const {done,value}=await reader.read();
-    if(done) break;
-    buf+=decoder.decode(value,{stream:true});
-    const lines=buf.split('\n'); buf=lines.pop()||'';
-    for(const line of lines){
-      if(!line.startsWith('data: ')) continue;
-      const json=line.slice(6).trim();
-      if(json==='[DONE]') break;
-      try{
-        const data=JSON.parse(json);
-        const chunk=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
-        if(chunk){ fullText+=chunk; onChunk(fullText); }
-      }catch(_){}
-    }
-  }
-  return fullText||'ไม่มีการตอบกลับ';
+  const data=await res.json();
+  const fullText=data.candidates?.[0]?.content?.parts?.[0]?.text||'ไม่มีการตอบกลับ';
+  // Typewriter effect — reveal text progressively at ~60fps
+  await new Promise(resolve=>{
+    let i=0;
+    const speed=Math.max(3,Math.floor(fullText.length/80)); // adaptive: ทุก response ใช้เวลาราวๆ เท่ากัน
+    const tick=()=>{
+      i=Math.min(i+speed,fullText.length);
+      onChunk(fullText.slice(0,i));
+      if(i<fullText.length) setTimeout(tick,16);
+      else resolve();
+    };
+    tick();
+  });
+  return fullText;
 }
 
 function _aiWelcomeHTML(){
