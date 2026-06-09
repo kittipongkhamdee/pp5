@@ -200,7 +200,7 @@ button{font-family:var(--font);}
 @keyframes toastOut{from{opacity:1;transform:translateX(0) scale(1)}to{opacity:0;transform:translateX(20px) scale(.95)}}
 @keyframes shimmer {0%{background-position:200% 0}100%{background-position:-200% 0}}
 @keyframes ai-dot  {0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1}}
-@keyframes ai-fab-pulse{0%,100%{box-shadow:0 4px 16px rgba(102,126,234,.5)}50%{box-shadow:0 4px 24px rgba(102,126,234,.8)}}
+@keyframes ai-fab-pulse{0%,100%{box-shadow:0 4px 20px rgba(0,100,200,.55)}50%{box-shadow:0 6px 32px rgba(0,140,255,.75)}}
 @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
 
 /* ── JS-built components (Tailwind can't scan these dynamically) ── */
@@ -6880,7 +6880,7 @@ function _aiAddErrMsg(text, showRetry){
     background:#fff3cd;color:#856404;font-size:13px;line-height:1.6;border:1px solid #ffc107">
     ${text.replace(/\n/g,'<br>')}
     ${showRetry?`<br><button onclick="sendAIMsg(_aiLastMsg)" style="margin-top:8px;padding:5px 14px;
-      background:#667eea;color:#fff;border:none;border-radius:20px;cursor:pointer;font-size:12px;
+      background:#0466c8;color:#fff;border:none;border-radius:20px;cursor:pointer;font-size:12px;
       font-family:var(--font)">↩ ลองใหม่</button>`:''}
   </div>
   <div style="font-size:10px;color:#c7c7cc;padding:0 4px">✨ AI · ${new Date().toLocaleTimeString('th',{hour:'2-digit',minute:'2-digit'})}</div>`;
@@ -6925,7 +6925,7 @@ function _aiAddMsg(role,text){
     .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>')
     .replace(/\n/g,'<br>');
   d.innerHTML=`<div style="max-width:90%;padding:9px 13px;border-radius:${isUser?'16px 16px 4px 16px':'16px 16px 16px 4px'};
-    background:${isUser?'linear-gradient(135deg,#667eea,#764ba2)':'var(--bg2,#f3f4f6)'};
+    background:${isUser?'linear-gradient(145deg,#001233 0%,#023e8a 55%,#0466c8 100%)':'var(--bg2,#f3f4f6)'};
     color:${isUser?'#fff':'var(--txt,#1d1d1f)'};font-size:13px;line-height:1.65;word-break:break-word">${fmt}</div>
     <div style="font-size:10px;color:#c7c7cc;padding:0 4px">${isUser?'คุณ':'✨ AI'} · ${new Date().toLocaleTimeString('th',{hour:'2-digit',minute:'2-digit'})}</div>`;
   msgs.appendChild(d);
@@ -6964,7 +6964,7 @@ function clearAIChat(){
 <!-- ══ AI CHAT FAB ══ -->
 <button id="ai-fab" class="no-print" onclick="toggleAIChat()"
   style="display:none;position:fixed;bottom:24px;right:20px;width:52px;height:52px;border-radius:50%;
-  background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;cursor:pointer;
+  background:linear-gradient(145deg,#001233 0%,#023e8a 55%,#0466c8 100%);color:#fff;border:none;cursor:pointer;
   z-index:9400;align-items:center;justify-content:center;
   animation:ai-fab-pulse 2.5s ease-in-out infinite;transition:transform .2s,opacity .2s"
   onmouseover="this.style.transform='scale(1.12)';this.style.animationPlayState='paused'"
@@ -6977,10 +6977,10 @@ function clearAIChat(){
 <div id="ai-panel" class="no-print" style="display:none;position:fixed;right:0;top:0;bottom:0;width:370px;
   background:var(--card,#fff);z-index:9500;
   box-shadow:-6px 0 32px rgba(0,0,0,.18);flex-direction:column;
-  border-left:1px solid rgba(102,126,234,.2)">
+  border-left:1px solid rgba(4,102,200,.25)">
 
   <!-- Header -->
-  <div style="padding:14px 16px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;
+  <div style="padding:14px 16px;background:linear-gradient(145deg,#001233 0%,#023e8a 55%,#0466c8 100%);color:#fff;
     display:flex;align-items:center;gap:10px;flex-shrink:0">
     <div style="width:34px;height:34px;background:rgba(255,255,255,.2);border-radius:50%;
       display:flex;align-items:center;justify-content:center;flex-shrink:0">
@@ -7025,9 +7025,9 @@ function clearAIChat(){
         font-size:13px;font-family:var(--font);resize:none;outline:none;
         background:#fff;line-height:1.5;color:var(--txt,#1d1d1f);transition:border-color .15s"
         onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAIMsg();}"
-        onfocus="this.style.borderColor='#667eea'" onblur="this.style.borderColor='var(--bdr,#e5e7eb)'"></textarea>
+        onfocus="this.style.borderColor='#0466c8'" onblur="this.style.borderColor='var(--bdr,#e5e7eb)'"></textarea>
       <button id="ai-send-btn" onclick="sendAIMsg()"
-        style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);
+        style="width:40px;height:40px;border-radius:50%;background:linear-gradient(145deg,#001233 0%,#023e8a 55%,#0466c8 100%);
         border:none;color:#fff;cursor:pointer;flex-shrink:0;
         display:flex;align-items:center;justify-content:center;transition:opacity .15s,transform .15s"
         onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
