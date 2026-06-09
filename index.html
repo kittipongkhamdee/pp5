@@ -6819,35 +6819,24 @@ async function buildAIContext(){
     const attRows=attBySubj[sub.id]||[];
     const passCount=sumRows.filter(r=>parseFloat(r.grade)>0&&!['ร','มส','มผ','ผ'].includes(r.special_result||'')).length;
     const msCount=sumRows.filter(r=>r.special_result==='มส').length;
-    const rCount=sumRows.filter(r=>r.special_result==='ร').length;
     const gradeArr=sumRows.map(r=>parseFloat(r.grade)).filter(g=>!isNaN(g)&&g>=0);
     const avg=gradeArr.length?(gradeArr.reduce((a,b)=>a+b,0)/gradeArr.length).toFixed(2):'—';
-    ctx+=`[${sub.subject_name} ม.${sub.grade_level}/${sub.room}] นักเรียน${stuInClass.length} ผ่าน${passCount} มส.${msCount} ร${rCount} เกรดเฉลี่ย${avg}\n`;
-    // เฉพาะนักเรียนที่มีปัญหา (เกรดต่ำ/มส./ร/เวลาเรียนน้อย)
-    const atRisk=stuInClass.filter(stu=>{
+    ctx+=`\n[${sub.subject_name} ม.${sub.grade_level}/${sub.room}] ${stuInClass.length}คน ผ่าน${passCount} มส.${msCount} เฉลี่ย${avg}\n`;
+    // รายชื่อนักเรียนทุกคน (format กระชับ)
+    stuInClass.forEach(stu=>{
       const sr=sumRows.find(r=>String(r.student_id)===String(stu.id));
       const stuAtt=attRows.filter(r=>String(r.student_id)===String(stu.id));
       const tot=stuAtt.filter(r=>r.status==='present'||r.status==='absent').reduce((a,r)=>a+(r.periods||0),0);
       const pres=stuAtt.filter(r=>r.status==='present').reduce((a,r)=>a+(r.periods||0),0);
       const pct=tot>0?Math.round(pres/tot*100):null;
-      const grade=sr?parseFloat(sr.grade):null;
-      const special=sr?.special_result||'';
-      return ['มส','ร','มผ','ผ'].includes(special)||(grade!==null&&grade<=1.5)||(pct!==null&&pct<80);
+      let line=`${stu.student_code} ${stu.student_name}`;
+      if(sr){
+        line+=` G:${sr.special_result||sr.grade||'—'}`;
+        if(sr.total_score!=null) line+=` S:${sr.total_score}`;
+      } else { line+=` G:—`; }
+      if(pct!==null) line+=` A:${pct}%`;
+      ctx+=line+'\n';
     });
-    if(atRisk.length){
-      ctx+=`  นักเรียนที่ต้องดูแล:\n`;
-      atRisk.forEach(stu=>{
-        const sr=sumRows.find(r=>String(r.student_id)===String(stu.id));
-        const stuAtt=attRows.filter(r=>String(r.student_id)===String(stu.id));
-        const tot=stuAtt.filter(r=>r.status==='present'||r.status==='absent').reduce((a,r)=>a+(r.periods||0),0);
-        const pres=stuAtt.filter(r=>r.status==='present').reduce((a,r)=>a+(r.periods||0),0);
-        const pct=tot>0?Math.round(pres/tot*100):null;
-        let line=`  ${stu.student_code} ${stu.student_name}`;
-        if(sr){ line+=` เกรด${sr.grade||'—'}`; if(sr.special_result) line+=`(${sr.special_result})`; }
-        if(pct!==null) line+=` เวลา${pct}%`;
-        ctx+=line+'\n';
-      });
-    }
   }
   return ctx;
 }
