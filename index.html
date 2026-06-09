@@ -6788,6 +6788,8 @@ function toggleAIChat(){
   if(!panel) return;
   panel.style.display=_aiOpen?'flex':'none';
   if(_aiOpen){
+    const msgs=$('ai-msgs');
+    if(msgs&&!msgs.children.length) msgs.innerHTML=_aiWelcomeHTML();
     if(!_aiCtx) _loadAIContext();
     setTimeout(()=>{ const i=$('ai-input'); if(i) i.focus(); },120);
   }
@@ -6915,19 +6917,59 @@ async function _callGemini(userMsg,context,apiKey,retry=0){
   return data.candidates?.[0]?.content?.parts?.[0]?.text||'ไม่มีการตอบกลับ';
 }
 
+function _aiWelcomeHTML(){
+  return `<div id="ai-welcome" style="display:flex;flex-direction:column;align-items:center;padding:24px 12px 8px">
+    <div style="width:68px;height:68px;background:linear-gradient(145deg,#001233,#0466c8);
+      border-radius:18px;display:flex;align-items:center;justify-content:center;
+      box-shadow:0 8px 28px rgba(4,102,200,.38);margin-bottom:14px">
+      <svg viewBox="0 0 24 24" fill="#fff" width="32" height="32"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
+    </div>
+    <div style="font-weight:700;font-size:18px;color:#1d1d1f;margin-bottom:4px;letter-spacing:-.4px">ผู้ช่วย AI</div>
+    <div style="font-size:12.5px;color:#8e8e93;margin-bottom:22px">วิเคราะห์ข้อมูลนักเรียนด้วย Gemini</div>
+    <div style="display:flex;flex-direction:column;gap:8px;width:100%">
+      ${[
+        ['📋','สรุปผลการเรียนทุกวิชา','ภาพรวมเกรดและอัตราผ่าน','สรุปผลการเรียนทุกวิชา'],
+        ['⚠️','นักเรียนที่มีผล มส.','รายชื่อและวิชาที่มีปัญหา','นักเรียนคนไหนมีผล มส. บ้าง'],
+        ['📊','อัตราผ่านแต่ละวิชา','เรียงจากน้อยไปมาก','วิชาไหนมีอัตราผ่านต่ำสุด เรียงลำดับให้หน่อย'],
+        ['🎯','นักเรียนที่ต้องดูแล','เกรดต่ำ / เวลาเรียนน้อย','นักเรียนที่ควรได้รับการดูแลเป็นพิเศษมีใครบ้าง'],
+      ].map(([ic,title,sub,q])=>`
+      <button onclick="_aiChip('${q}')"
+        style="background:#fff;border:none;border-radius:13px;padding:11px 13px;text-align:left;
+        cursor:pointer;font-size:13px;color:#1d1d1f;font-family:var(--font);
+        box-shadow:0 1px 4px rgba(0,0,0,.07);display:flex;align-items:center;gap:11px;
+        transition:background .12s,box-shadow .12s"
+        onmouseover="this.style.background='#eef3ff';this.style.boxShadow='0 2px 8px rgba(4,102,200,.12)'"
+        onmouseout="this.style.background='#fff';this.style.boxShadow='0 1px 4px rgba(0,0,0,.07)'">
+        <span style="font-size:20px;flex-shrink:0">${ic}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:13px">${title}</div>
+          <div style="font-size:11px;color:#8e8e93;margin-top:1px">${sub}</div>
+        </div>
+        <svg style="flex-shrink:0;opacity:.25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>`).join('')}
+    </div>
+  </div>`;
+}
+
+function _aiChip(q){
+  const inp=$('ai-input'); if(inp){inp.value='';inp.style.height='auto';}
+  sendAIMsg(q);
+}
+
 function _aiAddMsg(role,text){
   const msgs=$('ai-msgs'); if(!msgs) return;
-  const w=$('ai-welcome'); if(w) w.style.display='none';
+  const w=$('ai-welcome'); if(w) w.remove();
   const isUser=role==='user';
   const d=document.createElement('div');
   d.style.cssText=`display:flex;flex-direction:column;align-items:${isUser?'flex-end':'flex-start'};gap:3px`;
   const fmt=text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
     .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>')
     .replace(/\n/g,'<br>');
-  d.innerHTML=`<div style="max-width:90%;padding:9px 13px;border-radius:${isUser?'16px 16px 4px 16px':'16px 16px 16px 4px'};
-    background:${isUser?'linear-gradient(145deg,#001233 0%,#023e8a 55%,#0466c8 100%)':'var(--bg2,#f3f4f6)'};
-    color:${isUser?'#fff':'var(--txt,#1d1d1f)'};font-size:13px;line-height:1.65;word-break:break-word">${fmt}</div>
-    <div style="font-size:10px;color:#c7c7cc;padding:0 4px">${isUser?'คุณ':'✨ AI'} · ${new Date().toLocaleTimeString('th',{hour:'2-digit',minute:'2-digit'})}</div>`;
+  const bubbleStyle=isUser
+    ?`background:linear-gradient(145deg,#001a4d,#0353a4 60%,#0466c8);color:#fff;border-radius:18px 18px 4px 18px;box-shadow:0 2px 8px rgba(4,102,200,.3)`
+    :`background:#fff;color:#1d1d1f;border-radius:18px 18px 18px 4px;box-shadow:0 1px 4px rgba(0,0,0,.08)`;
+  d.innerHTML=`<div style="max-width:85%;padding:10px 14px;font-size:13.5px;line-height:1.65;word-break:break-word;${bubbleStyle}">${fmt}</div>
+    <div style="font-size:10px;color:#aeaeb2;padding:0 5px">${isUser?'คุณ':'✦ AI'} · ${new Date().toLocaleTimeString('th',{hour:'2-digit',minute:'2-digit'})}</div>`;
   msgs.appendChild(d);
   msgs.scrollTop=msgs.scrollHeight;
 }
@@ -6936,10 +6978,11 @@ function _aiAddTyping(id){
   const msgs=$('ai-msgs'); if(!msgs) return;
   const d=document.createElement('div');
   d.id=id; d.style.cssText='display:flex;align-items:flex-start';
-  d.innerHTML=`<div style="padding:10px 14px;border-radius:16px 16px 16px 4px;background:var(--bg2,#f3f4f6);display:inline-flex;gap:5px;align-items:center">
-    <span style="width:7px;height:7px;background:#9ca3af;border-radius:50%;animation:ai-dot 1.2s infinite 0s;display:inline-block"></span>
-    <span style="width:7px;height:7px;background:#9ca3af;border-radius:50%;animation:ai-dot 1.2s infinite .2s;display:inline-block"></span>
-    <span style="width:7px;height:7px;background:#9ca3af;border-radius:50%;animation:ai-dot 1.2s infinite .4s;display:inline-block"></span>
+  d.innerHTML=`<div style="padding:11px 16px;border-radius:18px 18px 18px 4px;background:#fff;
+    box-shadow:0 1px 4px rgba(0,0,0,.08);display:inline-flex;gap:5px;align-items:center">
+    <span style="width:7px;height:7px;background:#c7c7cc;border-radius:50%;animation:ai-dot 1.2s infinite 0s;display:inline-block"></span>
+    <span style="width:7px;height:7px;background:#c7c7cc;border-radius:50%;animation:ai-dot 1.2s infinite .2s;display:inline-block"></span>
+    <span style="width:7px;height:7px;background:#c7c7cc;border-radius:50%;animation:ai-dot 1.2s infinite .4s;display:inline-block"></span>
   </div>`;
   msgs.appendChild(d);
   msgs.scrollTop=msgs.scrollHeight;
@@ -6950,14 +6993,7 @@ function _aiRemoveEl(id){ const e=$(id); if(e) e.remove(); }
 function clearAIChat(){
   _aiCtx=null;
   const msgs=$('ai-msgs'); if(!msgs) return;
-  msgs.innerHTML='';
-  const w=document.createElement('div');
-  w.id='ai-welcome';
-  w.style.cssText='text-align:center;padding:24px 12px;color:#8e8e93';
-  w.innerHTML=`<div style="font-size:36px;margin-bottom:10px">✨</div>
-    <div style="font-weight:700;color:var(--txt,#1d1d1f);margin-bottom:8px;font-size:15px">สวัสดีครับ! ฉันช่วยวิเคราะห์ข้อมูลนักเรียนได้</div>
-    <div style="font-size:12.5px;line-height:1.8;color:#8e8e93">ลองถามเช่น:<br>📋 "สรุปผลการเรียนทุกวิชา"<br>⚠️ "นักเรียนคนไหนมีผล มส.?"<br>📊 "วิชาไหนอัตราผ่านต่ำสุด?"<br>🎯 "นักเรียนที่ควรช่วยเหลือมีใครบ้าง?"</div>`;
-  msgs.appendChild(w);
+  msgs.innerHTML=_aiWelcomeHTML();
 }
 </script>
 
@@ -6975,66 +7011,64 @@ function clearAIChat(){
 
 <!-- ══ AI CHAT PANEL ══ -->
 <div id="ai-panel" class="no-print" style="display:none;position:fixed;right:0;top:0;bottom:0;width:370px;
-  background:var(--card,#fff);z-index:9500;
-  box-shadow:-6px 0 32px rgba(0,0,0,.18);flex-direction:column;
-  border-left:1px solid rgba(4,102,200,.25)">
+  background:#f2f5f9;z-index:9500;box-shadow:-2px 0 48px rgba(0,0,0,.16);flex-direction:column">
 
   <!-- Header -->
-  <div style="padding:14px 16px;background:linear-gradient(145deg,#001233 0%,#023e8a 55%,#0466c8 100%);color:#fff;
-    display:flex;align-items:center;gap:10px;flex-shrink:0">
-    <div style="width:34px;height:34px;background:rgba(255,255,255,.2);border-radius:50%;
-      display:flex;align-items:center;justify-content:center;flex-shrink:0">
-      <svg viewBox="0 0 24 24" fill="currentColor" width="17" height="17"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+  <div style="background:linear-gradient(180deg,#001233 0%,#02306b 100%);flex-shrink:0">
+    <div style="display:flex;align-items:center;gap:11px;padding:16px 14px 14px">
+      <div style="width:40px;height:40px;background:linear-gradient(145deg,#0466c8,#48cae4);
+        border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+        box-shadow:0 3px 10px rgba(0,0,0,.35)">
+        <svg viewBox="0 0 24 24" fill="#fff" width="21" height="21"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
+      </div>
+      <div style="flex:1;min-width:0;color:#fff">
+        <div style="font-weight:700;font-size:15px;letter-spacing:-.3px">ผู้ช่วย AI</div>
+        <div style="font-size:11px;opacity:.6;letter-spacing:.1px">Gemini · วิเคราะห์ข้อมูลนักเรียน</div>
+      </div>
+      <button onclick="clearAIChat()" title="ล้างการสนทนา"
+        style="width:32px;height:32px;background:rgba(255,255,255,.1);border:none;
+        color:rgba(255,255,255,.75);border-radius:50%;cursor:pointer;
+        display:flex;align-items:center;justify-content:center;transition:background .15s"
+        onmouseover="this.style.background='rgba(255,255,255,.2)'" onmouseout="this.style.background='rgba(255,255,255,.1)'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+      </button>
+      <button onclick="toggleAIChat()"
+        style="width:32px;height:32px;background:rgba(255,255,255,.1);border:none;
+        color:rgba(255,255,255,.75);border-radius:50%;cursor:pointer;
+        display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:300;
+        transition:background .15s"
+        onmouseover="this.style.background='rgba(255,255,255,.2)'" onmouseout="this.style.background='rgba(255,255,255,.1)'">×</button>
     </div>
-    <div style="flex:1;min-width:0">
-      <div style="font-weight:700;font-size:14px">ผู้ช่วย AI</div>
-      <div style="font-size:11px;opacity:.8">Gemini · วิเคราะห์ข้อมูลนักเรียน</div>
-    </div>
-    <button onclick="clearAIChat()" title="ล้างการสนทนา"
-      style="background:rgba(255,255,255,.15);border:none;color:#fff;
-      width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:12px;
-      display:flex;align-items:center;justify-content:center;margin-right:4px">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-    </button>
-    <button onclick="toggleAIChat()"
-      style="background:rgba(255,255,255,.15);border:none;color:#fff;
-      width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:18px;
-      display:flex;align-items:center;justify-content:center">×</button>
+    <!-- Curved bottom edge -->
+    <div style="height:14px;background:#f2f5f9;border-radius:14px 14px 0 0"></div>
   </div>
 
   <!-- Messages -->
-  <div id="ai-msgs" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth">
-    <div id="ai-welcome" style="text-align:center;padding:24px 12px;color:#8e8e93">
-      <div style="font-size:36px;margin-bottom:10px">✨</div>
-      <div style="font-weight:700;color:var(--txt,#1d1d1f);margin-bottom:8px;font-size:15px">สวัสดีครับ! ฉันช่วยวิเคราะห์ข้อมูลนักเรียนได้</div>
-      <div style="font-size:12.5px;line-height:1.8;color:#8e8e93">ลองถามเช่น:<br>
-        📋 "สรุปผลการเรียนทุกวิชา"<br>
-        ⚠️ "นักเรียนคนไหนมีผล มส.?"<br>
-        📊 "วิชาไหนอัตราผ่านต่ำสุด?"<br>
-        🎯 "นักเรียนที่ควรช่วยเหลือมีใครบ้าง?"
-      </div>
-    </div>
-  </div>
+  <div id="ai-msgs" style="flex:1;overflow-y:auto;padding:4px 14px 14px;display:flex;flex-direction:column;gap:8px;scroll-behavior:smooth;background:#f2f5f9"></div>
 
-  <!-- Input area -->
-  <div style="padding:10px 12px;border-top:1px solid var(--bdr,#e5e7eb);background:var(--bg2,#f8f9fa);flex-shrink:0">
-    <div style="display:flex;gap:8px;align-items:flex-end">
-      <textarea id="ai-input" rows="2"
-        placeholder="ถามเกี่ยวกับนักเรียนของคุณ... (Enter = ส่ง, Shift+Enter = ขึ้นบรรทัดใหม่)"
-        style="flex:1;border:1.5px solid var(--bdr,#e5e7eb);border-radius:12px;padding:9px 12px;
-        font-size:13px;font-family:var(--font);resize:none;outline:none;
-        background:#fff;line-height:1.5;color:var(--txt,#1d1d1f);transition:border-color .15s"
+  <!-- Input area - iMessage style -->
+  <div style="padding:8px 12px 14px;background:#f2f5f9;flex-shrink:0;border-top:1px solid rgba(0,0,0,.05)">
+    <div style="display:flex;align-items:flex-end;gap:0;
+      background:#fff;border-radius:24px;
+      box-shadow:0 1px 6px rgba(0,0,0,.1);border:1px solid rgba(0,0,0,.07);
+      padding:8px 8px 8px 16px">
+      <textarea id="ai-input" rows="1"
+        placeholder="ข้อความ..."
+        style="flex:1;border:none;background:transparent;font-size:14px;
+        font-family:var(--font);resize:none;outline:none;line-height:1.5;
+        color:#1d1d1f;max-height:110px;padding:2px 8px 2px 0"
         onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAIMsg();}"
-        onfocus="this.style.borderColor='#0466c8'" onblur="this.style.borderColor='var(--bdr,#e5e7eb)'"></textarea>
+        oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,110)+'px'"></textarea>
       <button id="ai-send-btn" onclick="sendAIMsg()"
-        style="width:40px;height:40px;border-radius:50%;background:linear-gradient(145deg,#001233 0%,#023e8a 55%,#0466c8 100%);
+        style="width:34px;height:34px;border-radius:50%;
+        background:linear-gradient(145deg,#001a4d,#0353a4 55%,#0466c8);
         border:none;color:#fff;cursor:pointer;flex-shrink:0;
-        display:flex;align-items:center;justify-content:center;transition:opacity .15s,transform .15s"
+        display:flex;align-items:center;justify-content:center;transition:transform .1s,opacity .15s"
         onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
       </button>
     </div>
-    <div style="font-size:10px;color:#c7c7cc;text-align:center;margin-top:5px">Gemini AI · ข้อมูลนักเรียนจะถูกส่งไปยัง Google</div>
+    <div style="font-size:10px;color:#c7c7cc;text-align:center;margin-top:7px;letter-spacing:.15px">Gemini AI · ข้อมูลจะถูกส่งไปยัง Google</div>
   </div>
 </div>
 </body>
