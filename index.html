@@ -1634,7 +1634,7 @@ function openProfilePopup(ev){
       <div style="min-width:0">
         <div class="prof-name">${esc(n)}</div>
         <div class="prof-email">${esc(em)}</div>
-        <div class="prof-role">${S.profile?.is_admin ? '👑 แอดมิน' : '👤 ครูผู้สอน'}</div>
+        <div class="prof-role">${S.profile?.is_admin ? `${_ico.crown} แอดมิน` : `${_ico.user} ครูผู้สอน`}</div>
       </div>
     </div>
     <div class="prof-actions">
@@ -1946,7 +1946,7 @@ function nav(page,subId){
       .catch(e=>{
         toast('โหลดหน้าไม่สำเร็จ: '+(e.message||e),'er');
         $('pg').innerHTML=`<div class="card"><div class="empty">
-          <span class="ei" style="font-size:36px;display:block;margin-bottom:8px">⚠️</span>
+          <svg class="ei" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#FF9500" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin-bottom:8px"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
           <div style="margin-bottom:12px">โหลดหน้านี้ไม่สำเร็จ</div>
           <button class="btn bp" onclick="nav('${page}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>ลองใหม่</button>
         </div></div>`;
@@ -2123,7 +2123,7 @@ async function pgDash(){
     html+='</div></div>';
     return html;
   })()}
-  ${!S.subjects.length?`<div class="card"><div class="empty"><div class="ei">📚</div>
+  ${!S.subjects.length?`<div class="card"><div class="empty"><svg class="ei" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
     <div style="font-weight:600;margin-bottom:10px">ยังไม่มีรายวิชา</div>
     <button class="btn bp" onclick="nav('subjects')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>เพิ่มรายวิชาแรก</button></div></div>`:`
   <div class="card"><div class="ch"><div class="ct">รายวิชาทั้งหมด</div></div><div class="cb">
@@ -2139,7 +2139,7 @@ async function pgDash(){
         if(+a.room !== +b.room) return +a.room - +b.room;
         return (a.subject_name||'').localeCompare(b.subject_name||'','th');
       });
-      if(!_visibles.length && S.subjects.length) return '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13.5px;"><div style="font-size:28px;margin-bottom:8px;">📭</div>ไม่มีรายวิชาในภาคเรียนนี้<br><button onclick=\'_toggleDashFilter()\' style=\"margin-top:10px;background:none;border:none;color:var(--ac);font-weight:700;cursor:pointer;font-family:var(--font);font-size:13px;\">ดูทุกภาค →</button></div>';
+      if(!_visibles.length && S.subjects.length) return '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13.5px;"><svg style="margin-bottom:8px" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg><br>ไม่มีรายวิชาในภาคเรียนนี้<br><button onclick=\'_toggleDashFilter()\' style=\"margin-top:10px;background:none;border:none;color:var(--ac);font-weight:700;cursor:pointer;font-family:var(--font);font-size:13px;\">ดูทุกภาค →</button></div>';
       return _visibles.map((s,_si)=>{
       const st=s.stats||{total:0,pass:0,recorded:0,avg:0,passPercent:0};
       // สีตาม grade_level: ม.1=น้ำเงิน ม.2=เขียว ม.3=ส้ม ม.4=ม่วง ม.5=ฟ้า ม.6=แดง
@@ -2171,7 +2171,7 @@ async function pgDash(){
             ?`<span class="subc-tag" style="background:rgba(${_rgb},.1);color:${_ac}">ผ่าน ${st.pass}/${st.total}</span>
               <span class="subc-tag" style="background:rgba(${_rgb},.1);color:${_ac}">เฉลี่ย ${st.avg}</span>`
             :`<span class="subc-tag" style="background:rgba(${_rgb},.1);color:${_ac}">ยังไม่มีคะแนน</span>`}
-          ${st.msCount>0?`<span class="subc-tag" style="background:rgba(255,59,48,.1);color:#FF3B30">⚠️ มส. ${st.msCount} คน</span>`:''}
+          ${st.msCount>0?`<span class="subc-tag" style="background:rgba(255,59,48,.1);color:#FF3B30">${_ico.warning} มส. ${st.msCount} คน</span>`:''}
           <span style="margin-left:auto;font-size:13px;font-weight:700;color:${_ac}">${st.recorded>0?_pct+'%':'—'}</span>
         </div>
         <!-- Progress bar -->
@@ -2208,7 +2208,7 @@ async function pgSubjects(){
   <div class="ph"><div class="ptitle">จัดการรายวิชา</div>
     <button class="btn bp" onclick="openSubModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>เพิ่มรายวิชา</button></div>
   <div class="card"><div class="cb">
-  ${!S.subjects.length?`<div class="empty"><div class="ei">📖</div><div>ยังไม่มีรายวิชา</div></div>`:`
+  ${!S.subjects.length?`<div class="empty"><svg class="ei" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg><div>ยังไม่มีรายวิชา</div></div>`:`
   <div class="tw"><table>
     <thead><tr><th>ลำดับ</th><th class="tl">รหัส</th><th class="tl">ชื่อวิชา</th>
       <th>ชั้น/ห้อง</th><th>ชม./สัปดาห์</th><th>ชม./ภาค</th><th class="tl">ครูผู้สอน</th>
@@ -2337,7 +2337,7 @@ function openSubModal(id){
           </select>
         </div>
       <div class="score-box" style="margin-top:14px">
-        <div class="score-box-title">📊 โครงสร้างคะแนน (รวม = <span id="f-tot">${(s?.score_before_mid||25)+(s?.score_mid||20)+(s?.score_after_mid||25)+(s?.score_final||30)}</span> / 100)</div>
+        <div class="score-box-title">${_ico.barChart} โครงสร้างคะแนน (รวม = <span id="f-tot">${(s?.score_before_mid||25)+(s?.score_mid||20)+(s?.score_after_mid||25)+(s?.score_final||30)}</span> / 100)</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
           <div><label class="fl">ก่อนกลางภาค</label><input type="number" class="fi" id="f-sbm" value="${s?.score_before_mid||25}" min="0" max="100" oninput="updTot()"></div>
           <div><label class="fl">กลางภาค</label><input type="number" class="fi" id="f-sm" value="${s?.score_mid||20}" min="0" max="100" oninput="updTot()"></div>
@@ -2483,7 +2483,7 @@ function _updatePromotePreview(){
   // ตรวจว่าชั้นใหม่เท่ากับเดิมไหม
   const sameRoom = fromG===String(toGrade) && fromR===String(toRoom);
   const warnHtml = sameRoom
-    ? '<div style="color:#dc2626;font-size:11.5px;margin-top:4px">⚠️ ชั้น/ห้องใหม่เหมือนเดิม</div>'
+    ? `<div style="color:#dc2626;font-size:11.5px;margin-top:4px">${_ico.warning} ชั้น/ห้องใหม่เหมือนเดิม</div>`
     : '';
 
   prev.innerHTML =
@@ -2592,7 +2592,7 @@ async function pgStudents(){
   </div>
   <div class="card" style="margin-bottom:14px"><div class="cb" style="padding:10px 16px">
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-      <input class="fi" id="stu-q" placeholder="🔍 ค้นหาชื่อ/รหัส..." style="max-width:220px" oninput="filterStu()">
+      <input class="fi" id="stu-q" placeholder="ค้นหาชื่อ/รหัส..." style="max-width:220px" oninput="filterStu()">
       <select class="fs" id="stu-gr" style="max-width:140px" onchange="filterStu()">
         <option value="">ทุกชั้น/ห้อง</option>
         ${grs.map(g=>`<option>${g}</option>`).join('')}
@@ -2602,7 +2602,7 @@ async function pgStudents(){
   <div class="card"><div class="cb" id="stu-tb">${renderStuTbl(allStu)}</div></div>`;
 }
 function renderStuTbl(list){
-  if(!list.length)return`<div class="empty"><div class="ei">👥</div><div>ไม่พบนักเรียน</div></div>`;
+  if(!list.length)return`<div class="empty"><svg class="ei" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg><div>ไม่พบนักเรียน</div></div>`;
   return`<div class="tw"><table>
     <thead><tr><th>ลำดับ</th><th>รหัส</th><th class="tl">ชื่อ-สกุล</th><th>ชั้น/ห้อง</th><th>เพศ</th><th>จัดการ</th></tr></thead>
     <tbody>${list.map((s,i)=>`<tr>
@@ -2836,7 +2836,7 @@ function parseExcelRows(rows){
   $('imp-preview').innerHTML=_excelData.length===0
     ?`<div class="alert al-er">ไม่พบข้อมูลที่ถูกต้อง — ตรวจสอบ format คอลัมน์ (ต้องมีคอลัมน์ ชั้น และ ห้อง)</div>`
     :`<div class="alert al-ok" style="margin-bottom:8px">
-        ✅ พบข้อมูล <strong>${_excelData.length} คน</strong>
+        ${_ico.checkCircle} พบข้อมูล <strong>${_excelData.length} คน</strong>
         ${skipped>0?`<span style="color:var(--warn-txt)"> (ข้าม ${skipped} แถวที่ไม่ครบข้อมูล)</span>`:''}
       </div>
       <div class="tw"><table>
@@ -2908,7 +2908,7 @@ const ATT_I={present:'✓',absent:'✕',leave:'○'};
 const ATT_K={present:'ac ap',absent:'ac ab',leave:'ac av'};
 
 async function pgAttendance(){
-  if(!S.subjects.length){$('pg').innerHTML=`<div class="card"><div class="empty"><div class="ei">📅</div><div>ยังไม่มีรายวิชา</div></div></div>`;return;}
+  if(!S.subjects.length){$('pg').innerHTML=`<div class="card"><div class="empty"><svg class="ei" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><div>ยังไม่มีรายวิชา</div></div></div>`;return;}
   if(!S.selSub) S.selSub=S.subjects[0].id;
   attDays=[]; attMonthIdx=null;
   await loadAttData();
@@ -3086,7 +3086,7 @@ function _refreshGridOnly(){
 }
 function _renderGridAndSave(){
   if(!attDays.length)
-    return`<div class="empty" style="padding:30px"><span class="ei">📅</span><div>ยังไม่มีวันสอนในเดือนนี้<br>เพิ่มวันที่สอนด้านบนก่อน</div></div>`;
+    return`<div class="empty" style="padding:30px"><svg class="ei" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><div>ยังไม่มีวันสอนในเดือนนี้<br>เพิ่มวันที่สอนด้านบนก่อน</div></div>`;
   return renderMonthGrid()+(attStus.length>0?`
     <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
       <div style="font-size:12px;color:var(--muted)">รวม ${attDays.reduce((a,d)=>a+d.periods,0)} คาบในเดือนนี้</div>
@@ -3116,7 +3116,7 @@ function getCell(sid,day){
   return r?r.status:'present';
 }
 function renderMonthGrid(){
-  if(!attStus.length) return `<div class="empty" style="padding:22px">⚠️ ไม่พบนักเรียนในชั้นนี้</div>`;
+  if(!attStus.length) return `<div class="empty" style="padding:22px">${_ico.warning} ไม่พบนักเรียนในชั้นนี้</div>`;
   const by=getBuddhistYear(); // ← แก้ bug scope
   return `<div class="tw"><table>
     <thead>
@@ -3465,8 +3465,8 @@ function printAttendance(){
     </style></head><body>
     <div id="pbody">${body}</div>
     <div class="action-bar">
-      <button class="btn-print" onclick="window.print()">🖨️ พิมพ์</button>
-      <button class="btn-export" id="ebtn" onclick="doExportPdf('portrait')">📄 Export PDF</button>
+      <button class="btn-print" onclick="window.print()"><svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> พิมพ์</button>
+      <button class="btn-export" id="ebtn" onclick="doExportPdf('portrait')"><svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Export PDF</button>
     </div>
     </body></html>`);
   w.document.close();
@@ -3488,8 +3488,8 @@ function printAttendance(){
     '    jsPDF:{unit:"mm",format:"a4",orientation:orient},',
     '    pagebreak:{mode:["css"],before:".att-page[style*=page-break]"}',
     '  }).from(el).save()',
-    '  .then(()=>{if(btn){btn.textContent="✅ สำเร็จ";setTimeout(()=>{btn.textContent="📄 Export PDF";btn.disabled=false;},2000);}})',
-    '  .catch(e=>{if(btn){btn.textContent="📄 Export PDF";btn.disabled=false;}alert("ผิดพลาด: "+e.message);});',
+    '  .then(()=>{if(btn){btn.textContent="✓ สำเร็จ";setTimeout(()=>{btn.textContent="Export PDF";btn.disabled=false;},2000);}})',
+    '  .catch(e=>{if(btn){btn.textContent="Export PDF";btn.disabled=false;}alert("ผิดพลาด: "+e.message);});',
     '}'
   ].join('\n');
   w.document.body.appendChild(s2);
@@ -3628,7 +3628,7 @@ function renderUnitTab(period,maxTotal){
           <th>รวม</th>
         </tr></thead>
         <tbody>${scStus.length===0
-          ?`<tr><td colspan="${units.length+3}" class="tc" style="padding:20px;color:var(--muted)">⚠️ ไม่พบนักเรียน</td></tr>`
+          ?`<tr><td colspan="${units.length+3}" class="tc" style="padding:20px;color:var(--muted)">${_ico.warning} ไม่พบนักเรียน</td></tr>`
           :scStus.map((s,i)=>{
             let tot=0;
             const cells=units.map(u=>{
@@ -3649,7 +3649,7 @@ function renderUnitTab(period,maxTotal){
     </div>
   </div>`
   :`<div class="card"><div class="empty" style="padding:28px">
-    <span class="ei" style="font-size:32px">📝</span>
+    <svg class="ei" viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
     <div style="margin-top:8px;color:var(--muted)">ยังไม่มีหน่วยการเรียน<br>กรอกข้อมูลด้านบนแล้วกด "+ เพิ่มหน่วย"</div>
   </div></div>`}`;
 }
@@ -4187,8 +4187,8 @@ function printScores(){
     </style></head><body>
     <div id="pbody">${body}</div>
     <div class="action-bar">
-      <button class="btn-print" onclick="window.print()">🖨️ พิมพ์</button>
-      <button class="btn-export" id="ebtn" onclick="doExportPdf('portrait')">📄 Export PDF</button>
+      <button class="btn-print" onclick="window.print()"><svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> พิมพ์</button>
+      <button class="btn-export" id="ebtn" onclick="doExportPdf('portrait')"><svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Export PDF</button>
     </div>
     </body></html>`);
   w.document.close();
@@ -4209,8 +4209,8 @@ function printScores(){
     '    jsPDF:{unit:"mm",format:"a4",orientation:orient},',
     '    pagebreak:{mode:["css"]}',
     '  }).from(el).save()',
-    '  .then(()=>{if(btn){btn.textContent="✅ สำเร็จ";setTimeout(()=>{btn.textContent="📄 Export PDF";btn.disabled=false;},2000);}})',
-    '  .catch(e=>{if(btn){btn.textContent="📄 Export PDF";btn.disabled=false;}alert("ผิดพลาด: "+e.message);});',
+    '  .then(()=>{if(btn){btn.textContent="✓ สำเร็จ";setTimeout(()=>{btn.textContent="Export PDF";btn.disabled=false;},2000);}})',
+    '  .catch(e=>{if(btn){btn.textContent="Export PDF";btn.disabled=false;}alert("ผิดพลาด: "+e.message);});',
     '}'
   ].join('\n');
   w.document.body.appendChild(s2);
@@ -4230,7 +4230,7 @@ const CHAR8=[
 ];
 
 async function pgEval(){
-  if(!S.subjects.length){$('pg').innerHTML=`<div class="card"><div class="empty"><div class="ei">⭐</div><div>ยังไม่มีรายวิชา</div></div></div>`;return;}
+  if(!S.subjects.length){$('pg').innerHTML=`<div class="card"><div class="empty"><svg class="ei" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg><div>ยังไม่มีรายวิชา</div></div></div>`;return;}
   if(!S.selSub) S.selSub=S.subjects[0].id;
   loading(true);
   [evStus,evRead,evChar]=await Promise.all([
@@ -4484,7 +4484,7 @@ function printEval(){
 // 7. REPORT
 // ════════════════════════════════════════════════════════════════
 async function pgReport(){
-  if(!S.subjects.length){$('pg').innerHTML=`<div class="card"><div class="empty"><div class="ei">📊</div><div>ยังไม่มีรายวิชา</div></div></div>`;return;}
+  if(!S.subjects.length){$('pg').innerHTML=`<div class="card"><div class="empty"><svg class="ei" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><div>ยังไม่มีรายวิชา</div></div></div>`;return;}
   if(!S.selSub) S.selSub=S.subjects[0].id;
   loading(true);
   const sub=getSubject(S.selSub);
@@ -4693,7 +4693,7 @@ function printReport(){
       </table>
     </div>
     <div class="action-bar">
-      <button class="btn-print" onclick="window.print()">🖨️ พิมพ์</button>
+      <button class="btn-print" onclick="window.print()"><svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> พิมพ์</button>
     </div>
     </body></html>`);
   w.document.close();
@@ -4947,7 +4947,7 @@ async function exportCoverPdf(){
       jsPDF: { unit:'mm', format:'a4', orientation:'portrait' },
       pagebreak: { mode:'avoid-all' }
     }).from(clone).save();
-    toast('Export PDF สำเร็จ ✅');
+    toast('Export PDF สำเร็จ ✓');
   }catch(e){
     toast('Export PDF ผิดพลาด: '+e.message,'er');
   }finally{
@@ -5030,7 +5030,7 @@ async function _doClearAll(){
         if(errors.length){
           toast('ล้างข้อมูลเสร็จ (มีข้อผิดพลาด '+errors.length+' จุด)','in');
         } else {
-          toast('ล้างข้อมูลทั้งหมดเรียบร้อยแล้ว ✅');
+          toast('ล้างข้อมูลทั้งหมดเรียบร้อยแล้ว ✓');
         }
         setTimeout(()=>nav('dashboard'),800);
       }catch(e){
@@ -5058,7 +5058,7 @@ async function openAdminPanel(){
         <div style="width:36px;height:36px;border-radius:50%;background:${_avColor(p.id).bg};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0">${_avInitials(p.full_name||'?')}</div>
         <div style="flex:1;min-width:0">
           <div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.full_name||'(ไม่มีชื่อ)')}</div>
-          <div style="font-size:12px;color:var(--muted)">${subCount[p.id]||0} วิชา${p.is_admin?' · 👑 Admin':''}</div>
+          <div style="font-size:12px;color:var(--muted)">${subCount[p.id]||0} วิชา${p.is_admin?` · ${_ico.crown} Admin`:''}</div>
         </div>
         ${p.id!==S.user.id
           ? `<button class="btn bs" style="color:var(--err);font-size:12px;padding:6px 12px;flex-shrink:0"
@@ -5116,7 +5116,7 @@ async function deleteTeacherData(userId, name){
         }
         await q(sb.from('subjects').delete().eq('user_id',userId));
         document.getElementById('admin-panel-wrap')?.remove();
-        toast('ลบข้อมูลของ '+name+' เรียบร้อยแล้ว ✅');
+        toast('ลบข้อมูลของ '+name+' เรียบร้อยแล้ว ✓');
         setTimeout(openAdminPanel, 600);
       }catch(e){
         toast('เกิดข้อผิดพลาด: '+e.message,'er');
@@ -5239,7 +5239,7 @@ function pgSettings(){
             </label>
             <div style="position:relative">
               <input class="fi" id="c-gemini-key" type="password" value="${esc(cfg.gemini_api_key||'')}" placeholder="AIzaSy..." style="padding-right:42px">
-              <button type="button" onclick="const i=$('c-gemini-key');i.type=i.type==='password'?'text':'password'" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px">👁</button>
+              <button type="button" onclick="const i=$('c-gemini-key');i.type=i.type==='password'?'text':'password'" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted)">${_ico.eye}</button>
             </div>
             <div style="font-size:11.5px;color:var(--muted);margin-top:4px">รับฟรีได้ที่ <strong>aistudio.google.com</strong> → Get API Key</div>
           </div>
@@ -5393,7 +5393,7 @@ function pgSettings(){
         <div style="font-size:13px;color:#6e6e73;line-height:1.9;margin-bottom:14px;">
           <strong style="color:#1d1d1f">ล้างข้อมูลทั้งหมด</strong><br>
           ลบ <strong>รายวิชา · นักเรียน · เวลาเรียน · คะแนน · การประเมิน</strong> ทั้งหมดออกจากระบบ<br>
-          <span style="color:#dc2626;font-weight:700">⚠ ไม่สามารถกู้คืนได้</span> — แนะนำ <strong>Backup ก่อน</strong> ทุกครั้ง
+          <span style="color:#dc2626;font-weight:700">${_ico.warning} ไม่สามารถกู้คืนได้</span> — แนะนำ <strong>Backup ก่อน</strong> ทุกครั้ง
         </div>
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding-top:12px;border-top:1px solid #fecaca;">
           <button class="btn" onclick="openClearAllDialog()"
@@ -5614,7 +5614,7 @@ async function pgIQA(){
 
       ${!S.subjects.filter(s=>s.subject_group).length?`
       <div class="card" style="margin-top:12px"><div class="empty">
-        <div class="ei" style="font-size:28px">📋</div>
+        <svg class="ei" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
         <div style="font-weight:600;margin-bottom:8px">ยังไม่ได้ระบุกลุ่มสาระ</div>
         <div style="font-size:13px;color:#8e8e93;margin-bottom:14px">กรุณาไปที่ <strong>รายวิชา</strong> และแก้ไขแต่ละวิชาเพื่อเลือกกลุ่มสาระการเรียนรู้</div>
         <button class="btn bp" onclick="nav('subjects')">ไปหน้ารายวิชา</button>
@@ -6088,7 +6088,7 @@ function _parseRestoreFile(file){
           Object.entries(counts).map(([t,n])=>
             '<span style="background:#e5e5ea;border-radius:5px;padding:2px 7px;font-size:11.5px;"><strong>'+t+'</strong> '+n+' rows</span>'
           ).join('')+'</div>'+
-          '<div style="margin-top:8px;color:#dc2626;font-size:12px;font-weight:600;">⚠️ ข้อมูลปัจจุบันทั้งหมดจะถูกลบและแทนที่</div>';
+          '<div style="margin-top:8px;color:#dc2626;font-size:12px;font-weight:600;">'+_ico.warning+' ข้อมูลปัจจุบันทั้งหมดจะถูกลบและแทนที่</div>';
       }
       // เปิดปุ่ม confirm
       const btn = document.getElementById('restore-confirm-btn');
@@ -6491,7 +6491,7 @@ async function pgSchoolReport(){
             '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">'+
               '<div style="font-size:15px;font-weight:700;color:var(--txt)">'+esc(sub.subject_name)+'</div>'+
               '<span class="badge bg-b">'+grm(sub.grade_level,sub.room)+'</span>'+
-              (hasWarn?'<span class="badge bg-r" style="font-size:10px">⚠ ผ่านต่ำกว่า 80%</span>':'')+
+              (hasWarn?'<span class="badge bg-r" style="font-size:10px">'+_ico.warning+' ผ่านต่ำกว่า 80%</span>':'')+
             '</div>'+
             '<div style="font-size:11.5px;color:var(--muted);margin-bottom:8px">'+
               esc(sub.subject_code)+' &nbsp;·&nbsp; '+esc(st.teacherName)+' &nbsp;·&nbsp; '+sub.hours_per_week+' ชม./สัปดาห์'+
@@ -6895,7 +6895,7 @@ async function sendAIMsg(retryMsg){
     _aiHistory.pop();
     wrapper.remove();
     const isRate=e.message&&(e.message.includes('server')||e.message.includes('quota')||e.message.includes('demand'));
-    _aiAddErrMsg(isRate?'⏳ Gemini server ยุ่งอยู่ กรุณารอสักครู่':'⚠️ '+(e.message||'ไม่ทราบสาเหตุ'),isRate);
+    _aiAddErrMsg(isRate?'⏳ Gemini server ยุ่งอยู่ กรุณารอสักครู่':_ico.warning+' '+(e.message||'ไม่ทราบสาเหตุ'),isRate);
   }finally{
     _aiLoading=false;
     if(sendBtn){sendBtn.disabled=false;sendBtn.style.opacity='1';}
@@ -6996,7 +6996,7 @@ function _aiAddErrMsg(text, showRetry){
     background:#fff3cd;color:#856404;font-size:13px;line-height:1.6;border:1px solid #ffc107">
     ${text.replace(/\n/g,'<br>')}${retryBtn}
   </div>
-  <div style="font-size:10px;color:#c7c7cc;padding:0 4px">✨ AI · ${new Date().toLocaleTimeString('th',{hour:'2-digit',minute:'2-digit'})}</div>`;
+  <div style="font-size:10px;color:#c7c7cc;padding:0 4px">${_ico.sparkle} AI · ${new Date().toLocaleTimeString('th',{hour:'2-digit',minute:'2-digit'})}</div>`;
   if(showRetry){
     const btn=d.querySelector('#ai-retry-btn');
     if(btn) btn.addEventListener('click',()=>{
