@@ -1249,8 +1249,8 @@ function printHTML(title, bodyHTML, orient='portrait'){
       ${bodyHTML}
     </div>
     <div class="action-bar">
-      <button class="btn-print" onclick="window.print()">🖨️ พิมพ์</button>
-      <button class="btn-export" id="ebtn" onclick="doExportPdf('${orient}')">📄 Export PDF</button>
+      <button class="btn-print" onclick="window.print()"><svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> พิมพ์</button>
+      <button class="btn-export" id="ebtn" onclick="doExportPdf('${orient}')"><svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Export PDF</button>
     </div>
     </body></html>`);
   w.document.close();
@@ -1272,8 +1272,8 @@ function printHTML(title, bodyHTML, orient='portrait'){
     '    jsPDF:{unit:"mm",format:"a4",orientation:orient},',
     '    pagebreak:{mode:["avoid-all","css"]}',
     '  }).from(el).save()',
-    '  .then(()=>{if(btn){btn.textContent="✅ สำเร็จ";setTimeout(()=>{btn.textContent="📄 Export PDF";btn.disabled=false;},2000);}})',
-    '  .catch(e=>{if(btn){btn.textContent="📄 Export PDF";btn.disabled=false;}alert("ผิดพลาด: "+e.message);});',
+    '  .then(()=>{if(btn){btn.textContent="✓ สำเร็จ";setTimeout(()=>{btn.textContent="Export PDF";btn.disabled=false;},2000);}})',
+    '  .catch(e=>{if(btn){btn.textContent="Export PDF";btn.disabled=false;}alert("ผิดพลาด: "+e.message);});',
     '}'
   ].join('\n');
   w.document.body.appendChild(s2);
@@ -1634,7 +1634,7 @@ function openProfilePopup(ev){
       <div style="min-width:0">
         <div class="prof-name">${esc(n)}</div>
         <div class="prof-email">${esc(em)}</div>
-        <div class="prof-role">${S.profile?.is_admin ? '👑 แอดมิน' : '👤 ครูผู้สอน'}</div>
+        <div class="prof-role">${S.profile?.is_admin ? `${_ico.crown} แอดมิน` : `${_ico.user} ครูผู้สอน`}</div>
       </div>
     </div>
     <div class="prof-actions">
@@ -1946,7 +1946,7 @@ function nav(page,subId){
       .catch(e=>{
         toast('โหลดหน้าไม่สำเร็จ: '+(e.message||e),'er');
         $('pg').innerHTML=`<div class="card"><div class="empty">
-          <span class="ei" style="font-size:36px;display:block;margin-bottom:8px">⚠️</span>
+          <svg class="ei" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#FF9500" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin-bottom:8px"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
           <div style="margin-bottom:12px">โหลดหน้านี้ไม่สำเร็จ</div>
           <button class="btn bp" onclick="nav('${page}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>ลองใหม่</button>
         </div></div>`;
@@ -2123,7 +2123,7 @@ async function pgDash(){
     html+='</div></div>';
     return html;
   })()}
-  ${!S.subjects.length?`<div class="card"><div class="empty"><div class="ei">📚</div>
+  ${!S.subjects.length?`<div class="card"><div class="empty"><svg class="ei" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
     <div style="font-weight:600;margin-bottom:10px">ยังไม่มีรายวิชา</div>
     <button class="btn bp" onclick="nav('subjects')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>เพิ่มรายวิชาแรก</button></div></div>`:`
   <div class="card"><div class="ch"><div class="ct">รายวิชาทั้งหมด</div></div><div class="cb">
@@ -2139,7 +2139,7 @@ async function pgDash(){
         if(+a.room !== +b.room) return +a.room - +b.room;
         return (a.subject_name||'').localeCompare(b.subject_name||'','th');
       });
-      if(!_visibles.length && S.subjects.length) return '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13.5px;"><div style="font-size:28px;margin-bottom:8px;">📭</div>ไม่มีรายวิชาในภาคเรียนนี้<br><button onclick=\'_toggleDashFilter()\' style=\"margin-top:10px;background:none;border:none;color:var(--ac);font-weight:700;cursor:pointer;font-family:var(--font);font-size:13px;\">ดูทุกภาค →</button></div>';
+      if(!_visibles.length && S.subjects.length) return '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13.5px;"><svg style="margin-bottom:8px" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg><br>ไม่มีรายวิชาในภาคเรียนนี้<br><button onclick=\'_toggleDashFilter()\' style=\"margin-top:10px;background:none;border:none;color:var(--ac);font-weight:700;cursor:pointer;font-family:var(--font);font-size:13px;\">ดูทุกภาค →</button></div>';
       return _visibles.map((s,_si)=>{
       const st=s.stats||{total:0,pass:0,recorded:0,avg:0,passPercent:0};
       // สีตาม grade_level: ม.1=น้ำเงิน ม.2=เขียว ม.3=ส้ม ม.4=ม่วง ม.5=ฟ้า ม.6=แดง
@@ -2171,7 +2171,7 @@ async function pgDash(){
             ?`<span class="subc-tag" style="background:rgba(${_rgb},.1);color:${_ac}">ผ่าน ${st.pass}/${st.total}</span>
               <span class="subc-tag" style="background:rgba(${_rgb},.1);color:${_ac}">เฉลี่ย ${st.avg}</span>`
             :`<span class="subc-tag" style="background:rgba(${_rgb},.1);color:${_ac}">ยังไม่มีคะแนน</span>`}
-          ${st.msCount>0?`<span class="subc-tag" style="background:rgba(255,59,48,.1);color:#FF3B30">⚠️ มส. ${st.msCount} คน</span>`:''}
+          ${st.msCount>0?`<span class="subc-tag" style="background:rgba(255,59,48,.1);color:#FF3B30">${_ico.warning} มส. ${st.msCount} คน</span>`:''}
           <span style="margin-left:auto;font-size:13px;font-weight:700;color:${_ac}">${st.recorded>0?_pct+'%':'—'}</span>
         </div>
         <!-- Progress bar -->
@@ -2208,7 +2208,7 @@ async function pgSubjects(){
   <div class="ph"><div class="ptitle">จัดการรายวิชา</div>
     <button class="btn bp" onclick="openSubModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>เพิ่มรายวิชา</button></div>
   <div class="card"><div class="cb">
-  ${!S.subjects.length?`<div class="empty"><div class="ei">📖</div><div>ยังไม่มีรายวิชา</div></div>`:`
+  ${!S.subjects.length?`<div class="empty"><svg class="ei" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg><div>ยังไม่มีรายวิชา</div></div>`:`
   <div class="tw"><table>
     <thead><tr><th>ลำดับ</th><th class="tl">รหัส</th><th class="tl">ชื่อวิชา</th>
       <th>ชั้น/ห้อง</th><th>ชม./สัปดาห์</th><th>ชม./ภาค</th><th class="tl">ครูผู้สอน</th>
@@ -2337,7 +2337,7 @@ function openSubModal(id){
           </select>
         </div>
       <div class="score-box" style="margin-top:14px">
-        <div class="score-box-title">📊 โครงสร้างคะแนน (รวม = <span id="f-tot">${(s?.score_before_mid||25)+(s?.score_mid||20)+(s?.score_after_mid||25)+(s?.score_final||30)}</span> / 100)</div>
+        <div class="score-box-title">${_ico.barChart} โครงสร้างคะแนน (รวม = <span id="f-tot">${(s?.score_before_mid||25)+(s?.score_mid||20)+(s?.score_after_mid||25)+(s?.score_final||30)}</span> / 100)</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
           <div><label class="fl">ก่อนกลางภาค</label><input type="number" class="fi" id="f-sbm" value="${s?.score_before_mid||25}" min="0" max="100" oninput="updTot()"></div>
           <div><label class="fl">กลางภาค</label><input type="number" class="fi" id="f-sm" value="${s?.score_mid||20}" min="0" max="100" oninput="updTot()"></div>
@@ -2483,7 +2483,7 @@ function _updatePromotePreview(){
   // ตรวจว่าชั้นใหม่เท่ากับเดิมไหม
   const sameRoom = fromG===String(toGrade) && fromR===String(toRoom);
   const warnHtml = sameRoom
-    ? '<div style="color:#dc2626;font-size:11.5px;margin-top:4px">⚠️ ชั้น/ห้องใหม่เหมือนเดิม</div>'
+    ? `<div style="color:#dc2626;font-size:11.5px;margin-top:4px">${_ico.warning} ชั้น/ห้องใหม่เหมือนเดิม</div>`
     : '';
 
   prev.innerHTML =
@@ -2592,7 +2592,7 @@ async function pgStudents(){
   </div>
   <div class="card" style="margin-bottom:14px"><div class="cb" style="padding:10px 16px">
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-      <input class="fi" id="stu-q" placeholder="🔍 ค้นหาชื่อ/รหัส..." style="max-width:220px" oninput="filterStu()">
+      <input class="fi" id="stu-q" placeholder="ค้นหาชื่อ/รหัส..." style="max-width:220px" oninput="filterStu()">
       <select class="fs" id="stu-gr" style="max-width:140px" onchange="filterStu()">
         <option value="">ทุกชั้น/ห้อง</option>
         ${grs.map(g=>`<option>${g}</option>`).join('')}
@@ -2602,7 +2602,7 @@ async function pgStudents(){
   <div class="card"><div class="cb" id="stu-tb">${renderStuTbl(allStu)}</div></div>`;
 }
 function renderStuTbl(list){
-  if(!list.length)return`<div class="empty"><div class="ei">👥</div><div>ไม่พบนักเรียน</div></div>`;
+  if(!list.length)return`<div class="empty"><svg class="ei" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg><div>ไม่พบนักเรียน</div></div>`;
   return`<div class="tw"><table>
     <thead><tr><th>ลำดับ</th><th>รหัส</th><th class="tl">ชื่อ-สกุล</th><th>ชั้น/ห้อง</th><th>เพศ</th><th>จัดการ</th></tr></thead>
     <tbody>${list.map((s,i)=>`<tr>
@@ -2836,7 +2836,7 @@ function parseExcelRows(rows){
   $('imp-preview').innerHTML=_excelData.length===0
     ?`<div class="alert al-er">ไม่พบข้อมูลที่ถูกต้อง — ตรวจสอบ format คอลัมน์ (ต้องมีคอลัมน์ ชั้น และ ห้อง)</div>`
     :`<div class="alert al-ok" style="margin-bottom:8px">
-        ✅ พบข้อมูล <strong>${_excelData.length} คน</strong>
+        ${_ico.checkCircle} พบข้อมูล <strong>${_excelData.length} คน</strong>
         ${skipped>0?`<span style="color:var(--warn-txt)"> (ข้าม ${skipped} แถวที่ไม่ครบข้อมูล)</span>`:''}
       </div>
       <div class="tw"><table>
@@ -2908,7 +2908,7 @@ const ATT_I={present:'✓',absent:'✕',leave:'○'};
 const ATT_K={present:'ac ap',absent:'ac ab',leave:'ac av'};
 
 async function pgAttendance(){
-  if(!S.subjects.length){$('pg').innerHTML=`<div class="card"><div class="empty"><div class="ei">📅</div><div>ยังไม่มีรายวิชา</div></div></div>`;return;}
+  if(!S.subjects.length){$('pg').innerHTML=`<div class="card"><div class="empty"><svg class="ei" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><div>ยังไม่มีรายวิชา</div></div></div>`;return;}
   if(!S.selSub) S.selSub=S.subjects[0].id;
   attDays=[]; attMonthIdx=null;
   await loadAttData();
@@ -3086,7 +3086,7 @@ function _refreshGridOnly(){
 }
 function _renderGridAndSave(){
   if(!attDays.length)
-    return`<div class="empty" style="padding:30px"><span class="ei">📅</span><div>ยังไม่มีวันสอนในเดือนนี้<br>เพิ่มวันที่สอนด้านบนก่อน</div></div>`;
+    return`<div class="empty" style="padding:30px"><svg class="ei" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><div>ยังไม่มีวันสอนในเดือนนี้<br>เพิ่มวันที่สอนด้านบนก่อน</div></div>`;
   return renderMonthGrid()+(attStus.length>0?`
     <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
       <div style="font-size:12px;color:var(--muted)">รวม ${attDays.reduce((a,d)=>a+d.periods,0)} คาบในเดือนนี้</div>
@@ -3116,7 +3116,7 @@ function getCell(sid,day){
   return r?r.status:'present';
 }
 function renderMonthGrid(){
-  if(!attStus.length) return `<div class="empty" style="padding:22px">⚠️ ไม่พบนักเรียนในชั้นนี้</div>`;
+  if(!attStus.length) return `<div class="empty" style="padding:22px">${_ico.warning} ไม่พบนักเรียนในชั้นนี้</div>`;
   const by=getBuddhistYear(); // ← แก้ bug scope
   return `<div class="tw"><table>
     <thead>
@@ -3465,8 +3465,8 @@ function printAttendance(){
     </style></head><body>
     <div id="pbody">${body}</div>
     <div class="action-bar">
-      <button class="btn-print" onclick="window.print()">🖨️ พิมพ์</button>
-      <button class="btn-export" id="ebtn" onclick="doExportPdf('portrait')">📄 Export PDF</button>
+      <button class="btn-print" onclick="window.print()"><svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> พิมพ์</button>
+      <button class="btn-export" id="ebtn" onclick="doExportPdf('portrait')"><svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Export PDF</button>
     </div>
     </body></html>`);
   w.document.close();
@@ -3488,8 +3488,8 @@ function printAttendance(){
     '    jsPDF:{unit:"mm",format:"a4",orientation:orient},',
     '    pagebreak:{mode:["css"],before:".att-page[style*=page-break]"}',
     '  }).from(el).save()',
-    '  .then(()=>{if(btn){btn.textContent="✅ สำเร็จ";setTimeout(()=>{btn.textContent="📄 Export PDF";btn.disabled=false;},2000);}})',
-    '  .catch(e=>{if(btn){btn.textContent="📄 Export PDF";btn.disabled=false;}alert("ผิดพลาด: "+e.message);});',
+    '  .then(()=>{if(btn){btn.textContent="✓ สำเร็จ";setTimeout(()=>{btn.textContent="Export PDF";btn.disabled=false;},2000);}})',
+    '  .catch(e=>{if(btn){btn.textContent="Export PDF";btn.disabled=false;}alert("ผิดพลาด: "+e.message);});',
     '}'
   ].join('\n');
   w.document.body.appendChild(s2);
@@ -3628,7 +3628,7 @@ function renderUnitTab(period,maxTotal){
           <th>รวม</th>
         </tr></thead>
         <tbody>${scStus.length===0
-          ?`<tr><td colspan="${units.length+3}" class="tc" style="padding:20px;color:var(--muted)">⚠️ ไม่พบนักเรียน</td></tr>`
+          ?`<tr><td colspan="${units.length+3}" class="tc" style="padding:20px;color:var(--muted)">${_ico.warning} ไม่พบนักเรียน</td></tr>`
           :scStus.map((s,i)=>{
             let tot=0;
             const cells=units.map(u=>{
@@ -3649,7 +3649,7 @@ function renderUnitTab(period,maxTotal){
     </div>
   </div>`
   :`<div class="card"><div class="empty" style="padding:28px">
-    <span class="ei" style="font-size:32px">📝</span>
+    <svg class="ei" viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
     <div style="margin-top:8px;color:var(--muted)">ยังไม่มีหน่วยการเรียน<br>กรอกข้อมูลด้านบนแล้วกด "+ เพิ่มหน่วย"</div>
   </div></div>`}`;
 }
@@ -4187,8 +4187,8 @@ function printScores(){
     </style></head><body>
     <div id="pbody">${body}</div>
     <div class="action-bar">
-      <button class="btn-print" onclick="window.print()">🖨️ พิมพ์</button>
-      <button class="btn-export" id="ebtn" onclick="doExportPdf('portrait')">📄 Export PDF</button>
+      <button class="btn-print" onclick="window.print()"><svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> พิมพ์</button>
+      <button class="btn-export" id="ebtn" onclick="doExportPdf('portrait')"><svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Export PDF</button>
     </div>
     </body></html>`);
   w.document.close();
@@ -4209,8 +4209,8 @@ function printScores(){
     '    jsPDF:{unit:"mm",format:"a4",orientation:orient},',
     '    pagebreak:{mode:["css"]}',
     '  }).from(el).save()',
-    '  .then(()=>{if(btn){btn.textContent="✅ สำเร็จ";setTimeout(()=>{btn.textContent="📄 Export PDF";btn.disabled=false;},2000);}})',
-    '  .catch(e=>{if(btn){btn.textContent="📄 Export PDF";btn.disabled=false;}alert("ผิดพลาด: "+e.message);});',
+    '  .then(()=>{if(btn){btn.textContent="✓ สำเร็จ";setTimeout(()=>{btn.textContent="Export PDF";btn.disabled=false;},2000);}})',
+    '  .catch(e=>{if(btn){btn.textContent="Export PDF";btn.disabled=false;}alert("ผิดพลาด: "+e.message);});',
     '}'
   ].join('\n');
   w.document.body.appendChild(s2);
@@ -4230,7 +4230,7 @@ const CHAR8=[
 ];
 
 async function pgEval(){
-  if(!S.subjects.length){$('pg').innerHTML=`<div class="card"><div class="empty"><div class="ei">⭐</div><div>ยังไม่มีรายวิชา</div></div></div>`;return;}
+  if(!S.subjects.length){$('pg').innerHTML=`<div class="card"><div class="empty"><svg class="ei" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg><div>ยังไม่มีรายวิชา</div></div></div>`;return;}
   if(!S.selSub) S.selSub=S.subjects[0].id;
   loading(true);
   [evStus,evRead,evChar]=await Promise.all([
@@ -4484,7 +4484,7 @@ function printEval(){
 // 7. REPORT
 // ════════════════════════════════════════════════════════════════
 async function pgReport(){
-  if(!S.subjects.length){$('pg').innerHTML=`<div class="card"><div class="empty"><div class="ei">📊</div><div>ยังไม่มีรายวิชา</div></div></div>`;return;}
+  if(!S.subjects.length){$('pg').innerHTML=`<div class="card"><div class="empty"><svg class="ei" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><div>ยังไม่มีรายวิชา</div></div></div>`;return;}
   if(!S.selSub) S.selSub=S.subjects[0].id;
   loading(true);
   const sub=getSubject(S.selSub);
@@ -4693,7 +4693,7 @@ function printReport(){
       </table>
     </div>
     <div class="action-bar">
-      <button class="btn-print" onclick="window.print()">🖨️ พิมพ์</button>
+      <button class="btn-print" onclick="window.print()"><svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> พิมพ์</button>
     </div>
     </body></html>`);
   w.document.close();
@@ -4947,7 +4947,7 @@ async function exportCoverPdf(){
       jsPDF: { unit:'mm', format:'a4', orientation:'portrait' },
       pagebreak: { mode:'avoid-all' }
     }).from(clone).save();
-    toast('Export PDF สำเร็จ ✅');
+    toast('Export PDF สำเร็จ ✓');
   }catch(e){
     toast('Export PDF ผิดพลาด: '+e.message,'er');
   }finally{
@@ -5030,7 +5030,7 @@ async function _doClearAll(){
         if(errors.length){
           toast('ล้างข้อมูลเสร็จ (มีข้อผิดพลาด '+errors.length+' จุด)','in');
         } else {
-          toast('ล้างข้อมูลทั้งหมดเรียบร้อยแล้ว ✅');
+          toast('ล้างข้อมูลทั้งหมดเรียบร้อยแล้ว ✓');
         }
         setTimeout(()=>nav('dashboard'),800);
       }catch(e){
@@ -5058,7 +5058,7 @@ async function openAdminPanel(){
         <div style="width:36px;height:36px;border-radius:50%;background:${_avColor(p.id).bg};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0">${_avInitials(p.full_name||'?')}</div>
         <div style="flex:1;min-width:0">
           <div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.full_name||'(ไม่มีชื่อ)')}</div>
-          <div style="font-size:12px;color:var(--muted)">${subCount[p.id]||0} วิชา${p.is_admin?' · 👑 Admin':''}</div>
+          <div style="font-size:12px;color:var(--muted)">${subCount[p.id]||0} วิชา${p.is_admin?` · ${_ico.crown} Admin`:''}</div>
         </div>
         ${p.id!==S.user.id
           ? `<button class="btn bs" style="color:var(--err);font-size:12px;padding:6px 12px;flex-shrink:0"
@@ -5116,7 +5116,7 @@ async function deleteTeacherData(userId, name){
         }
         await q(sb.from('subjects').delete().eq('user_id',userId));
         document.getElementById('admin-panel-wrap')?.remove();
-        toast('ลบข้อมูลของ '+name+' เรียบร้อยแล้ว ✅');
+        toast('ลบข้อมูลของ '+name+' เรียบร้อยแล้ว ✓');
         setTimeout(openAdminPanel, 600);
       }catch(e){
         toast('เกิดข้อผิดพลาด: '+e.message,'er');
@@ -5239,7 +5239,7 @@ function pgSettings(){
             </label>
             <div style="position:relative">
               <input class="fi" id="c-gemini-key" type="password" value="${esc(cfg.gemini_api_key||'')}" placeholder="AIzaSy..." style="padding-right:42px">
-              <button type="button" onclick="const i=$('c-gemini-key');i.type=i.type==='password'?'text':'password'" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px">👁</button>
+              <button type="button" onclick="const i=$('c-gemini-key');i.type=i.type==='password'?'text':'password'" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted)">${_ico.eye}</button>
             </div>
             <div style="font-size:11.5px;color:var(--muted);margin-top:4px">รับฟรีได้ที่ <strong>aistudio.google.com</strong> → Get API Key</div>
           </div>
@@ -5393,7 +5393,7 @@ function pgSettings(){
         <div style="font-size:13px;color:#6e6e73;line-height:1.9;margin-bottom:14px;">
           <strong style="color:#1d1d1f">ล้างข้อมูลทั้งหมด</strong><br>
           ลบ <strong>รายวิชา · นักเรียน · เวลาเรียน · คะแนน · การประเมิน</strong> ทั้งหมดออกจากระบบ<br>
-          <span style="color:#dc2626;font-weight:700">⚠ ไม่สามารถกู้คืนได้</span> — แนะนำ <strong>Backup ก่อน</strong> ทุกครั้ง
+          <span style="color:#dc2626;font-weight:700">${_ico.warning} ไม่สามารถกู้คืนได้</span> — แนะนำ <strong>Backup ก่อน</strong> ทุกครั้ง
         </div>
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding-top:12px;border-top:1px solid #fecaca;">
           <button class="btn" onclick="openClearAllDialog()"
@@ -5614,7 +5614,7 @@ async function pgIQA(){
 
       ${!S.subjects.filter(s=>s.subject_group).length?`
       <div class="card" style="margin-top:12px"><div class="empty">
-        <div class="ei" style="font-size:28px">📋</div>
+        <svg class="ei" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
         <div style="font-weight:600;margin-bottom:8px">ยังไม่ได้ระบุกลุ่มสาระ</div>
         <div style="font-size:13px;color:#8e8e93;margin-bottom:14px">กรุณาไปที่ <strong>รายวิชา</strong> และแก้ไขแต่ละวิชาเพื่อเลือกกลุ่มสาระการเรียนรู้</div>
         <button class="btn bp" onclick="nav('subjects')">ไปหน้ารายวิชา</button>
@@ -6088,7 +6088,7 @@ function _parseRestoreFile(file){
           Object.entries(counts).map(([t,n])=>
             '<span style="background:#e5e5ea;border-radius:5px;padding:2px 7px;font-size:11.5px;"><strong>'+t+'</strong> '+n+' rows</span>'
           ).join('')+'</div>'+
-          '<div style="margin-top:8px;color:#dc2626;font-size:12px;font-weight:600;">⚠️ ข้อมูลปัจจุบันทั้งหมดจะถูกลบและแทนที่</div>';
+          '<div style="margin-top:8px;color:#dc2626;font-size:12px;font-weight:600;">'+_ico.warning+' ข้อมูลปัจจุบันทั้งหมดจะถูกลบและแทนที่</div>';
       }
       // เปิดปุ่ม confirm
       const btn = document.getElementById('restore-confirm-btn');
@@ -6491,7 +6491,7 @@ async function pgSchoolReport(){
             '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">'+
               '<div style="font-size:15px;font-weight:700;color:var(--txt)">'+esc(sub.subject_name)+'</div>'+
               '<span class="badge bg-b">'+grm(sub.grade_level,sub.room)+'</span>'+
-              (hasWarn?'<span class="badge bg-r" style="font-size:10px">⚠ ผ่านต่ำกว่า 80%</span>':'')+
+              (hasWarn?'<span class="badge bg-r" style="font-size:10px">'+_ico.warning+' ผ่านต่ำกว่า 80%</span>':'')+
             '</div>'+
             '<div style="font-size:11.5px;color:var(--muted);margin-bottom:8px">'+
               esc(sub.subject_code)+' &nbsp;·&nbsp; '+esc(st.teacherName)+' &nbsp;·&nbsp; '+sub.hours_per_week+' ชม./สัปดาห์'+
@@ -6778,9 +6778,30 @@ function installPWA(){
   _deferredInstall.userChoice.then(()=>{ _deferredInstall = null; });
 }
 
+const _ico={
+  warning:`<svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+  check:`<svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+  checkCircle:`<svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
+  file:`<svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`,
+  printer:`<svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>`,
+  eye:`<svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`,
+  crown:`<svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20M5 20l2-8 5 4 5-4 2 8"/><circle cx="12" cy="8" r="2"/></svg>`,
+  user:`<svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
+  users:`<svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>`,
+  barChart:`<svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`,
+  clipboard:`<svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>`,
+  bookOpen:`<svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>`,
+  book:`<svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>`,
+  fileEdit:`<svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`,
+  calendar:`<svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+  search:`<svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`,
+  sparkle:`<svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>`,
+};
+
 // ════ AI CHAT (GEMINI) ══════════════════════════════════════════════════
 
 let _aiOpen=false, _aiCtx=null, _aiLoading=false, _aiLastMsg='', _aiHistory=[];
+let _aiLastCallMs=0, _aiThrottleTimer=null;
 
 function toggleAIChat(){
   _aiOpen=!_aiOpen;
@@ -6843,6 +6864,27 @@ async function buildAIContext(){
   return ctx;
 }
 
+const _AI_SEND_SVG=`<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>`;
+const _AI_THROTTLE_MS=6000;
+
+function _aiShowSendCountdown(sec){
+  const btn=$('ai-send-btn'); if(!btn) return;
+  clearTimeout(_aiThrottleTimer);
+  btn.disabled=true;
+  btn.style.background='linear-gradient(145deg,#636366,#8e8e93)';
+  btn.style.opacity='1';
+  btn.innerHTML=`<span style="font-size:11px;font-weight:700;letter-spacing:-.5px">${sec}</span>`;
+  if(sec>1){
+    _aiThrottleTimer=setTimeout(()=>_aiShowSendCountdown(sec-1),1000);
+  }else{
+    _aiThrottleTimer=setTimeout(()=>{
+      btn.disabled=false;
+      btn.style.background='linear-gradient(145deg,#001a4d,#0353a4 55%,#0466c8)';
+      btn.innerHTML=_AI_SEND_SVG;
+    },1000);
+  }
+}
+
 async function sendAIMsg(retryMsg){
   const inp=$('ai-input');
   if(_aiLoading) return;
@@ -6850,13 +6892,20 @@ async function sendAIMsg(retryMsg){
   if(!msg) return;
   const apiKey=S.config.gemini_api_key;
   if(!apiKey){ toast('กรุณาใส่ Gemini API Key ในหน้าตั้งค่าก่อน','er'); return; }
+
+  // Throttle: manual sends only — ป้องกันส่งถี่เกินไป
+  if(!retryMsg&&_aiLastCallMs>0){
+    const wait=_AI_THROTTLE_MS-(Date.now()-_aiLastCallMs);
+    if(wait>0){ _aiShowSendCountdown(Math.ceil(wait/1000)); return; }
+  }
+
   if(inp){inp.value='';inp.style.height='auto';}
   if(!retryMsg) _aiAddMsg('user',msg);
   _aiLastMsg=msg;
   _aiHistory.push({role:'user',parts:[{text:msg}]});
   _aiLoading=true;
+  _aiLastCallMs=Date.now();
   const sendBtn=$('ai-send-btn'); if(sendBtn){sendBtn.disabled=true;sendBtn.style.opacity='.4';}
-  // สร้าง streaming bubble ทันที (ไม่ต้องรอ typing indicator)
   const {wrapper,bubble}=_aiCreateStreamBubble();
   try{
     if(!_aiCtx) _aiCtx=await buildAIContext();
@@ -6872,10 +6921,22 @@ async function sendAIMsg(retryMsg){
     _aiHistory.push({role:'model',parts:[{text:fullReply}]});
     if(_aiHistory.length>30) _aiHistory=_aiHistory.slice(-30);
   }catch(e){
+    console.error('[AI] sendAIMsg error:', e);
     _aiHistory.pop();
-    wrapper.remove();
-    const isRate=e.message&&(e.message.includes('server')||e.message.includes('quota')||e.message.includes('demand'));
-    _aiAddErrMsg(isRate?'⏳ Gemini server ยุ่งอยู่ กรุณารอสักครู่':'⚠️ '+(e.message||'ไม่ทราบสาเหตุ'),isRate);
+    try{ wrapper.remove(); }catch(_){}
+    const isRate=e.message==='rate'||e.message==='server';
+    try{
+      _aiAddErrMsg(
+        isRate?'⏳ Gemini server ยุ่งอยู่ กำลังลองใหม่อัตโนมัติ...':'⚠ '+(e.message||'ไม่ทราบสาเหตุ'),
+        isRate, isRate?20:0
+      );
+    }catch(e2){
+      console.error('[AI] _aiAddErrMsg failed:', e2);
+      // fallback: inject error directly into chat
+      const msgs=$('ai-msgs');
+      if(msgs) msgs.insertAdjacentHTML('beforeend',
+        `<div style="color:#856404;background:#fff3cd;border:1px solid #ffc107;border-radius:12px;padding:8px 12px;font-size:13px;max-width:90%">⚠ ${e.message||'เกิดข้อผิดพลาด'}</div>`);
+    }
   }finally{
     _aiLoading=false;
     if(sendBtn){sendBtn.disabled=false;sendBtn.style.opacity='1';}
@@ -6960,9 +7021,8 @@ async function refreshAICtx(){
   }
 }
 
-function _aiAddErrMsg(text, showRetry){
+function _aiAddErrMsg(text, showRetry, autoRetryAfterSec=0){
   const msgs=$('ai-msgs'); if(!msgs) return;
-  // ลบ error bubble เก่าทั้งหมดก่อนแสดงอันใหม่
   msgs.querySelectorAll('.ai-err-bubble').forEach(el=>el.remove());
   const d=document.createElement('div');
   d.className='ai-err-bubble';
@@ -6970,19 +7030,32 @@ function _aiAddErrMsg(text, showRetry){
   const retryBtn = showRetry
     ? `<br><button id="ai-retry-btn" style="margin-top:8px;padding:5px 14px;
         background:#0466c8;color:#fff;border:none;border-radius:20px;cursor:pointer;font-size:12px;
-        font-family:var(--font)">↩ ลองใหม่</button>`
+        font-family:var(--font)">↩ ลองใหม่ (${autoRetryAfterSec>0?autoRetryAfterSec+'s':''})</button>`
     : '';
   d.innerHTML=`<div style="max-width:90%;padding:9px 13px;border-radius:16px 16px 16px 4px;
     background:#fff3cd;color:#856404;font-size:13px;line-height:1.6;border:1px solid #ffc107">
     ${text.replace(/\n/g,'<br>')}${retryBtn}
   </div>
-  <div style="font-size:10px;color:#c7c7cc;padding:0 4px">✨ AI · ${new Date().toLocaleTimeString('th',{hour:'2-digit',minute:'2-digit'})}</div>`;
+  <div style="font-size:10px;color:#c7c7cc;padding:0 4px">${_ico.sparkle} AI · ${new Date().toLocaleTimeString('th',{hour:'2-digit',minute:'2-digit'})}</div>`;
   if(showRetry){
     const btn=d.querySelector('#ai-retry-btn');
-    if(btn) btn.addEventListener('click',()=>{
-      btn.disabled=true; btn.textContent='กำลังลอง...'; btn.style.opacity='.6';
-      sendAIMsg(_aiLastMsg);
-    });
+    if(btn){
+      let timer=null;
+      const doRetry=()=>{
+        clearInterval(timer);
+        btn.disabled=true; btn.textContent='กำลังลอง...'; btn.style.opacity='.6';
+        sendAIMsg(_aiLastMsg);
+      };
+      btn.addEventListener('click', doRetry);
+      if(autoRetryAfterSec>0){
+        let remaining=autoRetryAfterSec;
+        timer=setInterval(()=>{
+          remaining--;
+          if(remaining<=0){ doRetry(); }
+          else{ btn.textContent=`↩ ลองใหม่ (${remaining}s)`; }
+        },1000);
+      }
+    }
   }
   msgs.appendChild(d);
   msgs.scrollTop=msgs.scrollHeight;
@@ -6990,30 +7063,42 @@ function _aiAddErrMsg(text, showRetry){
 
 async function _callGeminiStream(history,context,apiKey,onChunk,retry=0){
   const sys=`คุณเป็นผู้ช่วยวิเคราะห์ข้อมูลนักเรียนสำหรับครูผู้สอน ตอบเป็นภาษาไทย กระชับ ชัดเจน มีประโยชน์กับครู\nใช้ข้อมูลต่อไปนี้ในการตอบ:\n\n${context}\n\nหลังตอบทุกครั้ง ให้ต่อท้ายด้วย [SUGGEST: คำถาม1|คำถาม2] เสมอ (2 คำถามที่ครูน่าจะถามต่อ)`;
-  const models=['gemini-2.5-flash','gemini-2.0-flash','gemini-2.0-flash-lite'];
-  const model=models[Math.min(retry,models.length-1)];
-  const maxRetry=models.length-1;
-  const res=await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-    {method:'POST',headers:{'Content-Type':'application/json'},
-     body:JSON.stringify({
-       system_instruction:{parts:[{text:sys}]},
-       contents:history,
-       generationConfig:{temperature:0.5,maxOutputTokens:8192}
-     })}
-  );
+  const model='gemini-2.5-flash';
+  const maxRetry=2; // retry สูงสุด 2 ครั้งสำหรับ transient error (503)
+  console.log('[AI] calling', model, 'retry='+retry, 'history='+history.length);
+  let res;
+  try{
+    res=await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+      {method:'POST',headers:{'Content-Type':'application/json'},
+       body:JSON.stringify({
+         system_instruction:{parts:[{text:sys}]},
+         contents:history,
+         generationConfig:{temperature:0.5,maxOutputTokens:8192}
+       })}
+    );
+  }catch(netErr){
+    console.error('[AI] fetch network error:', netErr);
+    throw new Error('เครือข่ายขัดข้อง: '+netErr.message);
+  }
+  console.log('[AI] HTTP', res.status);
   if(!res.ok){
     const e=await res.json().catch(()=>({}));
     const msg=e.error?.message||'HTTP '+res.status;
-    const isRetryable=res.status===429||res.status===503||msg.includes('quota')||msg.includes('RESOURCE_EXHAUSTED')||msg.includes('high demand')||msg.includes('overloaded')||msg.includes('not found');
-    if(isRetryable&&retry<maxRetry){
-      await new Promise(r=>setTimeout(r,retry%2===0?3000:6000));
+    console.error('[AI] API error:', msg);
+    const isQuota=res.status===429||msg.includes('quota')||msg.includes('RESOURCE_EXHAUSTED');
+    const isTransient=res.status===503||msg.includes('overloaded')||msg.includes('high demand');
+    if(isTransient&&retry<maxRetry){
+      console.log('[AI] transient, retry in', (retry+1)*5, 's');
+      await new Promise(r=>setTimeout(r,(retry+1)*5000));
       return _callGeminiStream(history,context,apiKey,onChunk,retry+1);
     }
-    if(isRetryable) throw new Error('server ยุ่งมาก กรุณากดลองใหม่');
+    if(isQuota) throw new Error('rate');
+    if(isTransient) throw new Error('server');
     throw new Error(msg);
   }
   const data=await res.json();
+  console.log('[AI] response OK, candidates:', data.candidates?.length);
   const fullText=data.candidates?.[0]?.content?.parts?.[0]?.text||'ไม่มีการตอบกลับ';
   // Typewriter effect — reveal text progressively at ~60fps
   await new Promise(resolve=>{
