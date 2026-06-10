@@ -6801,7 +6801,7 @@ const _ico={
 // ════ AI CHAT (GEMINI) ══════════════════════════════════════════════════
 
 let _aiOpen=false, _aiCtx=null, _aiLoading=false, _aiLastMsg='', _aiHistory=[];
-let _aiLastCallMs=0, _aiThrottleTimer=null;
+let _aiLastCallMs=0, _aiThrottleTimer=null, _aiRetryCount=0;
 
 function toggleAIChat(){
   _aiOpen=!_aiOpen;
@@ -6918,21 +6918,27 @@ async function sendAIMsg(retryMsg){
     const {text,suggestions}=_aiParseSuggestions(fullReply);
     _aiFinalizeBubble(wrapper,bubble,text,fullReply);
     if(suggestions.length) _aiShowSuggestions(suggestions);
+    _aiRetryCount=0;
     _aiHistory.push({role:'model',parts:[{text:fullReply}]});
     if(_aiHistory.length>30) _aiHistory=_aiHistory.slice(-30);
   }catch(e){
     console.error('[AI] sendAIMsg error:', e);
     _aiHistory.pop();
     try{ wrapper.remove(); }catch(_){}
-    const isRate=e.message==='rate'||e.message==='server';
+    const [errType,errPayload]=(e.message||'').split(':');
+    const isRate=errType==='rate'||errType==='server';
+    const waitSec=isRate?(parseInt(errPayload)||30):0;
+    const MAX_AUTO_RETRY=3;
+    const canAutoRetry=isRate&&_aiRetryCount<MAX_AUTO_RETRY;
+    if(isRate) _aiRetryCount++;
+    else _aiRetryCount=0;
+    const errText=isRate
+      ?`⏳ Quota เกินกำหนด${canAutoRetry?' กำลังลองใหม่อัตโนมัติ':'  กรุณากดลองใหม่ด้วยตัวเอง'}...`
+      :'⚠ '+(e.message||'ไม่ทราบสาเหตุ');
     try{
-      _aiAddErrMsg(
-        isRate?'⏳ Gemini server ยุ่งอยู่ กำลังลองใหม่อัตโนมัติ...':'⚠ '+(e.message||'ไม่ทราบสาเหตุ'),
-        isRate, isRate?20:0
-      );
+      _aiAddErrMsg(errText, isRate, canAutoRetry?waitSec:0);
     }catch(e2){
       console.error('[AI] _aiAddErrMsg failed:', e2);
-      // fallback: inject error directly into chat
       const msgs=$('ai-msgs');
       if(msgs) msgs.insertAdjacentHTML('beforeend',
         `<div style="color:#856404;background:#fff3cd;border:1px solid #ffc107;border-radius:12px;padding:8px 12px;font-size:13px;max-width:90%">⚠ ${e.message||'เกิดข้อผิดพลาด'}</div>`);
@@ -7093,8 +7099,12 @@ async function _callGeminiStream(history,context,apiKey,onChunk,retry=0){
       await new Promise(r=>setTimeout(r,(retry+1)*5000));
       return _callGeminiStream(history,context,apiKey,onChunk,retry+1);
     }
-    if(isQuota) throw new Error('rate');
-    if(isTransient) throw new Error('server');
+    if(isQuota){
+      const m=msg.match(/retry in (\d+(?:\.\d+)?)\s*s/i);
+      const waitSec=m?Math.ceil(parseFloat(m[1]))+2:30;
+      throw new Error('rate:'+waitSec);
+    }
+    if(isTransient) throw new Error('server:15');
     throw new Error(msg);
   }
   const data=await res.json();
