@@ -7267,7 +7267,11 @@ function clearAIChat(){
 // ══ Score keyboard navigation ═══════════════════════════════════
 (function(){
   function allUscInputs(){ return [...document.querySelectorAll('#unMod input.score-nav')]; }
-  function allExamInputs(){ return [...document.querySelectorAll('input.score-nav[id^="mid-"],input.score-nav[id^="fin-"]')]; }
+  function allExamInputs(){
+    const mids=[...document.querySelectorAll('input.score-nav[id^="mid-"]')];
+    const fins=[...document.querySelectorAll('input.score-nav[id^="fin-"]')];
+    return [...mids,...fins];
+  }
 
   document.addEventListener('keydown',function(e){
     if(e.key!=='Enter'&&e.key!=='Tab'&&e.key!=='Escape') return;
