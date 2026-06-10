@@ -1343,6 +1343,7 @@ function _lpTogglePw(){
   }
 }
 function showLogin(){
+  if(window._destroyIdleTimeout) _destroyIdleTimeout();
   loadingOff();
   $('login-page').style.display='block';
   $('main-app').style.display='none';
@@ -1380,6 +1381,7 @@ function showApp(){
   initPresence();
   updateMsBadge();
   const fab=$('ai-fab'); if(fab){fab.style.display='flex'; if(window._initFabDrag) _initFabDrag();}
+  if(window._initIdleTimeout) _initIdleTimeout();
 }
 
 
@@ -1882,6 +1884,7 @@ async function doRegister(){
 }
 
 async function doLogout(){
+  if(window._destroyIdleTimeout) _destroyIdleTimeout();
   cleanupPresence();
   loading(true);
   try{ await sb.auth.signOut(); }catch(e){}
@@ -7410,6 +7413,106 @@ function clearAIChat(){
   document.addEventListener('DOMContentLoaded',()=>setTimeout(initFabDrag,500));
   // also expose so showApp can call it
   window._initFabDrag=initFabDrag;
+})();
+
+// ── AUTO-LOGOUT (idle timeout + tab-close) ───────────────────────────────
+(function(){
+  const IDLE_MS=30*60*1000;   // 30 minutes
+  const WARN_BEFORE_MS=60*1000; // show warning 1 min before logout
+  const WARN_AT_MS=IDLE_MS-WARN_BEFORE_MS; // 29 min
+
+  let _warnTimer=null, _logoutTimer=null, _cdInterval=null;
+  const _CLOCK_SVG=`<svg viewBox="0 0 24 24" fill="none" stroke="#e53e3e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="44" height="44"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+
+  function _clearAll(){
+    clearTimeout(_warnTimer);
+    clearTimeout(_logoutTimer);
+    clearInterval(_cdInterval);
+  }
+
+  function _removeDialog(){
+    const el=document.getElementById('idle-warn-overlay');
+    if(el) el.remove();
+  }
+
+  function _scheduleTimers(){
+    _clearAll();
+    _warnTimer=setTimeout(_showWarn, WARN_AT_MS);
+    _logoutTimer=setTimeout(_autoLogout, IDLE_MS);
+  }
+
+  function _showWarn(){
+    if(!S||!S.user) return;
+    _removeDialog();
+    let remaining=60;
+    const overlay=document.createElement('div');
+    overlay.id='idle-warn-overlay';
+    overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;display:flex;align-items:center;justify-content:center';
+    overlay.innerHTML=`<div style="background:#fff;border-radius:18px;padding:32px 28px;max-width:320px;width:90%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.3)">
+      <div style="margin-bottom:12px">${_CLOCK_SVG}</div>
+      <div style="font-size:17px;font-weight:700;color:#1c1c1e;margin-bottom:8px">ระบบจะออกจากระบบอัตโนมัติ</div>
+      <div style="font-size:14px;color:#636366;margin-bottom:16px">ไม่พบการใช้งานนาน 29 นาที<br>ระบบจะออกจากระบบใน</div>
+      <div id="idle-cd" style="font-size:52px;font-weight:800;color:#e53e3e;line-height:1;margin-bottom:24px">60</div>
+      <button id="idle-stay-btn" style="background:linear-gradient(145deg,#001a4d,#0466c8);color:#fff;border:none;border-radius:12px;padding:14px 0;font-size:15px;font-weight:600;cursor:pointer;width:100%">ยังใช้งานอยู่</button>
+    </div>`;
+    document.body.appendChild(overlay);
+    document.getElementById('idle-stay-btn').addEventListener('click',()=>{
+      _removeDialog();
+      _clearAll();
+      _scheduleTimers();
+    });
+    _cdInterval=setInterval(()=>{
+      remaining--;
+      const cd=document.getElementById('idle-cd');
+      if(cd) cd.textContent=remaining;
+      if(remaining<=0) clearInterval(_cdInterval);
+    },1000);
+  }
+
+  function _autoLogout(){
+    _clearAll();
+    _removeDialog();
+    if(!S||!S.user) return;
+    if(typeof cleanupPresence==='function') cleanupPresence();
+    try{ sb.auth.signOut(); }catch(_){}
+    S.user=null; S.profile=null;
+    loadingOff();
+    showLogin();
+    toast('ออกจากระบบอัตโนมัติ เนื่องจากไม่มีการใช้งาน 30 นาที','wa');
+  }
+
+  function _onActivity(){
+    if(!S||!S.user) return;
+    // If warning dialog is visible, ignore activity (let countdown run)
+    if(document.getElementById('idle-warn-overlay')) return;
+    _scheduleTimers();
+  }
+
+  const _EVTS=['mousemove','keydown','mousedown','touchstart','scroll'];
+
+  function _initIdleTimeout(){
+    _EVTS.forEach(ev=>document.addEventListener(ev,_onActivity,{passive:true}));
+    _scheduleTimers();
+  }
+
+  function _destroyIdleTimeout(){
+    _EVTS.forEach(ev=>document.removeEventListener(ev,_onActivity));
+    _clearAll();
+    _removeDialog();
+  }
+
+  window._initIdleTimeout=_initIdleTimeout;
+  window._destroyIdleTimeout=_destroyIdleTimeout;
+
+  // Clear auth tokens when tab is closed / navigated away
+  window.addEventListener('pagehide',()=>{
+    if(!S||!S.user) return;
+    try{
+      Object.keys(localStorage)
+        .filter(k=>k.startsWith('sb-'))
+        .forEach(k=>localStorage.removeItem(k));
+    }catch(_){}
+  });
 })();
 </script>
 
