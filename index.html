@@ -3683,14 +3683,15 @@ function openUnitModal(period){
         <thead><tr><th>เลขที่</th><th class="tl">ชื่อ-สกุล</th><th>คะแนน (/${mx})</th></tr></thead>
         <tbody>${scStus.map((s,i)=>`
           <tr><td class="tc">${i+1}</td><td style="white-space:nowrap">${esc(s.student_name)}</td>
-          <td class="tc"><input type="number" class="si2" id="usc-${s.id}"
+          <td class="tc"><input type="number" class="si2 score-nav" id="usc-${s.id}"
             value="${existSc[String(s.id)]??''}" min="0" max="${mx}" step="0.5"
             oninput="this.classList.toggle('over',parseFloat(this.value)>parseFloat(this.max))"></td></tr>`).join('')}
         </tbody></table></div>
     </div>
     <div class="mf">
+      <span style="font-size:11px;color:var(--muted);margin-right:auto">Tab/Enter ถัดไป · Shift ย้อนกลับ</span>
       <button class="btn bs" onclick="rmModal('unMod')">ยกเลิก</button>
-      <button class="btn bp" onclick="saveUnitSc()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>บันทึกคะแนน</button>
+      <button class="btn bp" id="unMod-save" onclick="saveUnitSc()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>บันทึกคะแนน</button>
     </div>
   </div></div>`);
 }
@@ -3858,12 +3859,13 @@ function renderExamTab(){
       <tbody>${scStus.map((s,i)=>{
         const sm=gsum(s.id);
         return`<tr><td class="tc">${i+1}</td><td style="white-space:nowrap">${esc(s.student_name)}</td>
-          <td class="tc"><input type="number" class="si2" id="mid-${s.id}" value="${sm.mid_normal??''}" min="0" max="${mM}" step="0.5" oninput="this.classList.toggle('over',+this.value>+this.max)"></td>
-          <td class="tc"><input type="number" class="si2" id="fin-${s.id}" value="${sm.final_score??''}" min="0" max="${mF}" step="0.5" oninput="this.classList.toggle('over',+this.value>+this.max)"></td>
+          <td class="tc"><input type="number" class="si2 score-nav" id="mid-${s.id}" value="${sm.mid_normal??''}" min="0" max="${mM}" step="0.5" oninput="this.classList.toggle('over',+this.value>+this.max)"></td>
+          <td class="tc"><input type="number" class="si2 score-nav" id="fin-${s.id}" value="${sm.final_score??''}" min="0" max="${mF}" step="0.5" oninput="this.classList.toggle('over',+this.value>+this.max)"></td>
         </tr>`;
       }).join('')}</tbody>
     </table></div>
-    <div style="margin-top:12px;display:flex;justify-content:flex-end">
+    <div style="margin-top:12px;display:flex;justify-content:flex-end;align-items:center;gap:12px">
+      <span style="font-size:11px;color:var(--muted)">Tab/Enter ถัดไป · Shift ย้อนกลับ</span>
       <button class="btn bp" onclick="saveExam()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>บันทึกคะแนนสอบ</button>
     </div>
   </div></div>`;
@@ -7261,6 +7263,58 @@ function clearAIChat(){
   const msgs=$('ai-msgs'); if(!msgs) return;
   msgs.innerHTML=_aiWelcomeHTML();
 }
+
+// ══ Score keyboard navigation ═══════════════════════════════════
+(function(){
+  function allUscInputs(){ return [...document.querySelectorAll('#unMod input.score-nav')]; }
+  function allExamInputs(){ return [...document.querySelectorAll('input.score-nav[id^="mid-"],input.score-nav[id^="fin-"]')]; }
+
+  document.addEventListener('keydown',function(e){
+    if(e.key!=='Enter'&&e.key!=='Tab'&&e.key!=='Escape') return;
+    const t=e.target;
+    if(!t.classList.contains('score-nav')) return;
+
+    if(e.key==='Escape'){ t.blur(); return; }
+
+    const id=t.id||'';
+
+    // ── Modal กรอกคะแนนหน่วย ──
+    if(id.startsWith('usc-')){
+      const all=allUscInputs();
+      const idx=all.indexOf(t);
+      if(idx===-1) return;
+      e.preventDefault();
+      if(e.shiftKey){
+        if(idx>0){ all[idx-1].focus(); all[idx-1].select(); }
+      } else {
+        if(idx<all.length-1){ all[idx+1].focus(); all[idx+1].select(); }
+        else { $('unMod-save')?.focus(); } // ถึงคนสุดท้าย → focus ปุ่มบันทึก
+      }
+      return;
+    }
+
+    // ── ตารางคะแนนสอบ (mid/fin) ──
+    if(id.startsWith('mid-')||id.startsWith('fin-')){
+      const all=allExamInputs();
+      const idx=all.indexOf(t);
+      if(idx===-1) return;
+      e.preventDefault();
+      if(e.shiftKey){
+        if(idx>0){ all[idx-1].focus(); all[idx-1].select(); }
+      } else {
+        if(idx<all.length-1){ all[idx+1].focus(); all[idx+1].select(); }
+        else { document.querySelector('[onclick="saveExam()"]')?.focus(); }
+      }
+    }
+  });
+
+  // focus แรก: เมื่อ modal กรอกคะแนนเปิด → auto focus ช่องแรก
+  const _obs=new MutationObserver(()=>{
+    const first=document.querySelector('#unMod input.score-nav');
+    if(first){ first.focus(); first.select(); }
+  });
+  _obs.observe(document.body,{childList:true});
+})();
 
 // ══ FAB drag-to-reposition ══════════════════════════════════════
 (function(){
