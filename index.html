@@ -1379,7 +1379,7 @@ function showApp(){
   nav('dashboard');
   initPresence();
   updateMsBadge();
-  const fab=$('ai-fab'); if(fab){fab.style.display='flex';}
+  const fab=$('ai-fab'); if(fab){fab.style.display='flex'; if(window._initFabDrag) _initFabDrag();}
 }
 
 
@@ -7261,17 +7261,108 @@ function clearAIChat(){
   const msgs=$('ai-msgs'); if(!msgs) return;
   msgs.innerHTML=_aiWelcomeHTML();
 }
+
+// ══ FAB drag-to-reposition ══════════════════════════════════════
+(function(){
+  const STORE_KEY='ai-fab-pos';
+  const SIZE=52, EDGE=12;
+
+  function initFabDrag(){
+    const fab=$('ai-fab');
+    if(!fab||fab._dragInit) return;
+    fab._dragInit=true;
+
+    // restore saved position
+    try{
+      const s=JSON.parse(localStorage.getItem(STORE_KEY)||'{}');
+      if(s.right!=null) fab.style.right=s.right+'px';
+      if(s.bottom!=null) fab.style.bottom=s.bottom+'px';
+    }catch(_){}
+
+    let x0,y0,r0,b0,dragging=false,moved=false;
+
+    function start(e){
+      const p=e.touches?e.touches[0]:e;
+      x0=p.clientX; y0=p.clientY;
+      r0=parseInt(fab.style.right)||20;
+      b0=parseInt(fab.style.bottom)||24;
+      dragging=true; moved=false;
+      fab.style.transition='none';
+      fab.style.animationPlayState='paused';
+      fab.style.cursor='grabbing';
+      e.preventDefault();
+    }
+
+    function move(e){
+      if(!dragging) return;
+      const p=e.touches?e.touches[0]:e;
+      const dx=p.clientX-x0, dy=p.clientY-y0;
+      if(!moved&&Math.abs(dx)<6&&Math.abs(dy)<6) return;
+      moved=true;
+      const vw=window.innerWidth, vh=window.innerHeight;
+      const nr=Math.max(EDGE, Math.min(vw-SIZE-EDGE, r0-dx));
+      const nb=Math.max(EDGE, Math.min(vh-SIZE-EDGE, b0-dy));
+      fab.style.right=nr+'px';
+      fab.style.bottom=nb+'px';
+      e.preventDefault();
+    }
+
+    function end(){
+      if(!dragging) return;
+      dragging=false;
+      fab.style.cursor='grab';
+      fab.style.transition='transform .2s,opacity .2s,box-shadow .2s';
+      fab.style.animationPlayState='running';
+
+      if(!moved){
+        // treat as tap/click
+        toggleAIChat();
+      }else{
+        // snap to nearest vertical edge
+        const vw=window.innerWidth;
+        const cur=parseInt(fab.style.right)||20;
+        const mid=vw/2;
+        const fromLeft=vw-cur-SIZE; // current left position
+        const snapped=fromLeft<mid ? EDGE : vw-SIZE-EDGE;
+        fab.style.transition='right .2s cubic-bezier(.34,1.56,.64,1),bottom .2s,transform .2s,opacity .2s';
+        fab.style.right=snapped+'px';
+        try{
+          localStorage.setItem(STORE_KEY,JSON.stringify({
+            right:snapped,
+            bottom:parseInt(fab.style.bottom)||24
+          }));
+        }catch(_){}
+      }
+    }
+
+    fab.addEventListener('mousedown',start);
+    fab.addEventListener('touchstart',start,{passive:false});
+    document.addEventListener('mousemove',move);
+    document.addEventListener('touchmove',move,{passive:false});
+    document.addEventListener('mouseup',end);
+    document.addEventListener('touchend',end);
+
+    // hover only when not dragging
+    fab.addEventListener('mouseenter',()=>{ if(!dragging){fab.style.transform='scale(1.1)';} });
+    fab.addEventListener('mouseleave',()=>{ if(!dragging){fab.style.transform='scale(1)';} });
+  }
+
+  // init once the FAB becomes visible (called by showApp)
+  const _origShowApp=typeof showApp==='function'?showApp:null;
+  document.addEventListener('DOMContentLoaded',()=>setTimeout(initFabDrag,500));
+  // also expose so showApp can call it
+  window._initFabDrag=initFabDrag;
+})();
 </script>
 
 <!-- ══ AI CHAT FAB ══ -->
-<button id="ai-fab" class="no-print" onclick="toggleAIChat()"
+<button id="ai-fab" class="no-print"
   style="display:none;position:fixed;bottom:24px;right:20px;width:52px;height:52px;border-radius:50%;
-  background:linear-gradient(145deg,#001233 0%,#023e8a 55%,#0466c8 100%);color:#fff;border:none;cursor:pointer;
-  z-index:9400;align-items:center;justify-content:center;
-  animation:ai-fab-pulse 2.5s ease-in-out infinite;transition:transform .2s,opacity .2s"
-  onmouseover="this.style.transform='scale(1.12)';this.style.animationPlayState='paused'"
-  onmouseout="this.style.transform='scale(1)';this.style.animationPlayState='running'"
-  title="ผู้ช่วย AI">
+  background:linear-gradient(145deg,#001233 0%,#023e8a 55%,#0466c8 100%);color:#fff;border:none;
+  cursor:grab;z-index:9400;align-items:center;justify-content:center;
+  animation:ai-fab-pulse 2.5s ease-in-out infinite;transition:transform .2s,opacity .2s,box-shadow .2s;
+  touch-action:none;user-select:none"
+  title="ผู้ช่วย AI (ลากเพื่อย้าย)">
   <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
 </button>
 
