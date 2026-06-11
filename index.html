@@ -483,15 +483,92 @@ body.dark .subc{
   header.tb{padding:0 10px!important;gap:1.5px!important;}
   #tb-presence{gap:4px!important;}
 }
+
+/* ── Welcome loading overlay ── */
+#lov-welcome .lov-card{position:relative;z-index:10;background:#fff;border-radius:32px;padding:48px 44px 40px;width:340px;max-width:calc(100vw - 32px);box-shadow:0 2px 4px rgba(0,0,0,.04),0 8px 24px rgba(99,102,241,.10),0 32px 80px rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.08);text-align:center;animation:lovCardPop .7s cubic-bezier(.34,1.56,.64,1) both;}
+@keyframes lovCardPop{from{opacity:0;transform:translateY(48px) scale(.90);}to{opacity:1;transform:none;}}
+#lov-welcome .lov-blob{position:absolute;border-radius:50%;pointer-events:none;filter:blur(90px);animation:lovBlobFloat 8s ease-in-out infinite;}
+.lov-blob1{width:520px;height:520px;background:rgba(99,102,241,.10);top:-140px;right:-80px;}
+.lov-blob2{width:400px;height:400px;background:rgba(14,165,233,.09);bottom:-100px;left:-60px;animation-delay:-4s;}
+.lov-blob3{width:260px;height:260px;background:rgba(139,92,246,.08);top:50%;left:55%;animation-delay:-2s;}
+@keyframes lovBlobFloat{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(10px,-20px) scale(1.06);}}
+.lov-pt{position:absolute;border-radius:50%;animation:lovPtRise linear infinite;bottom:-10px;}
+@keyframes lovPtRise{0%{transform:translateY(0) scale(0);opacity:0;}8%{opacity:1;}90%{opacity:.6;}100%{transform:translateY(-105vh) scale(1);opacity:0;}}
+.lov-ring-wrap{position:relative;width:100px;height:100px;margin:0 auto 28px;}
+.lov-pulse{position:absolute;inset:-2px;border-radius:50%;border:2px solid rgba(99,102,241,.3);animation:lovPulse 2.4s ease-out infinite;}
+.lov-pulse:nth-child(2){animation-delay:.8s;}
+.lov-pulse:nth-child(3){animation-delay:1.6s;}
+@keyframes lovPulse{0%{transform:scale(1);opacity:.7;}100%{transform:scale(1.7);opacity:0;}}
+.lov-spin1{position:absolute;inset:0;border-radius:50%;border:2.5px solid transparent;border-top-color:#6366f1;border-right-color:rgba(99,102,241,.4);animation:spin 1.3s linear infinite;}
+.lov-spin2{position:absolute;inset:6px;border-radius:50%;border:2px solid transparent;border-bottom-color:#0ea5e9;border-left-color:rgba(14,165,233,.3);animation:spin .9s linear infinite reverse;}
+.lov-center{position:absolute;inset:13px;border-radius:50%;background:linear-gradient(145deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(99,102,241,.45);}
+.lov-chip{display:inline-flex;align-items:center;gap:6px;border-radius:99px;padding:5px 14px 5px 10px;font-size:12.5px;font-weight:600;margin-bottom:8px;animation:lovFadeUp .4s .2s both;}
+.lov-uname{font-size:26px;font-weight:800;color:#0f172a;margin-bottom:6px;line-height:1.25;animation:lovFadeUp .45s .35s both;}
+.lov-name-grad{background:linear-gradient(90deg,#6366f1 0%,#0ea5e9 50%,#8b5cf6 100%);background-size:200% 100%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:lovGradShift 4s ease-in-out infinite;}
+@keyframes lovGradShift{0%,100%{background-position:0%}50%{background-position:100%}}
+.lov-pill{display:inline-block;background:#f1f5f9;border-radius:99px;font-size:12px;color:#64748b;padding:4px 14px;margin-bottom:32px;font-weight:500;animation:lovFadeUp .45s .45s both;}
+.lov-bar-wrap{background:#f1f5f9;border-radius:99px;height:5px;overflow:hidden;margin-bottom:10px;animation:lovFadeUp .4s .55s both;}
+.lov-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#6366f1,#0ea5e9,#8b5cf6);background-size:200% 100%;animation:lovBarGrow 2.8s cubic-bezier(.4,0,.2,1) forwards,lovBarShimmer 2s linear infinite;}
+@keyframes lovBarGrow{from{width:0}to{width:80%}}
+@keyframes lovBarShimmer{0%{background-position:0%}100%{background-position:200%}}
+.lov-bar-lbl{display:flex;justify-content:space-between;font-size:11.5px;color:#cbd5e1;margin-bottom:18px;animation:lovFadeUp .4s .6s both;}
+.lov-srow{display:flex;align-items:center;justify-content:center;gap:7px;animation:lovFadeUp .4s .7s both;}
+.lov-dots{display:flex;gap:4px;}
+.lov-d{width:5px;height:5px;border-radius:50%;background:#6366f1;animation:lovDtBlink 1.4s ease-in-out infinite;}
+.lov-d:nth-child(2){animation-delay:.22s;background:#0ea5e9;}
+.lov-d:nth-child(3){animation-delay:.44s;background:#8b5cf6;}
+@keyframes lovDtBlink{0%,80%,100%{transform:scale(.5);opacity:.25;}40%{transform:scale(1.3);opacity:1;}}
+.lov-stxt{font-size:13px;color:#94a3b8;transition:opacity .3s;}
+@keyframes lovFadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
+.lov-chip-dawn{background:#fef9c3;color:#92400e;}
+.lov-chip-morning{background:#fef3c7;color:#b45309;}
+.lov-chip-noon{background:#fff7ed;color:#c2410c;}
+.lov-chip-afternoon{background:#fce7f3;color:#9d174d;}
+.lov-chip-evening{background:#ede9fe;color:#5b21b6;}
+.lov-chip-night{background:#eff6ff;color:#1e40af;}
 </style>
 </head>
 <body class="bg-bg text-txt antialiased">
 
-<!-- Loading overlay -->
-<div id="lov" class="fixed inset-0 flex items-center justify-center z-[9999]" style="background:rgba(242,242,247,.88);backdrop-filter:blur(12px)">
+<!-- Loading overlay (simple spinner — used for post-auth operations) -->
+<div id="lov" class="fixed inset-0 flex items-center justify-content z-[9999]" style="display:none;background:rgba(242,242,247,.88);backdrop-filter:blur(12px);align-items:center;justify-content:center">
   <div class="bg-white rounded-2xl px-8 py-6 flex flex-col items-center gap-3 shadow-md border border-black/5">
     <div class="w-8 h-8 rounded-full border-[2.5px] border-gray-200 border-t-ac" style="animation:spin .65s linear infinite"></div>
     <div class="text-sm text-muted font-medium">กำลังโหลด...</div>
+  </div>
+</div>
+
+<!-- Welcome overlay (shown once during initial auth) -->
+<div id="lov-welcome" style="position:fixed;inset:0;background:#f0f4ff;display:flex;align-items:center;justify-content:center;z-index:9998;overflow:hidden">
+  <div class="lov-blob lov-blob1"></div>
+  <div class="lov-blob lov-blob2"></div>
+  <div class="lov-blob lov-blob3"></div>
+  <div id="lov-pt" style="position:absolute;inset:0;pointer-events:none;overflow:hidden"></div>
+  <div class="lov-card">
+    <div class="lov-ring-wrap">
+      <div class="lov-pulse"></div>
+      <div class="lov-pulse"></div>
+      <div class="lov-pulse"></div>
+      <div class="lov-spin1"></div>
+      <div class="lov-spin2"></div>
+      <div class="lov-center">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="34" height="34"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+      </div>
+    </div>
+    <div id="lov-chip" class="lov-chip lov-chip-morning">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      สวัสดีตอนเช้า
+    </div>
+    <div class="lov-uname" id="lov-uname">กำลังโหลดระบบ...</div>
+    <div class="lov-pill" id="lov-school">ระบบบันทึกผลการเรียน</div>
+    <div class="lov-bar-wrap"><div class="lov-bar-fill"></div></div>
+    <div class="lov-bar-lbl"><span>เชื่อมต่อแล้ว</span><span id="lov-pct">0%</span></div>
+    <div class="lov-srow">
+      <div class="lov-dots">
+        <div class="lov-d"></div><div class="lov-d"></div><div class="lov-d"></div>
+      </div>
+      <span class="lov-stxt" id="lov-stxt">กำลังตรวจสอบบัญชีผู้ใช้...</span>
+    </div>
   </div>
 </div>
 
@@ -1285,17 +1362,20 @@ const ATT_FULL={present:'มา',absent:'ขาด',leave:'ลา'};
 
 // ── AUTH ─────────────────────────────────────────────────────────
 async function initAuth(){
-  loading(true);
+  if(window._lovWelcomeShow) _lovWelcomeShow();
   try{
     const {data:{session}} = await sb.auth.getSession();
     if(session){
       S.user = session.user;
       await Promise.all([loadProfile(), loadConfig()]);
+      if(window._lovWelcomeUpdateName) _lovWelcomeUpdateName();
     }
     loadingOff();
+    if(window._lovWelcomeHide) _lovWelcomeHide();
     session ? showApp() : showLogin();
   }catch(e){
     loadingOff();
+    if(window._lovWelcomeHide) _lovWelcomeHide();
     showLogin();
   }
   // onAuthStateChange: จัดการเฉพาะ session expire
@@ -7413,6 +7493,98 @@ function clearAIChat(){
   document.addEventListener('DOMContentLoaded',()=>setTimeout(initFabDrag,500));
   // also expose so showApp can call it
   window._initFabDrag=initFabDrag;
+})();
+
+// ── WELCOME OVERLAY ──────────────────────────────────────────────────────
+(function(){
+  const _ICONS={
+    dawn:`<svg viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="2" x2="12" y2="9"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/><line x1="23" y1="22" x2="1" y2="22"/><polyline points="8 6 12 2 16 6"/></svg>`,
+    sun:`<svg viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`,
+    noon:`<svg viewBox="0 0 24 24" fill="none" stroke="#c2410c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`,
+    aftn:`<svg viewBox="0 0 24 24" fill="none" stroke="#9d174d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="2" x2="12" y2="9"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/><line x1="23" y1="22" x2="1" y2="22"/></svg>`,
+    moon:`<svg viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`,
+    night:`<svg viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`,
+  };
+  const _GREET=[
+    {from:5, to:8,  cls:'lov-chip-dawn',     ico:'dawn',  txt:'อรุณสวัสดิ์'},
+    {from:8, to:12, cls:'lov-chip-morning',   ico:'sun',   txt:'สวัสดีตอนเช้า'},
+    {from:12,to:13, cls:'lov-chip-noon',      ico:'noon',  txt:'สวัสดีตอนเที่ยง'},
+    {from:13,to:17, cls:'lov-chip-afternoon', ico:'aftn',  txt:'สวัสดีตอนบ่าย'},
+    {from:17,to:20, cls:'lov-chip-evening',   ico:'moon',  txt:'สวัสดีตอนเย็น'},
+    {from:20,to:24, cls:'lov-chip-night',     ico:'night', txt:'ราตรีสวัสดิ์'},
+    {from:0, to:5,  cls:'lov-chip-night',     ico:'night', txt:'ราตรีสวัสดิ์'},
+  ];
+  const _MSGS=[
+    'กำลังตรวจสอบบัญชีผู้ใช้...',
+    'กำลังโหลดข้อมูลรายวิชา...',
+    'กำลังดึงข้อมูลนักเรียน...',
+    'เตรียมระบบสำหรับคุณ...',
+  ];
+  const COLS=['rgba(99,102,241,V)','rgba(14,165,233,V)','rgba(139,92,246,V)','rgba(16,185,129,V)'];
+  let _st=null,_pc=null,_si=0,_pct=0;
+
+  function _greet(){
+    const h=new Date().getHours();
+    return _GREET.find(g=>h>=g.from&&h<g.to)||_GREET[1];
+  }
+
+  function _initParticles(){
+    const wrap=document.getElementById('lov-pt'); if(!wrap||wrap.children.length) return;
+    for(let i=0;i<28;i++){
+      const d=document.createElement('div'); d.className='lov-pt';
+      const sz=3+Math.random()*5;
+      const col=COLS[i%4].replace('V',(.3+Math.random()*.5).toFixed(2));
+      d.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${col};animation-duration:${9+Math.random()*14}s;animation-delay:${-Math.random()*14}s;`;
+      wrap.appendChild(d);
+    }
+  }
+
+  function _lovWelcomeShow(){
+    const el=document.getElementById('lov-welcome'); if(!el) return;
+    const g=_greet();
+    const chip=document.getElementById('lov-chip');
+    if(chip){ chip.className='lov-chip '+g.cls; chip.innerHTML=_ICONS[g.ico]+g.txt; }
+    _initParticles();
+    _si=0; _pct=0;
+    const stEl=document.getElementById('lov-stxt'), pctEl=document.getElementById('lov-pct');
+    if(stEl) stEl.textContent=_MSGS[0];
+    if(pctEl) pctEl.textContent='0%';
+    clearInterval(_st); clearInterval(_pc);
+    _st=setInterval(()=>{
+      _si=(_si+1)%_MSGS.length;
+      if(stEl){ stEl.style.opacity='0'; setTimeout(()=>{stEl.textContent=_MSGS[_si];stEl.style.opacity='1';},300); }
+    },1600);
+    _pc=setInterval(()=>{
+      _pct=Math.min(_pct+Math.floor(Math.random()*5+2),80);
+      if(pctEl) pctEl.textContent=_pct+'%';
+      if(_pct>=80) clearInterval(_pc);
+    },250);
+    el.style.display='flex';
+  }
+
+  function _lovWelcomeUpdateName(){
+    const name=(typeof S!=='undefined'&&S.profile?.full_name)||'';
+    const uname=document.getElementById('lov-uname');
+    if(uname) uname.innerHTML=name
+      ?`สวัสดี คุณครู<br><span class="lov-name-grad">${name}</span>`
+      :'สวัสดี คุณครู';
+    const school=document.getElementById('lov-school');
+    if(school&&typeof S!=='undefined'&&S.config?.school_name) school.textContent=S.config.school_name;
+    const pctEl=document.getElementById('lov-pct');
+    if(pctEl) pctEl.textContent='100%';
+  }
+
+  function _lovWelcomeHide(){
+    clearInterval(_st); clearInterval(_pc);
+    const el=document.getElementById('lov-welcome'); if(!el) return;
+    el.style.transition='opacity .55s,transform .55s';
+    el.style.opacity='0'; el.style.transform='scale(1.03)';
+    setTimeout(()=>{ el.style.display='none'; el.style.opacity=''; el.style.transform=''; el.style.transition=''; },580);
+  }
+
+  window._lovWelcomeShow=_lovWelcomeShow;
+  window._lovWelcomeUpdateName=_lovWelcomeUpdateName;
+  window._lovWelcomeHide=_lovWelcomeHide;
 })();
 
 // ── AUTO-LOGOUT (idle timeout + tab-close) ───────────────────────────────
