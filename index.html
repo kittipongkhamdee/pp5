@@ -531,7 +531,7 @@ body.dark .subc{
 <body class="bg-bg text-txt antialiased">
 
 <!-- Loading overlay (simple spinner — used for post-auth operations) -->
-<div id="lov" class="fixed inset-0 flex items-center justify-content z-[9999]" style="display:none;background:rgba(242,242,247,.88);backdrop-filter:blur(12px);align-items:center;justify-content:center">
+<div id="lov" class="fixed inset-0 z-[9999]" style="display:flex;align-items:center;justify-content:center;background:rgba(242,242,247,.88);backdrop-filter:blur(12px)">
   <div class="bg-white rounded-2xl px-8 py-6 flex flex-col items-center gap-3 shadow-md border border-black/5">
     <div class="w-8 h-8 rounded-full border-[2.5px] border-gray-200 border-t-ac" style="animation:spin .65s linear infinite"></div>
     <div class="text-sm text-muted font-medium">กำลังโหลด...</div>
@@ -539,7 +539,7 @@ body.dark .subc{
 </div>
 
 <!-- Welcome overlay (shown once during initial auth) -->
-<div id="lov-welcome" style="position:fixed;inset:0;background:#f0f4ff;display:flex;align-items:center;justify-content:center;z-index:10000;overflow:hidden">
+<div id="lov-welcome" style="position:fixed;inset:0;background:#f0f4ff;display:none;align-items:center;justify-content:center;z-index:10000;overflow:hidden">
   <div class="lov-blob lov-blob1"></div>
   <div class="lov-blob lov-blob2"></div>
   <div class="lov-blob lov-blob3"></div>
@@ -1365,6 +1365,8 @@ async function initAuth(){
   try{
     const {data:{session}} = await sb.auth.getSession();
     if(session){
+      // IIFE has already run by now (async gap) — safe to call
+      if(window._lovWelcomeShow) _lovWelcomeShow();
       S.user = session.user;
       await Promise.all([loadProfile(), loadConfig()]);
       if(window._lovWelcomeUpdateName) _lovWelcomeUpdateName();
@@ -7540,6 +7542,7 @@ function clearAIChat(){
 
   function _lovWelcomeShow(){
     const el=document.getElementById('lov-welcome'); if(!el) return;
+    const lov=document.getElementById('lov'); if(lov) lov.style.display='none';
     const g=_greet();
     const chip=document.getElementById('lov-chip');
     if(chip){ chip.className='lov-chip '+g.cls; chip.innerHTML=_ICONS[g.ico]+g.txt; }
@@ -7584,9 +7587,6 @@ function clearAIChat(){
   window._lovWelcomeShow=_lovWelcomeShow;
   window._lovWelcomeUpdateName=_lovWelcomeUpdateName;
   window._lovWelcomeHide=_lovWelcomeHide;
-
-  // Auto-init immediately (IIFE runs synchronously before network responses)
-  _lovWelcomeShow();
 })();
 
 // ── AUTO-LOGOUT (idle timeout + tab-close) ───────────────────────────────
