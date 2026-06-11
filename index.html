@@ -1885,8 +1885,15 @@ async function doLogin(){
       return;
     }
     S.user = data.user;
+    const _t0=Date.now();
     await Promise.all([loadProfile(), loadConfig()]);
     loadingOff();
+    // Show welcome screen after login
+    if(window._lovWelcomeShow) _lovWelcomeShow();
+    if(window._lovWelcomeUpdateName) _lovWelcomeUpdateName();
+    const _elapsed=Date.now()-_t0;
+    if(_elapsed<1800) await new Promise(r=>setTimeout(r,1800-_elapsed));
+    if(window._lovWelcomeHide) _lovWelcomeHide();
     showApp();
   }catch(e){
     loadingOff();
