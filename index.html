@@ -1367,9 +1367,13 @@ async function initAuth(){
     if(session){
       // IIFE has already run by now (async gap) — safe to call
       if(window._lovWelcomeShow) _lovWelcomeShow();
+      const _t0=Date.now();
       S.user = session.user;
       await Promise.all([loadProfile(), loadConfig()]);
       if(window._lovWelcomeUpdateName) _lovWelcomeUpdateName();
+      // Ensure welcome shows at least 1.8s so animations play fully
+      const _elapsed=Date.now()-_t0;
+      if(_elapsed<1800) await new Promise(r=>setTimeout(r,1800-_elapsed));
     }
     loadingOff();
     if(window._lovWelcomeHide) _lovWelcomeHide();
@@ -7562,6 +7566,9 @@ function clearAIChat(){
       if(_pct>=80) clearInterval(_pc);
     },250);
     el.style.display='flex';
+    // Force CSS animation restart (required after display:none → flex)
+    const card=el.querySelector('.lov-card');
+    if(card){ card.style.animation='none'; void card.offsetWidth; card.style.animation=''; }
   }
 
   function _lovWelcomeUpdateName(){
