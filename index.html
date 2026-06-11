@@ -539,7 +539,7 @@ body.dark .subc{
 </div>
 
 <!-- Welcome overlay (shown once during initial auth) -->
-<div id="lov-welcome" style="position:fixed;inset:0;background:#f0f4ff;display:flex;align-items:center;justify-content:center;z-index:9998;overflow:hidden">
+<div id="lov-welcome" style="position:fixed;inset:0;background:#f0f4ff;display:flex;align-items:center;justify-content:center;z-index:10000;overflow:hidden">
   <div class="lov-blob lov-blob1"></div>
   <div class="lov-blob lov-blob2"></div>
   <div class="lov-blob lov-blob3"></div>
@@ -1362,7 +1362,6 @@ const ATT_FULL={present:'มา',absent:'ขาด',leave:'ลา'};
 
 // ── AUTH ─────────────────────────────────────────────────────────
 async function initAuth(){
-  if(window._lovWelcomeShow) _lovWelcomeShow();
   try{
     const {data:{session}} = await sb.auth.getSession();
     if(session){
@@ -7585,6 +7584,9 @@ function clearAIChat(){
   window._lovWelcomeShow=_lovWelcomeShow;
   window._lovWelcomeUpdateName=_lovWelcomeUpdateName;
   window._lovWelcomeHide=_lovWelcomeHide;
+
+  // Auto-init immediately (IIFE runs synchronously before network responses)
+  _lovWelcomeShow();
 })();
 
 // ── AUTO-LOGOUT (idle timeout + tab-close) ───────────────────────────────
