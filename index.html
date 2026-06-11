@@ -531,7 +531,7 @@ body.dark .subc{
 <body class="bg-bg text-txt antialiased">
 
 <!-- Loading overlay (simple spinner — used for post-auth operations) -->
-<div id="lov" class="fixed inset-0 z-[9999]" style="display:flex;align-items:center;justify-content:center;background:rgba(242,242,247,.88);backdrop-filter:blur(12px)">
+<div id="lov" class="fixed inset-0 z-[9999]" style="display:none;align-items:center;justify-content:center;background:rgba(242,242,247,.88);backdrop-filter:blur(12px)">
   <div class="bg-white rounded-2xl px-8 py-6 flex flex-col items-center gap-3 shadow-md border border-black/5">
     <div class="w-8 h-8 rounded-full border-[2.5px] border-gray-200 border-t-ac" style="animation:spin .65s linear infinite"></div>
     <div class="text-sm text-muted font-medium">กำลังโหลด...</div>
@@ -539,7 +539,7 @@ body.dark .subc{
 </div>
 
 <!-- Welcome overlay (shown once during initial auth) -->
-<div id="lov-welcome" style="position:fixed;inset:0;background:#f0f4ff;display:none;align-items:center;justify-content:center;z-index:10000;overflow:hidden">
+<div id="lov-welcome" style="position:fixed;inset:0;background:#f0f4ff;display:flex;align-items:center;justify-content:center;z-index:10000;overflow:hidden">
   <div class="lov-blob lov-blob1"></div>
   <div class="lov-blob lov-blob2"></div>
   <div class="lov-blob lov-blob3"></div>
@@ -1362,25 +1362,29 @@ const ATT_FULL={present:'มา',absent:'ขาด',leave:'ลา'};
 
 // ── AUTH ─────────────────────────────────────────────────────────
 async function initAuth(){
+  // #lov-welcome is already visible (display:flex in HTML)
+  // IIFE will init its content synchronously before getSession resolves
+  const _t0=Date.now();
   try{
     const {data:{session}} = await sb.auth.getSession();
     if(session){
-      // IIFE has already run by now (async gap) — safe to call
-      if(window._lovWelcomeShow) _lovWelcomeShow();
-      const _t0=Date.now();
       S.user = session.user;
       await Promise.all([loadProfile(), loadConfig()]);
       if(window._lovWelcomeUpdateName) _lovWelcomeUpdateName();
       // Ensure welcome shows at least 1.8s so animations play fully
       const _elapsed=Date.now()-_t0;
       if(_elapsed<1800) await new Promise(r=>setTimeout(r,1800-_elapsed));
+      loadingOff();
+      if(window._lovWelcomeHide) _lovWelcomeHide();
+      showApp();
+    } else {
+      loadingOff();
+      if(window._lovWelcomeHide) _lovWelcomeHide(true); // instant — no session, go to login
+      showLogin();
     }
-    loadingOff();
-    if(window._lovWelcomeHide) _lovWelcomeHide();
-    session ? showApp() : showLogin();
   }catch(e){
     loadingOff();
-    if(window._lovWelcomeHide) _lovWelcomeHide();
+    if(window._lovWelcomeHide) _lovWelcomeHide(true);
     showLogin();
   }
   // onAuthStateChange: จัดการเฉพาะ session expire
@@ -7590,9 +7594,10 @@ function clearAIChat(){
     if(pctEl) pctEl.textContent='100%';
   }
 
-  function _lovWelcomeHide(){
+  function _lovWelcomeHide(instant=false){
     clearInterval(_st); clearInterval(_pc);
     const el=document.getElementById('lov-welcome'); if(!el) return;
+    if(instant){ el.style.display='none'; return; }
     el.style.transition='opacity .55s,transform .55s';
     el.style.opacity='0'; el.style.transform='scale(1.03)';
     setTimeout(()=>{ el.style.display='none'; el.style.opacity=''; el.style.transform=''; el.style.transition=''; },580);
@@ -7601,6 +7606,9 @@ function clearAIChat(){
   window._lovWelcomeShow=_lovWelcomeShow;
   window._lovWelcomeUpdateName=_lovWelcomeUpdateName;
   window._lovWelcomeHide=_lovWelcomeHide;
+
+  // Auto-init content as soon as IIFE runs (element already visible)
+  _lovWelcomeShow();
 })();
 
 // ── AUTO-LOGOUT (idle timeout + tab-close) ───────────────────────────────
