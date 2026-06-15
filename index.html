@@ -4990,6 +4990,13 @@ async function printAllPP5(){
     CHAR8.forEach((item,i)=>{ body+=`ข้อที่ ${i+1} ${item.label}<br>`; });
     body+=`</div></div>`;
 
+    // ── 6. รายงานผลการเรียน ──────────────────────────────────────
+    const {attMap}=S._rpt;
+    const gcl=g=>{const n=parseFloat(g);if(n>=3.5)return'#15803d';if(n>=2.5)return'#0284c7';if(n>=1.5)return'#e6940a';if(n>=1)return'#c0392b';return'#922b21';};
+    body+=`<div class="sec pb">${ph('รายงานผลการเรียน — '+sub.subject_name+' '+grm(sub.grade_level,sub.room),1,1)}<h3>สรุปผลการเรียนรายบุคคล</h3><table><thead><tr><th>ที่</th><th class="l">ชื่อ-สกุล</th><th>รวมก่อน<br>(/${mBef})</th><th>รวมหลัง<br>(/${mAft})</th><th>กลางภาค<br>(/${mM})</th><th>ปลายภาค<br>(/${mF})</th><th>รวม<br>(100)</th><th>ผลการเรียน</th><th>ผลพิเศษ</th><th>เวลาเรียน</th><th>อ่าน/คิด</th><th>คุณลักษณะ</th></tr></thead><tbody>`;
+    stus.forEach((s,i)=>{ const sm=sumMap[s.id]||{},er=erMap[s.id]||{},ec=ecMap[s.id]||{},att=attMap[s.id]||{pct:0,ms:false},g=sm.grade??'-'; body+=`<tr><td>${i+1}</td><td class="l">${esc(s.student_name)}</td><td>${sm.total_before_mid??0}</td><td>${sm.total_after_mid??0}</td><td>${sm.mid_normal??0}</td><td>${sm.final_score??0}</td><td>${sm.total_score??0}</td><td style="color:${gcl(g)}"><strong>${g}</strong></td><td>${sm.special_result||'-'}</td><td>${att.pct}%${att.ms?' (มส)':''}</td><td>${elb(er.result)}</td><td>${elb(ec.overall_result)}</td></tr>`; });
+    body+=`</tbody></table></div>`;
+
     const w=window.open('','_blank');
     if(!w){ toast('เบราว์เซอร์บล็อก Popup — กรุณาอนุญาต Popup แล้วลองใหม่','er'); return; }
     w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>ปพ.5 ทั้งหมด — ${esc(sub.subject_name)} ${grm(sub.grade_level,sub.room)}</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet"><style>${css}</style></head><body><div id="pbody">${body}</div><div class="action-bar"><button class="btn-print" onclick="window.print()"><svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> พิมพ์ ปพ.5 ทั้งหมด</button></div></body></html>`);
