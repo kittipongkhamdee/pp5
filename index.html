@@ -4991,13 +4991,14 @@ async function exportAllPP5(){
     const fname='ปพ5_'+(sub.subject_code||'')+'_'+grm(sub.grade_level,sub.room)+'_'+(cfg.academic_year||new Date().getFullYear())+'.pdf';
     const css=`
       *{box-sizing:border-box;}
-      body{margin:0;padding:0;background:#fff;font-family:'Sarabun','TH SarabunNew','Noto Sans Thai',sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact;font-size:12px;color:#000;line-height:1.4;}
-      .sec{padding:0;margin:0;} .pb{page-break-before:always;}
+      body{margin:0;padding:0;background:#fff;font-family:'Sarabun','TH SarabunNew','Noto Sans Thai',sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact;font-size:12px;color:#000;line-height:1.4;width:794px;}
+      .sec{padding:0;margin:0;} .pb{page-break-before:always;break-before:page;}
       .ph{text-align:center;margin-bottom:6px;border-bottom:2px solid #000;padding-bottom:5px;}
       .ph h1{font-size:15px;font-weight:800;margin:0 0 2px;} .ph h2{font-size:13px;font-weight:600;margin:0 0 2px;} .ph .meta{font-size:11px;color:#444;margin:0;}
       .m2{font-size:10.5px;color:#444;margin:3px 0;}
       h3{font-size:12px;font-weight:700;margin:8px 0 4px;}
       table{width:100%;border-collapse:collapse;margin-top:4px;}
+      tr{page-break-inside:avoid;break-inside:avoid;}
       .sec:not(.cv) th,.sec:not(.cv) td{border:1px solid #666;padding:2px 3px;font-size:10px;text-align:center;font-family:'Sarabun','TH SarabunNew',sans-serif;}
       .sec:not(.cv) th{font-weight:700;background:#f0f0f0;} .sec:not(.cv) td.l,.sec:not(.cv) th.l{text-align:left;padding-left:5px;white-space:nowrap;}
       .legend{font-size:9.5px;margin-top:4px;color:#555;}
@@ -5011,7 +5012,7 @@ async function exportAllPP5(){
 <style>${css}</style>
 <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"><\/script>
 </head><body>
-<div id="content">${body}</div>
+<div id="content" style="padding-right:2px">${body}</div>
 <div id="ov" style="position:fixed;inset:0;background:rgba(255,255,255,.93);display:flex;align-items:center;justify-content:center;font-family:Sarabun,sans-serif;font-size:17px;color:#333">
   <div style="text-align:center"><div style="font-size:36px;margin-bottom:10px">⏳</div><div>กำลัง Export PDF ทั้งหมด...</div><div style="font-size:13px;color:#888;margin-top:6px">อาจใช้เวลา 1-2 นาที</div></div>
 </div>
@@ -5019,8 +5020,9 @@ async function exportAllPP5(){
 window.addEventListener('load',function(){
   html2pdf().set({margin:[10,10,10,10],filename:${JSON.stringify(fname)},
     image:{type:'jpeg',quality:0.97},
-    html2canvas:{scale:2,useCORS:true,logging:false,backgroundColor:'#ffffff'},
-    jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{before:'.pb'}
+    html2canvas:{scale:2,useCORS:true,logging:false,backgroundColor:'#ffffff',windowWidth:794},
+    jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+    pagebreak:{mode:['css','legacy'],before:'.pb',avoid:['tr']}
   }).from(document.getElementById('content')).save().then(function(){
     document.getElementById('ov').innerHTML='<div style="text-align:center"><div style="font-size:36px;margin-bottom:10px">✅</div><div>Export PDF สำเร็จ!</div><div style="font-size:13px;color:#888;margin-top:6px">หน้าต่างนี้จะปิดอัตโนมัติ</div></div>';
     setTimeout(function(){window.close();},2000);
