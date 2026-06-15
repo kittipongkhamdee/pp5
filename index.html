@@ -4629,7 +4629,6 @@ async function pgReport(){
     <div style="display:flex;gap:8px">
       <button class="btn bs no-print" onclick="exportReport()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>Excel</button>
       <button class="btn bs no-print" onclick="printReport()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>พิมพ์</button>
-      <button class="btn no-print" style="background:linear-gradient(135deg,#1d1d1f,#3a3a3c);color:#fff;border:none;font-weight:600" onclick="printAllPP5()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>พิมพ์ทั้งหมด</button>
     </div></div>
   <div style="display:flex;gap:10px;margin-bottom:18px" class="no-print">
     <select class="fs" style="max-width:310px" onchange="changeRptSub(this.value)">
@@ -4806,8 +4805,9 @@ function printReport(){
 }
 
 async function printAllPP5(){
-  if(!S._rpt){ toast('กรุณาโหลดหน้า "รายงานผลการเรียน" ก่อน','er'); return; }
-  const {sub,stus,sumMap,erMap,ecMap}=S._rpt;
+  if(!S.selSub){ toast('กรุณาเลือกรายวิชาก่อน','er'); return; }
+  const sub=getSubject(S.selSub);
+  if(!sub){ toast('ไม่พบข้อมูลรายวิชา','er'); return; }
   const subId=sub.id;
   const cfg=S.config||{};
   const schoolName=(cfg.school_name||'').startsWith('โรงเรียน')?cfg.school_name:'โรงเรียน'+(cfg.school_name||'');
@@ -4817,11 +4817,24 @@ async function printAllPP5(){
   toast('กำลังเตรียมข้อมูล...','in');
   loading(true);
   try{
-    const [scUnitsAll,attRows]=await Promise.all([
+    const [stus,sumRows,erRows,ecRows,scUnitsAll,attRows]=await Promise.all([
+      getStudentsBySubject(subId),
+      qc('sc_sum_'+subId,   ()=>q(sb.from('score_summary').select('*').eq('subject_id',subId))),
+      qc('ev_read_'+subId,  ()=>q(sb.from('eval_read').select('*').eq('subject_id',subId))),
+      qc('ev_char_'+subId,  ()=>q(sb.from('eval_char').select('*').eq('subject_id',subId))),
       qc('sc_units_'+subId, ()=>q(sb.from('score_units').select('*').eq('subject_id',subId))),
       qc('att_'+subId,      ()=>q(sb.from('attendance').select('*').eq('subject_id',subId)))
     ]);
     loading(false);
+    const sumMap=Object.fromEntries(sumRows.map(s=>[s.student_id,s]));
+    const erMap=Object.fromEntries(erRows.map(e=>[e.student_id,e]));
+    const ecMap=Object.fromEntries(ecRows.map(e=>[e.student_id,e]));
+    // คำนวณ attMap (สรุปเวลาเรียนรายคน)
+    const totH=sub.total_hours||60;
+    const attMap={};
+    stus.forEach(s=>{ attMap[s.id]={present:0,absent:0,leave:0,attended:0,pct:0,ms:false}; });
+    attRows.forEach(a=>{ if(!attMap[a.student_id]) attMap[a.student_id]={present:0,absent:0,leave:0,attended:0,pct:0,ms:false}; const p=parseInt(a.periods)||1; if(a.status in attMap[a.student_id]) attMap[a.student_id][a.status]+=p; });
+    Object.values(attMap).forEach(m=>{ m.attended=m.present+m.leave; m.pct=totH>0?Math.round(m.attended/totH*100):0; m.ms=m.pct<80; });
 
     const css=`
       @page{size:A4 portrait;margin:12mm 14mm;}
@@ -4912,10 +4925,6 @@ async function printAllPP5(){
     const mMap={};
     attRows.forEach(a=>{ const ym=String(a.year_month||'').trim(); if(!ym)return; if(!mMap[ym]) mMap[ym]={ym,monthName:a.month_name||'',dayMap:{},cells:{}}; const M=mMap[ym]; M.dayMap[a.date_day]=parseInt(a.periods)||1; if(!M.cells[a.student_id]) M.cells[a.student_id]={}; M.cells[a.student_id][a.date_day]=a.status; });
     const aMon=Object.values(mMap).map(M=>({...M,days:Object.keys(M.dayMap).map(d=>({day:parseInt(d),periods:M.dayMap[d]})).sort((a,b)=>a.day-b.day)})).sort((a,b)=>a.ym.localeCompare(b.ym));
-    const aSum={}; const totH=sub.total_hours||60;
-    stus.forEach(s=>{ aSum[s.id]={present:0,absent:0,leave:0}; });
-    attRows.forEach(a=>{ if(!aSum[a.student_id]) aSum[a.student_id]={present:0,absent:0,leave:0}; const p=parseInt(a.periods)||1; if(a.status in aSum[a.student_id]) aSum[a.student_id][a.status]+=p; });
-    Object.values(aSum).forEach(m=>{ m.attended=m.present+m.leave; m.pct=totH>0?Math.round(m.attended/totH*100):0; m.ms=m.pct<80; });
     const AABB={present:'/',absent:'ข',leave:'ล'};
     const aCols=[]; aMon.forEach(M=>{ M.days.forEach(d=>{ aCols.push({monthName:M.monthName,day:d.day,periods:d.periods,cells:M.cells}); }); });
     const aCk=[]; if(!aCols.length){ aCk.push([]); } else { for(let i=0;i<aCols.length;i+=15) aCk.push(aCols.slice(i,i+15)); }
@@ -4929,7 +4938,7 @@ async function printAllPP5(){
       stus.forEach((s,i)=>{
         body+=`<tr><td>${i+1}</td><td>${esc(s.student_code||'')}</td><td class="l">${esc(s.student_name)}</td>`;
         cols.forEach(c=>{ const st=(c.cells[s.id]||{})[c.day]||''; body+=`<td>${st?AABB[st]:''}</td>`; });
-        if(isLast){ const m=aSum[s.id]||{present:0,absent:0,leave:0,attended:0,pct:0,ms:false}; body+=`<td>${m.present}</td><td>${m.absent}</td><td>${m.leave}</td><td>${m.attended}</td><td>${m.pct}%</td><td>${m.ms?'มส':'-'}</td>`; }
+        if(isLast){ const m=attMap[s.id]||{present:0,absent:0,leave:0,attended:0,pct:0,ms:false}; body+=`<td>${m.present}</td><td>${m.absent}</td><td>${m.leave}</td><td>${m.attended}</td><td>${m.pct}%</td><td>${m.ms?'มส':'-'}</td>`; }
         body+=`</tr>`;
       });
       body+=`</tbody></table>`;
@@ -4991,7 +5000,6 @@ async function printAllPP5(){
     body+=`</div></div>`;
 
     // ── 6. รายงานผลการเรียน ──────────────────────────────────────
-    const {attMap}=S._rpt;
     const gcl=g=>{const n=parseFloat(g);if(n>=3.5)return'#15803d';if(n>=2.5)return'#0284c7';if(n>=1.5)return'#e6940a';if(n>=1)return'#c0392b';return'#922b21';};
     body+=`<div class="sec pb">${ph('รายงานผลการเรียน — '+sub.subject_name+' '+grm(sub.grade_level,sub.room),1,1)}<h3>สรุปผลการเรียนรายบุคคล</h3><table><thead><tr><th>ที่</th><th class="l">ชื่อ-สกุล</th><th>รวมก่อน<br>(/${mBef})</th><th>รวมหลัง<br>(/${mAft})</th><th>กลางภาค<br>(/${mM})</th><th>ปลายภาค<br>(/${mF})</th><th>รวม<br>(100)</th><th>ผลการเรียน</th><th>ผลพิเศษ</th><th>เวลาเรียน</th><th>อ่าน/คิด</th><th>คุณลักษณะ</th></tr></thead><tbody>`;
     stus.forEach((s,i)=>{ const sm=sumMap[s.id]||{},er=erMap[s.id]||{},ec=ecMap[s.id]||{},att=attMap[s.id]||{pct:0,ms:false},g=sm.grade??'-'; body+=`<tr><td>${i+1}</td><td class="l">${esc(s.student_name)}</td><td>${sm.total_before_mid??0}</td><td>${sm.total_after_mid??0}</td><td>${sm.mid_normal??0}</td><td>${sm.final_score??0}</td><td>${sm.total_score??0}</td><td style="color:${gcl(g)}"><strong>${g}</strong></td><td>${sm.special_result||'-'}</td><td>${att.pct}%${att.ms?' (มส)':''}</td><td>${elb(er.result)}</td><td>${elb(ec.overall_result)}</td></tr>`; });
@@ -5058,7 +5066,8 @@ async function pgCover(){
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 13h6M9 17h6"/></svg>
         Export PDF
       </button>
-      <button class="btn bs no-print" onclick="printCover()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>พิมพ์ปก</button></div>
+      <button class="btn bs no-print" onclick="printCover()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>พิมพ์ปก</button>
+      <button class="btn no-print" style="background:linear-gradient(135deg,#1d1d1f,#3a3a3c);color:#fff;border:none;font-weight:600" onclick="printAllPP5()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>พิมพ์ทั้งหมด</button></div>
   <div style="display:flex;gap:10px;margin-bottom:14px" class="no-print">
     <select class="fs" style="max-width:310px" onchange="changeCvrSub(this.value)">
       ${S.subjects.map(s=>`<option value="${s.id}" ${s.id===S.selSub?'selected':''}>${s.subject_name} ${grm(s.grade_level,s.room)}</option>`).join('')}
