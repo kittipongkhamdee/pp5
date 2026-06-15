@@ -4804,15 +4804,111 @@ function printReport(){
   w.document.close();
 }
 
+function _buildPP5Body(sub,cfg,stus,sumMap,erMap,ecMap,scUnitsAll,attRows,attMap,totH){
+  const schoolName=(cfg.school_name||'').startsWith('โรงเรียน')?cfg.school_name:'โรงเรียน'+(cfg.school_name||'');
+  const mBef=sub.score_before_mid||25, mAft=sub.score_after_mid||25;
+  const mM=sub.score_mid||20, mF=sub.score_final||30;
+  const ph=(title,pn,tp)=>`<div class="ph"><h1>${esc(schoolName)}</h1><h2>${esc(title)}</h2><div class="meta">ปีการศึกษา ${esc(cfg.academic_year||'')} ภาคเรียนที่ ${esc(cfg.semester||'')}</div></div><div class="m2">วิชา ${esc(sub.subject_name)} (${esc(sub.subject_code)}) ${grm(sub.grade_level,sub.room)} &nbsp; ครูผู้สอน ${esc(sub.teacher_name||'')}${tp>1?' &nbsp; <strong>(หน้า '+pn+'/'+tp+')</strong>':''}</div>`;
+  const elb=v=>{const n=parseInt(v);return[0,1,2,3].includes(n)?String(n):'-';};
+  let body='';
+
+  // ── 1. ปก ปพ.5 ─── ดึง HTML จาก DOM เหมือน printCover() ─────
+  const covEl=document.getElementById('cov-content');
+  body+=`<div class="cv sec">${covEl?covEl.innerHTML:'<p style="color:red">ไม่พบเนื้อหาปก กรุณาเปิดหน้า ปก ปพ.5 ก่อน</p>'}</div>`;
+
+  // ── 2. บันทึกเวลาเรียน ──────────────────────────────────────
+  const mMap={};
+  attRows.forEach(a=>{ const ym=String(a.year_month||'').trim(); if(!ym)return; if(!mMap[ym]) mMap[ym]={ym,monthName:a.month_name||'',dayMap:{},cells:{}}; const M=mMap[ym]; M.dayMap[a.date_day]=parseInt(a.periods)||1; if(!M.cells[a.student_id]) M.cells[a.student_id]={}; M.cells[a.student_id][a.date_day]=a.status; });
+  const aMon=Object.values(mMap).map(M=>({...M,days:Object.keys(M.dayMap).map(d=>({day:parseInt(d),periods:M.dayMap[d]})).sort((a,b)=>a.day-b.day)})).sort((a,b)=>a.ym.localeCompare(b.ym));
+  const AABB={present:'/',absent:'ข',leave:'ล'};
+  const aCols=[]; aMon.forEach(M=>{ M.days.forEach(d=>{ aCols.push({monthName:M.monthName,day:d.day,periods:d.periods,cells:M.cells}); }); });
+  const aCk=[]; if(!aCols.length){ aCk.push([]); } else { for(let i=0;i<aCols.length;i+=15) aCk.push(aCols.slice(i,i+15)); }
+  aCk.forEach((cols,ci)=>{
+    const isLast=ci===aCk.length-1;
+    const mg=[]; cols.forEach(c=>{ if(!mg.length||mg[mg.length-1].name!==c.monthName) mg.push({name:c.monthName,count:1}); else mg[mg.length-1].count++; });
+    body+=`<div class="sec pb">${ph('บันทึกเวลาเรียน — '+sub.subject_name+' '+grm(sub.grade_level,sub.room),ci+1,aCk.length)}<div class="m2">เวลาเรียนรวม ${totH} ชั่วโมง</div><table><thead><tr><th rowspan="2">เลขที่</th><th rowspan="2">รหัส</th><th rowspan="2" class="l">ชื่อ-สกุล</th>`;
+    mg.forEach(g=>{ body+=`<th colspan="${g.count}">${esc(g.name)}</th>`; });
+    if(isLast) body+=`<th rowspan="2">มา</th><th rowspan="2">ขาด</th><th rowspan="2">ลา</th><th rowspan="2">รวม</th><th rowspan="2">%</th><th rowspan="2">สถานะ</th>`;
+    body+=`</tr><tr>`; cols.forEach(c=>{ body+=`<th>${c.day}</th>`; }); body+=`</tr></thead><tbody>`;
+    stus.forEach((s,i)=>{
+      body+=`<tr><td>${i+1}</td><td>${esc(s.student_code||'')}</td><td class="l">${esc(s.student_name)}</td>`;
+      cols.forEach(c=>{ const st=(c.cells[s.id]||{})[c.day]||''; body+=`<td>${st?AABB[st]:''}</td>`; });
+      if(isLast){ const m=attMap[s.id]||{present:0,absent:0,leave:0,attended:0,pct:0,ms:false}; body+=`<td>${m.present}</td><td>${m.absent}</td><td>${m.leave}</td><td>${m.attended}</td><td>${m.pct}%</td><td>${m.ms?'มส':'-'}</td>`; }
+      body+=`</tr>`;
+    });
+    body+=`</tbody></table>`;
+    if(isLast) body+=`<div class="legend">สัญลักษณ์: / = มา, ข = ขาด, ล = ลา</div>`;
+    body+=`</div>`;
+  });
+
+  // ── 3. บันทึกคะแนน ──────────────────────────────────────────
+  const um={};
+  scUnitsAll.forEach(u=>{ const k=`${u.period}_${parseInt(u.unit_number)}`; if(!um[k]) um[k]={period:u.period,unit_number:parseInt(u.unit_number),unit_name:u.unit_name||'',max_score:parseFloat(u.max_score)||20}; });
+  const uBef=Object.values(um).filter(u=>u.period==='before').sort((a,b)=>a.unit_number-b.unit_number);
+  const uAft=Object.values(um).filter(u=>u.period==='after').sort((a,b)=>a.unit_number-b.unit_number);
+  const gscA=(sid,period,un)=>{ const r=scUnitsAll.find(s=>String(s.student_id)===String(sid)&&s.period===period&&parseInt(s.unit_number)===un); return r!=null?parseFloat(r.score):null; };
+  const CP=6;
+  const befCk=[]; for(let i=0;i<uBef.length;i+=CP) befCk.push(uBef.slice(i,i+CP));
+  const aftCk=[]; for(let i=0;i<uAft.length;i+=CP) aftCk.push(uAft.slice(i,i+CP));
+  const scCk=[...befCk.map((c,i)=>({cols:c,lB:i===befCk.length-1,lA:false})),...aftCk.map((c,i)=>({cols:c,lB:false,lA:i===aftCk.length-1}))];
+  const scTP=scCk.length+1;
+  scCk.forEach(({cols,lB,lA},ci)=>{
+    const pl=cols[0]?.period==='before'?'ก่อนกลางภาค':'หลังกลางภาค';
+    body+=`<div class="sec pb">${ph('บันทึกคะแนน — '+sub.subject_name+' '+grm(sub.grade_level,sub.room),ci+1,scTP)}<h3>บันทึกคะแนนหน่วยการเรียน</h3><table><thead><tr><th rowspan="2">เลขที่</th><th rowspan="2">รหัส</th><th rowspan="2" class="l">ชื่อ-สกุล</th><th colspan="${cols.length}">${pl}</th>`;
+    if(lB) body+=`<th rowspan="2">รวมก่อน<br>(/${mBef})</th>`;
+    if(lA) body+=`<th rowspan="2">รวมหลัง<br>(/${mAft})</th>`;
+    body+=`</tr><tr>`;
+    cols.forEach(u=>{ body+=`<th>${u.unit_number}${u.unit_name?'<br><span style="font-size:8px;font-weight:400">'+esc(u.unit_name.slice(0,10))+'</span>':''}<br><span style="font-size:8px;opacity:.6">/${u.max_score}</span></th>`; });
+    body+=`</tr></thead><tbody>`;
+    stus.forEach((s,i)=>{
+      body+=`<tr><td>${i+1}</td><td>${esc(s.student_code||'')}</td><td class="l">${esc(s.student_name)}</td>`;
+      cols.forEach(u=>{ const v=gscA(s.id,u.period,u.unit_number); body+=`<td>${v!=null?v:''}</td>`; });
+      if(lB){ const t=uBef.reduce((a,u)=>a+(gscA(s.id,'before',u.unit_number)??0),0); body+=`<td><strong>${t||''}</strong></td>`; }
+      if(lA){ const t=uAft.reduce((a,u)=>a+(gscA(s.id,'after',u.unit_number)??0),0); body+=`<td><strong>${t||''}</strong></td>`; }
+      body+=`</tr>`;
+    });
+    body+=`</tbody></table></div>`;
+  });
+  body+=`<div class="sec pb">${ph('บันทึกคะแนน — '+sub.subject_name+' '+grm(sub.grade_level,sub.room),scTP,scTP)}<h3>สรุปคะแนนและผลการเรียน</h3><table><thead><tr><th>เลขที่</th><th>รหัส</th><th class="l">ชื่อ-สกุล</th><th>รวมก่อน<br>(/${mBef})</th><th>รวมหลัง<br>(/${mAft})</th><th>กลางภาค<br>(/${mM})</th><th>รวมระหว่างภาค</th><th>ปลายภาค<br>(/${mF})</th><th>คะแนนรวม<br>(100)</th><th>ผลการเรียน</th></tr></thead><tbody>`;
+  stus.forEach((s,i)=>{
+    const sm=sumMap[s.id]||{};
+    const bef=sm.total_before_mid??uBef.reduce((a,u)=>a+(gscA(s.id,'before',u.unit_number)??0),0);
+    const aft=sm.total_after_mid??uAft.reduce((a,u)=>a+(gscA(s.id,'after',u.unit_number)??0),0);
+    const mid=parseFloat(sm.mid_normal)||0, fin=parseFloat(sm.final_score)||0;
+    const disp=['ร','มส','มผ','ผ'].includes(sm.special_result||'')?sm.special_result:(sm.grade??'-');
+    body+=`<tr><td>${i+1}</td><td>${esc(s.student_code||'')}</td><td class="l">${esc(s.student_name)}</td><td>${bef||''}</td><td>${aft||''}</td><td>${mid||''}</td><td>${(parseFloat(bef)+parseFloat(aft)+mid)||''}</td><td>${fin||''}</td><td><strong>${sm.total_score??0}</strong></td><td><strong>${disp}</strong></td></tr>`;
+  });
+  body+=`</tbody></table></div>`;
+
+  // ── 4. การประเมิน: อ่าน คิด เขียน ──────────────────────────
+  body+=`<div class="sec pb">${ph('การประเมิน — '+sub.subject_name+' '+grm(sub.grade_level,sub.room),1,2)}<h3>การอ่าน คิดวิเคราะห์ และเขียน</h3><table><thead><tr><th>เลขที่</th><th>รหัส</th><th class="l">ชื่อ-สกุล</th><th>ครั้ง 1</th><th>ครั้ง 2</th><th>ครั้ง 3</th><th>ครั้ง 4</th><th>ครั้ง 5</th><th>ผลสรุป</th></tr></thead><tbody>`;
+  stus.forEach((s,i)=>{ const er=erMap[s.id]||{}; body+=`<tr><td>${i+1}</td><td>${esc(s.student_code||'')}</td><td class="l">${esc(s.student_name)}</td><td>${elb(er.t1)}</td><td>${elb(er.t2)}</td><td>${elb(er.t3)}</td><td>${elb(er.t4)}</td><td>${elb(er.t5)}</td><td><strong>${elb(er.result)}</strong></td></tr>`; });
+  body+=`</tbody></table></div>`;
+
+  // ── 5. การประเมิน: คุณลักษณะ ──────────────────────────────────
+  body+=`<div class="sec pb">${ph('การประเมิน — '+sub.subject_name+' '+grm(sub.grade_level,sub.room),2,2)}<h3>คุณลักษณะอันพึงประสงค์</h3><table><thead><tr><th>เลขที่</th><th>รหัส</th><th class="l">ชื่อ-สกุล</th>`;
+  CHAR8.forEach((_,i)=>{ body+=`<th>ข้อ ${i+1}</th>`; });
+  body+=`<th>ผลสรุป</th></tr></thead><tbody>`;
+  stus.forEach((s,i)=>{ const ec=ecMap[s.id]||{}; body+=`<tr><td>${i+1}</td><td>${esc(s.student_code||'')}</td><td class="l">${esc(s.student_name)}</td>`; CHAR8.forEach(c=>{ body+=`<td>${elb(ec[c.key])}</td>`; }); body+=`<td><strong>${elb(ec.overall_result)}</strong></td></tr>`; });
+  body+=`</tbody></table><div style="margin-top:8px;font-size:9.5px;line-height:1.8;color:#333"><strong>หมายเหตุ</strong><br>`;
+  CHAR8.forEach((item,i)=>{ body+=`ข้อที่ ${i+1} ${item.label}<br>`; });
+  body+=`</div></div>`;
+
+  // ── 6. รายงานผลการเรียน ──────────────────────────────────────
+  const gcl=g=>{const n=parseFloat(g);if(n>=3.5)return'#15803d';if(n>=2.5)return'#0284c7';if(n>=1.5)return'#e6940a';if(n>=1)return'#c0392b';return'#922b21';};
+  body+=`<div class="sec pb">${ph('รายงานผลการเรียน — '+sub.subject_name+' '+grm(sub.grade_level,sub.room),1,1)}<h3>สรุปผลการเรียนรายบุคคล</h3><table><thead><tr><th>ที่</th><th class="l">ชื่อ-สกุล</th><th>รวมก่อน<br>(/${mBef})</th><th>รวมหลัง<br>(/${mAft})</th><th>กลางภาค<br>(/${mM})</th><th>ปลายภาค<br>(/${mF})</th><th>รวม<br>(100)</th><th>ผลการเรียน</th><th>ผลพิเศษ</th><th>เวลาเรียน</th><th>อ่าน/คิด</th><th>คุณลักษณะ</th></tr></thead><tbody>`;
+  stus.forEach((s,i)=>{ const sm=sumMap[s.id]||{},er=erMap[s.id]||{},ec=ecMap[s.id]||{},att=attMap[s.id]||{pct:0,ms:false},g=sm.grade??'-'; body+=`<tr><td>${i+1}</td><td class="l">${esc(s.student_name)}</td><td>${sm.total_before_mid??0}</td><td>${sm.total_after_mid??0}</td><td>${sm.mid_normal??0}</td><td>${sm.final_score??0}</td><td>${sm.total_score??0}</td><td style="color:${gcl(g)}"><strong>${g}</strong></td><td>${sm.special_result||'-'}</td><td>${att.pct}%${att.ms?' (มส)':''}</td><td>${elb(er.result)}</td><td>${elb(ec.overall_result)}</td></tr>`; });
+  body+=`</tbody></table></div>`;
+
+  return body;
+}
+
 async function printAllPP5(){
   if(!S.selSub){ toast('กรุณาเลือกรายวิชาก่อน','er'); return; }
   const sub=getSubject(S.selSub);
   if(!sub){ toast('ไม่พบข้อมูลรายวิชา','er'); return; }
   const subId=sub.id;
   const cfg=S.config||{};
-  const schoolName=(cfg.school_name||'').startsWith('โรงเรียน')?cfg.school_name:'โรงเรียน'+(cfg.school_name||'');
-  const mBef=sub.score_before_mid||25, mAft=sub.score_after_mid||25;
-  const mM=sub.score_mid||20, mF=sub.score_final||30;
 
   toast('กำลังเตรียมข้อมูล...','in');
   loading(true);
@@ -4829,13 +4925,13 @@ async function printAllPP5(){
     const sumMap=Object.fromEntries(sumRows.map(s=>[s.student_id,s]));
     const erMap=Object.fromEntries(erRows.map(e=>[e.student_id,e]));
     const ecMap=Object.fromEntries(ecRows.map(e=>[e.student_id,e]));
-    // คำนวณ attMap (สรุปเวลาเรียนรายคน)
     const totH=sub.total_hours||60;
     const attMap={};
     stus.forEach(s=>{ attMap[s.id]={present:0,absent:0,leave:0,attended:0,pct:0,ms:false}; });
     attRows.forEach(a=>{ if(!attMap[a.student_id]) attMap[a.student_id]={present:0,absent:0,leave:0,attended:0,pct:0,ms:false}; const p=parseInt(a.periods)||1; if(a.status in attMap[a.student_id]) attMap[a.student_id][a.status]+=p; });
     Object.values(attMap).forEach(m=>{ m.attended=m.present+m.leave; m.pct=totH>0?Math.round(m.attended/totH*100):0; m.ms=m.pct<80; });
 
+    const body=_buildPP5Body(sub,cfg,stus,sumMap,erMap,ecMap,scUnitsAll,attRows,attMap,totH);
     const css=`
       @page{size:A4 portrait;margin:12mm 14mm;}
       *{box-sizing:border-box;}
@@ -4853,100 +4949,6 @@ async function printAllPP5(){
       .btn-print{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#1d1d1f;color:#fff;font-weight:600;}
       @media print{.action-bar{display:none!important;}}
     `;
-
-    const ph=(title,pn,tp)=>`<div class="ph"><h1>${esc(schoolName)}</h1><h2>${esc(title)}</h2><div class="meta">ปีการศึกษา ${esc(cfg.academic_year||'')} ภาคเรียนที่ ${esc(cfg.semester||'')}</div></div><div class="m2">วิชา ${esc(sub.subject_name)} (${esc(sub.subject_code)}) ${grm(sub.grade_level,sub.room)} &nbsp; ครูผู้สอน ${esc(sub.teacher_name||'')}${tp>1?' &nbsp; <strong>(หน้า '+pn+'/'+tp+')</strong>':''}</div>`;
-
-    const elb=v=>{const n=parseInt(v);return[0,1,2,3].includes(n)?String(n):'-';};
-    let body='';
-
-    // ── 1. ปก ปพ.5 ─── ดึง HTML จาก DOM เหมือน printCover() ─────
-    const covEl=document.getElementById('cov-content');
-    body+=`<div class="cv sec">${covEl?covEl.innerHTML:'<p style="color:red">ไม่พบเนื้อหาปก กรุณาเปิดหน้า ปก ปพ.5 ก่อน</p>'}</div>`;
-
-    // ── 2. บันทึกเวลาเรียน ──────────────────────────────────────
-    const mMap={};
-    attRows.forEach(a=>{ const ym=String(a.year_month||'').trim(); if(!ym)return; if(!mMap[ym]) mMap[ym]={ym,monthName:a.month_name||'',dayMap:{},cells:{}}; const M=mMap[ym]; M.dayMap[a.date_day]=parseInt(a.periods)||1; if(!M.cells[a.student_id]) M.cells[a.student_id]={}; M.cells[a.student_id][a.date_day]=a.status; });
-    const aMon=Object.values(mMap).map(M=>({...M,days:Object.keys(M.dayMap).map(d=>({day:parseInt(d),periods:M.dayMap[d]})).sort((a,b)=>a.day-b.day)})).sort((a,b)=>a.ym.localeCompare(b.ym));
-    const AABB={present:'/',absent:'ข',leave:'ล'};
-    const aCols=[]; aMon.forEach(M=>{ M.days.forEach(d=>{ aCols.push({monthName:M.monthName,day:d.day,periods:d.periods,cells:M.cells}); }); });
-    const aCk=[]; if(!aCols.length){ aCk.push([]); } else { for(let i=0;i<aCols.length;i+=15) aCk.push(aCols.slice(i,i+15)); }
-    aCk.forEach((cols,ci)=>{
-      const isLast=ci===aCk.length-1;
-      const mg=[]; cols.forEach(c=>{ if(!mg.length||mg[mg.length-1].name!==c.monthName) mg.push({name:c.monthName,count:1}); else mg[mg.length-1].count++; });
-      body+=`<div class="sec pb">${ph('บันทึกเวลาเรียน — '+sub.subject_name+' '+grm(sub.grade_level,sub.room),ci+1,aCk.length)}<div class="m2">เวลาเรียนรวม ${totH} ชั่วโมง</div><table><thead><tr><th rowspan="2">เลขที่</th><th rowspan="2">รหัส</th><th rowspan="2" class="l">ชื่อ-สกุล</th>`;
-      mg.forEach(g=>{ body+=`<th colspan="${g.count}">${esc(g.name)}</th>`; });
-      if(isLast) body+=`<th rowspan="2">มา</th><th rowspan="2">ขาด</th><th rowspan="2">ลา</th><th rowspan="2">รวม</th><th rowspan="2">%</th><th rowspan="2">สถานะ</th>`;
-      body+=`</tr><tr>`; cols.forEach(c=>{ body+=`<th>${c.day}</th>`; }); body+=`</tr></thead><tbody>`;
-      stus.forEach((s,i)=>{
-        body+=`<tr><td>${i+1}</td><td>${esc(s.student_code||'')}</td><td class="l">${esc(s.student_name)}</td>`;
-        cols.forEach(c=>{ const st=(c.cells[s.id]||{})[c.day]||''; body+=`<td>${st?AABB[st]:''}</td>`; });
-        if(isLast){ const m=attMap[s.id]||{present:0,absent:0,leave:0,attended:0,pct:0,ms:false}; body+=`<td>${m.present}</td><td>${m.absent}</td><td>${m.leave}</td><td>${m.attended}</td><td>${m.pct}%</td><td>${m.ms?'มส':'-'}</td>`; }
-        body+=`</tr>`;
-      });
-      body+=`</tbody></table>`;
-      if(isLast) body+=`<div class="legend">สัญลักษณ์: / = มา, ข = ขาด, ล = ลา</div>`;
-      body+=`</div>`;
-    });
-
-    // ── 3. บันทึกคะแนน ──────────────────────────────────────────
-    const um={};
-    scUnitsAll.forEach(u=>{ const k=`${u.period}_${parseInt(u.unit_number)}`; if(!um[k]) um[k]={period:u.period,unit_number:parseInt(u.unit_number),unit_name:u.unit_name||'',max_score:parseFloat(u.max_score)||20}; });
-    const uBef=Object.values(um).filter(u=>u.period==='before').sort((a,b)=>a.unit_number-b.unit_number);
-    const uAft=Object.values(um).filter(u=>u.period==='after').sort((a,b)=>a.unit_number-b.unit_number);
-    const gscA=(sid,period,un)=>{ const r=scUnitsAll.find(s=>String(s.student_id)===String(sid)&&s.period===period&&parseInt(s.unit_number)===un); return r!=null?parseFloat(r.score):null; };
-    const CP=6;
-    const befCk=[]; for(let i=0;i<uBef.length;i+=CP) befCk.push(uBef.slice(i,i+CP));
-    const aftCk=[]; for(let i=0;i<uAft.length;i+=CP) aftCk.push(uAft.slice(i,i+CP));
-    const scCk=[...befCk.map((c,i)=>({cols:c,lB:i===befCk.length-1,lA:false})),...aftCk.map((c,i)=>({cols:c,lB:false,lA:i===aftCk.length-1}))];
-    const scTP=scCk.length+1;
-    scCk.forEach(({cols,lB,lA},ci)=>{
-      const pl=cols[0]?.period==='before'?'ก่อนกลางภาค':'หลังกลางภาค';
-      body+=`<div class="sec pb">${ph('บันทึกคะแนน — '+sub.subject_name+' '+grm(sub.grade_level,sub.room),ci+1,scTP)}<h3>บันทึกคะแนนหน่วยการเรียน</h3><table><thead><tr><th rowspan="2">เลขที่</th><th rowspan="2">รหัส</th><th rowspan="2" class="l">ชื่อ-สกุล</th><th colspan="${cols.length}">${pl}</th>`;
-      if(lB) body+=`<th rowspan="2">รวมก่อน<br>(/${mBef})</th>`;
-      if(lA) body+=`<th rowspan="2">รวมหลัง<br>(/${mAft})</th>`;
-      body+=`</tr><tr>`;
-      cols.forEach(u=>{ body+=`<th>${u.unit_number}${u.unit_name?'<br><span style="font-size:8px;font-weight:400">'+esc(u.unit_name.slice(0,10))+'</span>':''}<br><span style="font-size:8px;opacity:.6">/${u.max_score}</span></th>`; });
-      body+=`</tr></thead><tbody>`;
-      stus.forEach((s,i)=>{
-        body+=`<tr><td>${i+1}</td><td>${esc(s.student_code||'')}</td><td class="l">${esc(s.student_name)}</td>`;
-        cols.forEach(u=>{ const v=gscA(s.id,u.period,u.unit_number); body+=`<td>${v!=null?v:''}</td>`; });
-        if(lB){ const t=uBef.reduce((a,u)=>a+(gscA(s.id,'before',u.unit_number)??0),0); body+=`<td><strong>${t||''}</strong></td>`; }
-        if(lA){ const t=uAft.reduce((a,u)=>a+(gscA(s.id,'after',u.unit_number)??0),0); body+=`<td><strong>${t||''}</strong></td>`; }
-        body+=`</tr>`;
-      });
-      body+=`</tbody></table></div>`;
-    });
-    body+=`<div class="sec pb">${ph('บันทึกคะแนน — '+sub.subject_name+' '+grm(sub.grade_level,sub.room),scTP,scTP)}<h3>สรุปคะแนนและผลการเรียน</h3><table><thead><tr><th>เลขที่</th><th>รหัส</th><th class="l">ชื่อ-สกุล</th><th>รวมก่อน<br>(/${mBef})</th><th>รวมหลัง<br>(/${mAft})</th><th>กลางภาค<br>(/${mM})</th><th>รวมระหว่างภาค</th><th>ปลายภาค<br>(/${mF})</th><th>คะแนนรวม<br>(100)</th><th>ผลการเรียน</th></tr></thead><tbody>`;
-    stus.forEach((s,i)=>{
-      const sm=sumMap[s.id]||{};
-      const bef=sm.total_before_mid??uBef.reduce((a,u)=>a+(gscA(s.id,'before',u.unit_number)??0),0);
-      const aft=sm.total_after_mid??uAft.reduce((a,u)=>a+(gscA(s.id,'after',u.unit_number)??0),0);
-      const mid=parseFloat(sm.mid_normal)||0, fin=parseFloat(sm.final_score)||0;
-      const disp=['ร','มส','มผ','ผ'].includes(sm.special_result||'')?sm.special_result:(sm.grade??'-');
-      body+=`<tr><td>${i+1}</td><td>${esc(s.student_code||'')}</td><td class="l">${esc(s.student_name)}</td><td>${bef||''}</td><td>${aft||''}</td><td>${mid||''}</td><td>${(parseFloat(bef)+parseFloat(aft)+mid)||''}</td><td>${fin||''}</td><td><strong>${sm.total_score??0}</strong></td><td><strong>${disp}</strong></td></tr>`;
-    });
-    body+=`</tbody></table></div>`;
-
-    // ── 4. การประเมิน: อ่าน คิด เขียน ──────────────────────────
-    body+=`<div class="sec pb">${ph('การประเมิน — '+sub.subject_name+' '+grm(sub.grade_level,sub.room),1,2)}<h3>การอ่าน คิดวิเคราะห์ และเขียน</h3><table><thead><tr><th>เลขที่</th><th>รหัส</th><th class="l">ชื่อ-สกุล</th><th>ครั้ง 1</th><th>ครั้ง 2</th><th>ครั้ง 3</th><th>ครั้ง 4</th><th>ครั้ง 5</th><th>ผลสรุป</th></tr></thead><tbody>`;
-    stus.forEach((s,i)=>{ const er=erMap[s.id]||{}; body+=`<tr><td>${i+1}</td><td>${esc(s.student_code||'')}</td><td class="l">${esc(s.student_name)}</td><td>${elb(er.t1)}</td><td>${elb(er.t2)}</td><td>${elb(er.t3)}</td><td>${elb(er.t4)}</td><td>${elb(er.t5)}</td><td><strong>${elb(er.result)}</strong></td></tr>`; });
-    body+=`</tbody></table></div>`;
-
-    // ── 5. การประเมิน: คุณลักษณะ ──────────────────────────────────
-    body+=`<div class="sec pb">${ph('การประเมิน — '+sub.subject_name+' '+grm(sub.grade_level,sub.room),2,2)}<h3>คุณลักษณะอันพึงประสงค์</h3><table><thead><tr><th>เลขที่</th><th>รหัส</th><th class="l">ชื่อ-สกุล</th>`;
-    CHAR8.forEach((_,i)=>{ body+=`<th>ข้อ ${i+1}</th>`; });
-    body+=`<th>ผลสรุป</th></tr></thead><tbody>`;
-    stus.forEach((s,i)=>{ const ec=ecMap[s.id]||{}; body+=`<tr><td>${i+1}</td><td>${esc(s.student_code||'')}</td><td class="l">${esc(s.student_name)}</td>`; CHAR8.forEach(c=>{ body+=`<td>${elb(ec[c.key])}</td>`; }); body+=`<td><strong>${elb(ec.overall_result)}</strong></td></tr>`; });
-    body+=`</tbody></table><div style="margin-top:8px;font-size:9.5px;line-height:1.8;color:#333"><strong>หมายเหตุ</strong><br>`;
-    CHAR8.forEach((item,i)=>{ body+=`ข้อที่ ${i+1} ${item.label}<br>`; });
-    body+=`</div></div>`;
-
-    // ── 6. รายงานผลการเรียน ──────────────────────────────────────
-    const gcl=g=>{const n=parseFloat(g);if(n>=3.5)return'#15803d';if(n>=2.5)return'#0284c7';if(n>=1.5)return'#e6940a';if(n>=1)return'#c0392b';return'#922b21';};
-    body+=`<div class="sec pb">${ph('รายงานผลการเรียน — '+sub.subject_name+' '+grm(sub.grade_level,sub.room),1,1)}<h3>สรุปผลการเรียนรายบุคคล</h3><table><thead><tr><th>ที่</th><th class="l">ชื่อ-สกุล</th><th>รวมก่อน<br>(/${mBef})</th><th>รวมหลัง<br>(/${mAft})</th><th>กลางภาค<br>(/${mM})</th><th>ปลายภาค<br>(/${mF})</th><th>รวม<br>(100)</th><th>ผลการเรียน</th><th>ผลพิเศษ</th><th>เวลาเรียน</th><th>อ่าน/คิด</th><th>คุณลักษณะ</th></tr></thead><tbody>`;
-    stus.forEach((s,i)=>{ const sm=sumMap[s.id]||{},er=erMap[s.id]||{},ec=ecMap[s.id]||{},att=attMap[s.id]||{pct:0,ms:false},g=sm.grade??'-'; body+=`<tr><td>${i+1}</td><td class="l">${esc(s.student_name)}</td><td>${sm.total_before_mid??0}</td><td>${sm.total_after_mid??0}</td><td>${sm.mid_normal??0}</td><td>${sm.final_score??0}</td><td>${sm.total_score??0}</td><td style="color:${gcl(g)}"><strong>${g}</strong></td><td>${sm.special_result||'-'}</td><td>${att.pct}%${att.ms?' (มส)':''}</td><td>${elb(er.result)}</td><td>${elb(ec.overall_result)}</td></tr>`; });
-    body+=`</tbody></table></div>`;
-
     const w=window.open('','_blank');
     if(!w){ toast('เบราว์เซอร์บล็อก Popup — กรุณาอนุญาต Popup แล้วลองใหม่','er'); return; }
     w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>ปพ.5 ทั้งหมด — ${esc(sub.subject_name)} ${grm(sub.grade_level,sub.room)}</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet"><style>${css}</style></head><body><div id="pbody">${body}</div><div class="action-bar"><button class="btn-print" onclick="window.print()"><svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> พิมพ์ ปพ.5 ทั้งหมด</button></div></body></html>`);
@@ -4954,6 +4956,78 @@ async function printAllPP5(){
   }catch(e){
     loading(false);
     toast('เกิดข้อผิดพลาด: '+(e.message||e),'er');
+  }
+}
+
+async function exportAllPP5(){
+  if(!S.selSub){ toast('กรุณาเลือกรายวิชาก่อน','er'); return; }
+  if(typeof html2pdf==='undefined'){ toast('กำลังโหลด library รอสักครู่แล้วลองใหม่','er'); return; }
+  const sub=getSubject(S.selSub);
+  if(!sub){ toast('ไม่พบข้อมูลรายวิชา','er'); return; }
+  const subId=sub.id;
+  const cfg=S.config||{};
+
+  toast('กำลังเตรียมข้อมูล...','in');
+  loading(true);
+  let wrap=null;
+  try{
+    const [stus,sumRows,erRows,ecRows,scUnitsAll,attRows]=await Promise.all([
+      getStudentsBySubject(subId),
+      qc('sc_sum_'+subId,   ()=>q(sb.from('score_summary').select('*').eq('subject_id',subId))),
+      qc('ev_read_'+subId,  ()=>q(sb.from('eval_read').select('*').eq('subject_id',subId))),
+      qc('ev_char_'+subId,  ()=>q(sb.from('eval_char').select('*').eq('subject_id',subId))),
+      qc('sc_units_'+subId, ()=>q(sb.from('score_units').select('*').eq('subject_id',subId))),
+      qc('att_'+subId,      ()=>q(sb.from('attendance').select('*').eq('subject_id',subId)))
+    ]);
+    const sumMap=Object.fromEntries(sumRows.map(s=>[s.student_id,s]));
+    const erMap=Object.fromEntries(erRows.map(e=>[e.student_id,e]));
+    const ecMap=Object.fromEntries(ecRows.map(e=>[e.student_id,e]));
+    const totH=sub.total_hours||60;
+    const attMap={};
+    stus.forEach(s=>{ attMap[s.id]={present:0,absent:0,leave:0,attended:0,pct:0,ms:false}; });
+    attRows.forEach(a=>{ if(!attMap[a.student_id]) attMap[a.student_id]={present:0,absent:0,leave:0,attended:0,pct:0,ms:false}; const p=parseInt(a.periods)||1; if(a.status in attMap[a.student_id]) attMap[a.student_id][a.status]+=p; });
+    Object.values(attMap).forEach(m=>{ m.attended=m.present+m.leave; m.pct=totH>0?Math.round(m.attended/totH*100):0; m.ms=m.pct<80; });
+
+    const body=_buildPP5Body(sub,cfg,stus,sumMap,erMap,ecMap,scUnitsAll,attRows,attMap,totH);
+    const css=`
+      *{box-sizing:border-box;}
+      div,td,th,span{font-family:'Sarabun','TH SarabunNew','Noto Sans Thai',sans-serif;}
+      .sec{padding:0;margin:0;} .pb{page-break-before:always;}
+      .ph{text-align:center;margin-bottom:6px;border-bottom:2px solid #000;padding-bottom:5px;}
+      .ph h1{font-size:15px;font-weight:800;margin:0 0 2px;} .ph h2{font-size:13px;font-weight:600;margin:0 0 2px;} .ph .meta{font-size:11px;color:#444;margin:0;}
+      .m2{font-size:10.5px;color:#444;margin:3px 0;}
+      h3{font-size:12px;font-weight:700;margin:8px 0 4px;}
+      table{width:100%;border-collapse:collapse;margin-top:4px;}
+      .sec:not(.cv) th,.sec:not(.cv) td{border:1px solid #666;padding:2px 3px;font-size:10px;text-align:center;}
+      .sec:not(.cv) th{font-weight:700;background:#f0f0f0;} .sec:not(.cv) td.l,.sec:not(.cv) th.l{text-align:left;padding-left:5px;white-space:nowrap;}
+      .legend{font-size:9.5px;margin-top:4px;color:#555;}
+    `;
+
+    wrap=document.createElement('div');
+    wrap.style.cssText='position:fixed;left:-9999px;top:0;width:794px;background:#fff;font-size:12px;color:#000;line-height:1.4;';
+    const sEl=document.createElement('style'); sEl.textContent=css;
+    const cDiv=document.createElement('div'); cDiv.innerHTML=body;
+    wrap.appendChild(sEl); wrap.appendChild(cDiv);
+    document.body.appendChild(wrap);
+
+    const fname='ปพ5_'+(sub.subject_code||'')+'_'+grm(sub.grade_level,sub.room)+'_'+(cfg.academic_year||new Date().getFullYear())+'.pdf';
+    toast('กำลัง Export PDF...','in');
+
+    await html2pdf().set({
+      margin:[10,10,10,10],
+      filename:fname,
+      image:{type:'jpeg',quality:0.97},
+      html2canvas:{scale:2,useCORS:true,logging:false,backgroundColor:'#ffffff',windowWidth:794},
+      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+      pagebreak:{before:'.pb'}
+    }).from(cDiv).save();
+
+    toast('Export PDF ทั้งหมด สำเร็จ ✓');
+  }catch(e){
+    toast('Export PDF ผิดพลาด: '+(e.message||e),'er');
+  }finally{
+    wrap?.remove();
+    loading(false);
   }
 }
 
@@ -5006,7 +5080,11 @@ async function pgCover(){
   <div class="ph no-print"><div class="ptitle">ปก ปพ.5</div>
     <button class="btn bs no-print" onclick="exportCoverPdf()" style="background:rgba(255,59,48,.1);color:#FF3B30;border-color:rgba(255,59,48,.2)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 13h6M9 17h6"/></svg>
-        Export PDF
+        Export PDF ปก
+      </button>
+      <button class="btn bs no-print" onclick="exportAllPP5()" style="background:rgba(255,59,48,.1);color:#FF3B30;border-color:rgba(255,59,48,.2)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 13h6M9 17h6"/></svg>
+        Export PDF ทั้งหมด
       </button>
       <button class="btn bs no-print" onclick="printCover()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>พิมพ์ปก</button>
       <button class="btn no-print" style="background:linear-gradient(135deg,#1d1d1f,#3a3a3c);color:#fff;border:none;font-weight:600" onclick="printAllPP5()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>พิมพ์ทั้งหมด</button></div>
