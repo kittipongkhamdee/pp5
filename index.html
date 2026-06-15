@@ -4961,7 +4961,6 @@ async function printAllPP5(){
 
 async function exportAllPP5(){
   if(!S.selSub){ toast('กรุณาเลือกรายวิชาก่อน','er'); return; }
-  if(typeof html2pdf==='undefined'){ toast('กำลังโหลด library รอสักครู่แล้วลองใหม่','er'); return; }
   const sub=getSubject(S.selSub);
   if(!sub){ toast('ไม่พบข้อมูลรายวิชา','er'); return; }
   const subId=sub.id;
@@ -4969,7 +4968,6 @@ async function exportAllPP5(){
 
   toast('กำลังเตรียมข้อมูล...','in');
   loading(true);
-  let wrap=null;
   try{
     const [stus,sumRows,erRows,ecRows,scUnitsAll,attRows]=await Promise.all([
       getStudentsBySubject(subId),
@@ -4979,6 +4977,7 @@ async function exportAllPP5(){
       qc('sc_units_'+subId, ()=>q(sb.from('score_units').select('*').eq('subject_id',subId))),
       qc('att_'+subId,      ()=>q(sb.from('attendance').select('*').eq('subject_id',subId)))
     ]);
+    loading(false);
     const sumMap=Object.fromEntries(sumRows.map(s=>[s.student_id,s]));
     const erMap=Object.fromEntries(erRows.map(e=>[e.student_id,e]));
     const ecMap=Object.fromEntries(ecRows.map(e=>[e.student_id,e]));
@@ -4989,45 +4988,52 @@ async function exportAllPP5(){
     Object.values(attMap).forEach(m=>{ m.attended=m.present+m.leave; m.pct=totH>0?Math.round(m.attended/totH*100):0; m.ms=m.pct<80; });
 
     const body=_buildPP5Body(sub,cfg,stus,sumMap,erMap,ecMap,scUnitsAll,attRows,attMap,totH);
+    const fname='ปพ5_'+(sub.subject_code||'')+'_'+grm(sub.grade_level,sub.room)+'_'+(cfg.academic_year||new Date().getFullYear())+'.pdf';
     const css=`
       *{box-sizing:border-box;}
-      div,td,th,span{font-family:'Sarabun','TH SarabunNew','Noto Sans Thai',sans-serif;}
+      body{margin:0;padding:0;background:#fff;font-family:'Sarabun','TH SarabunNew','Noto Sans Thai',sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact;font-size:12px;color:#000;line-height:1.4;}
       .sec{padding:0;margin:0;} .pb{page-break-before:always;}
       .ph{text-align:center;margin-bottom:6px;border-bottom:2px solid #000;padding-bottom:5px;}
       .ph h1{font-size:15px;font-weight:800;margin:0 0 2px;} .ph h2{font-size:13px;font-weight:600;margin:0 0 2px;} .ph .meta{font-size:11px;color:#444;margin:0;}
       .m2{font-size:10.5px;color:#444;margin:3px 0;}
       h3{font-size:12px;font-weight:700;margin:8px 0 4px;}
       table{width:100%;border-collapse:collapse;margin-top:4px;}
-      .sec:not(.cv) th,.sec:not(.cv) td{border:1px solid #666;padding:2px 3px;font-size:10px;text-align:center;}
+      .sec:not(.cv) th,.sec:not(.cv) td{border:1px solid #666;padding:2px 3px;font-size:10px;text-align:center;font-family:'Sarabun','TH SarabunNew',sans-serif;}
       .sec:not(.cv) th{font-weight:700;background:#f0f0f0;} .sec:not(.cv) td.l,.sec:not(.cv) th.l{text-align:left;padding-left:5px;white-space:nowrap;}
       .legend{font-size:9.5px;margin-top:4px;color:#555;}
     `;
 
-    wrap=document.createElement('div');
-    wrap.style.cssText='position:fixed;left:-9999px;top:0;width:794px;background:#fff;font-size:12px;color:#000;line-height:1.4;';
-    const sEl=document.createElement('style'); sEl.textContent=css;
-    const cDiv=document.createElement('div'); cDiv.innerHTML=body;
-    wrap.appendChild(sEl); wrap.appendChild(cDiv);
-    document.body.appendChild(wrap);
-
-    const fname='ปพ5_'+(sub.subject_code||'')+'_'+grm(sub.grade_level,sub.room)+'_'+(cfg.academic_year||new Date().getFullYear())+'.pdf';
-    toast('กำลัง Export PDF...','in');
-
-    await html2pdf().set({
-      margin:[10,10,10,10],
-      filename:fname,
-      image:{type:'jpeg',quality:0.97},
-      html2canvas:{scale:2,useCORS:true,logging:false,backgroundColor:'#ffffff',windowWidth:794},
-      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
-      pagebreak:{before:'.pb'}
-    }).from(cDiv).save();
-
-    toast('Export PDF ทั้งหมด สำเร็จ ✓');
+    const w=window.open('','_blank');
+    if(!w){ toast('เบราว์เซอร์บล็อก Popup — กรุณาอนุญาต Popup แล้วลองใหม่','er'); return; }
+    w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
+<title>Export PDF — ${esc(sub.subject_name)}</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>${css}</style>
+<script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"><\/script>
+</head><body>
+<div id="content">${body}</div>
+<div id="ov" style="position:fixed;inset:0;background:rgba(255,255,255,.93);display:flex;align-items:center;justify-content:center;font-family:Sarabun,sans-serif;font-size:17px;color:#333">
+  <div style="text-align:center"><div style="font-size:36px;margin-bottom:10px">⏳</div><div>กำลัง Export PDF ทั้งหมด...</div><div style="font-size:13px;color:#888;margin-top:6px">อาจใช้เวลา 1-2 นาที</div></div>
+</div>
+<script>
+window.addEventListener('load',function(){
+  html2pdf().set({margin:[10,10,10,10],filename:${JSON.stringify(fname)},
+    image:{type:'jpeg',quality:0.97},
+    html2canvas:{scale:2,useCORS:true,logging:false,backgroundColor:'#ffffff'},
+    jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{before:'.pb'}
+  }).from(document.getElementById('content')).save().then(function(){
+    document.getElementById('ov').innerHTML='<div style="text-align:center"><div style="font-size:36px;margin-bottom:10px">✅</div><div>Export PDF สำเร็จ!</div><div style="font-size:13px;color:#888;margin-top:6px">หน้าต่างนี้จะปิดอัตโนมัติ</div></div>';
+    setTimeout(function(){window.close();},2000);
+  }).catch(function(e){
+    document.getElementById('ov').innerHTML='<div style="padding:20px;color:red">Export ผิดพลาด: '+e.message+'<br><br><button onclick="window.close()">ปิด</button></div>';
+  });
+});
+<\/script></body></html>`);
+    w.document.close();
+    toast('กำลัง Export PDF ในหน้าต่างใหม่...');
   }catch(e){
-    toast('Export PDF ผิดพลาด: '+(e.message||e),'er');
-  }finally{
-    wrap?.remove();
     loading(false);
+    toast('เกิดข้อผิดพลาด: '+(e.message||e),'er');
   }
 }
 
@@ -5253,44 +5259,37 @@ select,.no-print{display:none!important}
 }
 
 // ════ EXPORT COVER PDF ═══════════════════════════════════════════
-async function exportCoverPdf(){
+function exportCoverPdf(){
   const covEl = document.getElementById('cov-content');
   if(!covEl){ toast('ไม่พบเนื้อหาปก','er'); return; }
-  if(typeof html2pdf==='undefined'){ toast('กำลังโหลด library รอสักครู่แล้วลองใหม่','er'); return; }
-
   const sub = S.subjects.find(s=>s.id===S.selSub)||S.subjects[0];
   const fname = 'ปก_ปพ5_'+(sub?.subject_code||'')+'_'+grm(sub?.grade_level||0,sub?.room||0)+'_'+new Date().getFullYear()+'.pdf';
-
-  toast('กำลัง Export PDF...','in');
-  loading(true);
-
-  // A4 = 794px @ 96dpi; padding:10mm ≈ 38px ทำหน้าที่เป็น page margin ใน canvas
-  // จึงตั้ง jsPDF margin:[0,0,0,0] เพื่อไม่ให้ content ล้นขอบ
-  const wrap = document.createElement('div');
-  wrap.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#fff;';
-  const clone = covEl.cloneNode(true);
-  clone.style.cssText = 'width:794px;max-width:794px;margin:0;padding:10mm;box-sizing:border-box;background:#fff;';
-  clone.querySelectorAll('select,.no-print').forEach(el=>el.remove());
-  wrap.appendChild(clone);
-  document.body.appendChild(wrap);
-
-  try{
-    await html2pdf().set({
-      margin: [0,0,0,0],
-      filename: fname,
-      image: { type:'jpeg', quality:0.98 },
-      html2canvas: { scale:2, useCORS:true, logging:false,
-                     backgroundColor:'#ffffff', windowWidth:794 },
-      jsPDF: { unit:'mm', format:'a4', orientation:'portrait' },
-      pagebreak: { mode:'avoid-all' }
-    }).from(clone).save();
-    toast('Export PDF สำเร็จ ✓');
-  }catch(e){
-    toast('Export PDF ผิดพลาด: '+e.message,'er');
-  }finally{
-    wrap.remove();
-    loading(false);
-  }
+  const w=window.open('','_blank');
+  if(!w){ toast('เบราว์เซอร์บล็อก popup — กรุณาอนุญาต popup แล้วลองใหม่','er'); return; }
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>*{box-sizing:border-box}body{margin:0;padding:0;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}select,.no-print{display:none!important}</style>
+<script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"><\/script>
+</head><body>
+<div id="cv" style="max-width:210mm;margin:auto;padding:10mm">${covEl.innerHTML}</div>
+<div id="ov" style="position:fixed;inset:0;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;font-family:Sarabun,sans-serif;font-size:17px;color:#333">
+  <div style="text-align:center"><div style="font-size:36px;margin-bottom:10px">⏳</div><div>กำลัง Export PDF ปก...</div></div>
+</div>
+<script>
+window.addEventListener('load',function(){
+  html2pdf().set({margin:[0,0,0,0],filename:${JSON.stringify(fname)},image:{type:'jpeg',quality:0.98},
+    html2canvas:{scale:2,useCORS:true,logging:false,backgroundColor:'#ffffff'},
+    jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:'avoid-all'}
+  }).from(document.getElementById('cv')).save().then(function(){
+    document.getElementById('ov').innerHTML='<div style="text-align:center"><div style="font-size:36px;margin-bottom:10px">✅</div><div>Export PDF ปก สำเร็จ!</div></div>';
+    setTimeout(function(){window.close();},1500);
+  }).catch(function(e){
+    document.getElementById('ov').innerHTML='<div style="padding:20px;color:red">Export ผิดพลาด: '+e.message+'<br><br><button onclick="window.close()">ปิด</button></div>';
+  });
+});
+<\/script></body></html>`);
+  w.document.close();
+  toast('กำลัง Export PDF ปก...');
 }
 
 // ════════════════════════════════════════════════════════════════
