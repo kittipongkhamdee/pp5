@@ -4812,9 +4812,56 @@ function _buildPP5Body(sub,cfg,stus,sumMap,erMap,ecMap,scUnitsAll,attRows,attMap
   const elb=v=>{const n=parseInt(v);return[0,1,2,3].includes(n)?String(n):'-';};
   let body='';
 
-  // ── 1. ปก ปพ.5 ─── ดึง HTML จาก DOM เหมือน printCover() ─────
-  const covEl=document.getElementById('cov-content');
-  body+=`<div class="cv sec">${covEl?covEl.innerHTML:'<p style="color:red">ไม่พบเนื้อหาปก กรุณาเปิดหน้า ปก ปพ.5 ก่อน</p>'}</div>`;
+  // ── 1. ปก ปพ.5 ─── สร้าง HTML โดยตรงจากข้อมูล ────────────────
+  const totalN=stus.length;
+  const stuIds=new Set(stus.map(s=>String(s.id)));
+  const gc={4:0,3.5:0,3:0,2.5:0,2:0,1.5:0,1:0,0:0};let rC=0,msC=0;
+  Object.entries(sumMap).forEach(([sid,s])=>{if(!stuIds.has(String(sid)))return;const g=parseFloat(s.grade);if(gc[g]!==undefined)gc[g]++;if(s.special_result==='ร')rC++;if(s.special_result==='มส')msC++;});
+  const cvErLv={3:0,2:0,1:0,0:0};let cvErTotal=0;
+  Object.entries(erMap).filter(([sid])=>stuIds.has(String(sid))).forEach(([,e])=>{cvErTotal++;const v=parseInt(e.result);if(v in cvErLv)cvErLv[v]++;});
+  const cvEcLv={3:0,2:0,1:0,0:0};let cvEcTotal=0;
+  Object.entries(ecMap).filter(([sid])=>stuIds.has(String(sid))).forEach(([,e])=>{cvEcTotal++;const v=parseInt(e.overall_result);if(v in cvEcLv)cvEcLv[v]++;});
+  const cvPct=n=>totalN>0?(n/totalN*100).toFixed(2):'';
+  const cvTh=(c,ex='')=>`<td style="border:1px solid #000;padding:3px 4px;text-align:center;font-size:11px;font-weight:600;background:#f0f0f0;${ex}">${c}</td>`;
+  const cvTd=(c,ex='')=>`<td style="border:1px solid #000;padding:4px;text-align:center;font-size:12px;${ex}">${c}</td>`;
+  body+=`<div class="cv sec"><div style="border:1.5px solid #333;padding:12px 18px 14px;font-family:'Sarabun','TH SarabunNew',sans-serif;background:#fff;position:relative;min-height:270mm">
+<div style="position:absolute;top:10px;right:16px;font-size:12px;font-weight:700;letter-spacing:.5px">ปพ. 5</div>
+<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;margin:8px 0 10px;text-align:center"><img src="${cfg.logo_url||'https://lh5.googleusercontent.com/d/1IjjamxeQ9VaeAao8PtmR7RCwioE4hndi'}" alt="ตราโรงเรียน" style="height:80px;width:auto;object-fit:contain;display:block;margin:0 auto" onerror="this.style.display='none'"></div>
+<div style="text-align:center;font-size:16px;font-weight:700;margin-bottom:10px">แบบบันทึกผลการเรียนประจำรายวิชา</div>
+<table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:10px;table-layout:fixed"><colgroup><col style="width:150px"><col><col style="width:80px"><col></colgroup>
+<tr><td style="padding:4px 6px">โรงเรียน</td><td colspan="3" style="padding:4px 6px;border-bottom:1px solid #666">${esc(cfg.school_name||'')}</td></tr>
+<tr><td style="padding:4px 6px">อำเภอ/เขต</td><td style="padding:4px 6px;border-bottom:1px solid #666">${esc(cfg.school_district||'')}</td><td style="padding:4px 6px">จังหวัด</td><td style="padding:4px 6px;border-bottom:1px solid #666">${esc(cfg.school_province||'')}</td></tr>
+<tr><td style="padding:4px 6px">ชั้นมัธยมศึกษาปีที่</td><td style="padding:4px 6px;border-bottom:1px solid #666">${sub.grade_level}</td><td style="padding:4px 6px">ห้อง</td><td style="padding:4px 6px;border-bottom:1px solid #666">${+sub.room===0?'':sub.room}</td></tr>
+<tr><td style="padding:4px 6px">ภาคเรียนที่</td><td style="padding:4px 6px;border-bottom:1px solid #666;white-space:nowrap">${cfg.semester||''}</td><td style="padding:4px 6px;white-space:nowrap">ปีการศึกษา</td><td style="padding:4px 6px;border-bottom:1px solid #666;white-space:nowrap">${cfg.academic_year||''}</td></tr>
+<tr><td style="padding:4px 6px">รายวิชา</td><td colspan="2" style="padding:4px 6px;border-bottom:1px solid #666">${esc(sub.subject_name)}</td><td style="padding:4px 6px;border-bottom:1px solid #666">${esc(sub.subject_code)}</td></tr>
+<tr><td style="padding:4px 6px">หน่วยกิต</td><td style="padding:4px 6px;border-bottom:1px solid #666;white-space:nowrap">${sub.credits}</td><td style="padding:4px 6px;white-space:nowrap">เวลาเรียน</td><td style="padding:4px 6px;border-bottom:1px solid #666;white-space:nowrap">${sub.total_hours} ชม./ภาค (${sub.hours_per_week} ชม./สัปดาห์)</td></tr>
+<tr><td style="padding:4px 6px">ครูผู้สอน</td><td colspan="3" style="padding:4px 6px;border-bottom:1px solid #666">${esc(sub.teacher_name||'')}</td></tr>
+</table>
+<div style="font-size:13px;font-weight:700;margin:6px 0 4px">สรุปผลการประเมิน</div>
+<table style="width:100%;border-collapse:collapse;border:1px solid #666;font-size:13px;margin-bottom:5px"><thead><tr style="background:#efefef">
+${cvTh('จำนวน<br>นักเรียน','vertical-align:middle;font-size:11px;')}${[4,3.5,3,2.5,2,1.5,1,0].map(g=>cvTh(g,'font-size:13px;font-weight:700;')).join('')}${cvTh('ร','font-size:13px;font-weight:700;')}${cvTh('มส','font-size:13px;font-weight:700;')}
+</tr></thead><tbody>
+<tr>${cvTd(totalN,'font-weight:600;')}${[4,3.5,3,2.5,2,1.5,1,0].map(g=>cvTd(gc[g]||'')).join('')}${cvTd(rC||'')}${cvTd(msC||'')}</tr>
+<tr style="background:#fafafa">${cvTd('ร้อยละ','font-size:13px;color:#555;')}${[4,3.5,3,2.5,2,1.5,1,0].map(g=>cvTd(cvPct(gc[g]),'font-size:13px;')).join('')}${cvTd(cvPct(rC),'font-size:13px;')}${cvTd(cvPct(msC),'font-size:13px;')}</tr>
+</tbody></table>
+<table style="width:100%;border-collapse:collapse;border:1px solid #666;font-size:13px;margin-bottom:12px"><thead><tr style="background:#efefef">
+${cvTh('รายการประเมิน','text-align:left;padding-left:6px;font-size:11.5px;')}${cvTh('จำนวน','font-size:13px;')}${cvTh('ดีเยี่ยม (3)','font-size:13px;')}${cvTh('ดี (2)','font-size:13px;')}${cvTh('ผ่าน (1)','font-size:13px;')}${cvTh('ไม่ผ่าน (0)','font-size:13px;')}
+</tr></thead><tbody>
+<tr><td style="border:1px solid #666;padding:4px 6px;font-size:13px">การอ่าน คิดวิเคราะห์ และเขียน</td>${cvTd(cvErTotal||'')}${[3,2,1,0].map(v=>cvTd(cvErLv[v]?(cvErLv[v]+(cvErTotal>0?' ('+(cvErLv[v]/cvErTotal*100).toFixed(1)+'%)':'')):'','font-size:13px;')).join('')}</tr>
+<tr><td style="border:1px solid #666;padding:4px 6px;font-size:13px">คุณลักษณะอันพึงประสงค์</td>${cvTd(cvEcTotal||'')}${[3,2,1,0].map(v=>cvTd(cvEcLv[v]?(cvEcLv[v]+(cvEcTotal>0?' ('+(cvEcLv[v]/cvEcTotal*100).toFixed(1)+'%)':'')):'','font-size:13px;')).join('')}</tr>
+</tbody></table>
+<div style="font-size:13px;font-weight:700;margin-bottom:8px">การอนุมัติผลการเรียน</div>
+<div style="text-align:center;font-size:13px;margin-bottom:48px"><div style="margin-bottom:2px">ลงชื่อ …………………………………………………</div><div style="margin-bottom:2px">(${esc(sub.teacher_name||'…………………………………………………')})</div><div style="font-size:12px">ครูผู้สอน</div></div>
+<div style="display:flex;justify-content:space-around;font-size:13px;margin-bottom:22px">
+<div style="flex:1;text-align:center"><div style="margin-bottom:2px">ลงชื่อ …………………………………………</div><div style="margin-bottom:2px">(${esc(sub.head_of_group||'........................................')})</div><div style="font-size:12px">หัวหน้ากลุ่มสาระการเรียนรู้</div></div>
+<div style="flex:1;text-align:center"><div style="margin-bottom:2px">ลงชื่อ …………………………………………</div><div style="margin-bottom:2px">(${esc(cfg.head_registrar||'........................................')})</div><div style="font-size:12px">หัวหน้างานทะเบียนวัดผล</div></div>
+<div style="flex:1;text-align:center"><div style="margin-bottom:2px">ลงชื่อ …………………………………………</div><div style="margin-bottom:2px">(${esc(cfg.head_academic||'........................................')})</div><div style="font-size:12px">หัวหน้างานวิชาการ</div></div>
+</div>
+<div style="display:flex;justify-content:space-around;font-size:13px;margin-top:16px">
+<div style="flex:1;text-align:center"><div style="margin-bottom:48px;text-align:left;padding-left:32px">เรียน เสนอมาเพื่อโปรดพิจารณา</div><div style="margin-bottom:2px">ลงชื่อ …………………………………………</div><div style="margin-bottom:2px">(${esc(cfg.vice_director||'……………………………………………')})</div><div style="font-size:12px">รองผู้อำนวยการโรงเรียน${esc(cfg.school_name||'')}</div></div>
+<div style="flex:1;text-align:center"><div style="margin-bottom:48px"><span style="font-size:18px">☐</span> อนุมัติ &nbsp;&nbsp; <span style="font-size:18px">☐</span> ไม่อนุมัติ</div><div style="margin-bottom:2px">ลงชื่อ …………………………………………</div><div style="margin-bottom:2px">(${esc(cfg.director_name||'……………………………………………')})</div><div style="font-size:12px">ผู้อำนวยการโรงเรียน${esc(cfg.school_name||'')}</div><div style="font-size:11.5px;margin-top:4px">วันที่ ……… เดือน …………………………………… พ.ศ. ………</div></div>
+</div>
+</div></div>`;
 
   // ── 2. บันทึกเวลาเรียน ──────────────────────────────────────
   const mMap={};
