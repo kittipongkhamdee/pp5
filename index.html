@@ -1420,6 +1420,7 @@ async function loadConfig(){
     const rows = await q(sb.from('config').select('*'));
     S.config = {};
     rows.forEach(r=>{ S.config[r.key]=r.value; });
+    if(S.config.subject_groups){try{SUBJECT_GROUPS=JSON.parse(S.config.subject_groups);}catch(e){}}
   }catch(e){ S.config = {}; }
 }
 
@@ -1999,9 +2000,10 @@ const TITLES={dashboard:'แดชบอร์ด',subjects:'รายวิช�
   attendance:'เวลาเรียน',scores:'บันทึกคะแนน',eval:'ประเมิน อ่าน/คุณลักษณะ',
   report:'รายงานผลการเรียน',cover:'ปก ปพ.5',iqa:'รายงาน IQA กลุ่มสาระ',
   settings:'ตั้งค่า',manual:'คู่มือการใช้งาน'};
-const SUBJECT_GROUPS=['ภาษาไทย','คณิตศาสตร์','วิทยาศาสตร์และเทคโนโลยี',
+let SUBJECT_GROUPS=['ภาษาไทย','คณิตศาสตร์','วิทยาศาสตร์และเทคโนโลยี',
   'สังคมศึกษา ศาสนา และวัฒนธรรม','สุขศึกษาและพลศึกษา','ศิลปะ',
   'การงานอาชีพ','ภาษาต่างประเทศ','การศึกษาค้นคว้าด้วยตนเอง (IS)'];
+let _sgList=[];
 const IQA_DEFAULT_TARGETS={'ภาษาไทย':2.60,'คณิตศาสตร์':2.00,'วิทยาศาสตร์และเทคโนโลยี':2.75,
   'สังคมศึกษา ศาสนา และวัฒนธรรม':3.00,'สุขศึกษาและพลศึกษา':3.20,'ศิลปะ':3.20,
   'การงานอาชีพ':3.20,'ภาษาต่างประเทศ':2.50,'การศึกษาค้นคว้าด้วยตนเอง (IS)':3.10};
@@ -5490,8 +5492,36 @@ async function deleteTeacherData(userId, name){
   });
 }
 
+function _sgListHTML(list){
+  if(!list.length) return '<div style="color:#8e8e93;font-size:13px;text-align:center;padding:12px 0">ยังไม่มีกลุ่มสาระ</div>';
+  return list.map((g,i)=>`<div style="display:flex;align-items:center;gap:6px;padding:7px 0;border-bottom:1px solid var(--bdr)"><span style="font-size:12px;color:#8e8e93;min-width:22px">${i+1}.</span><span style="flex:1;font-size:13px">${esc(g)}</span><button class="btn bs" onclick="sgMove(${i},-1)" ${i===0?'disabled':''} style="padding:3px 8px;min-width:28px">▲</button><button class="btn bs" onclick="sgMove(${i},1)" ${i===list.length-1?'disabled':''} style="padding:3px 8px;min-width:28px">▼</button><button class="btn" onclick="sgDel(${i})" style="padding:3px 9px;color:#FF3B30;border-color:rgba(255,59,48,.3);background:rgba(255,59,48,.08);font-size:12px">ลบ</button></div>`).join('');
+}
+function _sgRefresh(){ const el=document.getElementById('sg-list'); if(el) el.innerHTML=_sgListHTML(_sgList); }
+function sgAdd(){
+  const inp=document.getElementById('sg-new'); if(!inp) return;
+  const name=inp.value.trim();
+  if(!name){ toast('กรุณาใส่ชื่อกลุ่มสาระ','er'); return; }
+  if(_sgList.includes(name)){ toast('กลุ่มสาระนี้มีอยู่แล้ว','er'); return; }
+  _sgList.push(name); inp.value=''; _sgRefresh();
+}
+function sgMove(i,dir){ const j=i+dir; if(j<0||j>=_sgList.length) return; [_sgList[i],_sgList[j]]=[_sgList[j],_sgList[i]]; _sgRefresh(); }
+function sgDel(i){ if(!confirm(`ลบ "${_sgList[i]}" ออกจากรายการกลุ่มสาระ?`)) return; _sgList.splice(i,1); _sgRefresh(); }
+async function saveSgList(){
+  if(!_sgList.length){ toast('ต้องมีกลุ่มสาระอย่างน้อย 1 กลุ่ม','er'); return; }
+  loading(true);
+  try{
+    await q(sb.from('config').upsert([{key:'subject_groups',value:JSON.stringify(_sgList)}],{onConflict:'key'}));
+    SUBJECT_GROUPS=[..._sgList];
+    S.config.subject_groups=JSON.stringify(_sgList);
+    toast('บันทึกกลุ่มสาระเรียบร้อย');
+    pgSettings();
+  }catch(e){ toast('เกิดข้อผิดพลาด: '+e.message,'er'); }
+  finally{ loading(false); }
+}
+
 function pgSettings(){
   const cfg=S.config;
+  _sgList=[...SUBJECT_GROUPS];
   $('pg').innerHTML=`
   <div class="ph">
     <div class="ptitle">
@@ -5654,6 +5684,31 @@ function pgSettings(){
     </div>
 
   </div><!-- end top grid -->
+
+  <!-- ── กลุ่มสาระการเรียนรู้ ── -->
+  <div class="card">
+    <div class="ch">
+      <div class="ct" style="display:flex;align-items:center;gap:7px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--ac)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        กลุ่มสาระการเรียนรู้
+      </div>
+    </div>
+    <div class="cb">
+      <div style="font-size:12px;color:#6e6e73;margin-bottom:14px;line-height:1.6">เพิ่ม ลบ หรือเรียงลำดับกลุ่มสาระที่ใช้ในระบบ (ใช้ในฟอร์มรายวิชาและรายงาน IQA)</div>
+      <div id="sg-list">${_sgListHTML(_sgList)}</div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <input class="fi" id="sg-new" placeholder="ชื่อกลุ่มสาระใหม่..." style="flex:1" onkeydown="if(event.key==='Enter')sgAdd()">
+        <button class="btn bs" onclick="sgAdd()" style="white-space:nowrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          เพิ่ม
+        </button>
+      </div>
+      <button class="btn bp" onclick="saveSgList()" style="margin-top:14px;width:100%;justify-content:center">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        บันทึกกลุ่มสาระ
+      </button>
+    </div>
+  </div>
 
   <!-- ── ค่าเป้าหมาย IQA ── -->
   <div class="card">
