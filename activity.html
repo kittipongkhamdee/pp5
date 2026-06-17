@@ -1014,12 +1014,34 @@ function _clearRptStu(){
   const inp=$('rpt-stu-search-inp');if(inp){inp.value='';inp.focus();}
   const wrap=$('rpt-stu-tag-wrap');if(wrap)wrap.innerHTML='';
   const sl=$('rpt-stu-suggest');if(sl){sl.style.display='none';sl.innerHTML=''}
-  $('rpt-stu-body').innerHTML='<div class="empty-state">เลือกนักเรียนเพื่อดูประวัติ</div>';
+  _renderClassStudentList();
 }
 function _onRptClassChange(val){
   S.rptStuClass=val||null;
-  _clearRptStu();
+  S.rptStuId=null;S.rptStuSearch='';
+  const inp=$('rpt-stu-search-inp');if(inp)inp.value='';
+  const wrap=$('rpt-stu-tag-wrap');if(wrap)wrap.innerHTML='';
+  const sl=$('rpt-stu-suggest');if(sl){sl.style.display='none';sl.innerHTML=''}
+  _renderClassStudentList();
 }
+let _stuPickList=[];
+function _renderClassStudentList(){
+  const body=$('rpt-stu-body');if(!body)return;
+  if(!S.rptStuClass){
+    body.innerHTML='<div class="empty-state">เลือกชั้นเรียน หรือพิมพ์ชื่อเพื่อค้นหานักเรียน</div>';return;
+  }
+  const[gl,r]=S.rptStuClass.split('_');
+  _stuPickList=S.students.filter(s=>String(s.grade_level)===gl&&String(s.room)===r);
+  if(!_stuPickList.length){body.innerHTML='<div class="empty-state">ไม่พบนักเรียนในชั้นนี้</div>';return}
+  const chevSvg=`<svg class="card-row-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M9 18l6-6-6-6"/></svg>`;
+  let h=`<div style="font-size:12px;font-weight:600;color:var(--txt3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px;padding:0 2px">${classLabel(gl,r)} · ${_stuPickList.length} คน</div><div class="card">`;
+  _stuPickList.forEach((s,i)=>{
+    h+=`<div class="card-row" onclick="_pickStu(${i})"><div class="card-row-info"><div class="card-row-name">${esc(s.student_name)}</div><div class="card-row-sub">${esc(s.student_code||'')}</div></div>${chevSvg}</div>`;
+  });
+  h+='</div>';
+  body.innerHTML=h;
+}
+function _pickStu(i){const s=_stuPickList[i];if(s)_selectRptStu(s.id,s.student_name);}
 async function _loadRptStudentData(){
   if(!S.rptStuId){$('rpt-stu-body').innerHTML='<div class="empty-state">เลือกนักเรียนเพื่อดูประวัติ</div>';return}
   $('rpt-stu-body').innerHTML='<div class="loading-text">กำลังโหลด...</div>';
@@ -1065,8 +1087,9 @@ async function renderRptStudent(){
     <div class="filter-row">
       <select class="ios-select" onchange="S.rptStuActivityId=+this.value||null;_loadRptStudentData()">${'<option value="">ทุกกิจกรรม</option>'+aOpts}</select>
     </div>
-    <div id="rpt-stu-body">${S.rptStuId?'<div class="loading-text">กำลังโหลด...</div>':'<div class="empty-state">พิมพ์ชื่อหรือรหัสนักเรียน แล้วเลือกจากรายชื่อ</div>'}</div>`;
+    <div id="rpt-stu-body"><div class="loading-text">กำลังโหลด...</div></div>`;
   if(S.rptStuId){_renderStuSelectedTag(S.rptStuSearch);await _loadRptStudentData();}
+  else _renderClassStudentList();
 }
 
 // ── Report: per class ──
