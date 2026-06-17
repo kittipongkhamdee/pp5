@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<title>Mockup — ระบบเช็คชื่อกิจกรรม</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Sarabun',-apple-system,sans-serif;background:#111827;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px 16px 40px;}
+
+.page-label{color:rgba(255,255,255,.45);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;text-align:center;}
+.page-desc{color:rgba(255,255,255,.6);font-size:13px;text-align:center;margin-bottom:20px;max-width:380px;line-height:1.6;}
+
+/* ── Nav tabs (outside phone) ── */
+.nav-tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;justify-content:center;}
+.nav-tab{padding:8px 16px;border-radius:20px;border:1.5px solid rgba(255,255,255,.2);background:transparent;color:rgba(255,255,255,.6);font-size:13px;font-weight:600;font-family:'Sarabun',sans-serif;cursor:pointer;transition:all .2s;}
+.nav-tab.on{background:#0A84FF;border-color:#0A84FF;color:white;}
+
+/* ── Phone frame ── */
+.phone{width:390px;max-width:100%;background:#f5f5f7;border-radius:48px;box-shadow:0 0 0 2px #2a2a2a,0 0 0 4px #1a1a1a,0 40px 80px rgba(0,0,0,.6);overflow:hidden;position:relative;display:flex;flex-direction:column;height:780px;}
+.status-bar{background:white;padding:14px 28px 8px;display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:700;flex-shrink:0;}
+.sb-time{font-size:15px;font-weight:800;}
+.sb-icons{display:flex;gap:5px;align-items:center;}
+
+/* ── Screens ── */
+.screen{display:none;flex:1;overflow-y:auto;flex-direction:column;padding-bottom:76px;}
+.screen.active{display:flex;}
+
+/* ── Bottom nav ── */
+.bottom-nav{position:absolute;bottom:0;left:0;right:0;background:rgba(255,255,255,.96);backdrop-filter:blur(20px);border-top:1px solid rgba(0,0,0,.08);display:flex;padding:8px 0 18px;z-index:100;}
+.bnav{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;cursor:pointer;color:#8e8e93;font-size:10px;font-weight:600;transition:color .2s;border:none;background:none;font-family:'Sarabun',sans-serif;}
+.bnav.on{color:#0A84FF;}
+.bnav svg{width:23px;height:23px;}
+
+/* ── Common ── */
+.hd{background:white;padding:18px 16px 14px;border-bottom:1px solid rgba(0,0,0,.06);flex-shrink:0;}
+.hd-title{font-size:22px;font-weight:800;color:#1d1d1f;}
+.hd-sub{font-size:13px;color:#8e8e93;margin-top:2px;}
+.cnt{padding:14px 14px 0;}
+
+.card{background:white;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 1px 6px rgba(0,0,0,.07);}
+
+.badge{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;}
+.b-blue{background:#E5F1FF;color:#0A84FF;}
+.b-green{background:#E5F5EA;color:#30D158;}
+.b-red{background:#FFECEB;color:#FF453A;}
+.b-orange{background:#FFF4E5;color:#FF9F0A;}
+.b-purple{background:#F0ECFF;color:#BF5AF2;}
+.b-gray{background:#F2F2F7;color:#8e8e93;}
+
+/* ────── SCREEN 1: HOME ────── */
+.act-card{background:white;border-radius:18px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.08);cursor:pointer;transition:transform .1s;}
+.act-card:active{transform:scale(.98);}
+.ac-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.ac-name{font-size:16px;font-weight:700;color:#1d1d1f;}
+.ac-date{font-size:12px;color:#8e8e93;margin-top:2px;}
+.ac-sessions{display:flex;gap:6px;margin-bottom:12px;}
+.session-pill{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid;}
+.sp-morning{border-color:#FF9F0A;color:#FF9F0A;background:#FFF4E5;}
+.sp-evening{border-color:#5E5CE6;color:#5E5CE6;background:#F0EFFF;}
+.sp-done{border-color:#30D158;color:#30D158;background:#E5F5EA;}
+.ac-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:0;padding:10px 0 0;border-top:1px solid #f2f2f7;}
+.ast{text-align:center;}
+.ast-n{font-size:22px;font-weight:800;}
+.ast-l{font-size:10px;color:#8e8e93;margin-top:1px;}
+.ast.present .ast-n{color:#30D158;}
+.ast.late .ast-n{color:#FF9F0A;}
+.ast.absent .ast-n{color:#FF453A;}
+.btn-main{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;padding:12px;background:#0A84FF;color:white;border:none;border-radius:13px;font-size:15px;font-weight:700;font-family:'Sarabun',sans-serif;cursor:pointer;margin-top:13px;}
+.btn-main.green{background:#30D158;}
+
+.today-banner{background:linear-gradient(135deg,#0A84FF,#0060DF);color:white;margin:14px 14px 0;border-radius:18px;padding:16px;display:flex;justify-content:space-between;align-items:center;}
+.tb-left{} .tb-day{font-size:13px;opacity:.85;} .tb-date{font-size:20px;font-weight:800;margin-top:2px;} .tb-right{text-align:right;} .tb-cnt{font-size:30px;font-weight:800;} .tb-sub{font-size:12px;opacity:.8;}
+
+/* ────── SCREEN 2: CHECK-IN ────── */
+.ci-header{background:#0A84FF;padding:14px 14px 18px;color:white;flex-shrink:0;}
+.ci-back{display:flex;align-items:center;gap:5px;color:rgba(255,255,255,.9);font-size:15px;font-weight:500;margin-bottom:10px;cursor:pointer;background:none;border:none;font-family:'Sarabun',sans-serif;}
+.ci-title{font-size:19px;font-weight:800;margin-bottom:3px;}
+.ci-sub{font-size:12px;opacity:.8;margin-bottom:14px;}
+.sess-toggle{display:flex;background:rgba(255,255,255,.2);border-radius:11px;padding:3px;gap:3px;}
+.sess-btn{flex:1;padding:8px;border-radius:9px;border:none;font-size:13px;font-weight:700;font-family:'Sarabun',sans-serif;cursor:pointer;color:rgba(255,255,255,.8);background:transparent;transition:all .2s;}
+.sess-btn.on{background:white;color:#0A84FF;}
+
+.ci-toolbar{background:white;padding:10px 12px;display:flex;gap:8px;align-items:center;border-bottom:1px solid #f2f2f7;position:sticky;top:0;z-index:10;flex-shrink:0;}
+.search-box{flex:1;display:flex;align-items:center;gap:7px;background:#f2f2f7;border-radius:10px;padding:8px 11px;font-size:13px;color:#8e8e93;}
+.filter-chip{display:flex;align-items:center;gap:4px;padding:8px 11px;background:#f2f2f7;border-radius:10px;font-size:13px;font-weight:600;color:#1d1d1f;white-space:nowrap;cursor:pointer;}
+
+.bulk-bar{background:#F8F8FA;padding:8px 12px;display:flex;gap:7px;flex-shrink:0;}
+.bulk-btn{flex:1;padding:9px 4px;border-radius:10px;border:none;font-size:12px;font-weight:700;font-family:'Sarabun',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;}
+.bb-all{background:#E5F5EA;color:#30D158;}
+.bb-abs{background:#FFECEB;color:#FF453A;}
+.bb-clr{background:#f2f2f7;color:#8e8e93;}
+
+.stu-row{background:white;padding:11px 12px;display:flex;align-items:center;gap:9px;border-bottom:1px solid #f5f5f7;}
+.stu-no{font-size:12px;color:#aeaeb2;min-width:22px;text-align:center;}
+.stu-info{flex:1;} .stu-name{font-size:14px;font-weight:600;color:#1d1d1f;} .stu-code{font-size:11px;color:#aeaeb2;}
+.stu-btns{display:flex;gap:5px;}
+.sb{width:34px;height:34px;border-radius:9px;border:1.5px solid;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;background:transparent;transition:all .15s;}
+.sb.p{border-color:#30D158;color:#30D158;} .sb.p.on{background:#30D158;color:white;}
+.sb.l{border-color:#FF9F0A;color:#FF9F0A;} .sb.l.on{background:#FF9F0A;color:white;}
+.sb.a{border-color:#FF453A;color:#FF453A;} .sb.a.on{background:#FF453A;color:white;}
+
+.ci-footer{background:white;border-top:1px solid rgba(0,0,0,.07);padding:12px 14px 22px;flex-shrink:0;}
+.footer-stats{display:flex;justify-content:space-around;margin-bottom:10px;}
+.fs{text-align:center;} .fs-n{font-size:20px;font-weight:800;} .fs-l{font-size:10px;color:#8e8e93;}
+.fs.p .fs-n{color:#30D158;} .fs.l .fs-n{color:#FF9F0A;} .fs.a .fs-n{color:#FF453A;}
+.btn-save{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;padding:14px;background:#0A84FF;color:white;border:none;border-radius:14px;font-size:15px;font-weight:800;font-family:'Sarabun',sans-serif;cursor:pointer;}
+
+/* ────── SCREEN 3: REPORT ────── */
+.rpt-header{background:white;padding:16px 14px 0;border-bottom:1px solid rgba(0,0,0,.06);flex-shrink:0;}
+.rpt-tabs{display:flex;margin-top:12px;}
+.rpt-tab{flex:1;padding:10px;text-align:center;font-size:13px;font-weight:700;color:#8e8e93;border-bottom:2px solid transparent;cursor:pointer;transition:all .2s;}
+.rpt-tab.on{color:#0A84FF;border-bottom-color:#0A84FF;}
+.sum-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+.sum-card{background:white;border-radius:14px;padding:14px 8px;text-align:center;box-shadow:0 1px 5px rgba(0,0,0,.07);}
+.sum-n{font-size:28px;font-weight:800;} .sum-l{font-size:11px;color:#8e8e93;margin-top:2px;}
+.sc-p .sum-n{color:#30D158;} .sc-l .sum-n{color:#FF9F0A;} .sc-a .sum-n{color:#FF453A;}
+
+.export-row{display:flex;gap:8px;margin-bottom:14px;}
+.ex-btn{flex:1;padding:10px 4px;border-radius:12px;border:1.5px solid;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;font-weight:700;font-family:'Sarabun',sans-serif;cursor:pointer;background:white;}
+.ex-pdf{border-color:#FF453A;color:#FF453A;} .ex-xls{border-color:#30D158;color:#30D158;} .ex-img{border-color:#5E5CE6;color:#5E5CE6;}
+
+.rpt-row{background:white;border-radius:14px;padding:13px 14px;margin-bottom:10px;box-shadow:0 1px 5px rgba(0,0,0,.07);}
+.rr-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;}
+.rr-name{font-size:14px;font-weight:700;color:#1d1d1f;} .rr-date{font-size:11px;color:#aeaeb2;}
+.rr-bar{height:7px;border-radius:4px;background:#f2f2f7;overflow:hidden;margin-bottom:7px;}
+.rr-fill{height:100%;border-radius:4px;}
+.rr-stats{display:flex;gap:12px;font-size:12px;font-weight:600;}
+.rrs-p{color:#30D158;} .rrs-l{color:#FF9F0A;} .rrs-a{color:#FF453A;}
+
+.stu-rpt-row{background:white;border-radius:12px;padding:12px 13px;margin-bottom:8px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 5px rgba(0,0,0,.06);}
+.srr-info{flex:1;} .srr-name{font-size:14px;font-weight:600;} .srr-sub{font-size:11px;color:#aeaeb2;}
+.srr-stats{display:flex;gap:6px;}
+.srr-pct{font-size:15px;font-weight:800;}
+
+/* ────── SCREEN 4: ADMIN ────── */
+.adm-header{background:white;padding:16px 14px 14px;border-bottom:1px solid rgba(0,0,0,.06);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.adm-title{font-size:22px;font-weight:800;}
+.btn-add{display:flex;align-items:center;gap:5px;padding:8px 14px;background:#0A84FF;color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;font-family:'Sarabun',sans-serif;cursor:pointer;}
+
+.adm-row{background:white;border-radius:16px;padding:14px;margin-bottom:10px;box-shadow:0 1px 6px rgba(0,0,0,.07);}
+.ar-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
+.ar-name{font-size:15px;font-weight:700;} .ar-date{font-size:12px;color:#8e8e93;margin-top:2px;}
+.ar-btns{display:flex;gap:6px;flex-shrink:0;}
+.ar-btn{padding:5px 13px;border-radius:8px;border:1.5px solid;font-size:12px;font-weight:700;font-family:'Sarabun',sans-serif;cursor:pointer;background:transparent;}
+.ar-edit{border-color:#0A84FF;color:#0A84FF;} .ar-del{border-color:#FF453A;color:#FF453A;}
+.ar-tags{display:flex;flex-wrap:wrap;gap:6px;}
+
+/* ── Modal sheet ── */
+.modal{display:none;position:absolute;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:flex-end;}
+.modal.open{display:flex;}
+.modal-sheet{background:#f5f5f7;border-radius:22px 22px 0 0;width:100%;padding:10px 16px 36px;max-height:88%;overflow-y:auto;}
+.modal-handle{width:36px;height:4px;background:#d1d1d6;border-radius:2px;margin:0 auto 16px;}
+.modal-title{font-size:18px;font-weight:800;margin-bottom:18px;}
+.f-label{font-size:11px;font-weight:700;color:#6e6e73;margin-bottom:5px;display:block;text-transform:uppercase;letter-spacing:.4px;}
+.f-input{width:100%;padding:12px 13px;border-radius:12px;border:1.5px solid #e5e5ea;font-size:15px;font-family:'Sarabun',sans-serif;background:white;margin-bottom:14px;outline:none;}
+.f-input:focus{border-color:#0A84FF;}
+.f-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.toggle-row{display:flex;justify-content:space-between;align-items:center;background:white;border-radius:13px;padding:13px 14px;margin-bottom:10px;}
+.tgl-label{font-size:15px;font-weight:600;}
+.tgl{width:50px;height:30px;border-radius:15px;position:relative;cursor:pointer;transition:background .2s;}
+.tgl.on{background:#30D158;} .tgl.off{background:#d1d1d6;}
+.tgl-knob{position:absolute;width:26px;height:26px;border-radius:50%;background:white;top:2px;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .2s;}
+.tgl.on .tgl-knob{left:22px;} .tgl.off .tgl-knob{left:2px;}
+.btn-submit{width:100%;padding:14px;background:#0A84FF;color:white;border:none;border-radius:14px;font-size:16px;font-weight:800;font-family:'Sarabun',sans-serif;cursor:pointer;margin-top:8px;}
+</style>
+</head>
+<body>
+
+<div class="page-label">Mockup — ระบบเช็คชื่อกิจกรรม</div>
+<div class="page-desc">คลิกแท็บด้านล่างเพื่อดูแต่ละหน้าจอ · นี่คือ interactive mockup ยังไม่เชื่อมฐานข้อมูล</div>
+
+<div class="nav-tabs">
+  <button class="nav-tab on" onclick="showScreen('home',this)">🏠 หน้าหลัก</button>
+  <button class="nav-tab" onclick="showScreen('checkin',this)">✅ เช็คชื่อ</button>
+  <button class="nav-tab" onclick="showScreen('report',this)">📊 รายงาน</button>
+  <button class="nav-tab" onclick="showScreen('admin',this)">⚙️ Admin</button>
+</div>
+
+<div class="phone" id="phone">
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <span class="sb-time">9:41</span>
+    <div class="sb-icons">
+      <svg width="16" height="12" fill="currentColor"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4.5" y="2" width="3" height="10" rx="1"/><rect x="9" y="0" width="3" height="12" rx="1"/><rect x="13.5" y="0" width="2.5" height="12" rx="1"/></svg>
+      <svg width="16" height="12" fill="currentColor"><path d="M8 2C5.5 2 3.3 3.1 1.8 4.8L0 3C2 1.1 4.9 0 8 0s6 1.1 8 3l-1.8 1.8C12.7 3.1 10.5 2 8 2z"/><path d="M8 6c-1.4 0-2.6.6-3.5 1.5L3 6C4.3 4.7 6 4 8 4s3.7.7 5 2l-1.5 1.5C10.6 6.6 9.4 6 8 6z"/><circle cx="8" cy="10" r="2"/></svg>
+      <svg width="25" height="12" fill="currentColor"><rect x="0" y="1" width="22" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="1.5" y="2.5" width="15" height="7" rx="2"/><path d="M23 4.5v3a1.5 1.5 0 000-3z"/></svg>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SCREEN 1: HOME
+  ══════════════════════════════════════════ -->
+  <div class="screen active" id="sc-home">
+    <div class="hd">
+      <div class="hd-title">กิจกรรม</div>
+      <div class="hd-sub">วันอังคารที่ 17 มิถุนายน 2568</div>
+    </div>
+
+    <!-- Banner วันนี้ -->
+    <div class="today-banner" style="margin:12px 12px 0;background:linear-gradient(135deg,#0A84FF,#0060DF);color:white;border-radius:18px;padding:16px;display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <div style="font-size:12px;opacity:.8">กิจกรรมวันนี้</div>
+        <div style="font-size:26px;font-weight:800;margin-top:2px">3 กิจกรรม</div>
+        <div style="font-size:12px;opacity:.75;margin-top:3px">เช็คชื่อแล้ว 1 · รอเช็ค 2</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:38px;font-weight:800;line-height:1">87<span style="font-size:20px">%</span></div>
+        <div style="font-size:11px;opacity:.8">อัตราเข้าร่วมเฉลี่ย</div>
+      </div>
+    </div>
+
+    <div class="cnt">
+      <div style="font-size:12px;font-weight:700;color:#8e8e93;letter-spacing:.5px;text-transform:uppercase;margin-bottom:10px;margin-top:6px">วันนี้</div>
+
+      <!-- กิจกรรม 1 - เช็คแล้ว -->
+      <div class="act-card">
+        <div class="ac-top">
+          <div>
+            <div class="ac-name">เข้าแถวหน้าเสาธง</div>
+            <div class="ac-date">ทุกชั้น · ทุกห้อง</div>
+          </div>
+          <span class="badge b-green">✓ เช็คแล้ว</span>
+        </div>
+        <div class="ac-sessions">
+          <div class="session-pill sp-done">☀️ เช้า เสร็จแล้ว</div>
+        </div>
+        <div class="ac-stats">
+          <div class="ast present"><div class="ast-n">124</div><div class="ast-l">มา</div></div>
+          <div class="ast late"><div class="ast-n">8</div><div class="ast-l">สาย</div></div>
+          <div class="ast absent"><div class="ast-n">12</div><div class="ast-l">ขาด</div></div>
+        </div>
+        <button class="btn-main green">📋 ดูผลการเช็คชื่อ</button>
+      </div>
+
+      <!-- กิจกรรม 2 - ยังไม่เช็ค -->
+      <div class="act-card" onclick="showScreen('checkin',null)">
+        <div class="ac-top">
+          <div>
+            <div class="ac-name">กิจกรรมชุมนุม</div>
+            <div class="ac-date">ม.4–ม.6 · ทุกห้อง</div>
+          </div>
+          <span class="badge b-orange">⏳ รอเช็ค</span>
+        </div>
+        <div class="ac-sessions">
+          <div class="session-pill sp-morning">☀️ เช้า</div>
+          <div class="session-pill sp-evening">🌙 เย็น</div>
+        </div>
+        <div class="ac-stats">
+          <div class="ast present"><div class="ast-n">—</div><div class="ast-l">มา</div></div>
+          <div class="ast late"><div class="ast-n">—</div><div class="ast-l">สาย</div></div>
+          <div class="ast absent"><div class="ast-n">—</div><div class="ast-l">ขาด</div></div>
+        </div>
+        <button class="btn-main" onclick="showScreen('checkin',null)">✅ เริ่มเช็คชื่อ</button>
+      </div>
+
+      <!-- กิจกรรม 3 -->
+      <div class="act-card">
+        <div class="ac-top">
+          <div>
+            <div class="ac-name">กีฬาสีประจำปี</div>
+            <div class="ac-date">ทุกชั้น · ทุกห้อง</div>
+          </div>
+          <span class="badge b-orange">⏳ รอเช็ค</span>
+        </div>
+        <div class="ac-sessions">
+          <div class="session-pill sp-morning">☀️ เช้า</div>
+          <div class="session-pill sp-evening">🌙 เย็น</div>
+        </div>
+        <div class="ac-stats">
+          <div class="ast present"><div class="ast-n">—</div><div class="ast-l">มา</div></div>
+          <div class="ast late"><div class="ast-n">—</div><div class="ast-l">สาย</div></div>
+          <div class="ast absent"><div class="ast-n">—</div><div class="ast-l">ขาด</div></div>
+        </div>
+        <button class="btn-main">✅ เริ่มเช็คชื่อ</button>
+      </div>
+
+      <div style="font-size:12px;font-weight:700;color:#8e8e93;letter-spacing:.5px;text-transform:uppercase;margin-bottom:10px;margin-top:4px">ล่าสุด</div>
+
+      <!-- กิจกรรมก่อนหน้า -->
+      <div style="background:white;border-radius:14px;padding:13px 14px;margin-bottom:10px;box-shadow:0 1px 5px rgba(0,0,0,.07);display:flex;align-items:center;justify-content:space-between;">
+        <div><div style="font-size:14px;font-weight:600;">วันทำความสะอาดโรงเรียน</div><div style="font-size:11px;color:#aeaeb2;margin-top:2px;">16 มิ.ย. 68 · เช้า</div></div>
+        <div style="text-align:right;"><div style="font-size:16px;font-weight:800;color:#30D158">91%</div><div style="font-size:10px;color:#aeaeb2">เข้าร่วม</div></div>
+      </div>
+      <div style="background:white;border-radius:14px;padding:13px 14px;margin-bottom:10px;box-shadow:0 1px 5px rgba(0,0,0,.07);display:flex;align-items:center;justify-content:space-between;">
+        <div><div style="font-size:14px;font-weight:600;">เข้าแถวหน้าเสาธง</div><div style="font-size:11px;color:#aeaeb2;margin-top:2px;">16 มิ.ย. 68 · เช้า</div></div>
+        <div style="text-align:right;"><div style="font-size:16px;font-weight:800;color:#FF9F0A">79%</div><div style="font-size:10px;color:#aeaeb2">เข้าร่วม</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SCREEN 2: CHECK-IN
+  ══════════════════════════════════════════ -->
+  <div class="screen" id="sc-checkin">
+    <div class="ci-header">
+      <button class="ci-back" onclick="showScreen('home',null)">
+        <svg width="9" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1L1 8l7 7"/></svg>
+        กิจกรรม
+      </button>
+      <div class="ci-title">กิจกรรมชุมนุม</div>
+      <div class="ci-sub">วันอังคาร 17 มิ.ย. 68 · ทุกชั้น-ทุกห้อง</div>
+      <div class="sess-toggle">
+        <button class="sess-btn on" onclick="setSession(this,'morning')">☀️ เช้า</button>
+        <button class="sess-btn" onclick="setSession(this,'evening')">🌙 เย็น</button>
+      </div>
+    </div>
+
+    <div class="ci-toolbar">
+      <div class="search-box">
+        <svg width="14" height="14" fill="none" stroke="#aeaeb2" stroke-width="2"><circle cx="6" cy="6" r="5"/><path d="M11 11l3 3" stroke-linecap="round"/></svg>
+        ค้นหาชื่อ...
+      </div>
+      <div class="filter-chip">
+        ม.4/1
+        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4l4 4 4-4"/></svg>
+      </div>
+    </div>
+
+    <div class="bulk-bar">
+      <button class="bulk-btn bb-all" onclick="markAll('p')">✓ ทั้งหมดมา</button>
+      <button class="bulk-btn bb-abs" onclick="markAll('a')">✗ ทั้งหมดขาด</button>
+      <button class="bulk-btn bb-clr" onclick="markAll('')">↺ ล้าง</button>
+    </div>
+
+    <div style="flex:1;overflow-y:auto;" id="stu-list">
+      <!-- ป้ายห้อง -->
+      <div style="background:#F2F2F7;padding:7px 12px;font-size:11px;font-weight:700;color:#6e6e73;letter-spacing:.4px;">ม.4/1 — 36 คน</div>
+      <!-- นักเรียน -->
+      <div class="stu-row"><span class="stu-no">1</span><div class="stu-info"><div class="stu-name">เด็กชาย กมล ทองดี</div><div class="stu-code">46201</div></div><div class="stu-btns"><button class="sb p on" onclick="toggle(this,'p')">✓</button><button class="sb l" onclick="toggle(this,'l')">⏰</button><button class="sb a" onclick="toggle(this,'a')">✗</button></div></div>
+      <div class="stu-row"><span class="stu-no">2</span><div class="stu-info"><div class="stu-name">เด็กชาย ขวัญชัย ใจดี</div><div class="stu-code">46202</div></div><div class="stu-btns"><button class="sb p on" onclick="toggle(this,'p')">✓</button><button class="sb l" onclick="toggle(this,'l')">⏰</button><button class="sb a" onclick="toggle(this,'a')">✗</button></div></div>
+      <div class="stu-row"><span class="stu-no">3</span><div class="stu-info"><div class="stu-name">เด็กชาย คมสัน ศรีไทย</div><div class="stu-code">46203</div></div><div class="stu-btns"><button class="sb p" onclick="toggle(this,'p')">✓</button><button class="sb l on" onclick="toggle(this,'l')">⏰</button><button class="sb a" onclick="toggle(this,'a')">✗</button></div></div>
+      <div class="stu-row"><span class="stu-no">4</span><div class="stu-info"><div class="stu-name">เด็กหญิง จิราพร วงศ์ดี</div><div class="stu-code">46204</div></div><div class="stu-btns"><button class="sb p on" onclick="toggle(this,'p')">✓</button><button class="sb l" onclick="toggle(this,'l')">⏰</button><button class="sb a" onclick="toggle(this,'a')">✗</button></div></div>
+      <div class="stu-row"><span class="stu-no">5</span><div class="stu-info"><div class="stu-name">เด็กหญิง ฉัตรชนก พรมมา</div><div class="stu-code">46205</div></div><div class="stu-btns"><button class="sb p" onclick="toggle(this,'p')">✓</button><button class="sb l" onclick="toggle(this,'l')">⏰</button><button class="sb a on" onclick="toggle(this,'a')">✗</button></div></div>
+      <div class="stu-row"><span class="stu-no">6</span><div class="stu-info"><div class="stu-name">เด็กหญิง ชลธิชา นาคสุข</div><div class="stu-code">46206</div></div><div class="stu-btns"><button class="sb p on" onclick="toggle(this,'p')">✓</button><button class="sb l" onclick="toggle(this,'l')">⏰</button><button class="sb a" onclick="toggle(this,'a')">✗</button></div></div>
+      <div class="stu-row"><span class="stu-no">7</span><div class="stu-info"><div class="stu-name">เด็กชาย ซื่อตรง มั่นคง</div><div class="stu-code">46207</div></div><div class="stu-btns"><button class="sb p on" onclick="toggle(this,'p')">✓</button><button class="sb l" onclick="toggle(this,'l')">⏰</button><button class="sb a" onclick="toggle(this,'a')">✗</button></div></div>
+      <div class="stu-row"><span class="stu-no">8</span><div class="stu-info"><div class="stu-name">เด็กชาย ณัฐพล สุขใจ</div><div class="stu-code">46208</div></div><div class="stu-btns"><button class="sb p" onclick="toggle(this,'p')">✓</button><button class="sb l" onclick="toggle(this,'l')">⏰</button><button class="sb a on" onclick="toggle(this,'a')">✗</button></div></div>
+      <div class="stu-row" style="opacity:.5"><span class="stu-no">···</span><div class="stu-info"><div class="stu-name" style="color:#aeaeb2">นักเรียนคนที่ 9–36</div></div><div class="stu-btns"><button class="sb p">✓</button><button class="sb l">⏰</button><button class="sb a">✗</button></div></div>
+    </div>
+
+    <div class="ci-footer">
+      <div class="footer-stats">
+        <div class="fs p"><div class="fs-n" id="cnt-p">6</div><div class="fs-l">มา</div></div>
+        <div class="fs l"><div class="fs-n" id="cnt-l">1</div><div class="fs-l">สาย</div></div>
+        <div class="fs a"><div class="fs-n" id="cnt-a">2</div><div class="fs-l">ขาด</div></div>
+        <div class="fs"><div class="fs-n" style="color:#aeaeb2" id="cnt-nd">27</div><div class="fs-l">ยังไม่เช็ค</div></div>
+      </div>
+      <button class="btn-save">💾 บันทึกการเช็คชื่อ</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SCREEN 3: REPORT
+  ══════════════════════════════════════════ -->
+  <div class="screen" id="sc-report">
+    <div class="rpt-header">
+      <div class="hd-title">รายงาน</div>
+      <div class="rpt-tabs">
+        <div class="rpt-tab on" onclick="switchRptTab(this,'ra')">รายกิจกรรม</div>
+        <div class="rpt-tab" onclick="switchRptTab(this,'rs')">รายนักเรียน</div>
+      </div>
+    </div>
+
+    <div id="rpt-content" style="flex:1;overflow-y:auto;">
+      <!-- Tab: รายกิจกรรม -->
+      <div id="ra" class="cnt">
+        <div style="display:flex;gap:8px;margin-bottom:12px;margin-top:4px;align-items:center;">
+          <div style="flex:1;background:white;border-radius:10px;padding:8px 11px;display:flex;gap:7px;align-items:center;font-size:13px;color:#aeaeb2;box-shadow:0 1px 4px rgba(0,0,0,.06)">
+            <svg width="14" height="14" fill="none" stroke="#aeaeb2" stroke-width="2"><rect x="1" y="3" width="13" height="11" rx="1.5"/><path d="M1 7h13M5 1v4M10 1v4" stroke-linecap="round"/></svg>
+            เดือน มิ.ย. 2568
+          </div>
+          <div style="background:white;border-radius:10px;padding:8px 11px;font-size:13px;color:#1d1d1f;font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,.06);display:flex;gap:4px;align-items:center;">ทุกชั้น
+            <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4l4 4 4-4"/></svg>
+          </div>
+        </div>
+
+        <div class="sum-grid">
+          <div class="sum-card sc-p"><div class="sum-n">87%</div><div class="sum-l">เฉลี่ยมา</div></div>
+          <div class="sum-card sc-l"><div class="sum-n">5%</div><div class="sum-l">เฉลี่ยสาย</div></div>
+          <div class="sum-card sc-a"><div class="sum-n">8%</div><div class="sum-l">เฉลี่ยขาด</div></div>
+        </div>
+
+        <div class="export-row">
+          <button class="ex-btn ex-pdf"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>PDF</button>
+          <button class="ex-btn ex-xls"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Excel</button>
+          <button class="ex-btn ex-img"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>รูปภาพ</button>
+        </div>
+
+        <div class="rpt-row">
+          <div class="rr-top"><div><div class="rr-name">เข้าแถวหน้าเสาธง</div><div class="rr-date">17 มิ.ย. 68 · เช้า · 144 คน</div></div><span class="badge b-green">87%</span></div>
+          <div class="rr-bar"><div class="rr-fill" style="width:87%;background:#30D158"></div></div>
+          <div class="rr-stats"><span class="rrs-p">✓ มา 124</span><span class="rrs-l">⏰ สาย 8</span><span class="rrs-a">✗ ขาด 12</span></div>
+        </div>
+        <div class="rpt-row">
+          <div class="rr-top"><div><div class="rr-name">วันทำความสะอาดโรงเรียน</div><div class="rr-date">16 มิ.ย. 68 · เช้า · 144 คน</div></div><span class="badge b-green">91%</span></div>
+          <div class="rr-bar"><div class="rr-fill" style="width:91%;background:#30D158"></div></div>
+          <div class="rr-stats"><span class="rrs-p">✓ มา 131</span><span class="rrs-l">⏰ สาย 4</span><span class="rrs-a">✗ ขาด 9</span></div>
+        </div>
+        <div class="rpt-row">
+          <div class="rr-top"><div><div class="rr-name">เข้าแถวหน้าเสาธง</div><div class="rr-date">16 มิ.ย. 68 · เช้า · 144 คน</div></div><span class="badge b-orange">79%</span></div>
+          <div class="rr-bar"><div class="rr-fill" style="width:79%;background:#FF9F0A"></div></div>
+          <div class="rr-stats"><span class="rrs-p">✓ มา 114</span><span class="rrs-l">⏰ สาย 12</span><span class="rrs-a">✗ ขาด 18</span></div>
+        </div>
+        <div class="rpt-row">
+          <div class="rr-top"><div><div class="rr-name">กิจกรรมชุมนุม</div><div class="rr-date">15 มิ.ย. 68 · เช้า+เย็น · 87 คน</div></div><span class="badge b-green">94%</span></div>
+          <div class="rr-bar"><div class="rr-fill" style="width:94%;background:#30D158"></div></div>
+          <div class="rr-stats"><span class="rrs-p">✓ มา 82</span><span class="rrs-l">⏰ สาย 2</span><span class="rrs-a">✗ ขาด 3</span></div>
+        </div>
+      </div>
+
+      <!-- Tab: รายนักเรียน (hidden) -->
+      <div id="rs" class="cnt" style="display:none">
+        <div style="background:white;border-radius:12px;padding:9px 12px;margin-bottom:12px;margin-top:4px;display:flex;gap:8px;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,.06)">
+          <svg width="14" height="14" fill="none" stroke="#aeaeb2" stroke-width="2"><circle cx="6" cy="6" r="5"/><path d="M11 11l3 3" stroke-linecap="round"/></svg>
+          <span style="font-size:13px;color:#aeaeb2">ค้นหาชื่อนักเรียน...</span>
+        </div>
+        <div class="stu-rpt-row">
+          <div style="width:36px;height:36px;border-radius:50%;background:#E5F1FF;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#0A84FF;flex-shrink:0">ก</div>
+          <div class="srr-info"><div class="srr-name">เด็กชาย กมล ทองดี</div><div class="srr-sub">ม.4/1 · รหัส 46201</div></div>
+          <div><div class="srr-pct" style="color:#30D158">97%</div><div style="font-size:10px;color:#aeaeb2">เข้าร่วม</div></div>
+        </div>
+        <div class="stu-rpt-row">
+          <div style="width:36px;height:36px;border-radius:50%;background:#E5F5EA;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#30D158;flex-shrink:0">จ</div>
+          <div class="srr-info"><div class="srr-name">เด็กหญิง จิราพร วงศ์ดี</div><div class="srr-sub">ม.4/1 · รหัส 46204</div></div>
+          <div><div class="srr-pct" style="color:#30D158">100%</div><div style="font-size:10px;color:#aeaeb2">เข้าร่วม</div></div>
+        </div>
+        <div class="stu-rpt-row">
+          <div style="width:36px;height:36px;border-radius:50%;background:#FFF4E5;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#FF9F0A;flex-shrink:0">ค</div>
+          <div class="srr-info"><div class="srr-name">เด็กชาย คมสัน ศรีไทย</div><div class="srr-sub">ม.4/1 · รหัส 46203</div></div>
+          <div><div class="srr-pct" style="color:#FF9F0A">75%</div><div style="font-size:10px;color:#aeaeb2">เข้าร่วม</div></div>
+        </div>
+        <div class="stu-rpt-row">
+          <div style="width:36px;height:36px;border-radius:50%;background:#FFECEB;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#FF453A;flex-shrink:0">ฉ</div>
+          <div class="srr-info"><div class="srr-name">เด็กหญิง ฉัตรชนก พรมมา</div><div class="srr-sub">ม.4/1 · รหัส 46205</div></div>
+          <div><div class="srr-pct" style="color:#FF453A">58%</div><div style="font-size:10px;color:#aeaeb2">เข้าร่วม</div></div>
+        </div>
+        <div class="stu-rpt-row">
+          <div style="width:36px;height:36px;border-radius:50%;background:#E5F5EA;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#30D158;flex-shrink:0">ณ</div>
+          <div class="srr-info"><div class="srr-name">เด็กชาย ณัฐพล สุขใจ</div><div class="srr-sub">ม.4/1 · รหัส 46208</div></div>
+          <div><div class="srr-pct" style="color:#30D158">92%</div><div style="font-size:10px;color:#aeaeb2">เข้าร่วม</div></div>
+        </div>
+        <div style="background:white;border-radius:12px;padding:10px 13px;text-align:center;color:#aeaeb2;font-size:13px;box-shadow:0 1px 4px rgba(0,0,0,.06)">···  นักเรียนทั้งหมด 144 คน</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SCREEN 4: ADMIN
+  ══════════════════════════════════════════ -->
+  <div class="screen" id="sc-admin">
+    <div class="adm-header">
+      <div class="adm-title">จัดการกิจกรรม</div>
+      <button class="btn-add" onclick="openModal()">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="6.5" y1="1" x2="6.5" y2="12"/><line x1="1" y1="6.5" x2="12" y2="6.5"/></svg>
+        เพิ่ม
+      </button>
+    </div>
+
+    <div class="cnt" style="overflow-y:auto;flex:1;padding-top:14px;">
+      <div style="font-size:12px;font-weight:700;color:#8e8e93;letter-spacing:.5px;text-transform:uppercase;margin-bottom:10px;">มิถุนายน 2568</div>
+
+      <div class="adm-row">
+        <div class="ar-top">
+          <div><div class="ar-name">เข้าแถวหน้าเสาธง</div><div class="ar-date">17 มิ.ย. 68</div></div>
+          <div class="ar-btns"><button class="ar-btn ar-edit">แก้ไข</button><button class="ar-btn ar-del">ลบ</button></div>
+        </div>
+        <div class="ar-tags"><span class="badge b-blue">ทุกชั้น</span><span class="badge b-orange">☀️ เช้า</span></div>
+      </div>
+
+      <div class="adm-row">
+        <div class="ar-top">
+          <div><div class="ar-name">กิจกรรมชุมนุม</div><div class="ar-date">17 มิ.ย. 68</div></div>
+          <div class="ar-btns"><button class="ar-btn ar-edit">แก้ไข</button><button class="ar-btn ar-del">ลบ</button></div>
+        </div>
+        <div class="ar-tags"><span class="badge b-purple">ม.4–6</span><span class="badge b-orange">☀️ เช้า</span><span class="badge b-purple">🌙 เย็น</span></div>
+      </div>
+
+      <div class="adm-row">
+        <div class="ar-top">
+          <div><div class="ar-name">กีฬาสีประจำปี</div><div class="ar-date">17 มิ.ย. 68</div></div>
+          <div class="ar-btns"><button class="ar-btn ar-edit">แก้ไข</button><button class="ar-btn ar-del">ลบ</button></div>
+        </div>
+        <div class="ar-tags"><span class="badge b-blue">ทุกชั้น</span><span class="badge b-orange">☀️ เช้า</span><span class="badge b-purple">🌙 เย็น</span></div>
+      </div>
+
+      <div class="adm-row">
+        <div class="ar-top">
+          <div><div class="ar-name">วันทำความสะอาดโรงเรียน</div><div class="ar-date">16 มิ.ย. 68</div></div>
+          <div class="ar-btns"><button class="ar-btn ar-edit">แก้ไข</button><button class="ar-btn ar-del">ลบ</button></div>
+        </div>
+        <div class="ar-tags"><span class="badge b-blue">ทุกชั้น</span><span class="badge b-orange">☀️ เช้า</span></div>
+      </div>
+
+      <div class="adm-row" style="opacity:.5">
+        <div class="ar-top">
+          <div><div class="ar-name" style="color:#aeaeb2">+ กิจกรรมอื่นๆ</div><div class="ar-date">...</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: เพิ่มกิจกรรม -->
+    <div class="modal" id="modal" onclick="closeModalOut(event)">
+      <div class="modal-sheet" id="modal-sheet">
+        <div class="modal-handle"></div>
+        <div class="modal-title">เพิ่มกิจกรรมใหม่</div>
+
+        <label class="f-label">ชื่อกิจกรรม *</label>
+        <input class="f-input" placeholder="เช่น เข้าแถวหน้าเสาธง">
+
+        <label class="f-label">วันที่จัดกิจกรรม *</label>
+        <input class="f-input" type="date" value="2025-06-17">
+
+        <div class="f-row">
+          <div>
+            <label class="f-label">ชั้น</label>
+            <select class="f-input" style="cursor:pointer">
+              <option>ทุกชั้น</option>
+              <option>ม.1</option><option>ม.2</option><option>ม.3</option>
+              <option>ม.4</option><option>ม.5</option><option>ม.6</option>
+            </select>
+          </div>
+          <div>
+            <label class="f-label">ห้อง</label>
+            <select class="f-input" style="cursor:pointer">
+              <option>ทุกห้อง</option>
+              <option>1</option><option>2</option><option>3</option><option>4</option>
+            </select>
+          </div>
+        </div>
+
+        <label class="f-label" style="margin-bottom:8px">รอบการเช็คชื่อ</label>
+        <div class="toggle-row">
+          <span class="tgl-label">☀️ รอบเช้า</span>
+          <div class="tgl on" onclick="toggleSwitch(this)"><div class="tgl-knob"></div></div>
+        </div>
+        <div class="toggle-row">
+          <span class="tgl-label">🌙 รอบเย็น</span>
+          <div class="tgl off" onclick="toggleSwitch(this)"><div class="tgl-knob"></div></div>
+        </div>
+
+        <label class="f-label" style="margin-top:8px">หมายเหตุ</label>
+        <input class="f-input" placeholder="(ไม่บังคับ)">
+
+        <button class="btn-submit" onclick="closeModal()">✓ เพิ่มกิจกรรม</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <button class="bnav on" id="bn-home" onclick="showScreen('home',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      หน้าหลัก
+    </button>
+    <button class="bnav" id="bn-checkin" onclick="showScreen('checkin',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      เช็คชื่อ
+    </button>
+    <button class="bnav" id="bn-report" onclick="showScreen('report',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      รายงาน
+    </button>
+    <button class="bnav" id="bn-admin" onclick="showScreen('admin',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93A10 10 0 004.93 19.07m14.14 0A10 10 0 004.93 4.93"/></svg>
+      Admin
+    </button>
+  </nav>
+</div>
+
+<div style="color:rgba(255,255,255,.35);font-size:11px;text-align:center;margin-top:16px;font-family:'Sarabun',sans-serif;">
+  Mockup เท่านั้น — ข้อมูลจำลอง · คลิกปุ่ม "เช็คชื่อ" ในหน้าหลักเพื่อดูหน้าเช็คชื่อ
+</div>
+
+<script>
+const screens={home:'sc-home',checkin:'sc-checkin',report:'sc-report',admin:'sc-admin'};
+const bnavs={home:'bn-home',checkin:'bn-checkin',report:'bn-report',admin:'bn-admin'};
+const tabBtns=document.querySelectorAll('.nav-tab');
+
+function showScreen(name,el){
+  Object.values(screens).forEach(id=>{
+    const s=document.getElementById(id);
+    if(s) s.classList.toggle('active',id===screens[name]);
+  });
+  Object.entries(bnavs).forEach(([k,id])=>{
+    const b=document.getElementById(id);
+    if(b) b.classList.toggle('on',k===name);
+  });
+  // sync outside tabs
+  const labels={home:0,checkin:1,report:2,admin:3};
+  tabBtns.forEach((t,i)=>t.classList.toggle('on',i===labels[name]));
+}
+
+// Wire outside nav tabs
+tabBtns.forEach((btn,i)=>{
+  const names=['home','checkin','report','admin'];
+  btn.onclick=()=>showScreen(names[i],btn);
+});
+
+// Session toggle
+function setSession(btn,s){
+  btn.parentElement.querySelectorAll('.sess-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+// Student status toggle
+function toggle(btn,type){
+  const row=btn.closest('.stu-btns');
+  const types=['p','l','a'];
+  const wasOn=btn.classList.contains('on');
+  types.forEach(t=>row.querySelector('.sb.'+t).classList.remove('on'));
+  if(!wasOn) btn.classList.add('on');
+  updateCounts();
+}
+
+// Mark all
+function markAll(type){
+  document.querySelectorAll('.stu-btns').forEach(row=>{
+    ['p','l','a'].forEach(t=>row.querySelector('.sb.'+t).classList.remove('on'));
+    if(type) row.querySelector('.sb.'+type).classList.add('on');
+  });
+  updateCounts();
+}
+
+function updateCounts(){
+  const p=document.querySelectorAll('.sb.p.on').length;
+  const l=document.querySelectorAll('.sb.l.on').length;
+  const a=document.querySelectorAll('.sb.a.on').length;
+  const total=document.querySelectorAll('.stu-row').length;
+  const nd=total-p-l-a;
+  document.getElementById('cnt-p').textContent=p;
+  document.getElementById('cnt-l').textContent=l;
+  document.getElementById('cnt-a').textContent=a;
+  document.getElementById('cnt-nd').textContent=Math.max(0,nd);
+}
+
+// Report tabs
+function switchRptTab(btn,tab){
+  document.querySelectorAll('.rpt-tab').forEach(t=>t.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('ra').style.display=tab==='ra'?'block':'none';
+  document.getElementById('rs').style.display=tab==='rs'?'block':'none';
+}
+
+// Modal
+function openModal(){document.getElementById('modal').classList.add('open');}
+function closeModal(){document.getElementById('modal').classList.remove('open');}
+function closeModalOut(e){if(e.target===document.getElementById('modal'))closeModal();}
+
+// Toggle switch
+function toggleSwitch(el){
+  el.classList.toggle('on');
+  el.classList.toggle('off');
+}
+
+updateCounts();
+</script>
+</body>
+</html>
