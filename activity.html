@@ -757,6 +757,21 @@ html[data-theme="dark"] .sb-btn{background:rgba(55,65,81,0.75);border-color:rgba
   </div>
 </div>
 
+<!-- Logout Confirm Modal -->
+<div id="logout-modal" style="position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)">
+  <div class="pin-card" style="max-width:300px">
+    <div style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#ef4444,#dc2626);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;box-shadow:0 6px 20px rgba(239,68,68,.4),inset 0 1px 0 rgba(255,255,255,.25)">
+      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    </div>
+    <div class="pin-title">ออกจากระบบ</div>
+    <div class="pin-sub" style="margin-bottom:22px">ต้องการออกจากระบบใช่หรือไม่?</div>
+    <div style="display:flex;gap:10px">
+      <button onclick="closeLogoutModal()" style="flex:1;padding:12px;background:var(--card);border:1px solid var(--sep);border-radius:12px;font-family:var(--font);font-size:15px;font-weight:600;color:var(--txt2);cursor:pointer;transition:opacity .15s">ยกเลิก</button>
+      <button onclick="confirmLogout()" style="flex:1;padding:12px;background:linear-gradient(135deg,#ef4444,#dc2626);border:none;border-radius:12px;font-family:var(--font);font-size:15px;font-weight:700;color:#fff;cursor:pointer;box-shadow:0 4px 14px rgba(239,68,68,.4),inset 0 1px 0 rgba(255,255,255,.2);transition:opacity .15s">ออกจากระบบ</button>
+    </div>
+  </div>
+</div>
+
 <!-- PIN Modal -->
 <div id="pin-modal">
   <div class="pin-card">
@@ -1897,12 +1912,20 @@ async function doLogin(){
   }finally{btn.disabled=false;btn.textContent='เข้าสู่ระบบ'}
 }
 
-async function doLogout(){
-  if(!confirm('ออกจากระบบ?'))return;
-  await sb.auth.signOut();
-  $('login-overlay').style.display='flex';
-  $('logout-btn').style.display='none';
-  $('login-pass').value='';
+function doLogout(){
+  const m=$('logout-modal');m.style.display='flex';
+  requestAnimationFrame(()=>m.style.opacity='1');
+}
+function closeLogoutModal(){$('logout-modal').style.display='none'}
+async function confirmLogout(){
+  closeLogoutModal();
+  loading(true);
+  try{
+    await sb.auth.signOut();
+    $('login-overlay').style.display='flex';
+    $('logout-btn').style.display='none';
+    $('login-pass').value='';
+  }finally{loading(false)}
 }
 
 async function loadAppData(){
