@@ -1597,7 +1597,34 @@ function renderAdmin(){
     h+=`</div>`;
   }
   h+=`</div>`;
+  h+=`<div class="section" style="margin-top:16px">
+    <div class="admin-hd"><div class="admin-hd-title">ตั้งค่าระบบ</div></div>
+    <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:12px">
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--txt2);margin-bottom:6px">ชื่อโรงเรียน</div>
+        <div style="display:flex;gap:8px">
+          <input id="admin-school-name-inp" class="ios-input" style="flex:1" value="${esc(S.schoolName)}" placeholder="กรอกชื่อโรงเรียน">
+          <button class="btn btn-blue btn-sm" onclick="saveSchoolName()">บันทึก</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
   $('admin-content').innerHTML=h;
+}
+
+async function saveSchoolName(){
+  const inp=$('admin-school-name-inp');
+  const val=inp?inp.value.trim():'';
+  if(!val){toast('กรุณากรอกชื่อโรงเรียน','er');return}
+  loading(true);
+  try{
+    await q(sb.from('config').upsert({key:'school_name',value:val},{onConflict:'key'}));
+    S.schoolName=val;
+    const sn=$('side-school-name');if(sn)sn.textContent=val;
+    const ts=$('topbar-sub');if(ts)ts.textContent=val;
+    toast('บันทึกชื่อโรงเรียนแล้ว');
+  }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er')}
+  finally{loading(false)}
 }
 
 function showActivityModal(idOrNull){
