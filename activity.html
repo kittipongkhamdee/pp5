@@ -216,6 +216,16 @@ html,body{height:100%;background:var(--bg);font-family:var(--font);color:var(--t
 /* ── Filter row ── */
 .filter-row{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
 
+/* ── Percent report run button ── */
+.pct-run-btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;padding:13px;margin-bottom:16px;
+  background:var(--primary);color:#fff;border:none;border-radius:var(--radius-sm);
+  font-family:var(--font);font-size:15px;font-weight:700;cursor:pointer;
+  box-shadow:0 3px 10px rgba(37,99,235,.30);transition:opacity .15s;
+}
+.pct-run-btn:active{opacity:.8}
+
 /* ── Admin ── */
 .admin-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 .admin-hd-title{font-size:17px;font-weight:700}
@@ -516,7 +526,7 @@ const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 const S={
   activities:[],students:[],classes:[],schoolName:'โรงเรียน',
   ckActivityId:null,ckDate:todayStr(),ckSession:'morning',ckAttend:{},ckFilter:'',
-  rptTab:'activity',rptActivityId:null,rptDate:todayStr(),rptSession:'morning',rptStuId:null,rptStuClass:null,rptStuSearch:'',rptStuActivityId:null,rptSchoolData:null,rptPctThreshold:80,rptPctActivityId:null,
+  rptTab:'activity',rptActivityId:null,rptDate:todayStr(),rptSession:'morning',rptStuId:null,rptStuClass:null,rptStuSearch:'',rptStuActivityId:null,rptSchoolData:null,rptPctThreshold:80,rptPctActivityId:null,rptPctClass:null,
   page:'home',
 };
 
@@ -1013,16 +1023,23 @@ function buildSchoolDoc(classData,act,sessLbl){
 // ── Report: attendance percentage ──
 async function renderRptPercent(){
   const aOpts=S.activities.map(a=>`<option value="${a.id}"${S.rptPctActivityId==a.id?' selected':''}>${esc(a.name)}</option>`).join('');
+  const cOpts=S.classes.map(c=>`<option value="${c.grade_level}_${c.room}"${S.rptPctClass===`${c.grade_level}_${c.room}`?' selected':''}>${classLabel(c.grade_level,c.room)}</option>`).join('');
   $('rpt-content').innerHTML=`
     <div class="filter-row">
       <select class="ios-select" onchange="S.rptPctActivityId=+this.value||null;renderRptPercent()">${'<option value="">ทุกกิจกรรม</option>'+aOpts}</select>
     </div>
-    <div class="filter-row" style="align-items:center;gap:8px">
-      <span style="font-size:14px;color:var(--txt2);white-space:nowrap">เกณฑ์ร้อยละ</span>
-      <input type="number" class="ios-input" style="width:72px;text-align:center" min="0" max="100" value="${S.rptPctThreshold}" oninput="S.rptPctThreshold=Math.min(100,Math.max(0,+this.value||0))">
-      <span style="font-size:14px;color:var(--txt2)">%</span>
-      <button class="ios-btn" style="flex:none" onclick="renderRptPercent()">ดูรายงาน</button>
+    <div class="filter-row">
+      <select class="ios-select" onchange="S.rptPctClass=this.value||null;renderRptPercent()">${'<option value="">ทุกชั้นเรียน</option>'+cOpts}</select>
     </div>
+    <div class="filter-row" style="flex-direction:row;align-items:center;gap:8px">
+      <span style="font-size:14px;color:var(--txt2);white-space:nowrap">เกณฑ์ร้อยละ</span>
+      <input type="number" class="ios-input" style="width:76px;text-align:center;flex:none" min="0" max="100" value="${S.rptPctThreshold}" oninput="S.rptPctThreshold=Math.min(100,Math.max(0,+this.value||0))">
+      <span style="font-size:14px;color:var(--txt2);flex:none">%</span>
+    </div>
+    <button class="pct-run-btn" onclick="renderRptPercent()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      ดูรายงาน
+    </button>
     <div id="rpt-pct-body"><div class="loading-text">กำลังโหลด...</div></div>`;
   try{
     let qb=sb.from('activity_attend').select('student_id,status');
@@ -1037,7 +1054,9 @@ async function renderRptPercent(){
       else if(r.status==='absent')stuMap[r.student_id].absent++;
     });
     const thr=S.rptPctThreshold;
-    const below=S.students.filter(s=>{
+    let targetStudents=S.students;
+    if(S.rptPctClass){const[gl,r]=S.rptPctClass.split('_');targetStudents=targetStudents.filter(s=>String(s.grade_level)===gl&&String(s.room)===r)}
+    const below=targetStudents.filter(s=>{
       const d=stuMap[s.id];if(!d)return false;
       const total=d.present+d.late+d.absent;if(!total)return false;
       return(d.present+d.late)/total*100<thr;
