@@ -157,7 +157,6 @@ html,body{height:100%;background:var(--bg);font-family:var(--font);color:var(--t
 .btn-red{background:#DC2626;color:#fff}
 .btn-outline{background:var(--card);border:1px solid var(--sep);color:var(--txt)}
 .btn-save{background:#1D4ED8;color:#fff}
-.btn-save.saved{background:#059669;color:#fff}
 .btn-sm{padding:7px 14px;font-size:13px}
 .btn-full{width:100%}
 
@@ -878,13 +877,13 @@ async function setStatus(stuId,status){
   const ex=S.ckAttend[stuId];
   if(ex?.status===status){
     if(ex.id){try{await q(sb.from('activity_attend').delete().eq('id',ex.id))}catch(e){toast('เกิดข้อผิดพลาด','er');return}}
-    delete S.ckAttend[stuId];_updateStuRow(stuId,'');updateCkStats();_showSaved();return;
+    delete S.ckAttend[stuId];_updateStuRow(stuId,'');updateCkStats();toast('ลบข้อมูลแล้ว','ok',1200);return;
   }
   const payload={activity_id:S.ckActivityId,student_id:stuId,date:S.ckDate,session:S.ckSession,status,updated_at:new Date().toISOString()};
   try{
     if(ex?.id){await q(sb.from('activity_attend').update({status,updated_at:payload.updated_at}).eq('id',ex.id));S.ckAttend[stuId]={id:ex.id,status}}
     else{const r=await q(sb.from('activity_attend').insert(payload).select());S.ckAttend[stuId]={id:r[0].id,status}}
-    _updateStuRow(stuId,status);updateCkStats();_showSaved();
+    _updateStuRow(stuId,status);updateCkStats();toast('✓ บันทึกแล้ว','ok',1200);
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er')}
 }
 
@@ -904,8 +903,7 @@ async function checkAll(status){
     const result=await q(sb.from('activity_attend').upsert(rows,{onConflict:'activity_id,student_id,date,session'}).select());
     result.forEach(r=>{S.ckAttend[r.student_id]={id:r.id,status:r.status}});
     renderCkList();updateCkStats();
-    toast(`เช็ค${status==='present'?'มา':'ขาด'} ${label} ${targets.length} คน`);
-    _showSaved();
+    toast(`✓ เช็ค${status==='present'?'มา':'ขาด'} ${label} ${targets.length} คน`);
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er')}
   finally{loading(false)}
 }
@@ -921,8 +919,7 @@ async function clearAllCk(){
     await q(sb.from('activity_attend').delete().eq('activity_id',S.ckActivityId).eq('date',S.ckDate).eq('session',S.ckSession).in('student_id',ids));
     ids.forEach(id=>{delete S.ckAttend[id]});
     renderCkList();updateCkStats();
-    toast(`ล้างค่า${label} ${targets.length} คน`);
-    _showSaved();
+    toast(`✓ ล้างค่า${label} ${targets.length} คน`);
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er')}
   finally{loading(false)}
 }
@@ -937,18 +934,6 @@ function saveCk(){
   const ab=v.filter(a=>a.status==='absent').length;
   const label=S.ckFilter?`ห้อง ${classLabel(...S.ckFilter.split('_'))}`:'ทั้งหมด';
   toast(`✓ บันทึกแล้ว ${label} — มา ${pr} · สาย ${la} · ขาด ${ab} คน`,'ok',3000);
-  _showSaved();
-}
-
-function _showSaved(){
-  const btn=$('ck-save-btn');
-  if(!btn)return;
-  const saveSvg=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M12 15V4"/><path d="M8 11l4 4 4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>`;
-  const chkSvg=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M20 6L9 17l-5-5"/></svg>`;
-  btn.innerHTML=chkSvg+'บันทึกแล้ว';
-  btn.classList.add('saved');
-  clearTimeout(btn._t);
-  btn._t=setTimeout(()=>{btn.innerHTML=saveSvg+'บันทึก';btn.classList.remove('saved')},3000);
 }
 
 async function onCkActChange(){S.ckActivityId=parseInt($('ck-act-sel').value)||null;S.ckSession='morning';await renderCheckin()}
