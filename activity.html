@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -36,7 +36,7 @@ html[data-theme="dark"]{
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
 html,body{height:100%;background:var(--bg);font-family:var(--font);color:var(--txt);overflow:hidden}
-#app{display:flex;flex-direction:column;height:100%;max-width:640px;margin:0 auto;position:relative}
+#app{display:flex;flex-direction:column;height:100%;margin:0 auto;position:relative;width:100%;max-width:640px}
 
 /* ── Top Bar ── */
 #topbar{
@@ -357,6 +357,72 @@ html,body{height:100%;background:var(--bg);font-family:var(--font);color:var(--t
 }
 #theme-btn:active{opacity:.7}
 
+/* ── App Body / Pages Wrap (responsive layout) ── */
+#app-body{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
+#pages-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative}
+
+/* ── Side Nav (desktop only) ── */
+#side-nav{display:none;flex-direction:column;gap:2px}
+#side-school-name{
+  font-size:13px;font-weight:700;color:var(--txt);line-height:1.3;
+  padding:6px 12px 14px;border-bottom:1px solid var(--sep);margin-bottom:8px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.side-nav-sep{height:1px;background:var(--sep);margin:6px 0}
+.side-nav-item{
+  display:flex;align-items:center;gap:10px;padding:10px 14px;
+  border-radius:10px;width:100%;border:none;background:none;
+  font-family:var(--font);font-size:14px;font-weight:500;
+  color:var(--txt2);cursor:pointer;transition:background .15s,color .15s;text-align:left;
+}
+.side-nav-item svg{width:19px;height:19px;flex-shrink:0}
+.side-nav-item:hover{background:var(--card2)}
+.side-nav-item.active{background:var(--primary-light);color:var(--primary);font-weight:600}
+
+/* ─── Breakpoints ─────────────────────────────────────────── */
+
+/* Tablet: 640px – 1023px */
+@media(min-width:640px){
+  #app{max-width:none}
+  #topbar{padding:14px 28px 12px;padding-top:calc(14px + env(safe-area-inset-top,0px))}
+  .section{padding-left:28px;padding-right:28px}
+  .stats-grid{padding-left:28px;padding-right:28px}
+  #ck-controls{padding-left:28px;padding-right:28px}
+  #ck-actions{padding-left:28px;padding-right:28px}
+  .stu-row{padding-left:28px;padding-right:28px}
+  #rpt-content{padding-left:28px;padding-right:28px}
+  .rpt-table{font-size:14px}
+  .rpt-table th{font-size:13px}
+}
+
+/* Desktop: 1024px+ */
+@media(min-width:1024px){
+  #app{max-width:1440px}
+  #app-body{flex-direction:row}
+  #side-nav{
+    display:flex;
+    width:240px;min-width:240px;flex-shrink:0;
+    background:var(--card);border-right:1px solid var(--sep);
+    padding:20px 12px;overflow-y:auto;
+  }
+  #bottom-nav{display:none}
+  .page-scroll{padding-bottom:32px}
+  #rpt-content{padding-bottom:32px;padding-left:32px;padding-right:32px}
+  #ck-controls{padding-left:32px;padding-right:32px}
+  #ck-actions{padding-left:32px;padding-right:32px}
+  .stu-row{padding-left:32px;padding-right:32px}
+  .section{padding-left:32px;padding-right:32px}
+  .stats-grid{padding-left:32px;padding-right:32px}
+  #topbar{padding:14px 32px;padding-top:calc(14px + env(safe-area-inset-top,0px))}
+  #topbar-title{font-size:20px}
+  #toast{bottom:24px}
+}
+
+/* Large Desktop: 1280px+ */
+@media(min-width:1280px){
+  #side-nav{width:260px;min-width:260px}
+}
+
 /* ── PIN modal ── */
 #pin-modal{position:fixed;inset:0;z-index:150;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 #pin-modal.open{display:flex}
@@ -394,6 +460,30 @@ html,body{height:100%;background:var(--bg);font-family:var(--font);color:var(--t
     <button id="theme-btn" onclick="toggleTheme()" title="เปลี่ยนโหมด"></button>
     <button class="logout-btn" onclick="doLogout()" id="logout-btn" style="display:none">ออกจากระบบ</button>
   </div>
+
+  <div id="app-body">
+  <!-- ═══ SIDE NAV (desktop) ═══ -->
+  <nav id="side-nav">
+    <div id="side-school-name">โรงเรียน</div>
+    <button class="side-nav-item" data-nav="home" onclick="nav('home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1v-9.5z"/><path d="M9 21v-7h6v7"/></svg>
+      หน้าหลัก
+    </button>
+    <button class="side-nav-item" data-nav="checkin" onclick="nav('checkin')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><path d="M9 12l2 2 4-4"/></svg>
+      เช็คชื่อ
+    </button>
+    <button class="side-nav-item" data-nav="report" onclick="nav('report')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-5-5z"/><path d="M14 2v6h6"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="12" y2="17"/></svg>
+      รายงาน
+    </button>
+    <div class="side-nav-sep"></div>
+    <button class="side-nav-item" data-nav="admin" onclick="nav('admin')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      Admin
+    </button>
+  </nav>
+  <div id="pages-wrap">
 
   <!-- ═══ HOME PAGE ═══ -->
   <div class="page" id="home-page">
@@ -452,25 +542,28 @@ html,body{height:100%;background:var(--bg);font-family:var(--font);color:var(--t
     <div class="page-scroll" id="admin-content"></div>
   </div>
 
+  </div><!-- /pages-wrap -->
+
   <!-- ═══ BOTTOM NAV ═══ -->
   <nav id="bottom-nav">
-    <button class="nav-item" id="nav-home" onclick="nav('home')">
+    <button class="nav-item" data-nav="home" id="nav-home" onclick="nav('home')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1v-9.5z"/><path d="M9 21v-7h6v7"/></svg>
       <span>หน้าหลัก</span>
     </button>
-    <button class="nav-item" id="nav-checkin" onclick="nav('checkin')">
+    <button class="nav-item" data-nav="checkin" id="nav-checkin" onclick="nav('checkin')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><path d="M9 12l2 2 4-4"/></svg>
       <span>เช็คชื่อ</span>
     </button>
-    <button class="nav-item" id="nav-report" onclick="nav('report')">
+    <button class="nav-item" data-nav="report" id="nav-report" onclick="nav('report')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-5-5z"/><path d="M14 2v6h6"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="12" y2="17"/></svg>
       <span>รายงาน</span>
     </button>
-    <button class="nav-item" id="nav-admin" onclick="nav('admin')">
+    <button class="nav-item" data-nav="admin" id="nav-admin" onclick="nav('admin')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
       <span>Admin</span>
     </button>
   </nav>
+  </div><!-- /app-body -->
 </div>
 
 <!-- Activity Modal -->
@@ -627,8 +720,9 @@ function checkPin(){
   if(entered===_adminPin){
     _adminUnlocked=true;closePinModal();
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-    $('admin-page').classList.add('active');$('nav-admin').classList.add('active');
+    document.querySelectorAll('.nav-item,.side-nav-item').forEach(n=>n.classList.remove('active'));
+    $('admin-page').classList.add('active');
+    document.querySelectorAll('[data-nav="admin"]').forEach(el=>el.classList.add('active'));
     $('topbar-title').textContent='จัดการกิจกรรม';
     renderAdmin();
   }else{
@@ -644,9 +738,9 @@ function nav(page){
   if(page==='admin'&&!_adminUnlocked){showPinModal();return}
   S.page=page;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.nav-item,.side-nav-item').forEach(n=>n.classList.remove('active'));
   $(`${page}-page`).classList.add('active');
-  $(`nav-${page}`).classList.add('active');
+  document.querySelectorAll(`[data-nav="${page}"]`).forEach(el=>el.classList.add('active'));
   const titles={home:'เช็คชื่อกิจกรรม',checkin:'เช็คชื่อ',report:'รายงาน',admin:'จัดการกิจกรรม'};
   $('topbar-title').textContent=titles[page]||'';
   if(page==='home')renderHome();
@@ -1546,6 +1640,7 @@ async function loadAppData(){
   loading(true);
   try{
     await Promise.all([loadActivities(),loadStudents(),loadSchoolName(),loadAdminPin()]);
+    const sn=$('side-school-name');if(sn)sn.textContent=S.schoolName;
     const firstActive=S.activities.find(a=>a.is_active);
     if(firstActive){S.ckActivityId=firstActive.id;S.rptActivityId=firstActive.id}
     nav('home');
