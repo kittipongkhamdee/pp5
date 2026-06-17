@@ -119,7 +119,11 @@ html,body{height:100%;background:var(--bg);font-family:var(--font);color:var(--t
 /* ── Check-in header ── */
 #ck-header{background:var(--card);border-bottom:1px solid var(--sep);flex-shrink:0}
 #ck-controls{display:flex;flex-direction:column;gap:8px;padding:14px 20px}
-#ck-actions{display:flex;gap:8px;padding:0 20px 12px}
+#ck-actions{padding:0 20px 12px}
+#ck-btn-row{display:flex;gap:8px;margin-top:8px;align-items:center}
+#ck-btn-group{display:flex;gap:6px;flex:1;min-width:0}
+#ck-btn-group .btn{flex:1;min-width:0;white-space:nowrap}
+.btn-gray{background:var(--card2);color:var(--txt);border:1px solid var(--sep)}
 
 /* ── Student rows ── */
 #ck-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(20px + var(--safe-bottom))}
@@ -515,10 +519,21 @@ html,body{height:100%;background:var(--bg);font-family:var(--font);color:var(--t
         <select class="ios-select" id="ck-class-sel" onchange="setCkFilterFromDrop()">
           <option value="">ทุกชั้นเรียน</option>
         </select>
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <button class="btn btn-green btn-sm" style="flex:1" onclick="checkAll('present')">✓ มาทั้งหมด</button>
-          <button class="btn btn-red btn-sm" style="flex:1" onclick="checkAll('absent')">✗ ขาดทั้งหมด</button>
-          <button class="btn btn-save btn-sm" id="ck-save-btn" onclick="saveCk()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M12 15V4"/><path d="M8 11l4 4 4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>บันทึก</button>
+        <div id="ck-btn-row">
+          <div id="ck-btn-group">
+            <button class="btn btn-green btn-sm" onclick="checkAll('present')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>มาทั้งหมด
+            </button>
+            <button class="btn btn-red btn-sm" onclick="checkAll('absent')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>ขาดทั้งหมด
+            </button>
+            <button class="btn btn-gray btn-sm" onclick="clearAllCk()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>ล้างค่า
+            </button>
+          </div>
+          <button class="btn btn-save btn-sm" id="ck-save-btn" onclick="saveCk()" style="flex-shrink:0">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4"/><path d="M8 11l4 4 4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>บันทึก
+          </button>
         </div>
       </div>
     </div>
@@ -890,6 +905,23 @@ async function checkAll(status){
     result.forEach(r=>{S.ckAttend[r.student_id]={id:r.id,status:r.status}});
     renderCkList();updateCkStats();
     toast(`เช็ค${status==='present'?'มา':'ขาด'} ${label} ${targets.length} คน`);
+    _showSaved();
+  }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er')}
+  finally{loading(false)}
+}
+
+async function clearAllCk(){
+  if(!S.ckActivityId){toast('เลือกกิจกรรมก่อน','er');return}
+  const targets=_filteredStudents();
+  if(!targets.length){toast('ไม่มีนักเรียนในห้องที่เลือก','er');return}
+  const label=S.ckFilter?`ห้อง ${classLabel(...S.ckFilter.split('_'))}`:'ทั้งหมด';
+  loading(true);
+  try{
+    const ids=targets.map(s=>s.id);
+    await q(sb.from('activity_attend').delete().eq('activity_id',S.ckActivityId).eq('date',S.ckDate).eq('session',S.ckSession).in('student_id',ids));
+    ids.forEach(id=>{delete S.ckAttend[id]});
+    renderCkList();updateCkStats();
+    toast(`ล้างค่า${label} ${targets.length} คน`);
     _showSaved();
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er')}
   finally{loading(false)}
