@@ -937,26 +937,7 @@ function renderHome(){
     });
     html+=`</div>`;
   }
-  html+=`</div>
-  <div style="padding:8px 20px 28px;display:flex;justify-content:center">
-    <div style="display:inline-flex;align-items:center;gap:12px;
-      background:rgba(255,255,255,0.52);backdrop-filter:blur(16px) saturate(1.6);-webkit-backdrop-filter:blur(16px) saturate(1.6);
-      border:1px solid rgba(255,255,255,0.5);border-radius:18px;padding:11px 18px;
-      box-shadow:0 4px 20px rgba(0,0,0,0.06),inset 0 1px 0 rgba(255,255,255,0.75)">
-      <div style="width:36px;height:36px;border-radius:11px;flex-shrink:0;
-        background:linear-gradient(135deg,#3B82F6 0%,#6366F1 100%);
-        display:flex;align-items:center;justify-content:center;
-        box-shadow:0 4px 10px rgba(99,102,241,0.45),inset 0 1px 0 rgba(255,255,255,0.25)">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
-        </svg>
-      </div>
-      <div>
-        <div style="font-size:10px;font-weight:700;color:var(--txt3);letter-spacing:.9px;text-transform:uppercase">ผู้พัฒนาระบบ</div>
-        <div style="font-size:15px;font-weight:700;color:var(--txt);margin-top:2px;letter-spacing:-.2px">นายกิตติพงษ์ คำดี</div>
-      </div>
-    </div>
-  </div>`;
+  html+=`</div>`;
   $('home-content').innerHTML=html;
 }
 
