@@ -464,7 +464,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--font);color:var(--t
   <div id="app-body">
   <!-- ═══ SIDE NAV (desktop) ═══ -->
   <nav id="side-nav">
-    <div id="side-school-name">โรงเรียน</div>
+    <div id="side-school-name"></div>
     <button class="side-nav-item" data-nav="home" onclick="nav('home')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1v-9.5z"/><path d="M9 21v-7h6v7"/></svg>
       หน้าหลัก
@@ -646,7 +646,7 @@ const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 
 // ─── State ────────────────────────────────────────────────────────────────
 const S={
-  activities:[],students:[],classes:[],schoolName:'โรงเรียน',
+  activities:[],students:[],classes:[],schoolName:'',
   ckActivityId:null,ckDate:todayStr(),ckSession:'morning',ckAttend:{},ckFilter:'',
   rptTab:'activity',rptActivityId:null,rptDate:todayStr(),rptSession:'morning',rptStuId:null,rptStuClass:null,rptStuSearch:'',rptStuActivityId:null,rptSchoolData:null,rptActData:null,rptStuData:null,rptPctData:null,rptPctThreshold:80,rptPctActivityId:null,rptPctClass:null,
   rptClassActivityId:null,rptClassClass:null,rptClassDate:null,rptClassSession:'morning',rptClassData:null,
@@ -1136,7 +1136,7 @@ async function renderRptClass(){
       <thead><tr><th>#</th><th>รหัส</th><th class="left">ชื่อ-สกุล</th><th>สถานะ</th></tr></thead><tbody>`;
     stuWithStatus.forEach((s,i)=>{
       const b=s.status==='present'?`<span class="badge green">มา</span>`:s.status==='late'?`<span class="badge orange">สาย</span>`:s.status==='absent'?`<span class="badge red">ขาด</span>`:`<span style="color:var(--txt3);font-size:12px">—</span>`;
-      h+=`<tr><td>${i+1}</td><td style="font-size:12px;color:var(--txt3)">${esc(s.student_code||'')}</td><td class="left">${esc(s.student_name)}</td><td>${b}</td></tr>`;
+      h+=`<tr><td>${i+1}</td><td>${esc(s.student_code||'')}</td><td class="left">${esc(s.student_name)}</td><td>${b}</td></tr>`;
     });
     h+=`</tbody></table></div>`;
     $('rpt-class-body').innerHTML=_expBar('exportClassPDF','exportClassExcel','exportClassImage')+`<div id="rpt-class-doc"><div style="font-size:13px;font-weight:600;margin-bottom:8px">${classLabel(gl,room)} · ${esc(selAct?.name||'')} · ${thDate(S.rptClassDate)} · ${sessLbl}</div>${h}</div>`;
@@ -1322,7 +1322,7 @@ async function renderRptPercent(){
       cls.stus.sort((a,b)=>a.pct-b.pct).forEach((s,i)=>{
         const pc=s.pct.toFixed(1);
         const cl=s.pct<50?'red':s.pct<70?'orange':'';
-        h+=`<tr><td>${i+1}</td><td style="font-size:12px;color:var(--txt3)">${esc(s.student_code||'')}</td><td class="left">${esc(s.student_name)}</td><td class="green">${s.present}</td><td class="orange">${s.late}</td><td class="red">${s.absent}</td><td class="${cl}" style="font-weight:600">${pc}%</td></tr>`;
+        h+=`<tr><td>${i+1}</td><td>${esc(s.student_code||'')}</td><td class="left">${esc(s.student_name)}</td><td class="green">${s.present}</td><td class="orange">${s.late}</td><td class="red">${s.absent}</td><td class="${cl}" style="font-weight:600">${pc}%</td></tr>`;
       });
       h+=`</tbody></table></div></div>`;
     });
@@ -1673,6 +1673,7 @@ async function loadAppData(){
   try{
     await Promise.all([loadActivities(),loadStudents(),loadSchoolName(),loadAdminPin()]);
     const sn=$('side-school-name');if(sn)sn.textContent=S.schoolName;
+    const ts=$('topbar-sub');if(ts)ts.textContent=S.schoolName;
     const firstActive=S.activities.find(a=>a.is_active);
     if(firstActive){S.ckActivityId=firstActive.id;S.rptActivityId=firstActive.id}
     nav('home');
