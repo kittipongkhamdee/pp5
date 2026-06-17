@@ -6,7 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#2563EB">
+<meta name="theme-color" content="#ffffff">
 <title>เช็คชื่อกิจกรรม</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4"></script>
@@ -14,90 +14,90 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 :root{
-  --bg:#EEE9E0;--card:#ffffff;--card2:#F5F1EB;--txt:#1E293B;--txt2:#64748B;--txt3:#94A3B8;
-  --sep:#E2D9CC;--blue:#2563EB;--green:#16A34A;--red:#DC2626;--orange:#EA580C;
-  --purple:#7C3AED;--teal:#0891B2;--nav:#ffffff;--nav-border:#E2D9CC;
+  --bg:#F4F6F9;--card:#ffffff;--card2:#F0F2F5;--txt:#111827;--txt2:#6B7280;--txt3:#9CA3AF;
+  --sep:#E5E7EB;--blue:#2563EB;--green:#059669;--red:#DC2626;--orange:#D97706;
+  --nav:#ffffff;--nav-border:#E5E7EB;
   --primary:#2563EB;--primary-dark:#1D4ED8;--primary-light:#EFF6FF;
+  --shadow:0 1px 4px rgba(0,0,0,.07),0 4px 16px rgba(0,0,0,.05);
   --font:'Sarabun',-apple-system,BlinkMacSystemFont,sans-serif;
-  --radius:14px;--radius-sm:10px;--safe-bottom:env(safe-area-inset-bottom,0px);
+  --radius:12px;--radius-sm:8px;--safe-bottom:env(safe-area-inset-bottom,0px);
 }
 @media(prefers-color-scheme:dark){:root{
-  --bg:#0F172A;--card:#1E293B;--card2:#334155;--txt:#F1F5F9;--txt2:#94A3B8;--txt3:#475569;
-  --sep:#334155;--nav:#1E293B;--nav-border:#334155;--primary-light:rgba(37,99,235,.15);
+  --bg:#111827;--card:#1F2937;--card2:#374151;--txt:#F9FAFB;--txt2:#9CA3AF;--txt3:#4B5563;
+  --sep:#374151;--nav:#1F2937;--nav-border:#374151;--primary-light:rgba(37,99,235,.2);
+  --shadow:0 1px 4px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.2);
 }}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
 html,body{height:100%;background:var(--bg);font-family:var(--font);color:var(--txt);overflow:hidden}
-#app{display:flex;flex-direction:column;height:100%;max-width:430px;margin:0 auto;position:relative}
+#app{display:flex;flex-direction:column;height:100%;max-width:640px;margin:0 auto;position:relative}
 
 /* ── Top Bar ── */
 #topbar{
-  background:linear-gradient(135deg,var(--primary) 0%,var(--primary-dark) 100%);
-  padding:12px 16px 12px;padding-top:calc(12px + env(safe-area-inset-top,0px));
-  flex-shrink:0;box-shadow:0 2px 12px rgba(37,99,235,.3);
+  background:var(--card);border-bottom:1px solid var(--sep);
+  padding:14px 20px 12px;padding-top:calc(14px + env(safe-area-inset-top,0px));
+  flex-shrink:0;
 }
-#topbar-title{font-size:17px;font-weight:700;letter-spacing:-.3px;color:#fff}
-#topbar-sub{font-size:13px;color:rgba(255,255,255,.7);margin-top:1px}
+#topbar-title{font-size:18px;font-weight:700;letter-spacing:-.4px;color:var(--txt)}
+#topbar-sub{font-size:13px;color:var(--txt2);margin-top:1px}
 
 /* ── Pages ── */
 .page{flex:1;display:none;flex-direction:column;overflow:hidden}
 .page.active{display:flex}
-.page-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 0 calc(80px + var(--safe-bottom)) 0}
+.page-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 0 calc(72px + var(--safe-bottom)) 0}
 
 /* ── Bottom Nav ── */
 #bottom-nav{
-  background:var(--nav);border-top:1px solid var(--nav-border);
+  background:var(--nav);border-top:1px solid var(--sep);
   display:flex;padding-bottom:var(--safe-bottom);flex-shrink:0;
-  box-shadow:0 -1px 0 var(--sep),0 -4px 20px rgba(0,0,0,.06);
 }
 .nav-item{
-  flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
-  padding:8px 4px 4px;border:none;background:none;cursor:pointer;
-  font-family:var(--font);color:var(--txt3);transition:all .2s;position:relative;
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:9px 4px 6px;border:none;background:none;cursor:pointer;
+  font-family:var(--font);color:var(--txt3);transition:color .15s;
 }
 .nav-item.active{color:var(--primary)}
-.nav-item.active span{font-weight:700}
-.nav-item svg{width:24px;height:24px;transition:transform .2s}
-.nav-item.active svg{transform:scale(1.1)}
+.nav-item svg{width:22px;height:22px}
 .nav-item span{font-size:10px;font-weight:500}
-.nav-item::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:0;height:3px;background:var(--primary);border-radius:3px 3px 0 0;transition:width .2s}
-.nav-item.active::after{width:32px}
+.nav-item.active span{font-weight:700}
 
 /* ── Cards / Lists ── */
-.section{padding:16px 16px 0}
-.section-title{font-size:13px;font-weight:600;color:var(--txt2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;padding:0 4px}
-.card{background:var(--card);border-radius:var(--radius);overflow:hidden;margin-bottom:12px}
+.section{padding:16px 20px 0}
+.section-title{font-size:12px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
+.card{background:var(--card);border-radius:var(--radius);overflow:hidden;margin-bottom:12px;border:1px solid var(--sep)}
 .card-row{
-  display:flex;align-items:center;gap:12px;padding:14px 16px;
-  border-bottom:1px solid var(--sep);cursor:pointer;
+  display:flex;align-items:center;gap:12px;padding:13px 16px;
+  border-bottom:1px solid var(--sep);cursor:pointer;transition:background .1s;
 }
 .card-row:last-child{border-bottom:none}
-.card-row-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.card-row:active{background:var(--card2)}
+.card-row-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
 .card-row-info{flex:1;min-width:0}
 .card-row-name{font-size:15px;font-weight:600}
-.card-row-sub{font-size:13px;color:var(--txt2);margin-top:1px}
-.card-row-arrow{color:var(--txt3);font-size:18px;font-weight:300}
+.card-row-sub{font-size:13px;color:var(--txt2);margin-top:2px}
+.card-row-chev{color:var(--txt3);font-size:16px}
 
 /* ── Stats ── */
-.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px 16px 14px;background:var(--card);border-bottom:1px solid var(--sep)}
-.stat-box{text-align:center;padding:10px 4px;border-radius:10px}
-.stat-box.s-all{background:#EFF6FF}
-.stat-box.s-present{background:#F0FDF4}
-.stat-box.s-late{background:#FFF7ED}
-.stat-box.s-absent{background:#FEF2F2}
-.stat-num{font-size:24px;font-weight:800;line-height:1}
-.stat-lbl{font-size:11px;font-weight:500;margin-top:3px}
-.stat-box.s-all .stat-num{color:var(--primary)}.stat-box.s-all .stat-lbl{color:var(--primary)}
-.stat-num.green{color:var(--green)}.stat-box.s-present .stat-lbl{color:var(--green)}
-.stat-num.orange{color:var(--orange)}.stat-box.s-late .stat-lbl{color:var(--orange)}
-.stat-num.red{color:var(--red)}.stat-box.s-absent .stat-lbl{color:var(--red)}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:14px 20px;background:var(--card);border-bottom:1px solid var(--sep)}
+.stat-box{text-align:center;padding:10px 6px;border-radius:10px;border:1px solid transparent}
+.stat-box.s-all{background:#EFF6FF;border-color:#BFDBFE}
+.stat-box.s-present{background:#ECFDF5;border-color:#A7F3D0}
+.stat-box.s-late{background:#FFFBEB;border-color:#FDE68A}
+.stat-box.s-absent{background:#FEF2F2;border-color:#FECACA}
+.stat-num{font-size:22px;font-weight:800;line-height:1}
+.stat-lbl{font-size:11px;font-weight:600;margin-top:3px}
+.stat-box.s-all .stat-num{color:#1D4ED8}.stat-box.s-all .stat-lbl{color:#3B82F6}
+.stat-num.green{color:#059669}.stat-box.s-present .stat-lbl{color:#059669}
+.stat-num.orange{color:#D97706}.stat-box.s-late .stat-lbl{color:#D97706}
+.stat-num.red{color:#DC2626}.stat-box.s-absent .stat-lbl{color:#DC2626}
 
 /* ── Selectors / Inputs ── */
 .ios-select,.ios-input{
-  width:100%;padding:10px 12px;background:var(--card2);border:1px solid var(--sep);
+  width:100%;padding:10px 14px;background:var(--card);border:1px solid var(--sep);
   border-radius:var(--radius-sm);font-family:var(--font);font-size:15px;color:var(--txt);
-  -webkit-appearance:none;appearance:none;outline:none;
+  -webkit-appearance:none;appearance:none;outline:none;transition:border-color .15s;
 }
-.ios-select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23999' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.ios-select:focus,.ios-input:focus{border-color:var(--primary)}
+.ios-select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B7280' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
 
 /* ── Segment Control ── */
 .seg-ctrl{display:flex;background:var(--card2);border-radius:var(--radius-sm);padding:2px;gap:2px}
@@ -107,40 +107,33 @@ html,body{height:100%;background:var(--bg);font-family:var(--font);color:var(--t
 }
 .seg-ctrl button.active{background:var(--card);color:var(--txt);box-shadow:0 1px 4px rgba(0,0,0,.15);font-weight:600}
 
-/* ── Filter pills ── */
-.pill-row{display:flex;gap:6px;overflow-x:auto;padding:10px 16px;-webkit-overflow-scrolling:touch;flex-shrink:0}
-.pill-row::-webkit-scrollbar{display:none}
-.pill{
-  padding:5px 14px;border-radius:20px;font-size:13px;font-weight:500;white-space:nowrap;
-  border:1.5px solid var(--sep);background:var(--card);color:var(--txt2);cursor:pointer;
-  font-family:var(--font);transition:all .15s;
-}
-.pill.active{background:var(--primary);border-color:var(--primary);color:#fff;box-shadow:0 2px 8px rgba(37,99,235,.3)}
+/* ── Misc misc ── */
 
 /* ── Check-in header ── */
-#ck-header{background:var(--card);border-bottom:1px solid var(--sep);flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.06)}
-#ck-controls{display:flex;flex-direction:column;gap:8px;padding:12px 16px}
-#ck-actions{display:flex;gap:8px;padding:0 16px 10px}
+#ck-header{background:var(--card);border-bottom:1px solid var(--sep);flex-shrink:0}
+#ck-controls{display:flex;flex-direction:column;gap:8px;padding:14px 20px}
+#ck-actions{display:flex;gap:8px;padding:0 20px 12px}
 
 /* ── Student rows ── */
 #ck-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(20px + var(--safe-bottom))}
 .stu-row{
-  display:flex;align-items:center;gap:10px;padding:12px 16px;
-  background:var(--card);border-bottom:1px solid var(--sep);
+  display:flex;align-items:center;gap:10px;padding:11px 20px;
+  background:var(--card);border-bottom:1px solid var(--sep);transition:background .1s;
 }
-.stu-num{font-size:13px;color:var(--txt3);width:22px;text-align:right;flex-shrink:0}
+.stu-row:active{background:var(--card2)}
+.stu-num{font-size:13px;color:var(--txt3);width:24px;text-align:right;flex-shrink:0;font-weight:500}
 .stu-info{flex:1;min-width:0}
 .stu-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.stu-meta{font-size:12px;color:var(--txt2)}
-.stu-btns{display:flex;gap:4px;flex-shrink:0}
+.stu-meta{font-size:12px;color:var(--txt3);margin-top:1px}
+.stu-btns{display:flex;gap:5px;flex-shrink:0}
 .sb-btn{
-  padding:5px 10px;border-radius:8px;font-size:12px;font-weight:600;
-  border:1.5px solid var(--sep);background:transparent;color:var(--txt2);
+  padding:5px 11px;border-radius:6px;font-size:12px;font-weight:600;
+  border:1px solid var(--sep);background:var(--card2);color:var(--txt2);
   font-family:var(--font);cursor:pointer;transition:all .15s;
 }
-.sb-btn.present.active{background:var(--green);border-color:var(--green);color:#fff}
-.sb-btn.late.active{background:var(--orange);border-color:var(--orange);color:#fff}
-.sb-btn.absent.active{background:var(--red);border-color:var(--red);color:#fff}
+.sb-btn.present.active{background:#059669;border-color:#059669;color:#fff}
+.sb-btn.late.active{background:#D97706;border-color:#D97706;color:#fff}
+.sb-btn.absent.active{background:#DC2626;border-color:#DC2626;color:#fff}
 
 /* ── Action buttons ── */
 .btn{
@@ -148,26 +141,26 @@ html,body{height:100%;background:var(--bg);font-family:var(--font);color:var(--t
   padding:10px 16px;border-radius:var(--radius-sm);font-family:var(--font);
   font-size:14px;font-weight:600;border:none;cursor:pointer;transition:all .15s;
 }
-.btn-blue{background:var(--primary);color:#fff;box-shadow:0 2px 8px rgba(37,99,235,.3)}
-.btn-green{background:var(--green);color:#fff;box-shadow:0 2px 8px rgba(22,163,74,.25)}
-.btn-red{background:var(--red);color:#fff;box-shadow:0 2px 8px rgba(220,38,38,.25)}
-.btn-outline{background:transparent;border:1.5px solid var(--sep);color:var(--txt)}
-.btn-sm{padding:6px 12px;font-size:13px}
+.btn-blue{background:var(--primary);color:#fff}
+.btn-green{background:#059669;color:#fff}
+.btn-red{background:#DC2626;color:#fff}
+.btn-outline{background:var(--card);border:1px solid var(--sep);color:var(--txt)}
+.btn-sm{padding:7px 14px;font-size:13px}
 .btn-full{width:100%}
 
 /* ── Report tabs ── */
 #rpt-tabs{
   display:flex;background:var(--card);border-bottom:1px solid var(--sep);
-  padding:0 16px;gap:0;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.05);
+  padding:0 20px;gap:0;flex-shrink:0;
 }
 .rpt-tab{
-  flex:1;padding:12px 4px;font-size:13px;font-weight:500;color:var(--txt2);
+  flex:1;padding:13px 4px;font-size:13px;font-weight:500;color:var(--txt2);
   border:none;background:none;font-family:var(--font);cursor:pointer;
-  border-bottom:3px solid transparent;transition:all .15s;
+  border-bottom:2px solid transparent;transition:all .15s;
 }
 .rpt-tab.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:700}
 
-#rpt-content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px;padding-bottom:calc(80px + var(--safe-bottom))}
+#rpt-content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 20px;padding-bottom:calc(80px + var(--safe-bottom))}
 
 /* ── Report tables ── */
 .rpt-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:12px}
@@ -224,10 +217,10 @@ html,body{height:100%;background:var(--bg);font-family:var(--font);color:var(--t
 .admin-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 .admin-hd-title{font-size:17px;font-weight:700}
 .icon-btn{
-  width:34px;height:34px;border-radius:8px;border:none;background:var(--card2);
-  font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  width:32px;height:32px;border-radius:6px;border:1px solid var(--sep);background:var(--card2);
+  font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;
 }
-.icon-btn.red{background:rgba(255,59,48,.12)}
+.icon-btn.red{background:#FEF2F2;border-color:#FECACA}
 
 /* ── Modal ── */
 .modal-overlay{
@@ -320,8 +313,8 @@ html,body{height:100%;background:var(--bg);font-family:var(--font);color:var(--t
 #topbar{display:flex;align-items:center;justify-content:space-between;gap:8px}
 #topbar-left{flex:1;min-width:0}
 .logout-btn{
-  flex-shrink:0;padding:5px 12px;border-radius:20px;border:1.5px solid rgba(255,255,255,.4);
-  background:rgba(255,255,255,.15);font-family:var(--font);font-size:12px;font-weight:600;color:#fff;cursor:pointer;
+  flex-shrink:0;padding:5px 12px;border-radius:6px;border:1px solid var(--sep);
+  background:var(--card2);font-family:var(--font);font-size:12px;font-weight:500;color:var(--txt2);cursor:pointer;
 }
 
 /* ── PIN modal ── */
@@ -387,11 +380,15 @@ html,body{height:100%;background:var(--bg);font-family:var(--font);color:var(--t
         <div class="stat-box s-late"><div class="stat-num orange" id="ck-stat-late">0</div><div class="stat-lbl">สาย</div></div>
         <div class="stat-box s-absent"><div class="stat-num red" id="ck-stat-absent">0</div><div class="stat-lbl">ขาด</div></div>
       </div>
-      <div id="ck-actions" style="display:flex;gap:8px;padding:8px 16px">
-        <button class="btn btn-green btn-sm" style="flex:1" onclick="checkAll('present')">✓ เช็คทั้งหมด มา</button>
-        <button class="btn btn-red btn-sm" style="flex:1" onclick="checkAll('absent')">✗ ขาดทั้งหมด</button>
+      <div id="ck-actions">
+        <select class="ios-select" id="ck-class-sel" onchange="setCkFilterFromDrop()">
+          <option value="">ทุกชั้นเรียน</option>
+        </select>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn btn-green btn-sm" style="flex:1" onclick="checkAll('present')">✓ เช็คทั้งหมด มา</button>
+          <button class="btn btn-red btn-sm" style="flex:1" onclick="checkAll('absent')">✗ ขาดทั้งหมด</button>
+        </div>
       </div>
-      <div class="pill-row" id="ck-class-pills"></div>
     </div>
     <div id="ck-list"></div>
   </div>
@@ -526,7 +523,10 @@ function thDate(d){
   const M=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
   return`${+day} ${M[+m-1]} ${+y+543}`;
 }
-function classLabel(gl,r){return`ม.${gl}/${r}`}
+function classLabel(gl,r){
+  const cnt=S.classes.filter(c=>String(c.grade_level)===String(gl)).length;
+  return cnt<=1?`ม.${gl}`:`ม.${gl}/${r}`;
+}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function $(id){return document.getElementById(id)}
 function toast(msg,type='ok',dur=2500){const t=$('toast');t.textContent=msg;t.className='toast show '+(type==='er'?'er':'');setTimeout(()=>t.className='toast',dur)}
@@ -616,41 +616,33 @@ function renderHome(){
   const hour=new Date().getHours();
   const greet=hour<12?'อรุณสวัสดิ์':hour<18?'สวัสดีตอนบ่าย':'สวัสดีตอนเย็น';
   const greetIcon=hour<12?'🌅':hour<18?'☀️':'🌙';
-  let html=`
-  <div style="background:linear-gradient(135deg,#2563EB 0%,#1D4ED8 60%,#1E40AF 100%);padding:20px 20px 28px;margin-bottom:-16px;position:relative;overflow:hidden">
-    <div style="position:absolute;top:-30px;right:-30px;width:140px;height:140px;background:rgba(255,255,255,.08);border-radius:50%"></div>
-    <div style="position:absolute;bottom:-20px;left:60px;width:80px;height:80px;background:rgba(255,255,255,.06);border-radius:50%"></div>
-    <div style="font-size:13px;color:rgba(255,255,255,.7);margin-bottom:4px;position:relative">${greetIcon} ${greet}</div>
-    <div style="font-size:22px;font-weight:800;color:#fff;position:relative">ระบบเช็คชื่อกิจกรรม</div>
-    <div style="font-size:13px;color:rgba(255,255,255,.65);margin-top:4px;position:relative">${thDate(todayStr())}</div>
-    <div style="display:flex;gap:10px;margin-top:16px;position:relative">
-      <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:10px 14px;flex:1;text-align:center">
-        <div style="font-size:20px;font-weight:800;color:#fff">${acts.length}</div>
-        <div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:2px">กิจกรรม</div>
-      </div>
-      <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:10px 14px;flex:1;text-align:center">
-        <div style="font-size:20px;font-weight:800;color:#fff">${S.students.length}</div>
-        <div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:2px">นักเรียน</div>
-      </div>
-      <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:10px 14px;flex:1;text-align:center">
-        <div style="font-size:20px;font-weight:800;color:#fff">${S.classes.length}</div>
-        <div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:2px">ห้องเรียน</div>
-      </div>
+  let html=`<div class="section" style="padding-top:20px">
+  <div style="display:flex;gap:10px;margin-bottom:20px">
+    <div style="flex:1;background:var(--card);border:1px solid var(--sep);border-radius:var(--radius);padding:14px 12px;text-align:center">
+      <div style="font-size:24px;font-weight:800;color:var(--primary)">${acts.length}</div>
+      <div style="font-size:12px;color:var(--txt2);margin-top:3px">กิจกรรม</div>
     </div>
-  </div>
-  <div class="section" style="padding-top:28px">`;
+    <div style="flex:1;background:var(--card);border:1px solid var(--sep);border-radius:var(--radius);padding:14px 12px;text-align:center">
+      <div style="font-size:24px;font-weight:800;color:#059669">${S.students.length}</div>
+      <div style="font-size:12px;color:var(--txt2);margin-top:3px">นักเรียน</div>
+    </div>
+    <div style="flex:1;background:var(--card);border:1px solid var(--sep);border-radius:var(--radius);padding:14px 12px;text-align:center">
+      <div style="font-size:24px;font-weight:800;color:#D97706">${S.classes.length}</div>
+      <div style="font-size:12px;color:var(--txt2);margin-top:3px">ห้องเรียน</div>
+    </div>
+  </div>`;
   if(!acts.length){
-    html+=`<div class="empty-state" style="background:var(--card);border-radius:var(--radius);padding:40px 24px">ยังไม่มีกิจกรรม<small>กด Admin → เพิ่มกิจกรรม</small></div>`;
+    html+=`<div style="background:var(--card);border:1px solid var(--sep);border-radius:var(--radius);padding:40px 24px;text-align:center;color:var(--txt2)">ยังไม่มีกิจกรรม<br><small style="font-size:13px;color:var(--txt3)">กด Admin → เพิ่มกิจกรรม</small></div>`;
   }else{
-    html+=`<div class="section-title">เลือกกิจกรรมเพื่อเช็คชื่อ</div><div class="card">`;
+    html+=`<div class="section-title">กิจกรรมทั้งหมด</div><div class="card">`;
     acts.forEach(a=>{
       html+=`<div class="card-row" onclick="quickCheckin(${a.id})">
-        <div class="card-row-icon" style="background:${actBg(a.id)}18;font-size:20px;width:42px;height:42px;border-radius:12px">${actEmoji(a.name)}</div>
+        <div class="card-row-icon" style="background:${actBg(a.id)}15">${actEmoji(a.name)}</div>
         <div class="card-row-info">
           <div class="card-row-name">${esc(a.name)}</div>
-          <div class="card-row-sub">${a.has_evening?'รอบเช้า + รอบบ่าย':'รอบเช้าอย่างเดียว'}</div>
+          <div class="card-row-sub">${a.has_evening?'เช้า + บ่าย':'เช้า'}</div>
         </div>
-        <div style="width:28px;height:28px;background:var(--primary-light);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--primary);font-size:16px;font-weight:700">›</div>
+        <svg class="card-row-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="9 18 15 12 9 6"/></svg>
       </div>`;
     });
     html+=`</div>`;
@@ -671,10 +663,12 @@ async function renderCheckin(){
   $('ck-session-wrap').style.display=hasEv?'flex':'none';
   $('ck-sess-m').classList.toggle('active',S.ckSession==='morning');
   $('ck-sess-e').classList.toggle('active',S.ckSession==='evening');
-  // class pills
-  let pills=`<div class="pill${!S.ckFilter?' active':''}" onclick="setCkFilter('')">ทุกชั้น</div>`;
-  S.classes.forEach(c=>{const k=`${c.grade_level}_${c.room}`;pills+=`<div class="pill${S.ckFilter===k?' active':''}" onclick="setCkFilter('${k}')">${classLabel(c.grade_level,c.room)}</div>`});
-  $('ck-class-pills').innerHTML=pills;
+  // populate class dropdown
+  const sel=$('ck-class-sel');
+  if(sel){
+    sel.innerHTML=`<option value="">ทุกชั้นเรียน (${S.students.length} คน)</option>`+
+      S.classes.map(c=>{const k=`${c.grade_level}_${c.room}`;const cnt=S.students.filter(s=>String(s.grade_level)===String(c.grade_level)&&String(s.room)===String(c.room)).length;return`<option value="${k}"${S.ckFilter===k?' selected':''}>${classLabel(c.grade_level,c.room)} (${cnt} คน)</option>`}).join('');
+  }
   if(!S.ckActivityId){
     $('ck-list').innerHTML=`<div class="empty-state">เลือกกิจกรรมเพื่อเริ่มเช็คชื่อ<small>กรุณาเลือกกิจกรรมด้านบน</small></div>`;
     updateCkStats();return;
@@ -685,7 +679,7 @@ async function renderCheckin(){
   renderCkList();updateCkStats();
 }
 
-function setCkFilter(f){S.ckFilter=f;const pills=$('ck-class-pills');if(pills){pills.querySelectorAll('.pill').forEach(p=>{p.classList.toggle('active',p.textContent===(f?classLabel(...f.split('_')):'ทุกชั้น'))})}renderCkList()}
+function setCkFilterFromDrop(){S.ckFilter=$('ck-class-sel').value;renderCkList();updateCkStats()}
 
 function renderCkList(){
   let stus=S.students;
