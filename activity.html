@@ -331,20 +331,22 @@ html,body{height:100%;background:var(--bg);font-family:var(--font);color:var(--t
 .pin-icon{font-size:40px;margin-bottom:12px}
 .pin-title{font-size:18px;font-weight:700;margin-bottom:4px}
 .pin-sub{font-size:13px;color:var(--txt2);margin-bottom:20px}
-.pin-dots{display:flex;justify-content:center;gap:12px;margin-bottom:24px}
-.pin-dot{width:14px;height:14px;border-radius:50%;background:var(--sep);transition:background .15s}
-.pin-dot.filled{background:var(--primary)}
-.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.pin-key{
-  padding:16px 8px;border-radius:14px;border:none;background:var(--card2);
-  font-family:var(--font);font-size:20px;font-weight:600;color:var(--txt);cursor:pointer;
-  transition:all .1s;
+.pin-input-wrap{position:relative;margin-bottom:12px}
+.pin-input{
+  width:100%;padding:13px 44px 13px 16px;background:var(--card2);border:2px solid var(--sep);
+  border-radius:12px;font-family:var(--font);font-size:18px;font-weight:600;color:var(--txt);
+  text-align:center;letter-spacing:4px;outline:none;transition:border-color .2s;
 }
-.pin-key:active{background:var(--primary);color:#fff;transform:scale(.95)}
-.pin-key.del{font-size:16px;color:var(--txt2)}
-.pin-key.empty{background:transparent;cursor:default}
-.pin-err{color:var(--red);font-size:13px;margin-top:12px;min-height:18px}
-.pin-cancel{margin-top:16px;background:none;border:none;font-family:var(--font);font-size:14px;color:var(--txt2);cursor:pointer;padding:8px}
+.pin-input:focus{border-color:var(--primary)}
+.pin-input::placeholder{letter-spacing:0;font-size:15px;font-weight:400}
+.pin-submit{
+  width:100%;padding:13px;background:var(--primary);border:none;border-radius:12px;
+  font-family:var(--font);font-size:15px;font-weight:700;color:#fff;cursor:pointer;
+  transition:opacity .15s;box-shadow:0 3px 10px rgba(37,99,235,.35);
+}
+.pin-submit:active{opacity:.85}
+.pin-err{color:var(--red);font-size:13px;margin-top:10px;min-height:18px}
+.pin-cancel{margin-top:12px;background:none;border:none;font-family:var(--font);font-size:14px;color:var(--txt2);cursor:pointer;padding:8px}
 </style>
 </head>
 <body>
@@ -465,27 +467,12 @@ html,body{height:100%;background:var(--bg);font-family:var(--font);color:var(--t
   <div class="pin-card">
     <div class="pin-icon">🔐</div>
     <div class="pin-title">เข้าสู่หน้า Admin</div>
-    <div class="pin-sub">กรอกรหัส PIN 4 หลัก</div>
-    <div class="pin-dots">
-      <div class="pin-dot" id="pd0"></div>
-      <div class="pin-dot" id="pd1"></div>
-      <div class="pin-dot" id="pd2"></div>
-      <div class="pin-dot" id="pd3"></div>
+    <div class="pin-sub">กรอกรหัสผ่าน Admin</div>
+    <div class="pin-input-wrap">
+      <input class="pin-input" type="password" id="pin-input" placeholder="รหัสผ่าน"
+        autocomplete="off" onkeydown="if(event.key==='Enter')checkPin()">
     </div>
-    <div class="pin-pad">
-      <button class="pin-key" onclick="pinKey('1')">1</button>
-      <button class="pin-key" onclick="pinKey('2')">2</button>
-      <button class="pin-key" onclick="pinKey('3')">3</button>
-      <button class="pin-key" onclick="pinKey('4')">4</button>
-      <button class="pin-key" onclick="pinKey('5')">5</button>
-      <button class="pin-key" onclick="pinKey('6')">6</button>
-      <button class="pin-key" onclick="pinKey('7')">7</button>
-      <button class="pin-key" onclick="pinKey('8')">8</button>
-      <button class="pin-key" onclick="pinKey('9')">9</button>
-      <button class="pin-key empty"></button>
-      <button class="pin-key" onclick="pinKey('0')">0</button>
-      <button class="pin-key del" onclick="pinDel()">⌫</button>
-    </div>
+    <button class="pin-submit" onclick="checkPin()">ยืนยัน</button>
     <div class="pin-err" id="pin-err"></div>
     <button class="pin-cancel" onclick="closePinModal()">ยกเลิก</button>
   </div>
@@ -583,22 +570,16 @@ async function loadAdminPin(){
 }
 
 function showPinModal(){
-  _pinBuf='';updatePinDots();$('pin-err').textContent='';
+  $('pin-input').value='';$('pin-err').textContent='';
   $('pin-modal').classList.add('open');
+  setTimeout(()=>$('pin-input').focus(),100);
 }
 function closePinModal(){$('pin-modal').classList.remove('open')}
 
-function pinKey(k){
-  if(_pinBuf.length>=4)return;
-  _pinBuf+=k;updatePinDots();
-  if(_pinBuf.length===4)setTimeout(checkPin,100);
-}
-function pinDel(){if(_pinBuf.length>0){_pinBuf=_pinBuf.slice(0,-1);updatePinDots()}}
-function updatePinDots(){
-  for(let i=0;i<4;i++){const d=$('pd'+i);if(d)d.classList.toggle('filled',i<_pinBuf.length)}
-}
 function checkPin(){
-  if(_pinBuf===_adminPin){
+  const entered=$('pin-input').value;
+  if(!entered){$('pin-err').textContent='กรุณากรอกรหัสผ่าน';return}
+  if(entered===_adminPin){
     _adminUnlocked=true;closePinModal();
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -606,9 +587,8 @@ function checkPin(){
     $('topbar-title').textContent='จัดการกิจกรรม';
     renderAdmin();
   }else{
-    $('pin-err').textContent='รหัส PIN ไม่ถูกต้อง';
-    _pinBuf='';updatePinDots();
-    // shake animation
+    $('pin-err').textContent='รหัสผ่านไม่ถูกต้อง';
+    $('pin-input').value='';$('pin-input').focus();
     const card=document.querySelector('.pin-card');
     card.style.animation='none';setTimeout(()=>{card.style.animation='shake .4s';},10);
   }
