@@ -579,7 +579,7 @@ let _adminUnlocked=false;
 let _adminPin='1234';
 
 async function loadAdminPin(){
-  try{const r=await q(sb.from('config').select('value').eq('key','admin_pin').limit(1));if(r&&r[0])_adminPin=r[0].value}catch(e){}
+  try{const r=await q(sb.from('config').select('value').eq('key','admin_password').limit(1));if(r&&r[0])_adminPin=r[0].value}catch(e){}
 }
 
 function showPinModal(){
