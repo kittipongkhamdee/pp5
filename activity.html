@@ -411,34 +411,58 @@ html[data-theme="dark"] .sb-btn{background:rgba(55,65,81,0.75);border-color:rgba
 
 /* ── Login overlay ── */
 #login-overlay{
-  position:fixed;inset:0;z-index:300;background:linear-gradient(160deg,#1E3A8A 0%,#2563EB 50%,#1D4ED8 100%);
-  display:flex;align-items:center;justify-content:center;padding:24px;
+  position:fixed;inset:0;z-index:300;background:#f0f4ff;
+  display:flex;align-items:center;justify-content:center;padding:24px;overflow:hidden;
 }
+@keyframes liq-b1{0%,100%{border-radius:60% 40% 70% 30%/60% 30% 70% 40%;transform:translate(0,0)}50%{border-radius:30% 70% 40% 60%/50% 60% 40% 50%;transform:translate(-20px,14px)}}
+@keyframes liq-b2{0%,100%{border-radius:40% 60% 50% 50%/30% 60% 40% 70%;transform:translate(0,0)}50%{border-radius:70% 30% 60% 40%/60% 40% 70% 30%;transform:translate(16px,-14px)}}
+@keyframes liq-b3{0%,100%{border-radius:50% 50% 60% 40%/40% 70% 30% 60%;transform:translate(0,0)}50%{border-radius:40% 60% 30% 70%/70% 40% 60% 30%;transform:translate(-12px,-18px)}}
+.login-blob{position:absolute;pointer-events:none}
+.login-blob1{width:480px;height:480px;background:linear-gradient(135deg,#3b82f6,#6366f1);opacity:.28;filter:blur(70px);top:-140px;left:-120px;animation:liq-b1 9s ease-in-out infinite}
+.login-blob2{width:400px;height:400px;background:linear-gradient(135deg,#8b5cf6,#ec4899);opacity:.22;filter:blur(65px);bottom:-100px;right:-100px;animation:liq-b2 11s ease-in-out infinite}
+.login-blob3{width:340px;height:340px;background:linear-gradient(135deg,#06b6d4,#3b82f6);opacity:.18;filter:blur(60px);bottom:25%;left:5%;animation:liq-b3 13s ease-in-out infinite}
 .login-card{
-  background:rgba(255,255,255,.08);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
-  border:1px solid rgba(255,255,255,.15);border-radius:24px;padding:36px 28px;width:100%;max-width:360px;
+  position:relative;z-index:1;
+  background:rgba(255,255,255,.78);backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px);
+  border:1px solid rgba(255,255,255,.92);border-radius:24px;padding:32px 28px 20px;width:100%;max-width:360px;
+  box-shadow:0 8px 40px rgba(99,102,241,.13),0 2px 8px rgba(0,0,0,.06),inset 0 1px 0 rgba(255,255,255,.95);
 }
-.login-logo{text-align:center;margin-bottom:24px}
-.login-logo-icon{width:64px;height:64px;background:rgba(255,255,255,.2);border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:30px;border:2px solid rgba(255,255,255,.3)}
-.login-title{font-size:20px;font-weight:700;color:#fff;text-align:center}
-.login-sub{font-size:13px;color:rgba(255,255,255,.5);text-align:center;margin-top:4px}
+.login-logo{text-align:center;margin-bottom:20px}
+.login-logo-icon{
+  width:64px;height:64px;border-radius:18px;
+  background:linear-gradient(135deg,#3b82f6,#8b5cf6);
+  display:flex;align-items:center;justify-content:center;margin:0 auto 12px;
+  box-shadow:0 8px 24px rgba(99,102,241,.4),inset 0 1px 0 rgba(255,255,255,.3)
+}
+.login-title{
+  font-size:20px;font-weight:800;text-align:center;
+  background:linear-gradient(135deg,#1d4ed8,#7c3aed);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.login-sub{font-size:13px;color:#94a3b8;text-align:center;margin-top:4px}
 .login-field{margin-bottom:14px}
-.login-field label{display:block;font-size:12px;font-weight:600;color:rgba(255,255,255,.6);margin-bottom:6px;letter-spacing:.3px}
+.login-field label{display:block;font-size:12px;font-weight:700;color:#64748b;margin-bottom:6px;letter-spacing:.4px}
 .login-field input{
-  width:100%;padding:12px 14px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);
-  border-radius:12px;font-family:var(--font);font-size:15px;color:#fff;outline:none;
-  transition:border-color .2s;
+  width:100%;padding:12px 14px;background:rgba(255,255,255,.8);
+  border:1px solid rgba(148,163,184,.3);border-radius:12px;
+  font-family:var(--font);font-size:15px;color:#1e293b;outline:none;
+  transition:border-color .2s,box-shadow .2s;
 }
-.login-field input::placeholder{color:rgba(255,255,255,.3)}
-.login-field input:focus{border-color:rgba(0,122,255,.7);background:rgba(255,255,255,.12)}
-.login-err{font-size:13px;color:#ff6b6b;text-align:center;margin-bottom:12px;min-height:18px}
+.login-field input::placeholder{color:#cbd5e1}
+.login-field input:focus{border-color:rgba(99,102,241,.55);box-shadow:0 0 0 3px rgba(99,102,241,.1);background:#fff}
+.login-err{font-size:13px;color:#ef4444;text-align:center;margin-bottom:12px;min-height:18px}
 .login-btn{
-  width:100%;padding:13px;background:rgba(255,255,255,.95);border:none;border-radius:12px;
-  font-family:var(--font);font-size:16px;font-weight:700;color:#1D4ED8;cursor:pointer;
-  transition:opacity .15s;margin-top:4px;box-shadow:0 4px 16px rgba(0,0,0,.2);
+  width:100%;padding:13px;
+  background:linear-gradient(135deg,#3b82f6,#8b5cf6);
+  border:none;border-radius:12px;font-family:var(--font);font-size:16px;font-weight:700;color:#fff;cursor:pointer;
+  transition:opacity .15s,transform .1s;margin-top:4px;
+  box-shadow:0 4px 20px rgba(99,102,241,.45),inset 0 1px 0 rgba(255,255,255,.22);
 }
-.login-btn:active{opacity:.85}
+.login-btn:active{opacity:.9;transform:scale(.99)}
 .login-btn:disabled{opacity:.5;cursor:not-allowed}
+.login-credit{text-align:center;margin-top:18px;padding-top:14px;border-top:1px solid rgba(148,163,184,.2)}
+.login-credit-lbl{font-size:10px;font-weight:700;color:#94a3b8;letter-spacing:.6px;text-transform:uppercase;margin-bottom:3px}
+.login-credit-name{font-size:13px;font-weight:700;background:linear-gradient(135deg,#3b82f6,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 
 /* ── User chip in topbar ── */
 #topbar{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -734,10 +758,13 @@ html[data-theme="dark"] .sb-btn{background:rgba(55,65,81,0.75);border-color:rgba
 
 <!-- Login Overlay -->
 <div id="login-overlay">
+  <div class="login-blob login-blob1"></div>
+  <div class="login-blob login-blob2"></div>
+  <div class="login-blob login-blob3"></div>
   <div class="login-card">
     <div class="login-logo">
       <div class="login-logo-icon"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><path d="M9 12l2 2 4-4"/></svg></div>
-      <div class="login-title">เช็คชื่อกิจกรรม</div>
+      <div class="login-title">ระบบเช็คชื่อกิจกรรม</div>
       <div class="login-sub">เข้าสู่ระบบเพื่อดำเนินการต่อ</div>
     </div>
     <div class="login-field">
@@ -750,6 +777,10 @@ html[data-theme="dark"] .sb-btn{background:rgba(55,65,81,0.75);border-color:rgba
     </div>
     <div class="login-err" id="login-err"></div>
     <button class="login-btn" id="login-btn" onclick="doLogin()">เข้าสู่ระบบ</button>
+    <div class="login-credit">
+      <div class="login-credit-lbl">ผู้พัฒนาระบบ</div>
+      <div class="login-credit-name">นายกิตติพงษ์ คำดี</div>
+    </div>
   </div>
 </div>
 
