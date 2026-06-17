@@ -1535,7 +1535,24 @@ async function _captureImage(elId,filename){
       width:W,height:H,
       windowWidth:Math.max(W,1024),windowHeight:H,
     });
-    const a=document.createElement('a');a.href=canvas.toDataURL('image/png');a.download=filename;a.click();
+    const dataUrl=canvas.toDataURL('image/png');
+    /* ลอง Web Share API ก่อน (มือถือ) */
+    if(navigator.canShare){
+      try{
+        const res=await fetch(dataUrl);
+        const blob=await res.blob();
+        const file=new File([blob],filename,{type:'image/png'});
+        if(navigator.canShare({files:[file]})){
+          await navigator.share({files:[file],title:filename.replace(/_/g,' ').replace('.png','')});
+          toast('แชร์รูปภาพแล้ว');
+          return;
+        }
+      }catch(shareErr){
+        if(shareErr.name==='AbortError')return; /* ผู้ใช้ยกเลิกการแชร์เอง */
+      }
+    }
+    /* fallback: download */
+    const a=document.createElement('a');a.href=dataUrl;a.download=filename;a.click();
     toast('ดาวน์โหลดรูปภาพแล้ว');
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er')}
   finally{if(wrap.parentNode)wrap.parentNode.removeChild(wrap);loading(false)}
