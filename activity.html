@@ -937,6 +937,9 @@ async function renderHome(){
   const acts=S.activities.filter(a=>a.is_active);
   const today=todayStr();
   const total=S.students.length;
+  const totalCls=S.classes.length;
+  const stuCls={};
+  S.students.forEach(s=>{stuCls[s.id]=`${s.grade_level}_${s.room}`});
   let html=`<div class="section" style="padding-top:20px">
   <div class="home-stats-row" style="display:flex;gap:10px;margin-bottom:20px">
     <div style="flex:1;background:var(--card);border:1px solid var(--sep);border-radius:var(--radius);padding:14px 12px;text-align:center">
@@ -955,17 +958,18 @@ async function renderHome(){
   if(!acts.length){
     html+=`<div style="background:var(--card);border:1px solid var(--sep);border-radius:var(--radius);padding:40px 24px;text-align:center;color:var(--txt2)">ยังไม่มีกิจกรรม<br><small style="font-size:13px;color:var(--txt3)">กด Admin → เพิ่มกิจกรรม</small></div>`;
   }else{
-    // fetch today attendance for all activities in one query
     let aMap={};
     if(total>0){
       try{
         const ids=acts.map(a=>a.id);
-        const rows=await q(sb.from('activity_attend').select('activity_id,session,status').in('activity_id',ids).eq('date',today));
+        const rows=await q(sb.from('activity_attend').select('activity_id,session,status,student_id').in('activity_id',ids).eq('date',today));
         rows.forEach(r=>{
           if(!aMap[r.activity_id])aMap[r.activity_id]={};
-          if(!aMap[r.activity_id][r.session])aMap[r.activity_id][r.session]={ok:0,n:0};
-          if(r.status==='present'||r.status==='late')aMap[r.activity_id][r.session].ok++;
-          aMap[r.activity_id][r.session].n++;
+          if(!aMap[r.activity_id][r.session])aMap[r.activity_id][r.session]={ok:0,n:0,cls:new Set()};
+          const sess=aMap[r.activity_id][r.session];
+          if(r.status==='present'||r.status==='late')sess.ok++;
+          sess.n++;
+          const ck=stuCls[r.student_id];if(ck)sess.cls.add(ck);
         });
       }catch(e){}
     }
@@ -974,9 +978,18 @@ async function renderHome(){
     function _bar(label,sd){
       const p=sd&&total>0?Math.round(sd.ok/total*100):0;
       const has=sd&&sd.n>0;
+      const clsN=sd?sd.cls.size:0;
+      const done=clsN>0&&clsN>=totalCls;
+      const badge=done
+        ?`<span style="font-size:9px;font-weight:700;color:#059669;background:#ECFDF5;border:1px solid #A7F3D0;border-radius:20px;padding:1px 8px;white-space:nowrap">✓ เช็คครบทุกห้องแล้ว</span>`
+        :clsN>0
+          ?`<span style="font-size:9px;font-weight:700;color:#3B82F6;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:20px;padding:1px 8px;white-space:nowrap">${clsN}/${totalCls} ห้อง</span>`
+          :`<span style="font-size:9px;font-weight:600;color:var(--txt3);background:var(--card2);border:1px solid var(--sep);border-radius:20px;padding:1px 8px;white-space:nowrap">ยังไม่เช็ค</span>`;
       return `<div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
-          <span style="font-size:10px;font-weight:600;color:var(--txt3)">${label}</span>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:10px;font-weight:600;color:var(--txt3);min-width:22px">${label}</span>${badge}
+          </div>
           <span style="font-size:10px;font-weight:800;color:${has?_pCol(p):'var(--txt3)'}">${has?p+'%':'—'}</span>
         </div>
         <div style="height:5px;border-radius:3px;background:var(--sep);overflow:hidden">
@@ -988,7 +1001,7 @@ async function renderHome(){
     acts.forEach(a=>{
       const ad=aMap[a.id]||{};
       const bars=a.has_evening
-        ?`<div style="display:flex;flex-direction:column;gap:5px;margin-top:6px">${_bar('เช้า',ad.morning)}${_bar('บ่าย',ad.evening)}</div>`
+        ?`<div style="display:flex;flex-direction:column;gap:6px;margin-top:6px">${_bar('เช้า',ad.morning)}${_bar('บ่าย',ad.evening)}</div>`
         :`<div style="margin-top:6px">${_bar('เช้า',ad.morning)}</div>`;
       html+=`<div class="card-row" onclick="quickCheckin(${a.id})">
         <div class="card-row-icon" style="background:${actBg(a.id)}15">${actEmoji(a.name)}</div>
