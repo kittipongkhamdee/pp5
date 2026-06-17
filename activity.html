@@ -514,7 +514,7 @@ const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 const S={
   activities:[],students:[],classes:[],schoolName:'โรงเรียน',
   ckActivityId:null,ckDate:todayStr(),ckSession:'morning',ckAttend:{},ckFilter:'',
-  rptTab:'activity',rptActivityId:null,rptDate:todayStr(),rptSession:'morning',rptStuId:null,rptSchoolData:null,
+  rptTab:'activity',rptActivityId:null,rptDate:todayStr(),rptSession:'morning',rptStuId:null,rptStuClass:null,rptStuSearch:'',rptSchoolData:null,
   page:'home',
 };
 
@@ -836,14 +836,36 @@ async function renderRptActivity(){
 }
 
 // ── Report: per student ──
-async function renderRptStudent(){
-  const sOpts=S.students.map(s=>`<option value="${s.id}"${S.rptStuId==s.id?' selected':''}>${esc(s.student_name)} (${esc(s.student_code)}) ${classLabel(s.grade_level,s.room)}</option>`).join('');
-  $('rpt-content').innerHTML=`
-    <div class="filter-row">
-      <select class="ios-select" onchange="S.rptStuId=this.value||null;renderRptStudent()">${'<option value="">-- เลือกนักเรียน --</option>'+sOpts}</select>
-    </div>
-    <div id="rpt-stu-body">${S.rptStuId?'<div class="loading-text">กำลังโหลด...</div>':'<div class="empty-state">เลือกนักเรียนเพื่อดูประวัติ</div>'}</div>`;
-  if(!S.rptStuId)return;
+function _rptStuFiltered(){
+  let stus=S.students;
+  if(S.rptStuClass){
+    const[gl,r]=S.rptStuClass.split('_');
+    stus=stus.filter(s=>String(s.grade_level)===gl&&String(s.room)===r);
+  }
+  if(S.rptStuSearch){
+    const kw=S.rptStuSearch.toLowerCase();
+    stus=stus.filter(s=>s.student_name.toLowerCase().includes(kw)||(s.student_code||'').toLowerCase().includes(kw));
+  }
+  return stus;
+}
+function _updateRptStuSelect(){
+  const sel=$('rpt-stu-select');if(!sel)return;
+  const filtered=_rptStuFiltered();
+  sel.innerHTML='<option value="">-- เลือกนักเรียน --</option>'+filtered.map(s=>`<option value="${s.id}"${S.rptStuId===s.id?' selected':''}>${esc(s.student_name)} (${esc(s.student_code||'')})</option>`).join('');
+}
+function _onRptClassChange(val){
+  S.rptStuClass=val||null;S.rptStuId=null;
+  _updateRptStuSelect();
+  $('rpt-stu-body').innerHTML='<div class="empty-state">เลือกนักเรียนเพื่อดูประวัติ</div>';
+}
+function _onRptStuSearch(val){
+  S.rptStuSearch=val;S.rptStuId=null;
+  _updateRptStuSelect();
+  $('rpt-stu-body').innerHTML='<div class="empty-state">เลือกนักเรียนเพื่อดูประวัติ</div>';
+}
+async function _loadRptStudentData(){
+  if(!S.rptStuId){$('rpt-stu-body').innerHTML='<div class="empty-state">เลือกนักเรียนเพื่อดูประวัติ</div>';return}
+  $('rpt-stu-body').innerHTML='<div class="loading-text">กำลังโหลด...</div>';
   try{
     const rows=await q(sb.from('activity_attend').select('*,activities(name)').eq('student_id',S.rptStuId).order('date',{ascending:false}).order('session'));
     if(!rows.length){$('rpt-stu-body').innerHTML='<div class="empty-state">ยังไม่มีข้อมูลการเข้าร่วมกิจกรรม</div>';return}
@@ -862,6 +884,23 @@ async function renderRptStudent(){
     h+=`</tbody></table></div>`;
     $('rpt-stu-body').innerHTML=h;
   }catch(e){$('rpt-stu-body').innerHTML=`<div class="empty-state">เกิดข้อผิดพลาด: ${esc(e.message)}</div>`}
+}
+async function renderRptStudent(){
+  const cOpts=S.classes.map(c=>`<option value="${c.grade_level}_${c.room}"${S.rptStuClass===`${c.grade_level}_${c.room}`?' selected':''}>${classLabel(c.grade_level,c.room)}</option>`).join('');
+  const filtered=_rptStuFiltered();
+  const sOpts=filtered.map(s=>`<option value="${s.id}"${S.rptStuId===s.id?' selected':''}>${esc(s.student_name)} (${esc(s.student_code||'')})</option>`).join('');
+  $('rpt-content').innerHTML=`
+    <div class="filter-row">
+      <select class="ios-select" onchange="_onRptClassChange(this.value)">${'<option value="">-- ทุกชั้นเรียน --</option>'+cOpts}</select>
+    </div>
+    <div class="filter-row">
+      <input type="text" class="ios-input" placeholder="🔍 ค้นหาชื่อ / รหัสนักเรียน..." value="${esc(S.rptStuSearch||'')}" oninput="_onRptStuSearch(this.value)" style="flex:1">
+    </div>
+    <div class="filter-row">
+      <select id="rpt-stu-select" class="ios-select" onchange="S.rptStuId=this.value||null;_loadRptStudentData()">${'<option value="">-- เลือกนักเรียน ('+filtered.length+' คน) --</option>'+sOpts}</select>
+    </div>
+    <div id="rpt-stu-body">${S.rptStuId?'<div class="loading-text">กำลังโหลด...</div>':'<div class="empty-state">เลือกนักเรียนเพื่อดูประวัติ</div>'}</div>`;
+  if(S.rptStuId) await _loadRptStudentData();
 }
 
 // ── Report: school-wide ──
