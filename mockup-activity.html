@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<title>Mockup v2 — ระบบเช็คชื่อกิจกรรม</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ── Reset & Base ── */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{
+  --blue:#007AFF;--green:#34C759;--red:#FF3B30;--orange:#FF9500;--purple:#AF52DE;--indigo:#5856D6;
+  --bg:#F2F2F7;--card:#FFFFFF;--card2:#F2F2F7;
+  --lbl:#000;--lbl2:rgba(60,60,67,.6);--lbl3:rgba(60,60,67,.3);
+  --sep:rgba(60,60,67,.18);--sep-opaque:#C6C6C8;
+  --radius-card:12px;--radius-btn:10px;
+}
+body{font-family:'Sarabun',-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;background:#1C1C1E;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:28px 16px 48px;}
+
+/* ── Outside chrome ── */
+.outer-label{color:rgba(255,255,255,.4);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;text-align:center;}
+.outer-tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;justify-content:center;}
+.out-tab{padding:8px 18px;border-radius:20px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:rgba(255,255,255,.55);font-size:13px;font-weight:600;font-family:'Sarabun',sans-serif;cursor:pointer;transition:all .2s;}
+.out-tab.on{background:#007AFF;border-color:#007AFF;color:white;}
+
+/* ── Phone frame ── */
+.phone{width:393px;max-width:calc(100vw - 32px);background:var(--bg);border-radius:50px;box-shadow:0 0 0 1.5px #3A3A3C,0 0 0 4px #1C1C1E,0 30px 70px rgba(0,0,0,.7),inset 0 0 0 1px rgba(255,255,255,.05);overflow:hidden;position:relative;display:flex;flex-direction:column;height:812px;}
+
+/* ── Status bar ── */
+.sb{height:52px;background:var(--card);display:flex;align-items:flex-end;justify-content:space-between;padding:0 24px 10px;flex-shrink:0;}
+.sb-time{font-size:15px;font-weight:800;color:var(--lbl);}
+.sb-icons{display:flex;gap:6px;align-items:center;color:var(--lbl);}
+
+/* ── Screen ── */
+.screen{display:none;flex:1;overflow-y:auto;flex-direction:column;overscroll-behavior:contain;}
+.screen.on{display:flex;}
+.screen::-webkit-scrollbar{display:none;}
+
+/* ── Bottom nav ── */
+.bnav-bar{position:absolute;bottom:0;left:0;right:0;background:rgba(242,242,247,.94);backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%);border-top:1px solid var(--sep-opaque);display:flex;padding:10px 0 20px;z-index:100;}
+.bnav{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;color:var(--lbl2);font-size:10px;font-weight:600;transition:color .15s;border:none;background:none;font-family:'Sarabun',sans-serif;padding:0;}
+.bnav.on{color:var(--blue);}
+.bnav svg{width:24px;height:24px;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+
+/* ── Typography ── */
+.t-nav{font-size:28px;font-weight:800;color:var(--lbl);letter-spacing:-.3px;}
+.t-sub{font-size:13px;color:var(--lbl2);margin-top:2px;}
+.t-head{font-size:17px;font-weight:700;color:var(--lbl);}
+.t-section{font-size:12px;font-weight:700;color:var(--lbl2);text-transform:uppercase;letter-spacing:.5px;padding:18px 18px 8px;background:var(--bg);}
+
+/* ── Cards ── */
+.card{background:var(--card);border-radius:var(--radius-card);overflow:hidden;margin:0 16px 12px;box-shadow:0 1px 3px rgba(0,0,0,.07);}
+.card-row{padding:13px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--sep);}
+.card-row:last-child{border-bottom:none;}
+
+/* ── Badges ── */
+.pill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:700;}
+.pill-blue{background:#E5F1FF;color:#007AFF;}
+.pill-green{background:#E5F5EA;color:#34C759;}
+.pill-red{background:#FFECEB;color:#FF3B30;}
+.pill-orange{background:#FFF4E5;color:#FF9500;}
+.pill-purple{background:#F3EDFF;color:#AF52DE;}
+.pill-gray{background:#F2F2F7;color:#8E8E93;}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:none;cursor:pointer;font-family:'Sarabun',sans-serif;font-weight:700;transition:opacity .15s;}
+.btn:active{opacity:.75;}
+.btn-primary{background:var(--blue);color:white;border-radius:var(--radius-btn);padding:13px 20px;font-size:15px;width:100%;}
+.btn-primary.green{background:var(--green);}
+.btn-sm{padding:7px 14px;border-radius:8px;font-size:13px;}
+.btn-ghost-blue{background:#E5F1FF;color:var(--blue);}
+.btn-ghost-red{background:#FFECEB;color:var(--red);}
+
+/* ════════════════════════════════════════
+   SCREEN 1 — HOME
+════════════════════════════════════════ */
+.home-header{background:var(--card);padding:16px 18px 18px;flex-shrink:0;}
+.banner{background:linear-gradient(135deg,#007AFF 0%,#0055D4 100%);margin:12px 16px 0;border-radius:18px;padding:18px;color:white;display:flex;justify-content:space-between;align-items:center;}
+.banner-l .banner-day{font-size:12px;opacity:.8;font-weight:500;}
+.banner-l .banner-date{font-size:20px;font-weight:800;margin-top:3px;letter-spacing:-.3px;}
+.banner-l .banner-sub{font-size:12px;opacity:.75;margin-top:5px;}
+.banner-r .banner-pct{font-size:42px;font-weight:800;line-height:1;letter-spacing:-1px;}
+.banner-r .banner-pct span{font-size:20px;font-weight:700;}
+.banner-r .banner-rl{font-size:11px;opacity:.8;margin-top:4px;text-align:right;}
+
+.act-card{background:var(--card);margin:0 16px 12px;border-radius:16px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08);}
+.act-card-body{padding:15px 16px;}
+.act-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.act-name{font-size:16px;font-weight:700;color:var(--lbl);}
+.act-meta{font-size:12px;color:var(--lbl2);margin-top:2px;}
+.act-sessions{display:flex;gap:6px;margin-bottom:13px;}
+.sess{display:flex;align-items:center;gap:4px;padding:4px 10px;border-radius:100px;font-size:11.5px;font-weight:700;border:1.5px solid;}
+.sess-m{border-color:#FF9500;color:#FF9500;background:#FFF4E5;}
+.sess-e{border-color:#5856D6;color:#5856D6;background:#EDECFF;}
+.sess-done{border-color:#34C759;color:#34C759;background:#E5F5EA;}
+.act-stats{display:grid;grid-template-columns:repeat(3,1fr);padding:11px 0 0;border-top:1px solid var(--sep);}
+.a-stat{text-align:center;}
+.a-stat-n{font-size:22px;font-weight:800;}
+.a-stat-l{font-size:10px;color:var(--lbl2);margin-top:1px;}
+.a-stat.p .a-stat-n{color:var(--green);}
+.a-stat.l .a-stat-n{color:var(--orange);}
+.a-stat.a .a-stat-n{color:var(--red);}
+.act-card-footer{padding:0 14px 14px;}
+
+.hist-row{background:var(--card);margin:0 16px 8px;border-radius:12px;padding:13px 15px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+.hist-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.hist-info{flex:1;}
+.hist-name{font-size:14px;font-weight:600;color:var(--lbl);}
+.hist-sub{font-size:11px;color:var(--lbl2);margin-top:2px;}
+.hist-pct{font-size:17px;font-weight:800;}
+
+/* ════════════════════════════════════════
+   SCREEN 2 — CHECK-IN
+════════════════════════════════════════ */
+.ci-hd{background:var(--blue);padding:14px 16px 18px;flex-shrink:0;}
+.ci-back{display:flex;align-items:center;gap:5px;background:none;border:none;color:rgba(255,255,255,.9);font-size:16px;font-weight:500;font-family:'Sarabun',sans-serif;cursor:pointer;margin-bottom:12px;padding:0;}
+.ci-title-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;}
+.ci-title{font-size:20px;font-weight:800;color:white;}
+.ci-sub{font-size:12px;color:rgba(255,255,255,.8);}
+.sess-toggle{display:flex;background:rgba(0,0,0,.2);border-radius:11px;padding:3px;gap:3px;}
+.sess-t{flex:1;padding:9px;border-radius:9px;border:none;font-size:14px;font-weight:700;font-family:'Sarabun',sans-serif;cursor:pointer;color:rgba(255,255,255,.7);background:transparent;transition:all .2s;}
+.sess-t.on{background:white;color:var(--blue);}
+
+.ci-bar{background:var(--card);padding:10px 14px;display:flex;gap:8px;align-items:center;border-bottom:1px solid var(--sep);position:sticky;top:0;z-index:10;flex-shrink:0;}
+.srch{flex:1;display:flex;align-items:center;gap:8px;background:rgba(120,120,128,.12);border-radius:10px;padding:9px 12px;font-size:13px;color:var(--lbl3);}
+.flt{display:flex;align-items:center;gap:4px;padding:9px 13px;background:rgba(120,120,128,.12);border-radius:10px;font-size:13px;font-weight:600;color:var(--lbl);white-space:nowrap;}
+
+.bulk{background:var(--bg);padding:8px 14px;display:flex;gap:7px;flex-shrink:0;}
+.bk{flex:1;padding:9px 4px;border-radius:10px;border:none;font-size:12px;font-weight:700;font-family:'Sarabun',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;}
+.bk-p{background:#E5F5EA;color:#34C759;}
+.bk-a{background:#FFECEB;color:#FF3B30;}
+.bk-c{background:rgba(120,120,128,.1);color:#8E8E93;}
+
+.stu-section-hd{background:var(--bg);padding:7px 18px;font-size:12px;font-weight:700;color:var(--lbl2);letter-spacing:.4px;}
+.stu-row{background:var(--card);padding:11px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--sep);}
+.stu-no{font-size:12px;color:var(--lbl3);min-width:22px;text-align:right;}
+.stu-av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0;}
+.stu-inf{flex:1;}
+.stu-nm{font-size:14px;font-weight:600;color:var(--lbl);}
+.stu-cd{font-size:11px;color:var(--lbl2);}
+.stu-btns{display:flex;gap:5px;}
+.sb2{width:36px;height:36px;border-radius:10px;border:1.5px solid;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;background:transparent;transition:all .15s;font-weight:700;}
+.sb2.p{border-color:#34C759;color:#34C759;}.sb2.p.on{background:#34C759;color:white;}
+.sb2.l{border-color:#FF9500;color:#FF9500;}.sb2.l.on{background:#FF9500;color:white;}
+.sb2.a{border-color:#FF3B30;color:#FF3B30;}.sb2.a.on{background:#FF3B30;color:white;}
+
+.ci-foot{background:var(--card);border-top:1px solid var(--sep);padding:12px 16px 28px;flex-shrink:0;}
+.ft-stats{display:flex;justify-content:space-around;margin-bottom:12px;}
+.fs{text-align:center;}.fs-n{font-size:22px;font-weight:800;}.fs-l{font-size:10px;color:var(--lbl2);}
+.fs.p .fs-n{color:var(--green);}.fs.l .fs-n{color:var(--orange);}.fs.a .fs-n{color:var(--red);}.fs.nd .fs-n{color:var(--lbl3);}
+
+/* ════════════════════════════════════════
+   SCREEN 3 — REPORT
+════════════════════════════════════════ */
+.rpt-hd{background:var(--card);padding:16px 18px 0;border-bottom:1px solid var(--sep);flex-shrink:0;}
+.rpt-subtabs{display:flex;margin-top:12px;border-top:1px solid var(--sep);}
+.rpt-st{flex:1;padding:10px 4px;text-align:center;font-size:12px;font-weight:700;color:var(--lbl2);border-bottom:2px solid transparent;cursor:pointer;transition:all .2s;}
+.rpt-st.on{color:var(--blue);border-bottom-color:var(--blue);}
+
+/* rpt sub-tab panels */
+.rp{display:none;flex:1;overflow-y:auto;flex-direction:column;}
+.rp.on{display:flex;}
+
+.sum-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px 16px;}
+.sc{background:var(--card);border-radius:14px;padding:14px 8px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.07);}
+.sc-n{font-size:28px;font-weight:800;letter-spacing:-.5px;}.sc-l{font-size:11px;color:var(--lbl2);margin-top:2px;}
+.sc.p .sc-n{color:var(--green);}.sc.l .sc-n{color:var(--orange);}.sc.a .sc-n{color:var(--red);}
+
+.exp-row{display:flex;gap:9px;padding:0 16px 14px;}
+.ex-btn{flex:1;padding:11px 4px;border-radius:13px;border:1.5px solid;display:flex;flex-direction:column;align-items:center;gap:5px;font-size:11px;font-weight:700;font-family:'Sarabun',sans-serif;cursor:pointer;background:var(--card);transition:opacity .2s;}
+.ex-btn:active{opacity:.7;}
+.ex-pdf{border-color:var(--red);color:var(--red);}
+.ex-xls{border-color:var(--green);color:var(--green);}
+.ex-img{border-color:var(--indigo);color:var(--indigo);}
+
+.rpt-card{background:var(--card);border-radius:14px;padding:14px 15px;margin:0 16px 10px;box-shadow:0 1px 5px rgba(0,0,0,.07);}
+.rc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
+.rc-name{font-size:14px;font-weight:700;color:var(--lbl);}
+.rc-date{font-size:11px;color:var(--lbl2);margin-top:2px;}
+.rc-bar{height:7px;border-radius:4px;background:var(--bg);overflow:hidden;margin-bottom:7px;}
+.rc-fill{height:100%;border-radius:4px;}
+.rc-stats{display:flex;gap:12px;font-size:12px;font-weight:700;}
+.rcs-p{color:var(--green);}.rcs-l{color:var(--orange);}.rcs-a{color:var(--red);}
+
+.stu-rpt{background:var(--card);border-radius:13px;padding:12px 14px;margin:0 16px 8px;display:flex;align-items:center;gap:11px;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+.sr-av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;flex-shrink:0;}
+.sr-inf{flex:1;}.sr-nm{font-size:14px;font-weight:600;}.sr-sb{font-size:11px;color:var(--lbl2);}
+.sr-pct{font-size:17px;font-weight:800;}
+
+/* ── รายงานทั้งโรงเรียน ── */
+.school-rpt-wrap{padding:14px 16px;}
+.doc-card{background:var(--card);border-radius:16px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.1);}
+.doc-header{background:linear-gradient(135deg,#1D1D1F,#2C2C2E);color:white;padding:18px 18px 16px;text-align:center;}
+.doc-school{font-size:15px;font-weight:700;margin-bottom:4px;}
+.doc-title{font-size:17px;font-weight:800;margin-bottom:6px;letter-spacing:-.2px;}
+.doc-act{font-size:14px;font-weight:600;color:rgba(255,255,255,.8);margin-bottom:3px;}
+.doc-date{font-size:12px;color:rgba(255,255,255,.6);}
+.doc-body{padding:0;}
+
+/* Grade summary table */
+.doc-table{width:100%;border-collapse:collapse;font-size:13px;}
+.doc-table th{padding:10px 8px;text-align:center;font-weight:700;font-size:11px;color:var(--lbl2);background:var(--bg);letter-spacing:.3px;text-transform:uppercase;}
+.doc-table th:first-child{text-align:left;padding-left:16px;}
+.doc-table td{padding:10px 8px;text-align:center;border-top:1px solid var(--sep);font-size:13px;font-weight:600;}
+.doc-table td:first-child{text-align:left;padding-left:16px;font-weight:700;}
+.doc-table tr.total td{background:#F8F8FA;font-weight:800;font-size:14px;border-top:2px solid var(--sep-opaque);}
+.doc-table .c-p{color:var(--green);}
+.doc-table .c-a{color:var(--red);}
+.doc-table .c-l{color:var(--orange);}
+.doc-table .c-pct{font-weight:800;}
+.pct-hi{color:var(--green);}
+.pct-md{color:var(--orange);}
+.pct-lo{color:var(--red);}
+
+.doc-sign{padding:18px 18px 20px;border-top:1px solid var(--sep);}
+.sign-line{border-bottom:1px dashed var(--sep-opaque);margin:6px 0 4px;}
+.sign-name{font-size:12px;color:var(--lbl2);text-align:center;}
+.sign-role{font-size:11px;color:var(--lbl3);text-align:center;}
+
+/* Absent list (page 2) */
+.absent-hd{display:flex;align-items:center;gap:8px;padding:16px 16px 8px;}
+.absent-hd-icon{width:32px;height:32px;border-radius:8px;background:#FFECEB;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.absent-hd-txt{font-size:16px;font-weight:800;}
+.absent-hd-sub{font-size:12px;color:var(--lbl2);}
+
+.abs-class{margin:0 0 10px;}
+.abs-class-hd{padding:7px 16px;background:rgba(120,120,128,.1);display:flex;justify-content:space-between;align-items:center;}
+.abs-class-nm{font-size:13px;font-weight:700;color:var(--lbl);}
+.abs-class-cnt{font-size:12px;font-weight:700;color:var(--red);}
+.abs-stu{background:var(--card);border-bottom:1px solid var(--sep);padding:11px 16px;display:flex;align-items:center;gap:10px;}
+.abs-no{font-size:12px;color:var(--lbl3);min-width:22px;}
+.abs-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
+.abs-nm{font-size:14px;font-weight:600;}
+.abs-cd{font-size:11px;color:var(--lbl2);}
+.abs-status{}.abs-pill{}
+
+/* ════════════════════════════════════════
+   SCREEN 4 — ADMIN
+════════════════════════════════════════ */
+.adm-hd{background:var(--card);padding:16px 18px 14px;border-bottom:1px solid var(--sep);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.adm-actions{display:flex;gap:8px;align-items:center;}
+.adm-card{background:var(--card);border-radius:14px;margin:0 16px 10px;overflow:hidden;box-shadow:0 1px 5px rgba(0,0,0,.07);}
+.adm-card-body{padding:14px 15px;}
+.adm-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:9px;}
+.adm-name{font-size:15px;font-weight:700;}
+.adm-date{font-size:12px;color:var(--lbl2);margin-top:2px;}
+.adm-btns{display:flex;gap:6px;}
+.adm-btn{padding:5px 13px;border-radius:8px;border:1.5px solid;font-size:12px;font-weight:700;font-family:'Sarabun',sans-serif;cursor:pointer;background:transparent;}
+.adm-edit{border-color:var(--blue);color:var(--blue);}
+.adm-del{border-color:var(--red);color:var(--red);}
+.adm-tags{display:flex;flex-wrap:wrap;gap:6px;}
+.adm-stat{display:flex;gap:8px;padding:10px 15px;background:var(--bg);border-top:1px solid var(--sep);}
+.ads{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;}
+.ads-p{color:var(--green);}.ads-a{color:var(--red);}.ads-nd{color:var(--lbl3);}
+
+/* ── Modal sheet ── */
+.modal{display:none;position:absolute;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:flex-end;}
+.modal.open{display:flex;}
+.modal-sh{background:var(--bg);border-radius:22px 22px 0 0;width:100%;padding:10px 16px 40px;max-height:88%;overflow-y:auto;}
+.modal-h{width:36px;height:5px;background:var(--sep-opaque);border-radius:3px;margin:0 auto 18px;}
+.modal-t{font-size:20px;font-weight:800;margin-bottom:20px;}
+.f-lbl{font-size:12px;font-weight:700;color:var(--lbl2);margin-bottom:5px;display:block;text-transform:uppercase;letter-spacing:.4px;}
+.f-inp{width:100%;padding:13px 14px;border-radius:12px;border:1.5px solid var(--sep-opaque);font-size:15px;font-family:'Sarabun',sans-serif;background:var(--card);margin-bottom:14px;outline:none;color:var(--lbl);}
+.f-inp:focus{border-color:var(--blue);}
+.f-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.tgl-row{display:flex;justify-content:space-between;align-items:center;background:var(--card);border-radius:13px;padding:14px 15px;margin-bottom:10px;}
+.tgl-lbl{font-size:15px;font-weight:600;}
+.tgl{width:52px;height:31px;border-radius:16px;position:relative;cursor:pointer;transition:background .25s;}
+.tgl.on{background:var(--green);}.tgl.off{background:#D1D1D6;}
+.tgl-k{position:absolute;width:27px;height:27px;border-radius:50%;background:white;top:2px;box-shadow:0 2px 6px rgba(0,0,0,.2);transition:left .25s;}
+.tgl.on .tgl-k{left:23px;}.tgl.off .tgl-k{left:2px;}
+</style>
+</head>
+<body>
+
+<div class="outer-label">Mockup v2 — ระบบเช็คชื่อกิจกรรม · Apple Style</div>
+<div class="outer-tabs">
+  <button class="out-tab on" onclick="go('home',this)">🏠 หน้าหลัก</button>
+  <button class="out-tab" onclick="go('checkin',this)">✅ เช็คชื่อ</button>
+  <button class="out-tab" onclick="go('report',this)">📊 รายงาน</button>
+  <button class="out-tab" onclick="go('admin',this)">⚙️ Admin</button>
+</div>
+
+<div class="phone" id="ph">
+  <!-- Status bar -->
+  <div class="sb">
+    <span class="sb-time">9:41</span>
+    <div class="sb-icons">
+      <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor"><rect x="0" y="3" width="3" height="9" rx="1.2"/><rect x="4.5" y="2" width="3" height="10" rx="1.2"/><rect x="9" y="0" width="3" height="12" rx="1.2"/><rect x="13.5" y="0" width="2.5" height="12" rx="1.2" opacity=".3"/></svg>
+      <svg width="16" height="12" viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1 4.2C4 1.4 8.3 0 12 0s8 1.4 11 4.2"/><path d="M4.5 7.5C6.5 5.5 9.1 4.5 12 4.5s5.5 1 7.5 3"/><circle cx="12" cy="10.5" r="1.5" fill="currentColor" stroke="none"/></svg>
+      <svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x=".5" y=".5" width="22" height="11" rx="3" stroke="currentColor" stroke-width="1.2"/><rect x="2" y="2" width="17" height="8" rx="2" fill="currentColor"/><path d="M24 4v4a2 2 0 000-4z" fill="currentColor" opacity=".4"/></svg>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN: HOME ══ -->
+  <div class="screen on" id="sc-home">
+    <div class="home-header">
+      <div class="t-nav">กิจกรรม</div>
+      <div class="t-sub">วันอังคาร · 17 มิถุนายน 2568</div>
+    </div>
+
+    <div class="banner">
+      <div class="banner-l">
+        <div class="banner-day">กิจกรรมวันนี้</div>
+        <div class="banner-date">3 กิจกรรม</div>
+        <div class="banner-sub">เช็คแล้ว 1 · รอเช็ค 2</div>
+      </div>
+      <div class="banner-r">
+        <div class="banner-pct">87<span>%</span></div>
+        <div class="banner-rl">อัตราเข้าร่วมเฉลี่ย</div>
+      </div>
+    </div>
+
+    <div class="t-section">วันนี้</div>
+
+    <!-- Activity 1 — done -->
+    <div class="act-card">
+      <div class="act-card-body">
+        <div class="act-card-top">
+          <div><div class="act-name">เข้าแถวหน้าเสาธง</div><div class="act-meta">ทุกชั้น · ทุกห้อง</div></div>
+          <span class="pill pill-green">✓ เช็คแล้ว</span>
+        </div>
+        <div class="act-sessions"><div class="sess sess-done">☀️ เช้า เสร็จแล้ว</div></div>
+        <div class="act-stats">
+          <div class="a-stat p"><div class="a-stat-n">124</div><div class="a-stat-l">มา</div></div>
+          <div class="a-stat l"><div class="a-stat-n">8</div><div class="a-stat-l">สาย</div></div>
+          <div class="a-stat a"><div class="a-stat-n">12</div><div class="a-stat-l">ขาด</div></div>
+        </div>
+      </div>
+      <div class="act-card-footer"><button class="btn btn-primary green" style="font-size:14px;padding:11px">📋 ดูผลการเช็คชื่อ</button></div>
+    </div>
+
+    <!-- Activity 2 — pending -->
+    <div class="act-card" style="cursor:pointer" onclick="go('checkin',null)">
+      <div class="act-card-body">
+        <div class="act-card-top">
+          <div><div class="act-name">กิจกรรมชุมนุม</div><div class="act-meta">ม.4–ม.6 · ทุกห้อง</div></div>
+          <span class="pill pill-orange">⏳ รอเช็ค</span>
+        </div>
+        <div class="act-sessions"><div class="sess sess-m">☀️ เช้า</div><div class="sess sess-e">🌙 เย็น</div></div>
+        <div class="act-stats">
+          <div class="a-stat p"><div class="a-stat-n" style="color:var(--lbl3)">—</div><div class="a-stat-l">มา</div></div>
+          <div class="a-stat l"><div class="a-stat-n" style="color:var(--lbl3)">—</div><div class="a-stat-l">สาย</div></div>
+          <div class="a-stat a"><div class="a-stat-n" style="color:var(--lbl3)">—</div><div class="a-stat-l">ขาด</div></div>
+        </div>
+      </div>
+      <div class="act-card-footer"><button class="btn btn-primary" style="font-size:14px;padding:11px">✅ เริ่มเช็คชื่อ</button></div>
+    </div>
+
+    <!-- Activity 3 -->
+    <div class="act-card">
+      <div class="act-card-body">
+        <div class="act-card-top">
+          <div><div class="act-name">กีฬาสีประจำปี</div><div class="act-meta">ทุกชั้น · ทุกห้อง</div></div>
+          <span class="pill pill-orange">⏳ รอเช็ค</span>
+        </div>
+        <div class="act-sessions"><div class="sess sess-m">☀️ เช้า</div><div class="sess sess-e">🌙 เย็น</div></div>
+        <div class="act-stats">
+          <div class="a-stat p"><div class="a-stat-n" style="color:var(--lbl3)">—</div><div class="a-stat-l">มา</div></div>
+          <div class="a-stat l"><div class="a-stat-n" style="color:var(--lbl3)">—</div><div class="a-stat-l">สาย</div></div>
+          <div class="a-stat a"><div class="a-stat-n" style="color:var(--lbl3)">—</div><div class="a-stat-l">ขาด</div></div>
+        </div>
+      </div>
+      <div class="act-card-footer"><button class="btn btn-primary" style="font-size:14px;padding:11px">✅ เริ่มเช็คชื่อ</button></div>
+    </div>
+
+    <div class="t-section">ล่าสุด</div>
+    <div class="hist-row"><div class="hist-icon" style="background:#E5F5EA">📋</div><div class="hist-info"><div class="hist-name">วันทำความสะอาดโรงเรียน</div><div class="hist-sub">16 มิ.ย. 68 · เช้า · 144 คน</div></div><div style="text-align:right"><div class="hist-pct" style="color:var(--green)">91%</div><div style="font-size:10px;color:var(--lbl2)">เข้าร่วม</div></div></div>
+    <div class="hist-row"><div class="hist-icon" style="background:#FFF4E5">📋</div><div class="hist-info"><div class="hist-name">เข้าแถวหน้าเสาธง</div><div class="hist-sub">16 มิ.ย. 68 · เช้า · 144 คน</div></div><div style="text-align:right"><div class="hist-pct" style="color:var(--orange)">79%</div><div style="font-size:10px;color:var(--lbl2)">เข้าร่วม</div></div></div>
+    <div style="height:20px"></div>
+  </div>
+
+  <!-- ══ SCREEN: CHECK-IN ══ -->
+  <div class="screen" id="sc-checkin">
+    <div class="ci-hd">
+      <button class="ci-back" onclick="go('home',null)">
+        <svg width="9" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1L1 8l7 7"/></svg> กิจกรรม
+      </button>
+      <div class="ci-title-row">
+        <div><div class="ci-title">กิจกรรมชุมนุม</div><div class="ci-sub" style="margin-top:3px">17 มิ.ย. 68 · 87 คน</div></div>
+      </div>
+      <div class="sess-toggle">
+        <button class="sess-t on" onclick="setSess(this)">☀️ รอบเช้า</button>
+        <button class="sess-t" onclick="setSess(this)">🌙 รอบเย็น</button>
+      </div>
+    </div>
+    <div class="ci-bar">
+      <div class="srch">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="6" r="5"/><path d="M11 11l3 3"/></svg>
+        ค้นหาชื่อ...
+      </div>
+      <div class="flt">ทุกชั้น <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 4l4 4 4-4"/></svg></div>
+    </div>
+    <div class="bulk">
+      <button class="bk bk-p" onclick="markAll('p')">✓ ทั้งหมดมา</button>
+      <button class="bk bk-a" onclick="markAll('a')">✗ ทั้งหมดขาด</button>
+      <button class="bk bk-c" onclick="markAll('')">↺ รีเซ็ต</button>
+    </div>
+
+    <div style="flex:1;overflow-y:auto;" id="stu-list">
+      <div class="stu-section-hd">ม.4/1 — 36 คน</div>
+      <!-- students -->
+      <div class="stu-row"><span class="stu-no">1</span><div class="stu-av" style="background:#E5F1FF;color:#007AFF">ก</div><div class="stu-inf"><div class="stu-nm">เด็กชาย กมล ทองดี</div><div class="stu-cd">46201</div></div><div class="stu-btns"><button class="sb2 p on" onclick="tog(this,'p')">✓</button><button class="sb2 l" onclick="tog(this,'l')">⏰</button><button class="sb2 a" onclick="tog(this,'a')">✗</button></div></div>
+      <div class="stu-row"><span class="stu-no">2</span><div class="stu-av" style="background:#E5F5EA;color:#34C759">ข</div><div class="stu-inf"><div class="stu-nm">เด็กชาย ขวัญชัย ใจดี</div><div class="stu-cd">46202</div></div><div class="stu-btns"><button class="sb2 p on" onclick="tog(this,'p')">✓</button><button class="sb2 l" onclick="tog(this,'l')">⏰</button><button class="sb2 a" onclick="tog(this,'a')">✗</button></div></div>
+      <div class="stu-row"><span class="stu-no">3</span><div class="stu-av" style="background:#FFF4E5;color:#FF9500">ค</div><div class="stu-inf"><div class="stu-nm">เด็กชาย คมสัน ศรีไทย</div><div class="stu-cd">46203</div></div><div class="stu-btns"><button class="sb2 p" onclick="tog(this,'p')">✓</button><button class="sb2 l on" onclick="tog(this,'l')">⏰</button><button class="sb2 a" onclick="tog(this,'a')">✗</button></div></div>
+      <div class="stu-row"><span class="stu-no">4</span><div class="stu-av" style="background:#F3EDFF;color:#AF52DE">จ</div><div class="stu-inf"><div class="stu-nm">เด็กหญิง จิราพร วงศ์ดี</div><div class="stu-cd">46204</div></div><div class="stu-btns"><button class="sb2 p on" onclick="tog(this,'p')">✓</button><button class="sb2 l" onclick="tog(this,'l')">⏰</button><button class="sb2 a" onclick="tog(this,'a')">✗</button></div></div>
+      <div class="stu-row"><span class="stu-no">5</span><div class="stu-av" style="background:#FFECEB;color:#FF3B30">ฉ</div><div class="stu-inf"><div class="stu-nm">เด็กหญิง ฉัตรชนก พรมมา</div><div class="stu-cd">46205</div></div><div class="stu-btns"><button class="sb2 p" onclick="tog(this,'p')">✓</button><button class="sb2 l" onclick="tog(this,'l')">⏰</button><button class="sb2 a on" onclick="tog(this,'a')">✗</button></div></div>
+      <div class="stu-row"><span class="stu-no">6</span><div class="stu-av" style="background:#E5F1FF;color:#007AFF">ช</div><div class="stu-inf"><div class="stu-nm">เด็กหญิง ชลธิชา นาคสุข</div><div class="stu-cd">46206</div></div><div class="stu-btns"><button class="sb2 p on" onclick="tog(this,'p')">✓</button><button class="sb2 l" onclick="tog(this,'l')">⏰</button><button class="sb2 a" onclick="tog(this,'a')">✗</button></div></div>
+      <div class="stu-row"><span class="stu-no">7</span><div class="stu-av" style="background:#E5F5EA;color:#34C759">ซ</div><div class="stu-inf"><div class="stu-nm">เด็กชาย ซื่อตรง มั่นคง</div><div class="stu-cd">46207</div></div><div class="stu-btns"><button class="sb2 p on" onclick="tog(this,'p')">✓</button><button class="sb2 l" onclick="tog(this,'l')">⏰</button><button class="sb2 a" onclick="tog(this,'a')">✗</button></div></div>
+      <div class="stu-row"><span class="stu-no">8</span><div class="stu-av" style="background:#FFECEB;color:#FF3B30">ณ</div><div class="stu-inf"><div class="stu-nm">เด็กชาย ณัฐพล สุขใจ</div><div class="stu-cd">46208</div></div><div class="stu-btns"><button class="sb2 p" onclick="tog(this,'p')">✓</button><button class="sb2 l" onclick="tog(this,'l')">⏰</button><button class="sb2 a on" onclick="tog(this,'a')">✗</button></div></div>
+      <div class="stu-row" style="opacity:.4"><span class="stu-no">···</span><div class="stu-av" style="background:var(--bg);color:var(--lbl3)">…</div><div class="stu-inf"><div class="stu-nm" style="color:var(--lbl3)">นักเรียนคนที่ 9–36</div></div><div class="stu-btns"><button class="sb2 p">✓</button><button class="sb2 l">⏰</button><button class="sb2 a">✗</button></div></div>
+    </div>
+
+    <div class="ci-foot">
+      <div class="ft-stats">
+        <div class="fs p"><div class="fs-n" id="cnt-p">5</div><div class="fs-l">มา</div></div>
+        <div class="fs l"><div class="fs-n" id="cnt-l">1</div><div class="fs-l">สาย</div></div>
+        <div class="fs a"><div class="fs-n" id="cnt-a">2</div><div class="fs-l">ขาด</div></div>
+        <div class="fs nd"><div class="fs-n" id="cnt-nd">28</div><div class="fs-l">ยังไม่เช็ค</div></div>
+      </div>
+      <button class="btn btn-primary" style="padding:14px">
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        บันทึกการเช็คชื่อ
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN: REPORT ══ -->
+  <div class="screen" id="sc-report">
+    <div class="rpt-hd">
+      <div class="t-nav">รายงาน</div>
+      <div class="rpt-subtabs">
+        <div class="rpt-st on" onclick="rptTab('ra',this)">รายกิจกรรม</div>
+        <div class="rpt-st" onclick="rptTab('rs',this)">รายนักเรียน</div>
+        <div class="rpt-st" onclick="rptTab('rw',this)">ทั้งโรงเรียน</div>
+      </div>
+    </div>
+
+    <!-- Tab: รายกิจกรรม -->
+    <div class="rp on" id="rp-ra">
+      <div style="display:flex;gap:8px;padding:14px 16px 4px;align-items:center;">
+        <div style="flex:1;background:var(--card);border-radius:10px;padding:9px 12px;display:flex;gap:8px;align-items:center;font-size:13px;color:var(--lbl2);box-shadow:0 1px 3px rgba(0,0,0,.07)">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          มิ.ย. 2568
+        </div>
+        <div style="background:var(--card);border-radius:10px;padding:9px 13px;font-size:13px;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.07);display:flex;gap:5px;align-items:center;">ทุกชั้น<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 4l4 4 4-4"/></svg></div>
+      </div>
+      <div class="sum-row">
+        <div class="sc p"><div class="sc-n">87%</div><div class="sc-l">เฉลี่ยมา</div></div>
+        <div class="sc l"><div class="sc-n">5%</div><div class="sc-l">เฉลี่ยสาย</div></div>
+        <div class="sc a"><div class="sc-n">8%</div><div class="sc-l">เฉลี่ยขาด</div></div>
+      </div>
+      <div class="exp-row">
+        <button class="ex-btn ex-pdf"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>PDF</button>
+        <button class="ex-btn ex-xls"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="2" y1="9" x2="22" y2="9"/><line x1="2" y1="15" x2="22" y2="15"/><line x1="9" y1="9" x2="9" y2="21"/></svg>Excel</button>
+        <button class="ex-btn ex-img"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>รูปภาพ</button>
+      </div>
+      <div class="rpt-card"><div class="rc-top"><div><div class="rc-name">เข้าแถวหน้าเสาธง</div><div class="rc-date">17 มิ.ย. 68 · เช้า · 144 คน</div></div><span class="pill pill-green">87%</span></div><div class="rc-bar"><div class="rc-fill" style="width:87%;background:var(--green)"></div></div><div class="rc-stats"><span class="rcs-p">✓ มา 124</span><span class="rcs-l">⏰ สาย 8</span><span class="rcs-a">✗ ขาด 12</span></div></div>
+      <div class="rpt-card"><div class="rc-top"><div><div class="rc-name">วันทำความสะอาดโรงเรียน</div><div class="rc-date">16 มิ.ย. 68 · เช้า · 144 คน</div></div><span class="pill pill-green">91%</span></div><div class="rc-bar"><div class="rc-fill" style="width:91%;background:var(--green)"></div></div><div class="rc-stats"><span class="rcs-p">✓ มา 131</span><span class="rcs-l">⏰ สาย 4</span><span class="rcs-a">✗ ขาด 9</span></div></div>
+      <div class="rpt-card"><div class="rc-top"><div><div class="rc-name">เข้าแถวหน้าเสาธง</div><div class="rc-date">16 มิ.ย. 68 · เช้า · 144 คน</div></div><span class="pill pill-orange">79%</span></div><div class="rc-bar"><div class="rc-fill" style="width:79%;background:var(--orange)"></div></div><div class="rc-stats"><span class="rcs-p">✓ มา 113</span><span class="rcs-l">⏰ สาย 12</span><span class="rcs-a">✗ ขาด 19</span></div></div>
+      <div class="rpt-card"><div class="rc-top"><div><div class="rc-name">กิจกรรมชุมนุม</div><div class="rc-date">15 มิ.ย. 68 · เช้า+เย็น · 87 คน</div></div><span class="pill pill-green">94%</span></div><div class="rc-bar"><div class="rc-fill" style="width:94%;background:var(--green)"></div></div><div class="rc-stats"><span class="rcs-p">✓ มา 82</span><span class="rcs-l">⏰ สาย 2</span><span class="rcs-a">✗ ขาด 3</span></div></div>
+      <div style="height:12px"></div>
+    </div>
+
+    <!-- Tab: รายนักเรียน -->
+    <div class="rp" id="rp-rs" style="flex-direction:column;">
+      <div style="padding:12px 16px;">
+        <div style="background:var(--card);border-radius:12px;padding:10px 14px;display:flex;gap:9px;align-items:center;box-shadow:0 1px 3px rgba(0,0,0,.07);">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="6" r="5"/><path d="M11 11l3 3"/></svg>
+          <span style="font-size:13px;color:var(--lbl3)">ค้นหาชื่อนักเรียน...</span>
+        </div>
+      </div>
+      <div class="stu-rpt"><div class="sr-av" style="background:#E5F1FF;color:var(--blue)">ก</div><div class="sr-inf"><div class="sr-nm">เด็กชาย กมล ทองดี</div><div class="sr-sb">ม.4/1 · 46201 · เข้า 14/15 ครั้ง</div></div><div><div class="sr-pct pct-hi">93%</div></div></div>
+      <div class="stu-rpt"><div class="sr-av" style="background:#E5F5EA;color:var(--green)">จ</div><div class="sr-inf"><div class="sr-nm">เด็กหญิง จิราพร วงศ์ดี</div><div class="sr-sb">ม.4/1 · 46204 · เข้า 15/15 ครั้ง</div></div><div><div class="sr-pct pct-hi">100%</div></div></div>
+      <div class="stu-rpt"><div class="sr-av" style="background:#FFF4E5;color:var(--orange)">ค</div><div class="sr-inf"><div class="sr-nm">เด็กชาย คมสัน ศรีไทย</div><div class="sr-sb">ม.4/1 · 46203 · เข้า 11/15 ครั้ง</div></div><div><div class="sr-pct pct-md">73%</div></div></div>
+      <div class="stu-rpt"><div class="sr-av" style="background:#FFECEB;color:var(--red)">ฉ</div><div class="sr-inf"><div class="sr-nm">เด็กหญิง ฉัตรชนก พรมมา</div><div class="sr-sb">ม.4/1 · 46205 · เข้า 8/15 ครั้ง</div></div><div><div class="sr-pct pct-lo">53%</div></div></div>
+      <div class="stu-rpt"><div class="sr-av" style="background:#E5F1FF;color:var(--blue)">ณ</div><div class="sr-inf"><div class="sr-nm">เด็กชาย ณัฐพล สุขใจ</div><div class="sr-sb">ม.4/1 · 46208 · เข้า 14/15 ครั้ง</div></div><div><div class="sr-pct pct-hi">93%</div></div></div>
+      <div style="background:var(--card);border-radius:12px;margin:0 16px;padding:11px;text-align:center;font-size:13px;color:var(--lbl3);box-shadow:0 1px 3px rgba(0,0,0,.06)">··· นักเรียนทั้งหมด 144 คน</div>
+      <div style="height:12px"></div>
+    </div>
+
+    <!-- Tab: ทั้งโรงเรียน ── รายงานทางการ -->
+    <div class="rp" id="rp-rw" style="flex-direction:column;overflow-y:auto;">
+      <!-- selector -->
+      <div style="padding:12px 16px 8px;display:flex;gap:8px;">
+        <div style="flex:1;background:var(--card);border-radius:11px;padding:10px 13px;display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.07);cursor:pointer;">
+          เข้าแถวหน้าเสาธง · 17 มิ.ย. 68
+          <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 4l4 4 4-4"/></svg>
+        </div>
+      </div>
+
+      <!-- Export buttons -->
+      <div class="exp-row" style="padding-top:0;">
+        <button class="ex-btn ex-pdf"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>PDF</button>
+        <button class="ex-btn ex-xls"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="2" y1="9" x2="22" y2="9"/><line x1="2" y1="15" x2="22" y2="15"/><line x1="9" y1="9" x2="9" y2="21"/></svg>Excel</button>
+        <button class="ex-btn ex-img"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>รูปภาพ</button>
+      </div>
+
+      <!-- ── Document page 1 ── -->
+      <div class="school-rpt-wrap">
+        <div class="doc-card">
+          <!-- doc header -->
+          <div class="doc-header">
+            <div class="doc-school">โรงเรียนตาเบาวิทยา</div>
+            <div class="doc-title">รายงานการเข้าร่วมกิจกรรม</div>
+            <div class="doc-act">เข้าแถวหน้าเสาธง</div>
+            <div class="doc-date">วันอังคารที่ 17 มิถุนายน พ.ศ. 2568 · รอบเช้า</div>
+          </div>
+          <!-- summary table -->
+          <div class="doc-body">
+            <table class="doc-table">
+              <thead>
+                <tr>
+                  <th>ชั้น</th><th>ทั้งหมด</th><th>มา</th><th>ขาด</th><th>สาย</th><th>%มา</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>ม.1</td><td>30</td><td class="c-p">26</td><td class="c-a">3</td><td class="c-l">1</td><td class="c-pct pct-hi">87%</td></tr>
+                <tr><td>ม.2</td><td>28</td><td class="c-p">25</td><td class="c-a">2</td><td class="c-l">1</td><td class="c-pct pct-hi">89%</td></tr>
+                <tr><td>ม.3</td><td>32</td><td class="c-p">30</td><td class="c-a">1</td><td class="c-l">1</td><td class="c-pct pct-hi">94%</td></tr>
+                <tr><td>ม.4</td><td>30</td><td class="c-p">24</td><td class="c-a">5</td><td class="c-l">1</td><td class="c-pct pct-md">80%</td></tr>
+                <tr><td>ม.5</td><td>28</td><td class="c-p">26</td><td class="c-a">1</td><td class="c-l">1</td><td class="c-pct pct-hi">93%</td></tr>
+                <tr><td>ม.6</td><td>30</td><td class="c-p">27</td><td class="c-a">2</td><td class="c-l">1</td><td class="c-pct pct-hi">90%</td></tr>
+                <tr class="total"><td>รวม</td><td>178</td><td class="c-p">158</td><td class="c-a">14</td><td class="c-l">6</td><td class="c-pct pct-hi">89%</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <!-- signature -->
+          <div class="doc-sign">
+            <div style="display:flex;justify-content:center;margin-bottom:12px;">
+              <div style="text-align:center;min-width:200px;">
+                <div style="font-size:12px;color:var(--lbl2);margin-bottom:14px">ลงชื่อ ………………………………………………</div>
+                <div style="font-size:13px;font-weight:700;">(นายตัวอย่าง ครูดีมาก)</div>
+                <div style="font-size:12px;color:var(--lbl2);margin-top:3px">ครูผู้รับผิดชอบกิจกรรม</div>
+                <div style="font-size:11px;color:var(--lbl3);margin-top:4px">วันที่ ……… / ……… / ………</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Document page 2: ผู้ขาด ── -->
+        <div style="display:flex;align-items:center;gap:10px;margin:20px 0 10px;">
+          <div style="flex:1;height:1px;background:var(--sep-opaque)"></div>
+          <span style="font-size:11px;font-weight:700;color:var(--lbl2);white-space:nowrap;background:var(--bg);padding:0 8px;">หน้าที่ 2</span>
+          <div style="flex:1;height:1px;background:var(--sep-opaque)"></div>
+        </div>
+
+        <div class="doc-card">
+          <div style="padding:16px 16px 8px;border-bottom:1px solid var(--sep);">
+            <div style="font-size:16px;font-weight:800;color:var(--lbl);margin-bottom:3px">รายชื่อนักเรียนที่ไม่ได้เข้าร่วมกิจกรรม</div>
+            <div style="font-size:12px;color:var(--lbl2)">เข้าแถวหน้าเสาธง · 17 มิ.ย. 68 · รวม <strong style="color:var(--red)">14 คน</strong></div>
+          </div>
+
+          <!-- ม.1/1 -->
+          <div style="background:rgba(120,120,128,.07);padding:8px 16px;display:flex;justify-content:space-between;border-bottom:1px solid var(--sep);">
+            <span style="font-size:13px;font-weight:700;">ม.1/1</span>
+            <span style="font-size:13px;font-weight:700;color:var(--red)">3 คน</span>
+          </div>
+          <div class="abs-stu"><span class="abs-no">1</span><div class="abs-av" style="background:#E5F1FF;color:var(--blue)">ก</div><div><div class="abs-nm">เด็กชาย กวี พงษ์ไทย</div><div style="font-size:11px;color:var(--lbl2)">46101 · ขาด</div></div></div>
+          <div class="abs-stu"><span class="abs-no">2</span><div class="abs-av" style="background:#FFF4E5;color:var(--orange)">ข</div><div><div class="abs-nm">เด็กหญิง ขวัญจิต สุขดี</div><div style="font-size:11px;color:var(--lbl2)">46102 · ขาด</div></div></div>
+          <div class="abs-stu" style="border-bottom:none"><span class="abs-no">3</span><div class="abs-av" style="background:#E5F5EA;color:var(--green)">ค</div><div><div class="abs-nm">เด็กชาย คณิน วงษ์สุข</div><div style="font-size:11px;color:var(--lbl2)">46103 · ขาด</div></div></div>
+
+          <!-- ม.2/2 -->
+          <div style="background:rgba(120,120,128,.07);padding:8px 16px;display:flex;justify-content:space-between;border-top:1px solid var(--sep);border-bottom:1px solid var(--sep);">
+            <span style="font-size:13px;font-weight:700;">ม.2/2</span>
+            <span style="font-size:13px;font-weight:700;color:var(--red)">2 คน</span>
+          </div>
+          <div class="abs-stu"><span class="abs-no">1</span><div class="abs-av" style="background:#FFECEB;color:var(--red)">จ</div><div><div class="abs-nm">เด็กหญิง จันทร์เพ็ญ สายทอง</div><div style="font-size:11px;color:var(--lbl2)">46201 · ขาด</div></div></div>
+          <div class="abs-stu" style="border-bottom:none"><span class="abs-no">2</span><div class="abs-av" style="background:#F3EDFF;color:var(--purple)">ช</div><div><div class="abs-nm">เด็กชาย ชัยชนะ พรพิชัย</div><div style="font-size:11px;color:var(--lbl2)">46202 · ขาด</div></div></div>
+
+          <!-- ม.4/1 -->
+          <div style="background:rgba(120,120,128,.07);padding:8px 16px;display:flex;justify-content:space-between;border-top:1px solid var(--sep);border-bottom:1px solid var(--sep);">
+            <span style="font-size:13px;font-weight:700;">ม.4/1</span>
+            <span style="font-size:13px;font-weight:700;color:var(--red)">5 คน</span>
+          </div>
+          <div class="abs-stu"><span class="abs-no">1</span><div class="abs-av" style="background:#FFECEB;color:var(--red)">ฉ</div><div><div class="abs-nm">เด็กหญิง ฉัตรชนก พรมมา</div><div style="font-size:11px;color:var(--lbl2)">46205 · ขาด</div></div></div>
+          <div class="abs-stu"><span class="abs-no">2</span><div class="abs-av" style="background:#FFECEB;color:var(--red)">ณ</div><div><div class="abs-nm">เด็กชาย ณัฐพล สุขใจ</div><div style="font-size:11px;color:var(--lbl2)">46208 · ขาด</div></div></div>
+          <div class="abs-stu" style="border-bottom:none;opacity:.5"><span class="abs-no">···</span><div class="abs-av" style="background:var(--bg);color:var(--lbl3)">…</div><div><div class="abs-nm" style="color:var(--lbl3)">และอีก 3 คน</div></div></div>
+
+          <!-- Footer doc -->
+          <div style="padding:14px 16px;border-top:1px solid var(--sep);display:flex;justify-content:space-around;">
+            <div style="text-align:center"><div style="font-size:11px;color:var(--lbl2);margin-bottom:10px">ลงชื่อ ………………………………</div><div style="font-size:12px;font-weight:700;">(นายตัวอย่าง ครูดีมาก)</div><div style="font-size:11px;color:var(--lbl2)">ครูผู้รับผิดชอบกิจกรรม</div></div>
+            <div style="text-align:center"><div style="font-size:11px;color:var(--lbl2);margin-bottom:10px">ลงชื่อ ………………………………</div><div style="font-size:12px;font-weight:700;">(นายผู้บริหาร ดีเด่น)</div><div style="font-size:11px;color:var(--lbl2)">รองผู้อำนวยการ</div></div>
+          </div>
+        </div>
+        <div style="height:16px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN: ADMIN ══ -->
+  <div class="screen" id="sc-admin">
+    <div class="adm-hd">
+      <div class="t-nav">จัดการ</div>
+      <div class="adm-actions">
+        <button class="btn btn-sm btn-ghost-blue" onclick="openM()">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="1" x2="6" y2="11"/><line x1="1" y1="6" x2="11" y2="6"/></svg>
+          เพิ่มกิจกรรม
+        </button>
+      </div>
+    </div>
+
+    <div style="flex:1;overflow-y:auto;">
+      <div class="t-section">มิถุนายน 2568</div>
+
+      <div class="adm-card">
+        <div class="adm-card-body">
+          <div class="adm-top"><div><div class="adm-name">เข้าแถวหน้าเสาธง</div><div class="adm-date">17 มิ.ย. 68</div></div><div class="adm-btns"><button class="adm-btn adm-edit">แก้ไข</button><button class="adm-btn adm-del">ลบ</button></div></div>
+          <div class="adm-tags"><span class="pill pill-blue">ทุกชั้น</span><span class="pill pill-orange">☀️ เช้า</span></div>
+        </div>
+        <div class="adm-stat"><div class="ads ads-p">✓ 124 มา</div><div class="ads ads-a">✗ 12 ขาด</div><div class="ads ads-nd">○ 8 สาย</div></div>
+      </div>
+
+      <div class="adm-card">
+        <div class="adm-card-body">
+          <div class="adm-top"><div><div class="adm-name">กิจกรรมชุมนุม</div><div class="adm-date">17 มิ.ย. 68</div></div><div class="adm-btns"><button class="adm-btn adm-edit">แก้ไข</button><button class="adm-btn adm-del">ลบ</button></div></div>
+          <div class="adm-tags"><span class="pill pill-purple">ม.4–6</span><span class="pill pill-orange">☀️ เช้า</span><span class="pill pill-purple">🌙 เย็น</span></div>
+        </div>
+        <div class="adm-stat"><div class="ads ads-nd" style="color:var(--lbl3)">○ ยังไม่เช็คชื่อ</div></div>
+      </div>
+
+      <div class="adm-card">
+        <div class="adm-card-body">
+          <div class="adm-top"><div><div class="adm-name">กีฬาสีประจำปี</div><div class="adm-date">17 มิ.ย. 68</div></div><div class="adm-btns"><button class="adm-btn adm-edit">แก้ไข</button><button class="adm-btn adm-del">ลบ</button></div></div>
+          <div class="adm-tags"><span class="pill pill-blue">ทุกชั้น</span><span class="pill pill-orange">☀️ เช้า</span><span class="pill pill-purple">🌙 เย็น</span></div>
+        </div>
+        <div class="adm-stat"><div class="ads ads-nd" style="color:var(--lbl3)">○ ยังไม่เช็คชื่อ</div></div>
+      </div>
+
+      <div class="adm-card">
+        <div class="adm-card-body">
+          <div class="adm-top"><div><div class="adm-name">วันทำความสะอาดโรงเรียน</div><div class="adm-date">16 มิ.ย. 68</div></div><div class="adm-btns"><button class="adm-btn adm-edit">แก้ไข</button><button class="adm-btn adm-del">ลบ</button></div></div>
+          <div class="adm-tags"><span class="pill pill-blue">ทุกชั้น</span><span class="pill pill-orange">☀️ เช้า</span></div>
+        </div>
+        <div class="adm-stat"><div class="ads ads-p">✓ 131 มา</div><div class="ads ads-a">✗ 9 ขาด</div><div class="ads ads-nd">○ 4 สาย</div></div>
+      </div>
+      <div style="height:12px"></div>
+    </div>
+
+    <!-- Modal: เพิ่มกิจกรรม -->
+    <div class="modal" id="adm-modal" onclick="closeM(event)">
+      <div class="modal-sh" id="modal-sh">
+        <div class="modal-h"></div>
+        <div class="modal-t">เพิ่มกิจกรรม</div>
+        <label class="f-lbl">ชื่อกิจกรรม *</label>
+        <input class="f-inp" placeholder="เช่น เข้าแถวหน้าเสาธง">
+        <label class="f-lbl">วันที่จัด *</label>
+        <input class="f-inp" type="date" value="2025-06-17">
+        <div class="f-row2">
+          <div><label class="f-lbl">ชั้น</label>
+            <select class="f-inp" style="cursor:pointer"><option>ทุกชั้น</option><option>ม.1</option><option>ม.2</option><option>ม.3</option><option>ม.4</option><option>ม.5</option><option>ม.6</option></select></div>
+          <div><label class="f-lbl">ห้อง</label>
+            <select class="f-inp" style="cursor:pointer"><option>ทุกห้อง</option><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
+        </div>
+        <label class="f-lbl" style="margin-bottom:8px">รอบการเช็คชื่อ</label>
+        <div class="tgl-row"><span class="tgl-lbl">☀️ รอบเช้า</span><div class="tgl on" onclick="tg(this)"><div class="tgl-k"></div></div></div>
+        <div class="tgl-row"><span class="tgl-lbl">🌙 รอบเย็น</span><div class="tgl off" onclick="tg(this)"><div class="tgl-k"></div></div></div>
+        <label class="f-lbl" style="margin-top:10px">หมายเหตุ (ไม่บังคับ)</label>
+        <input class="f-inp" placeholder="">
+        <button class="btn btn-primary" style="margin-top:4px;padding:14px;font-size:16px;" onclick="closeM({target:document.getElementById('adm-modal')})">✓ บันทึกกิจกรรม</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom nav -->
+  <nav class="bnav-bar">
+    <button class="bnav on" id="bn-home" onclick="go('home',this)">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>หน้าหลัก
+    </button>
+    <button class="bnav" id="bn-checkin" onclick="go('checkin',this)">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>เช็คชื่อ
+    </button>
+    <button class="bnav" id="bn-report" onclick="go('report',this)">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>รายงาน
+    </button>
+    <button class="bnav" id="bn-admin" onclick="go('admin',this)">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93A10 10 0 004.93 19.07m14.14 0A10 10 0 004.93 4.93"/></svg>Admin
+    </button>
+  </nav>
+</div>
+
+<div style="color:rgba(255,255,255,.25);font-size:11px;text-align:center;margin-top:18px;font-family:'Sarabun',sans-serif;line-height:1.8">
+  Mockup เท่านั้น · ข้อมูลจำลอง<br>
+  คลิกแท็บ รายงาน → ทั้งโรงเรียน เพื่อดูรายงานทางการ
+</div>
+
+<script>
+// ── Screen navigation ──
+const SC={home:'sc-home',checkin:'sc-checkin',report:'sc-report',admin:'sc-admin'};
+const BN={home:'bn-home',checkin:'bn-checkin',report:'bn-report',admin:'bn-admin'};
+const OT=document.querySelectorAll('.out-tab');
+function go(name,el){
+  Object.values(SC).forEach(id=>{const s=document.getElementById(id);if(s)s.classList.toggle('on',id===SC[name]);});
+  Object.entries(BN).forEach(([k,id])=>{const b=document.getElementById(id);if(b)b.classList.toggle('on',k===name);});
+  const idx={home:0,checkin:1,report:2,admin:3}[name];
+  OT.forEach((t,i)=>t.classList.toggle('on',i===idx));
+}
+OT.forEach((t,i)=>{const ns=['home','checkin','report','admin'];t.onclick=()=>go(ns[i],t);});
+
+// ── Session toggle ──
+function setSess(btn){btn.parentElement.querySelectorAll('.sess-t').forEach(b=>b.classList.remove('on'));btn.classList.add('on');}
+
+// ── Check-in buttons ──
+function tog(btn,type){
+  const btns=btn.closest('.stu-btns');
+  const wasOn=btn.classList.contains('on');
+  btns.querySelectorAll('.sb2').forEach(b=>b.classList.remove('on'));
+  if(!wasOn)btn.classList.add('on');
+  upd();
+}
+function markAll(t){
+  document.querySelectorAll('#stu-list .stu-btns').forEach(row=>{
+    row.querySelectorAll('.sb2').forEach(b=>b.classList.remove('on'));
+    if(t)row.querySelector('.sb2.'+t).classList.add('on');
+  });
+  upd();
+}
+function upd(){
+  const p=document.querySelectorAll('.sb2.p.on').length;
+  const l=document.querySelectorAll('.sb2.l.on').length;
+  const a=document.querySelectorAll('.sb2.a.on').length;
+  const tot=document.querySelectorAll('#stu-list .stu-row').length;
+  document.getElementById('cnt-p').textContent=p;
+  document.getElementById('cnt-l').textContent=l;
+  document.getElementById('cnt-a').textContent=a;
+  document.getElementById('cnt-nd').textContent=Math.max(0,tot-p-l-a);
+}
+upd();
+
+// ── Report sub-tabs ──
+function rptTab(id,btn){
+  document.querySelectorAll('.rpt-st').forEach(t=>t.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('.rp').forEach(p=>p.classList.remove('on'));
+  document.getElementById('rp-'+id).classList.add('on');
+}
+
+// ── Admin modal ──
+function openM(){document.getElementById('adm-modal').classList.add('open');}
+function closeM(e){if(e.target===document.getElementById('adm-modal'))document.getElementById('adm-modal').classList.remove('open');}
+function tg(el){el.classList.toggle('on');el.classList.toggle('off');}
+</script>
+</body>
+</html>

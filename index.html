@@ -1420,6 +1420,7 @@ async function loadConfig(){
     const rows = await q(sb.from('config').select('*'));
     S.config = {};
     rows.forEach(r=>{ S.config[r.key]=r.value; });
+    if(S.config.subject_groups){try{SUBJECT_GROUPS=JSON.parse(S.config.subject_groups);}catch(e){}}
   }catch(e){ S.config = {}; }
 }
 
@@ -1999,9 +2000,10 @@ const TITLES={dashboard:'แดชบอร์ด',subjects:'รายวิช�
   attendance:'เวลาเรียน',scores:'บันทึกคะแนน',eval:'ประเมิน อ่าน/คุณลักษณะ',
   report:'รายงานผลการเรียน',cover:'ปก ปพ.5',iqa:'รายงาน IQA กลุ่มสาระ',
   settings:'ตั้งค่า',manual:'คู่มือการใช้งาน'};
-const SUBJECT_GROUPS=['ภาษาไทย','คณิตศาสตร์','วิทยาศาสตร์และเทคโนโลยี',
+let SUBJECT_GROUPS=['ภาษาไทย','คณิตศาสตร์','วิทยาศาสตร์และเทคโนโลยี',
   'สังคมศึกษา ศาสนา และวัฒนธรรม','สุขศึกษาและพลศึกษา','ศิลปะ',
   'การงานอาชีพ','ภาษาต่างประเทศ','การศึกษาค้นคว้าด้วยตนเอง (IS)'];
+let _sgList=[];
 const IQA_DEFAULT_TARGETS={'ภาษาไทย':2.60,'คณิตศาสตร์':2.00,'วิทยาศาสตร์และเทคโนโลยี':2.75,
   'สังคมศึกษา ศาสนา และวัฒนธรรม':3.00,'สุขศึกษาและพลศึกษา':3.20,'ศิลปะ':3.20,
   'การงานอาชีพ':3.20,'ภาษาต่างประเทศ':2.50,'การศึกษาค้นคว้าด้วยตนเอง (IS)':3.10};
@@ -4812,9 +4814,56 @@ function _buildPP5Body(sub,cfg,stus,sumMap,erMap,ecMap,scUnitsAll,attRows,attMap
   const elb=v=>{const n=parseInt(v);return[0,1,2,3].includes(n)?String(n):'-';};
   let body='';
 
-  // ── 1. ปก ปพ.5 ─── ดึง HTML จาก DOM เหมือน printCover() ─────
-  const covEl=document.getElementById('cov-content');
-  body+=`<div class="cv sec">${covEl?covEl.innerHTML:'<p style="color:red">ไม่พบเนื้อหาปก กรุณาเปิดหน้า ปก ปพ.5 ก่อน</p>'}</div>`;
+  // ── 1. ปก ปพ.5 ─── สร้าง HTML โดยตรงจากข้อมูล ────────────────
+  const totalN=stus.length;
+  const stuIds=new Set(stus.map(s=>String(s.id)));
+  const gc={4:0,3.5:0,3:0,2.5:0,2:0,1.5:0,1:0,0:0};let rC=0,msC=0;
+  Object.entries(sumMap).forEach(([sid,s])=>{if(!stuIds.has(String(sid)))return;const g=parseFloat(s.grade);if(gc[g]!==undefined)gc[g]++;if(s.special_result==='ร')rC++;if(s.special_result==='มส')msC++;});
+  const cvErLv={3:0,2:0,1:0,0:0};let cvErTotal=0;
+  Object.entries(erMap).filter(([sid])=>stuIds.has(String(sid))).forEach(([,e])=>{cvErTotal++;const v=parseInt(e.result);if(v in cvErLv)cvErLv[v]++;});
+  const cvEcLv={3:0,2:0,1:0,0:0};let cvEcTotal=0;
+  Object.entries(ecMap).filter(([sid])=>stuIds.has(String(sid))).forEach(([,e])=>{cvEcTotal++;const v=parseInt(e.overall_result);if(v in cvEcLv)cvEcLv[v]++;});
+  const cvPct=n=>totalN>0?(n/totalN*100).toFixed(2):'';
+  const cvTh=(c,ex='')=>`<td style="border:1px solid #000;padding:3px 4px;text-align:center;font-size:11px;font-weight:600;background:#f0f0f0;${ex}">${c}</td>`;
+  const cvTd=(c,ex='')=>`<td style="border:1px solid #000;padding:4px;text-align:center;font-size:12px;${ex}">${c}</td>`;
+  body+=`<div class="cv sec"><div style="border:1.5px solid #333;padding:12px 18px 14px;font-family:'Sarabun','TH SarabunNew',sans-serif;background:#fff;position:relative;min-height:270mm">
+<div style="position:absolute;top:10px;right:16px;font-size:12px;font-weight:700;letter-spacing:.5px">ปพ. 5</div>
+<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;margin:8px 0 10px;text-align:center"><img src="${cfg.logo_url||'https://lh5.googleusercontent.com/d/1IjjamxeQ9VaeAao8PtmR7RCwioE4hndi'}" alt="ตราโรงเรียน" style="height:80px;width:auto;object-fit:contain;display:block;margin:0 auto" onerror="this.style.display='none'"></div>
+<div style="text-align:center;font-size:16px;font-weight:700;margin-bottom:10px">แบบบันทึกผลการเรียนประจำรายวิชา</div>
+<table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:10px;table-layout:fixed"><colgroup><col style="width:150px"><col><col style="width:80px"><col></colgroup>
+<tr><td style="padding:4px 6px">โรงเรียน</td><td colspan="3" style="padding:4px 6px;border-bottom:1px solid #666">${esc(cfg.school_name||'')}</td></tr>
+<tr><td style="padding:4px 6px">อำเภอ/เขต</td><td style="padding:4px 6px;border-bottom:1px solid #666">${esc(cfg.school_district||'')}</td><td style="padding:4px 6px">จังหวัด</td><td style="padding:4px 6px;border-bottom:1px solid #666">${esc(cfg.school_province||'')}</td></tr>
+<tr><td style="padding:4px 6px">ชั้นมัธยมศึกษาปีที่</td><td style="padding:4px 6px;border-bottom:1px solid #666">${sub.grade_level}</td><td style="padding:4px 6px">ห้อง</td><td style="padding:4px 6px;border-bottom:1px solid #666">${+sub.room===0?'':sub.room}</td></tr>
+<tr><td style="padding:4px 6px">ภาคเรียนที่</td><td style="padding:4px 6px;border-bottom:1px solid #666;white-space:nowrap">${cfg.semester||''}</td><td style="padding:4px 6px;white-space:nowrap">ปีการศึกษา</td><td style="padding:4px 6px;border-bottom:1px solid #666;white-space:nowrap">${cfg.academic_year||''}</td></tr>
+<tr><td style="padding:4px 6px">รายวิชา</td><td colspan="2" style="padding:4px 6px;border-bottom:1px solid #666">${esc(sub.subject_name)}</td><td style="padding:4px 6px;border-bottom:1px solid #666">${esc(sub.subject_code)}</td></tr>
+<tr><td style="padding:4px 6px">หน่วยกิต</td><td style="padding:4px 6px;border-bottom:1px solid #666;white-space:nowrap">${sub.credits}</td><td style="padding:4px 6px;white-space:nowrap">เวลาเรียน</td><td style="padding:4px 6px;border-bottom:1px solid #666;white-space:nowrap">${sub.total_hours} ชม./ภาค (${sub.hours_per_week} ชม./สัปดาห์)</td></tr>
+<tr><td style="padding:4px 6px">ครูผู้สอน</td><td colspan="3" style="padding:4px 6px;border-bottom:1px solid #666">${esc(sub.teacher_name||'')}</td></tr>
+</table>
+<div style="font-size:13px;font-weight:700;margin:6px 0 4px">สรุปผลการประเมิน</div>
+<table style="width:100%;border-collapse:collapse;border:1px solid #666;font-size:13px;margin-bottom:5px"><thead><tr style="background:#efefef">
+${cvTh('จำนวน<br>นักเรียน','vertical-align:middle;font-size:11px;')}${[4,3.5,3,2.5,2,1.5,1,0].map(g=>cvTh(g,'font-size:13px;font-weight:700;')).join('')}${cvTh('ร','font-size:13px;font-weight:700;')}${cvTh('มส','font-size:13px;font-weight:700;')}
+</tr></thead><tbody>
+<tr>${cvTd(totalN,'font-weight:600;')}${[4,3.5,3,2.5,2,1.5,1,0].map(g=>cvTd(gc[g]||'')).join('')}${cvTd(rC||'')}${cvTd(msC||'')}</tr>
+<tr style="background:#fafafa">${cvTd('ร้อยละ','font-size:13px;color:#555;')}${[4,3.5,3,2.5,2,1.5,1,0].map(g=>cvTd(cvPct(gc[g]),'font-size:13px;')).join('')}${cvTd(cvPct(rC),'font-size:13px;')}${cvTd(cvPct(msC),'font-size:13px;')}</tr>
+</tbody></table>
+<table style="width:100%;border-collapse:collapse;border:1px solid #666;font-size:13px;margin-bottom:12px"><thead><tr style="background:#efefef">
+${cvTh('รายการประเมิน','text-align:left;padding-left:6px;font-size:11.5px;')}${cvTh('จำนวน','font-size:13px;')}${cvTh('ดีเยี่ยม (3)','font-size:13px;')}${cvTh('ดี (2)','font-size:13px;')}${cvTh('ผ่าน (1)','font-size:13px;')}${cvTh('ไม่ผ่าน (0)','font-size:13px;')}
+</tr></thead><tbody>
+<tr><td style="border:1px solid #666;padding:4px 6px;font-size:13px">การอ่าน คิดวิเคราะห์ และเขียน</td>${cvTd(cvErTotal||'')}${[3,2,1,0].map(v=>cvTd(cvErLv[v]?(cvErLv[v]+(cvErTotal>0?' ('+(cvErLv[v]/cvErTotal*100).toFixed(1)+'%)':'')):'','font-size:13px;')).join('')}</tr>
+<tr><td style="border:1px solid #666;padding:4px 6px;font-size:13px">คุณลักษณะอันพึงประสงค์</td>${cvTd(cvEcTotal||'')}${[3,2,1,0].map(v=>cvTd(cvEcLv[v]?(cvEcLv[v]+(cvEcTotal>0?' ('+(cvEcLv[v]/cvEcTotal*100).toFixed(1)+'%)':'')):'','font-size:13px;')).join('')}</tr>
+</tbody></table>
+<div style="font-size:13px;font-weight:700;margin-bottom:8px">การอนุมัติผลการเรียน</div>
+<div style="text-align:center;font-size:13px;margin-bottom:48px"><div style="margin-bottom:2px">ลงชื่อ …………………………………………………</div><div style="margin-bottom:2px">(${esc(sub.teacher_name||'…………………………………………………')})</div><div style="font-size:12px">ครูผู้สอน</div></div>
+<div style="display:flex;justify-content:space-around;font-size:13px;margin-bottom:22px">
+<div style="flex:1;text-align:center"><div style="margin-bottom:2px">ลงชื่อ …………………………………………</div><div style="margin-bottom:2px">(${esc(sub.head_of_group||'........................................')})</div><div style="font-size:12px">หัวหน้ากลุ่มสาระการเรียนรู้</div></div>
+<div style="flex:1;text-align:center"><div style="margin-bottom:2px">ลงชื่อ …………………………………………</div><div style="margin-bottom:2px">(${esc(cfg.head_registrar||'........................................')})</div><div style="font-size:12px">หัวหน้างานทะเบียนวัดผล</div></div>
+<div style="flex:1;text-align:center"><div style="margin-bottom:2px">ลงชื่อ …………………………………………</div><div style="margin-bottom:2px">(${esc(cfg.head_academic||'........................................')})</div><div style="font-size:12px">หัวหน้างานวิชาการ</div></div>
+</div>
+<div style="display:flex;justify-content:space-around;font-size:13px;margin-top:16px">
+<div style="flex:1;text-align:center"><div style="margin-bottom:48px;text-align:left;padding-left:32px">เรียน เสนอมาเพื่อโปรดพิจารณา</div><div style="margin-bottom:2px">ลงชื่อ …………………………………………</div><div style="margin-bottom:2px">(${esc(cfg.vice_director||'……………………………………………')})</div><div style="font-size:12px">รองผู้อำนวยการโรงเรียน${esc(cfg.school_name||'')}</div></div>
+<div style="flex:1;text-align:center"><div style="margin-bottom:48px"><span style="font-size:18px">☐</span> อนุมัติ &nbsp;&nbsp; <span style="font-size:18px">☐</span> ไม่อนุมัติ</div><div style="margin-bottom:2px">ลงชื่อ …………………………………………</div><div style="margin-bottom:2px">(${esc(cfg.director_name||'……………………………………………')})</div><div style="font-size:12px">ผู้อำนวยการโรงเรียน${esc(cfg.school_name||'')}</div><div style="font-size:11.5px;margin-top:4px">วันที่ ……… เดือน …………………………………… พ.ศ. ………</div></div>
+</div>
+</div></div>`;
 
   // ── 2. บันทึกเวลาเรียน ──────────────────────────────────────
   const mMap={};
@@ -4961,7 +5010,6 @@ async function printAllPP5(){
 
 async function exportAllPP5(){
   if(!S.selSub){ toast('กรุณาเลือกรายวิชาก่อน','er'); return; }
-  if(typeof html2pdf==='undefined'){ toast('กำลังโหลด library รอสักครู่แล้วลองใหม่','er'); return; }
   const sub=getSubject(S.selSub);
   if(!sub){ toast('ไม่พบข้อมูลรายวิชา','er'); return; }
   const subId=sub.id;
@@ -4969,7 +5017,6 @@ async function exportAllPP5(){
 
   toast('กำลังเตรียมข้อมูล...','in');
   loading(true);
-  let wrap=null;
   try{
     const [stus,sumRows,erRows,ecRows,scUnitsAll,attRows]=await Promise.all([
       getStudentsBySubject(subId),
@@ -4979,6 +5026,7 @@ async function exportAllPP5(){
       qc('sc_units_'+subId, ()=>q(sb.from('score_units').select('*').eq('subject_id',subId))),
       qc('att_'+subId,      ()=>q(sb.from('attendance').select('*').eq('subject_id',subId)))
     ]);
+    loading(false);
     const sumMap=Object.fromEntries(sumRows.map(s=>[s.student_id,s]));
     const erMap=Object.fromEntries(erRows.map(e=>[e.student_id,e]));
     const ecMap=Object.fromEntries(ecRows.map(e=>[e.student_id,e]));
@@ -4990,44 +5038,31 @@ async function exportAllPP5(){
 
     const body=_buildPP5Body(sub,cfg,stus,sumMap,erMap,ecMap,scUnitsAll,attRows,attMap,totH);
     const css=`
+      @page{size:A4 portrait;margin:12mm 14mm;}
       *{box-sizing:border-box;}
-      div,td,th,span{font-family:'Sarabun','TH SarabunNew','Noto Sans Thai',sans-serif;}
+      body{margin:0;padding:0;background:#fff;font-family:'Sarabun','TH SarabunNew','Noto Sans Thai',sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact;font-size:12px;color:#000;line-height:1.4;}
       .sec{padding:0;margin:0;} .pb{page-break-before:always;}
       .ph{text-align:center;margin-bottom:6px;border-bottom:2px solid #000;padding-bottom:5px;}
       .ph h1{font-size:15px;font-weight:800;margin:0 0 2px;} .ph h2{font-size:13px;font-weight:600;margin:0 0 2px;} .ph .meta{font-size:11px;color:#444;margin:0;}
       .m2{font-size:10.5px;color:#444;margin:3px 0;}
       h3{font-size:12px;font-weight:700;margin:8px 0 4px;}
-      table{width:100%;border-collapse:collapse;margin-top:4px;}
-      .sec:not(.cv) th,.sec:not(.cv) td{border:1px solid #666;padding:2px 3px;font-size:10px;text-align:center;}
+      table{width:100%;border-collapse:collapse;margin-top:4px;} thead{display:table-header-group;} tr{page-break-inside:avoid;}
+      .sec:not(.cv) th,.sec:not(.cv) td{border:1px solid #666;padding:2px 3px;font-size:10px;text-align:center;font-family:'Sarabun','TH SarabunNew',sans-serif;}
       .sec:not(.cv) th{font-weight:700;background:#f0f0f0;} .sec:not(.cv) td.l,.sec:not(.cv) th.l{text-align:left;padding-left:5px;white-space:nowrap;}
       .legend{font-size:9.5px;margin-top:4px;color:#555;}
+      .action-bar{display:flex;gap:12px;align-items:center;justify-content:center;padding:14px;margin-top:20px;background:#f5f5f7;border-radius:10px;position:sticky;bottom:0;}
+      .btn-exp{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#FF3B30;color:#fff;font-weight:600;}
+      .tip{font-size:12px;color:#555;}
+      @media print{.action-bar{display:none!important;}}
     `;
-
-    wrap=document.createElement('div');
-    wrap.style.cssText='position:fixed;left:-9999px;top:0;width:794px;background:#fff;font-size:12px;color:#000;line-height:1.4;';
-    const sEl=document.createElement('style'); sEl.textContent=css;
-    const cDiv=document.createElement('div'); cDiv.innerHTML=body;
-    wrap.appendChild(sEl); wrap.appendChild(cDiv);
-    document.body.appendChild(wrap);
-
-    const fname='ปพ5_'+(sub.subject_code||'')+'_'+grm(sub.grade_level,sub.room)+'_'+(cfg.academic_year||new Date().getFullYear())+'.pdf';
-    toast('กำลัง Export PDF...','in');
-
-    await html2pdf().set({
-      margin:[10,10,10,10],
-      filename:fname,
-      image:{type:'jpeg',quality:0.97},
-      html2canvas:{scale:2,useCORS:true,logging:false,backgroundColor:'#ffffff',windowWidth:794},
-      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
-      pagebreak:{before:'.pb'}
-    }).from(cDiv).save();
-
-    toast('Export PDF ทั้งหมด สำเร็จ ✓');
+    const w=window.open('','_blank');
+    if(!w){ toast('เบราว์เซอร์บล็อก Popup — กรุณาอนุญาต Popup แล้วลองใหม่','er'); return; }
+    w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>Export PDF ทั้งหมด — ${esc(sub.subject_name)} ${grm(sub.grade_level,sub.room)}</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet"><style>${css}</style></head><body><div id="pbody">${body}</div><div class="action-bar"><button class="btn-exp" onclick="window.print()"><svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> บันทึกเป็น PDF</button><span class="tip">เลือก "บันทึกเป็น PDF" ในช่องปลายทางการพิมพ์</span></div><script>window.addEventListener('load',function(){setTimeout(function(){window.print();},500);});<\/script></body></html>`);
+    w.document.close();
+    toast('กำลังเปิดหน้าต่าง Export PDF...');
   }catch(e){
-    toast('Export PDF ผิดพลาด: '+(e.message||e),'er');
-  }finally{
-    wrap?.remove();
     loading(false);
+    toast('เกิดข้อผิดพลาด: '+(e.message||e),'er');
   }
 }
 
@@ -5253,44 +5288,37 @@ select,.no-print{display:none!important}
 }
 
 // ════ EXPORT COVER PDF ═══════════════════════════════════════════
-async function exportCoverPdf(){
+function exportCoverPdf(){
   const covEl = document.getElementById('cov-content');
   if(!covEl){ toast('ไม่พบเนื้อหาปก','er'); return; }
-  if(typeof html2pdf==='undefined'){ toast('กำลังโหลด library รอสักครู่แล้วลองใหม่','er'); return; }
-
   const sub = S.subjects.find(s=>s.id===S.selSub)||S.subjects[0];
   const fname = 'ปก_ปพ5_'+(sub?.subject_code||'')+'_'+grm(sub?.grade_level||0,sub?.room||0)+'_'+new Date().getFullYear()+'.pdf';
-
-  toast('กำลัง Export PDF...','in');
-  loading(true);
-
-  // A4 = 794px @ 96dpi; padding:10mm ≈ 38px ทำหน้าที่เป็น page margin ใน canvas
-  // จึงตั้ง jsPDF margin:[0,0,0,0] เพื่อไม่ให้ content ล้นขอบ
-  const wrap = document.createElement('div');
-  wrap.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#fff;';
-  const clone = covEl.cloneNode(true);
-  clone.style.cssText = 'width:794px;max-width:794px;margin:0;padding:10mm;box-sizing:border-box;background:#fff;';
-  clone.querySelectorAll('select,.no-print').forEach(el=>el.remove());
-  wrap.appendChild(clone);
-  document.body.appendChild(wrap);
-
-  try{
-    await html2pdf().set({
-      margin: [0,0,0,0],
-      filename: fname,
-      image: { type:'jpeg', quality:0.98 },
-      html2canvas: { scale:2, useCORS:true, logging:false,
-                     backgroundColor:'#ffffff', windowWidth:794 },
-      jsPDF: { unit:'mm', format:'a4', orientation:'portrait' },
-      pagebreak: { mode:'avoid-all' }
-    }).from(clone).save();
-    toast('Export PDF สำเร็จ ✓');
-  }catch(e){
-    toast('Export PDF ผิดพลาด: '+e.message,'er');
-  }finally{
-    wrap.remove();
-    loading(false);
-  }
+  const w=window.open('','_blank');
+  if(!w){ toast('เบราว์เซอร์บล็อก popup — กรุณาอนุญาต popup แล้วลองใหม่','er'); return; }
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>*{box-sizing:border-box}body{margin:0;padding:0;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}select,.no-print{display:none!important}</style>
+<script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"><\/script>
+</head><body>
+<div id="cv" style="max-width:210mm;margin:auto;padding:10mm">${covEl.innerHTML}</div>
+<div id="ov" style="position:fixed;inset:0;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;font-family:Sarabun,sans-serif;font-size:17px;color:#333">
+  <div style="text-align:center"><div style="font-size:36px;margin-bottom:10px">⏳</div><div>กำลัง Export PDF ปก...</div></div>
+</div>
+<script>
+window.addEventListener('load',function(){
+  html2pdf().set({margin:[0,0,0,0],filename:${JSON.stringify(fname)},image:{type:'jpeg',quality:0.98},
+    html2canvas:{scale:2,useCORS:true,logging:false,backgroundColor:'#ffffff'},
+    jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:'avoid-all'}
+  }).from(document.getElementById('cv')).save().then(function(){
+    document.getElementById('ov').innerHTML='<div style="text-align:center"><div style="font-size:36px;margin-bottom:10px">✅</div><div>Export PDF ปก สำเร็จ!</div></div>';
+    setTimeout(function(){window.close();},1500);
+  }).catch(function(e){
+    document.getElementById('ov').innerHTML='<div style="padding:20px;color:red">Export ผิดพลาด: '+e.message+'<br><br><button onclick="window.close()">ปิด</button></div>';
+  });
+});
+<\/script></body></html>`);
+  w.document.close();
+  toast('กำลัง Export PDF ปก...');
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -5464,8 +5492,36 @@ async function deleteTeacherData(userId, name){
   });
 }
 
+function _sgListHTML(list){
+  if(!list.length) return '<div style="color:#8e8e93;font-size:13px;text-align:center;padding:12px 0">ยังไม่มีกลุ่มสาระ</div>';
+  return list.map((g,i)=>`<div style="display:flex;align-items:center;gap:6px;padding:7px 0;border-bottom:1px solid var(--bdr)"><span style="font-size:12px;color:#8e8e93;min-width:22px">${i+1}.</span><span style="flex:1;font-size:13px">${esc(g)}</span><button class="btn bs" onclick="sgMove(${i},-1)" ${i===0?'disabled':''} style="padding:3px 8px;min-width:28px">▲</button><button class="btn bs" onclick="sgMove(${i},1)" ${i===list.length-1?'disabled':''} style="padding:3px 8px;min-width:28px">▼</button><button class="btn" onclick="sgDel(${i})" style="padding:3px 9px;color:#FF3B30;border-color:rgba(255,59,48,.3);background:rgba(255,59,48,.08);font-size:12px">ลบ</button></div>`).join('');
+}
+function _sgRefresh(){ const el=document.getElementById('sg-list'); if(el) el.innerHTML=_sgListHTML(_sgList); }
+function sgAdd(){
+  const inp=document.getElementById('sg-new'); if(!inp) return;
+  const name=inp.value.trim();
+  if(!name){ toast('กรุณาใส่ชื่อกลุ่มสาระ','er'); return; }
+  if(_sgList.includes(name)){ toast('กลุ่มสาระนี้มีอยู่แล้ว','er'); return; }
+  _sgList.push(name); inp.value=''; _sgRefresh();
+}
+function sgMove(i,dir){ const j=i+dir; if(j<0||j>=_sgList.length) return; [_sgList[i],_sgList[j]]=[_sgList[j],_sgList[i]]; _sgRefresh(); }
+function sgDel(i){ if(!confirm(`ลบ "${_sgList[i]}" ออกจากรายการกลุ่มสาระ?`)) return; _sgList.splice(i,1); _sgRefresh(); }
+async function saveSgList(){
+  if(!_sgList.length){ toast('ต้องมีกลุ่มสาระอย่างน้อย 1 กลุ่ม','er'); return; }
+  loading(true);
+  try{
+    await q(sb.from('config').upsert([{key:'subject_groups',value:JSON.stringify(_sgList)}],{onConflict:'key'}));
+    SUBJECT_GROUPS=[..._sgList];
+    S.config.subject_groups=JSON.stringify(_sgList);
+    toast('บันทึกกลุ่มสาระเรียบร้อย');
+    pgSettings();
+  }catch(e){ toast('เกิดข้อผิดพลาด: '+e.message,'er'); }
+  finally{ loading(false); }
+}
+
 function pgSettings(){
   const cfg=S.config;
+  _sgList=[...SUBJECT_GROUPS];
   $('pg').innerHTML=`
   <div class="ph">
     <div class="ptitle">
@@ -5628,6 +5684,31 @@ function pgSettings(){
     </div>
 
   </div><!-- end top grid -->
+
+  <!-- ── กลุ่มสาระการเรียนรู้ ── -->
+  <div class="card">
+    <div class="ch">
+      <div class="ct" style="display:flex;align-items:center;gap:7px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--ac)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        กลุ่มสาระการเรียนรู้
+      </div>
+    </div>
+    <div class="cb">
+      <div style="font-size:12px;color:#6e6e73;margin-bottom:14px;line-height:1.6">เพิ่ม ลบ หรือเรียงลำดับกลุ่มสาระที่ใช้ในระบบ (ใช้ในฟอร์มรายวิชาและรายงาน IQA)</div>
+      <div id="sg-list">${_sgListHTML(_sgList)}</div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <input class="fi" id="sg-new" placeholder="ชื่อกลุ่มสาระใหม่..." style="flex:1" onkeydown="if(event.key==='Enter')sgAdd()">
+        <button class="btn bs" onclick="sgAdd()" style="white-space:nowrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          เพิ่ม
+        </button>
+      </div>
+      <button class="btn bp" onclick="saveSgList()" style="margin-top:14px;width:100%;justify-content:center">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        บันทึกกลุ่มสาระ
+      </button>
+    </div>
+  </div>
 
   <!-- ── ค่าเป้าหมาย IQA ── -->
   <div class="card">
