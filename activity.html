@@ -1072,6 +1072,9 @@ async function renderRptStudent(){
   const cOpts=S.classes.map(c=>`<option value="${c.grade_level}_${c.room}"${S.rptStuClass===`${c.grade_level}_${c.room}`?' selected':''}>${classLabel(c.grade_level,c.room)}</option>`).join('');
   const aOpts=S.activities.map(a=>`<option value="${a.id}"${S.rptStuActivityId==a.id?' selected':''}>${esc(a.name)}</option>`).join('');
   $('rpt-content').innerHTML=`
+    <div class="filter-row">
+      <select class="ios-select" onchange="S.rptStuActivityId=+this.value||null;_loadRptStudentData()">${'<option value="">ทุกกิจกรรม</option>'+aOpts}</select>
+    </div>
     <div class="suggest-wrap">
       <input id="rpt-stu-search-inp" type="text" class="ios-input" placeholder="🔍 ค้นหาชื่อ / รหัสนักเรียน..."
         value="${esc(S.rptStuId?S.rptStuSearch:S.rptStuSearch||'')}"
@@ -1083,9 +1086,6 @@ async function renderRptStudent(){
     <div id="rpt-stu-tag-wrap"></div>
     <div class="filter-row">
       <select class="ios-select" onchange="_onRptClassChange(this.value)">${'<option value="">-- ทุกชั้นเรียน --</option>'+cOpts}</select>
-    </div>
-    <div class="filter-row">
-      <select class="ios-select" onchange="S.rptStuActivityId=+this.value||null;_loadRptStudentData()">${'<option value="">ทุกกิจกรรม</option>'+aOpts}</select>
     </div>
     <div id="rpt-stu-body"><div class="loading-text">กำลังโหลด...</div></div>`;
   if(S.rptStuId){_renderStuSelectedTag(S.rptStuSearch);await _loadRptStudentData();}
