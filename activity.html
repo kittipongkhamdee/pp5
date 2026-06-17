@@ -153,12 +153,12 @@ html,body{height:100%;background:var(--bg);font-family:var(--font);color:var(--t
 /* ── Report tabs ── */
 #rpt-tabs{
   display:flex;background:var(--card);border-bottom:1px solid var(--sep);
-  padding:0 20px;gap:0;flex-shrink:0;
+  padding:0 8px;gap:0;flex-shrink:0;
 }
 .rpt-tab{
-  flex:1;padding:13px 4px;font-size:13px;font-weight:500;color:var(--txt2);
+  flex:1;padding:11px 2px;font-size:12px;font-weight:500;color:var(--txt2);
   border:none;background:none;font-family:var(--font);cursor:pointer;
-  border-bottom:2px solid transparent;transition:all .15s;
+  border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;
 }
 .rpt-tab.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:700}
 
@@ -172,6 +172,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--font);color:var(--t
 .rpt-table td.green{color:var(--green);font-weight:600}
 .rpt-table td.orange{color:var(--orange);font-weight:600}
 .rpt-table td.red{color:var(--red);font-weight:600}
+.rpt-table td.not-checked{color:#aaa;font-style:italic;font-size:12px}
 .rpt-table td.left{text-align:left;padding-left:10px}
 
 .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:12px;font-weight:600;color:#fff}
@@ -402,6 +403,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--font);color:var(--t
       <button class="rpt-tab active" id="rpt-tab-activity" onclick="switchRptTab('activity')">รายกิจกรรม</button>
       <button class="rpt-tab" id="rpt-tab-student" onclick="switchRptTab('student')">รายนักเรียน</button>
       <button class="rpt-tab" id="rpt-tab-school" onclick="switchRptTab('school')">ทั้งโรงเรียน</button>
+      <button class="rpt-tab" id="rpt-tab-percent" onclick="switchRptTab('percent')">ร้อยละ</button>
     </div>
     <div id="rpt-content"></div>
   </div>
@@ -514,7 +516,7 @@ const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 const S={
   activities:[],students:[],classes:[],schoolName:'โรงเรียน',
   ckActivityId:null,ckDate:todayStr(),ckSession:'morning',ckAttend:{},ckFilter:'',
-  rptTab:'activity',rptActivityId:null,rptDate:todayStr(),rptSession:'morning',rptStuId:null,rptStuClass:null,rptStuSearch:'',rptSchoolData:null,
+  rptTab:'activity',rptActivityId:null,rptDate:todayStr(),rptSession:'morning',rptStuId:null,rptStuClass:null,rptStuSearch:'',rptSchoolData:null,rptPctThreshold:80,rptPctActivityId:null,
   page:'home',
 };
 
@@ -528,7 +530,7 @@ function thDate(d){
 }
 function classLabel(gl,r){
   const cnt=S.classes.filter(c=>String(c.grade_level)===String(gl)).length;
-  return cnt<=1?`ม.${gl}`:`ม.${gl}/${r}`;
+  return cnt<=1?`มัธยมศึกษาปีที่ ${gl}`:`มัธยมศึกษาปีที่ ${gl}/${r}`;
 }
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function $(id){return document.getElementById(id)}
@@ -787,10 +789,11 @@ async function onCkSessionChange(s){S.ckSession=s;await renderCheckin()}
 
 // ─── REPORT ────────────────────────────────────────────────────────────────
 function renderReport(){
-  ['activity','student','school'].forEach(t=>$('rpt-tab-'+t).classList.toggle('active',S.rptTab===t));
+  ['activity','student','school','percent'].forEach(t=>$('rpt-tab-'+t)?.classList.toggle('active',S.rptTab===t));
   if(S.rptTab==='activity')renderRptActivity();
   else if(S.rptTab==='student')renderRptStudent();
-  else renderRptSchool();
+  else if(S.rptTab==='school')renderRptSchool();
+  else renderRptPercent();
 }
 function switchRptTab(tab){S.rptTab=tab;renderReport()}
 
@@ -826,7 +829,10 @@ async function renderRptActivity(){
       <tr><th>มา</th><th>สาย</th><th>ขาด</th>${ev?'<th>มา</th><th>สาย</th><th>ขาด</th>':''}</tr></thead><tbody>`;
     let tot={total:0,mP:0,mL:0,mA:0,eP:0,eL:0,eA:0};
     Object.values(cs).filter(c=>c.total>0).forEach(c=>{
-      h+=`<tr><td class="left">${classLabel(c.gl,c.r)}</td><td>${c.total}</td><td class="green">${c.mP}</td><td class="orange">${c.mL}</td><td class="red">${c.mA}</td>${ev?`<td class="green">${c.eP}</td><td class="orange">${c.eL}</td><td class="red">${c.eA}</td>`:''}</tr>`;
+      const mRec=c.mP+c.mL+c.mA;const eRec=c.eP+c.eL+c.eA;
+      const mCols=mRec===0?`<td colspan="3" class="not-checked">ยังไม่เช็คชื่อ</td>`:`<td class="green">${c.mP}</td><td class="orange">${c.mL}</td><td class="red">${c.mA}</td>`;
+      const eCols=eRec===0?`<td colspan="3" class="not-checked">ยังไม่เช็คชื่อ</td>`:`<td class="green">${c.eP}</td><td class="orange">${c.eL}</td><td class="red">${c.eA}</td>`;
+      h+=`<tr><td class="left">${classLabel(c.gl,c.r)}</td><td>${c.total}</td>${mCols}${ev?eCols:''}</tr>`;
       tot.total+=c.total;tot.mP+=c.mP;tot.mL+=c.mL;tot.mA+=c.mA;tot.eP+=c.eP;tot.eL+=c.eL;tot.eA+=c.eA;
     });
     h+=`<tr class="total-row"><td class="left">รวม</td><td>${tot.total}</td><td class="green">${tot.mP}</td><td class="orange">${tot.mL}</td><td class="red">${tot.mA}</td>${ev?`<td class="green">${tot.eP}</td><td class="orange">${tot.eL}</td><td class="red">${tot.eA}</td>`:''}</tr>`;
@@ -966,15 +972,14 @@ function buildSchoolDoc(classData,act,sessLbl){
       <tbody>`;
   entries.forEach(c=>{
     const rec=c.present+c.late+c.absent;
-    h+=`<tr><td class="left">${classLabel(c.gl,c.r)}</td><td>${c.stus.length}</td><td class="green">${c.present}</td><td class="orange">${c.late}</td><td class="red">${c.absent}</td><td>${pct(c.present+c.late,rec||c.stus.length)}</td></tr>`;
+    if(rec===0){
+      h+=`<tr><td class="left">${classLabel(c.gl,c.r)}</td><td>${c.stus.length}</td><td colspan="4" class="not-checked">ยังไม่เช็คชื่อ</td></tr>`;
+    }else{
+      h+=`<tr><td class="left">${classLabel(c.gl,c.r)}</td><td>${c.stus.length}</td><td class="green">${c.present}</td><td class="orange">${c.late}</td><td class="red">${c.absent}</td><td>${pct(c.present+c.late,rec)}</td></tr>`;
+    }
   });
   h+=`<tr class="total-row"><td class="left">รวม</td><td>${tot.total}</td><td class="green">${tot.present}</td><td class="orange">${tot.late}</td><td class="red">${tot.absent}</td><td>${pct(tot.present+tot.late,totRec||tot.total)}</td></tr>`;
   h+=`</tbody></table></div>
-    <div class="sr-sig">
-      <div>ลงชื่อ ..................................</div>
-      <div>(.................................)</div>
-      <div style="font-size:12px;color:var(--txt3)">ผู้รายงาน</div>
-    </div>
   </div>`;
 
   // Page 2: absent list
@@ -999,6 +1004,68 @@ function buildSchoolDoc(classData,act,sessLbl){
   return h;
 }
 
+// ── Report: attendance percentage ──
+async function renderRptPercent(){
+  const aOpts=S.activities.map(a=>`<option value="${a.id}"${S.rptPctActivityId==a.id?' selected':''}>${esc(a.name)}</option>`).join('');
+  $('rpt-content').innerHTML=`
+    <div class="filter-row">
+      <select class="ios-select" onchange="S.rptPctActivityId=+this.value||null;renderRptPercent()">${'<option value="">ทุกกิจกรรม</option>'+aOpts}</select>
+    </div>
+    <div class="filter-row" style="align-items:center;gap:8px">
+      <span style="font-size:14px;color:var(--txt2);white-space:nowrap">เกณฑ์ร้อยละ</span>
+      <input type="number" class="ios-input" style="width:72px;text-align:center" min="0" max="100" value="${S.rptPctThreshold}" oninput="S.rptPctThreshold=Math.min(100,Math.max(0,+this.value||0))">
+      <span style="font-size:14px;color:var(--txt2)">%</span>
+      <button class="ios-btn" style="flex:none" onclick="renderRptPercent()">ดูรายงาน</button>
+    </div>
+    <div id="rpt-pct-body"><div class="loading-text">กำลังโหลด...</div></div>`;
+  try{
+    let qb=sb.from('activity_attend').select('student_id,status');
+    if(S.rptPctActivityId) qb=qb.eq('activity_id',S.rptPctActivityId);
+    const rows=await q(qb);
+    if(!rows.length){$('rpt-pct-body').innerHTML='<div class="empty-state">ยังไม่มีข้อมูลการเช็คชื่อ</div>';return}
+    const stuMap={};
+    rows.forEach(r=>{
+      if(!stuMap[r.student_id])stuMap[r.student_id]={present:0,late:0,absent:0};
+      if(r.status==='present')stuMap[r.student_id].present++;
+      else if(r.status==='late')stuMap[r.student_id].late++;
+      else if(r.status==='absent')stuMap[r.student_id].absent++;
+    });
+    const thr=S.rptPctThreshold;
+    const below=S.students.filter(s=>{
+      const d=stuMap[s.id];if(!d)return false;
+      const total=d.present+d.late+d.absent;if(!total)return false;
+      return(d.present+d.late)/total*100<thr;
+    }).map(s=>{
+      const d=stuMap[s.id];
+      const total=d.present+d.late+d.absent;
+      return{...s,...d,total,pct:total>0?(d.present+d.late)/total*100:0};
+    });
+    if(!below.length){
+      $('rpt-pct-body').innerHTML=`<div class="empty-state">✓ ไม่มีนักเรียนที่เข้าร่วมต่ำกว่า ${thr}%</div>`;return;
+    }
+    const byClass={};
+    below.forEach(s=>{
+      const k=`${s.grade_level}_${s.room}`;
+      if(!byClass[k])byClass[k]={gl:s.grade_level,r:s.room,stus:[]};
+      byClass[k].stus.push(s);
+    });
+    let h=`<div style="font-size:13px;color:var(--txt2);margin-bottom:10px">พบ <strong>${below.length}</strong> คน ที่มีร้อยละการเข้าร่วมต่ำกว่า ${thr}%</div>`;
+    Object.values(byClass).forEach(cls=>{
+      h+=`<div class="sr-class-group">
+        <div class="sr-class-hd">${classLabel(cls.gl,cls.r)} <span>(${cls.stus.length} คน)</span></div>
+        <div class="table-wrap"><table class="rpt-table">
+          <thead><tr><th>#</th><th class="left">ชื่อ-สกุล</th><th>มา</th><th>สาย</th><th>ขาด</th><th>ร้อยละ</th></tr></thead><tbody>`;
+      cls.stus.sort((a,b)=>a.pct-b.pct).forEach((s,i)=>{
+        const pc=s.pct.toFixed(1);
+        const cl=s.pct<50?'red':s.pct<70?'orange':'';
+        h+=`<tr><td>${i+1}</td><td class="left">${esc(s.student_name)}<br><span style="font-size:11px;color:var(--txt3)">${esc(s.student_code||'')}</span></td><td class="green">${s.present}</td><td class="orange">${s.late}</td><td class="red">${s.absent}</td><td class="${cl}" style="font-weight:600">${pc}%</td></tr>`;
+      });
+      h+=`</tbody></table></div></div>`;
+    });
+    $('rpt-pct-body').innerHTML=h;
+  }catch(e){$('rpt-pct-body').innerHTML=`<div class="empty-state">เกิดข้อผิดพลาด: ${esc(e.message)}</div>`}
+}
+
 // ─── EXPORT ────────────────────────────────────────────────────────────────
 async function exportSchoolPDF(){
   if(!S.rptSchoolData){toast('กรุณาโหลดรายงานก่อน','er');return}
@@ -1021,7 +1088,7 @@ async function exportSchoolPDF(){
     tr.total-row td{font-weight:700;background:#f0f0f0}
     td.left{text-align:left;padding-left:10px}
     td.green{color:#1a7c35;font-weight:600}td.orange{color:#b35900;font-weight:600}td.red{color:#c0000a;font-weight:600}
-    .sr-sig{margin-top:28px;text-align:right;line-height:2;font-size:13px;color:#555}
+    td.not-checked{color:#aaa;font-style:italic;font-size:12px}
     .sr-p2-title{font-size:15px;font-weight:700;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:4px}
     .sr-p2-sub{font-size:12px;color:#555;margin-bottom:16px}
     .sr-class-group{margin-bottom:16px}
