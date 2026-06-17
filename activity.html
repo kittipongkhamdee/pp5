@@ -933,11 +933,10 @@ function nav(page){
 }
 
 // ─── HOME ──────────────────────────────────────────────────────────────────
-function renderHome(){
+async function renderHome(){
   const acts=S.activities.filter(a=>a.is_active);
-  const hour=new Date().getHours();
-  const greet=hour<12?'อรุณสวัสดิ์':hour<18?'สวัสดีตอนบ่าย':'สวัสดีตอนเย็น';
-  const greetIcon=hour<12?'🌅':hour<18?'☀️':'🌙';
+  const today=todayStr();
+  const total=S.students.length;
   let html=`<div class="section" style="padding-top:20px">
   <div class="home-stats-row" style="display:flex;gap:10px;margin-bottom:20px">
     <div style="flex:1;background:var(--card);border:1px solid var(--sep);border-radius:var(--radius);padding:14px 12px;text-align:center">
@@ -956,13 +955,46 @@ function renderHome(){
   if(!acts.length){
     html+=`<div style="background:var(--card);border:1px solid var(--sep);border-radius:var(--radius);padding:40px 24px;text-align:center;color:var(--txt2)">ยังไม่มีกิจกรรม<br><small style="font-size:13px;color:var(--txt3)">กด Admin → เพิ่มกิจกรรม</small></div>`;
   }else{
+    // fetch today attendance for all activities in one query
+    let aMap={};
+    if(total>0){
+      try{
+        const ids=acts.map(a=>a.id);
+        const rows=await q(sb.from('activity_attend').select('activity_id,session,status').in('activity_id',ids).eq('date',today));
+        rows.forEach(r=>{
+          if(!aMap[r.activity_id])aMap[r.activity_id]={};
+          if(!aMap[r.activity_id][r.session])aMap[r.activity_id][r.session]={ok:0,n:0};
+          if(r.status==='present'||r.status==='late')aMap[r.activity_id][r.session].ok++;
+          aMap[r.activity_id][r.session].n++;
+        });
+      }catch(e){}
+    }
+    const _pCol=p=>p>=80?'#059669':p>=50?'#D97706':'#DC2626';
+    const _pGrd=p=>p>=80?'linear-gradient(90deg,#34d399,#059669)':p>=50?'linear-gradient(90deg,#fbbf24,#d97706)':'linear-gradient(90deg,#f87171,#dc2626)';
+    function _bar(label,sd){
+      const p=sd&&total>0?Math.round(sd.ok/total*100):0;
+      const has=sd&&sd.n>0;
+      return `<div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+          <span style="font-size:10px;font-weight:600;color:var(--txt3)">${label}</span>
+          <span style="font-size:10px;font-weight:800;color:${has?_pCol(p):'var(--txt3)'}">${has?p+'%':'—'}</span>
+        </div>
+        <div style="height:5px;border-radius:3px;background:var(--sep);overflow:hidden">
+          <div style="height:100%;width:${has?p:0}%;background:${has?_pGrd(p):'transparent'};border-radius:3px"></div>
+        </div>
+      </div>`;
+    }
     html+=`<div class="section-title">กิจกรรมทั้งหมด</div><div class="card" id="home-acts-wrap">`;
     acts.forEach(a=>{
+      const ad=aMap[a.id]||{};
+      const bars=a.has_evening
+        ?`<div style="display:flex;flex-direction:column;gap:5px;margin-top:6px">${_bar('เช้า',ad.morning)}${_bar('บ่าย',ad.evening)}</div>`
+        :`<div style="margin-top:6px">${_bar('เช้า',ad.morning)}</div>`;
       html+=`<div class="card-row" onclick="quickCheckin(${a.id})">
         <div class="card-row-icon" style="background:${actBg(a.id)}15">${actEmoji(a.name)}</div>
         <div class="card-row-info">
           <div class="card-row-name">${esc(a.name)}</div>
-          <div class="card-row-sub">${a.has_evening?'เช้า + บ่าย':'เช้า'}</div>
+          ${bars}
         </div>
         <svg class="card-row-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M9 18l6-6-6-6"/></svg>
       </div>`;
