@@ -273,6 +273,45 @@ html,body{height:100%;background:var(--bg);font-family:var(--font);color:var(--t
 #loader{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:200;display:none;align-items:center;justify-content:center}
 .spinner{width:44px;height:44px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Login overlay ── */
+#login-overlay{
+  position:fixed;inset:0;z-index:300;background:linear-gradient(160deg,#1a1a2e 0%,#0f3460 50%,#16213e 100%);
+  display:flex;align-items:center;justify-content:center;padding:24px;
+}
+.login-card{
+  background:rgba(255,255,255,.08);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border:1px solid rgba(255,255,255,.15);border-radius:24px;padding:36px 28px;width:100%;max-width:360px;
+}
+.login-logo{text-align:center;margin-bottom:24px}
+.login-logo-icon{width:64px;height:64px;background:var(--blue);border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:30px}
+.login-title{font-size:20px;font-weight:700;color:#fff;text-align:center}
+.login-sub{font-size:13px;color:rgba(255,255,255,.5);text-align:center;margin-top:4px}
+.login-field{margin-bottom:14px}
+.login-field label{display:block;font-size:12px;font-weight:600;color:rgba(255,255,255,.6);margin-bottom:6px;letter-spacing:.3px}
+.login-field input{
+  width:100%;padding:12px 14px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);
+  border-radius:12px;font-family:var(--font);font-size:15px;color:#fff;outline:none;
+  transition:border-color .2s;
+}
+.login-field input::placeholder{color:rgba(255,255,255,.3)}
+.login-field input:focus{border-color:rgba(0,122,255,.7);background:rgba(255,255,255,.12)}
+.login-err{font-size:13px;color:#ff6b6b;text-align:center;margin-bottom:12px;min-height:18px}
+.login-btn{
+  width:100%;padding:13px;background:var(--blue);border:none;border-radius:12px;
+  font-family:var(--font);font-size:16px;font-weight:700;color:#fff;cursor:pointer;
+  transition:opacity .15s;margin-top:4px;
+}
+.login-btn:active{opacity:.85}
+.login-btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* ── User chip in topbar ── */
+#topbar{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#topbar-left{flex:1;min-width:0}
+.logout-btn{
+  flex-shrink:0;padding:5px 10px;border-radius:8px;border:1px solid var(--sep);
+  background:transparent;font-family:var(--font);font-size:12px;color:var(--txt2);cursor:pointer;
+}
 </style>
 </head>
 <body>
@@ -280,8 +319,11 @@ html,body{height:100%;background:var(--bg);font-family:var(--font);color:var(--t
 
   <!-- Top Bar -->
   <div id="topbar">
-    <div id="topbar-title">เช็คชื่อกิจกรรม</div>
-    <div id="topbar-sub" id="topbar-sub"></div>
+    <div id="topbar-left">
+      <div id="topbar-title">เช็คชื่อกิจกรรม</div>
+      <div id="topbar-sub"></div>
+    </div>
+    <button class="logout-btn" onclick="doLogout()" id="logout-btn" style="display:none">ออกจากระบบ</button>
   </div>
 
   <!-- ═══ HOME PAGE ═══ -->
@@ -382,6 +424,27 @@ html,body{height:100%;background:var(--bg);font-family:var(--font);color:var(--t
         <input type="checkbox" class="ios-toggle" id="modal-act-active" checked>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- Login Overlay -->
+<div id="login-overlay">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">✅</div>
+      <div class="login-title">เช็คชื่อกิจกรรม</div>
+      <div class="login-sub">เข้าสู่ระบบเพื่อดำเนินการต่อ</div>
+    </div>
+    <div class="login-field">
+      <label>อีเมล</label>
+      <input type="email" id="login-email" placeholder="email@school.ac.th" autocomplete="email" onkeydown="if(event.key==='Enter')$('login-pass').focus()">
+    </div>
+    <div class="login-field">
+      <label>รหัสผ่าน</label>
+      <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="login-err" id="login-err"></div>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">เข้าสู่ระบบ</button>
   </div>
 </div>
 
@@ -915,8 +978,34 @@ async function deleteActivity(id){
   finally{loading(false)}
 }
 
-// ─── INIT ──────────────────────────────────────────────────────────────────
-async function init(){
+// ─── AUTH ──────────────────────────────────────────────────────────────────
+async function doLogin(){
+  const email=$('login-email').value.trim();
+  const pass=$('login-pass').value;
+  const btn=$('login-btn');
+  $('login-err').textContent='';
+  if(!email||!pass){$('login-err').textContent='กรุณากรอกอีเมลและรหัสผ่าน';return}
+  btn.disabled=true;btn.textContent='กำลังเข้าสู่ระบบ...';
+  try{
+    const{data,error}=await sb.auth.signInWithPassword({email,password:pass});
+    if(error)throw error;
+    $('login-overlay').style.display='none';
+    $('logout-btn').style.display='';
+    await loadAppData();
+  }catch(e){
+    $('login-err').textContent=e.message==='Invalid login credentials'?'อีเมลหรือรหัสผ่านไม่ถูกต้อง':e.message;
+  }finally{btn.disabled=false;btn.textContent='เข้าสู่ระบบ'}
+}
+
+async function doLogout(){
+  if(!confirm('ออกจากระบบ?'))return;
+  await sb.auth.signOut();
+  $('login-overlay').style.display='flex';
+  $('logout-btn').style.display='none';
+  $('login-pass').value='';
+}
+
+async function loadAppData(){
   loading(true);
   try{
     await Promise.all([loadActivities(),loadStudents(),loadSchoolName()]);
@@ -924,8 +1013,20 @@ async function init(){
     if(firstActive){S.ckActivityId=firstActive.id;S.rptActivityId=firstActive.id}
     nav('home');
   }catch(e){
-    document.body.innerHTML=`<div style="padding:40px 24px;text-align:center;font-family:'Sarabun',sans-serif;color:#ff3b30;font-size:15px">ไม่สามารถเชื่อมต่อฐานข้อมูล<br><small style="color:#888;font-size:13px">${e.message}</small></div>`;
+    toast('โหลดข้อมูลไม่สำเร็จ: '+e.message,'er');
   }finally{loading(false)}
+}
+
+// ─── INIT ──────────────────────────────────────────────────────────────────
+async function init(){
+  // ตรวจสอบ session ที่มีอยู่แล้ว
+  const{data:{session}}=await sb.auth.getSession();
+  if(session){
+    $('login-overlay').style.display='none';
+    $('logout-btn').style.display='';
+    await loadAppData();
+  }
+  // ไม่มี session → แสดง login overlay (default display:flex)
 }
 init();
 </script>
