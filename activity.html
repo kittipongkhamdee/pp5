@@ -840,7 +840,7 @@ async function renderRptStudent(){
   const sOpts=S.students.map(s=>`<option value="${s.id}"${S.rptStuId==s.id?' selected':''}>${esc(s.student_name)} (${esc(s.student_code)}) ${classLabel(s.grade_level,s.room)}</option>`).join('');
   $('rpt-content').innerHTML=`
     <div class="filter-row">
-      <select class="ios-select" onchange="S.rptStuId=+this.value||null;renderRptStudent()">${'<option value="">-- เลือกนักเรียน --</option>'+sOpts}</select>
+      <select class="ios-select" onchange="S.rptStuId=this.value||null;renderRptStudent()">${'<option value="">-- เลือกนักเรียน --</option>'+sOpts}</select>
     </div>
     <div id="rpt-stu-body">${S.rptStuId?'<div class="loading-text">กำลังโหลด...</div>':'<div class="empty-state">เลือกนักเรียนเพื่อดูประวัติ</div>'}</div>`;
   if(!S.rptStuId)return;
