@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Login Effect Mockups</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Sarabun',sans-serif;background:#0f172a;color:#fff;padding:40px 20px}
+h1{text-align:center;font-size:22px;color:#94a3b8;margin-bottom:8px;letter-spacing:1px;text-transform:uppercase;font-size:13px}
+h2{text-align:center;font-size:28px;font-weight:800;margin-bottom:40px}
+.grid{display:flex;gap:32px;justify-content:center;flex-wrap:wrap}
+.option{display:flex;flex-direction:column;align-items:center;gap:12px}
+.label{font-size:14px;font-weight:700;color:#94a3b8;letter-spacing:.5px}
+.badge{font-size:11px;background:rgba(99,102,241,.25);color:#a5b4fc;border:1px solid rgba(99,102,241,.4);border-radius:20px;padding:3px 10px;margin-top:2px}
+.frame{width:280px;height:480px;border-radius:20px;overflow:hidden;position:relative;box-shadow:0 25px 60px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.07);flex-shrink:0}
+
+/* ─── Option 1: Aurora Glow ─── */
+.frame1{background:#060d1f}
+@keyframes aurora{
+  0%{background-position:0% 50%}
+  50%{background-position:100% 50%}
+  100%{background-position:0% 50%}
+}
+@keyframes floatA{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(15px,-20px) scale(1.05)}}
+@keyframes floatB{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-20px,15px) scale(1.08)}}
+.aurora-bg{position:absolute;inset:0;background:linear-gradient(135deg,#0c1445,#1a0a3d,#0a1a45,#0d2260);animation:aurora 8s ease infinite;background-size:400% 400%}
+.aurora-blob1{position:absolute;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(99,102,241,.55),transparent 70%);top:-60px;left:-60px;animation:floatA 7s ease-in-out infinite;filter:blur(40px)}
+.aurora-blob2{position:absolute;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(139,92,246,.5),transparent 70%);bottom:-40px;right:-50px;animation:floatB 9s ease-in-out infinite;filter:blur(35px)}
+.aurora-blob3{position:absolute;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,rgba(59,130,246,.45),transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);animation:floatA 11s ease-in-out infinite reverse;filter:blur(30px)}
+.aurora-card{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 24px}
+.aurora-card .logo-box{width:60px;height:60px;border-radius:16px;background:linear-gradient(135deg,rgba(99,102,241,.6),rgba(139,92,246,.6));border:1.5px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;margin-bottom:14px;backdrop-filter:blur(10px);box-shadow:0 0 30px rgba(99,102,241,.4),inset 0 1px 0 rgba(255,255,255,.2)}
+.aurora-card .app-title{font-size:18px;font-weight:800;color:#fff;text-shadow:0 0 20px rgba(139,92,246,.6);letter-spacing:-.3px;margin-bottom:4px}
+.aurora-card .app-sub{font-size:12px;color:rgba(255,255,255,.45);margin-bottom:24px}
+.aurora-card .glass-box{background:rgba(255,255,255,.07);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:20px;width:100%;box-shadow:inset 0 1px 0 rgba(255,255,255,.1)}
+.aurora-card .field-lbl{font-size:11px;font-weight:600;color:rgba(255,255,255,.5);letter-spacing:.5px;margin-bottom:5px}
+.aurora-card .field-inp{width:100%;padding:9px 12px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:rgba(255,255,255,.7);font-size:13px;margin-bottom:12px}
+.aurora-card .btn1{width:100%;padding:11px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;box-shadow:0 4px 20px rgba(99,102,241,.5),inset 0 1px 0 rgba(255,255,255,.2);margin-top:4px}
+
+/* ─── Option 2: Geometric Mesh ─── */
+.frame2{background:#0a0e1a}
+.mesh-bg{position:absolute;inset:0;background:linear-gradient(150deg,#0a0e1a 0%,#0f1629 50%,#0c1020 100%)}
+.mesh-svg{position:absolute;inset:0;width:100%;height:100%;opacity:.12}
+@keyframes pulse-ring{0%{transform:scale(1);opacity:.6}100%{transform:scale(1.5);opacity:0}}
+.mesh-card{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 24px}
+.mesh-logo-wrap{position:relative;margin-bottom:14px}
+.mesh-ring1{position:absolute;inset:-10px;border-radius:50%;border:1.5px solid rgba(59,130,246,.4);animation:pulse-ring 2.5s ease-out infinite}
+.mesh-ring2{position:absolute;inset:-20px;border-radius:50%;border:1px solid rgba(59,130,246,.2);animation:pulse-ring 2.5s ease-out .8s infinite}
+.mesh-logo{width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#1d4ed8,#2563eb);border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;box-shadow:0 0 24px rgba(37,99,235,.5)}
+.mesh-title{font-size:18px;font-weight:800;color:#fff;margin-bottom:4px;letter-spacing:-.3px}
+.mesh-sub{font-size:11px;color:rgba(255,255,255,.35);margin-bottom:22px;letter-spacing:.5px;text-transform:uppercase}
+.mesh-form{background:rgba(255,255,255,.95);border-radius:16px;padding:20px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+.mesh-form .field-lbl2{font-size:11px;font-weight:700;color:#475569;letter-spacing:.5px;margin-bottom:5px}
+.mesh-form .field-inp2{width:100%;padding:9px 12px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;color:#1e293b;font-size:13px;margin-bottom:12px}
+.mesh-form .btn2{width:100%;padding:11px;background:linear-gradient(135deg,#1d4ed8,#2563eb);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;box-shadow:0 4px 16px rgba(37,99,235,.4);margin-top:2px}
+
+/* ─── Option 3: Liquid Color ─── */
+.frame3{background:#fff}
+@keyframes blob1{0%,100%{border-radius:60% 40% 70% 30%/60% 30% 70% 40%;transform:translate(0,0)}50%{border-radius:30% 70% 40% 60%/50% 60% 40% 50%;transform:translate(-15px,10px)}}
+@keyframes blob2{0%,100%{border-radius:40% 60% 50% 50%/30% 60% 40% 70%;transform:translate(0,0)}50%{border-radius:70% 30% 60% 40%/60% 40% 70% 30%;transform:translate(10px,-10px)}}
+@keyframes blob3{0%,100%{border-radius:50% 50% 60% 40%/40% 70% 30% 60%;transform:translate(0,0)}50%{border-radius:40% 60% 30% 70%/70% 40% 60% 30%;transform:translate(-8px,-15px)}}
+.liq-blob1{position:absolute;width:200px;height:200px;background:linear-gradient(135deg,#3b82f6,#6366f1);opacity:.35;filter:blur(50px);top:-50px;left:-40px;animation:blob1 9s ease-in-out infinite}
+.liq-blob2{position:absolute;width:180px;height:180px;background:linear-gradient(135deg,#8b5cf6,#ec4899);opacity:.3;filter:blur(45px);bottom:-30px;right:-40px;animation:blob2 11s ease-in-out infinite}
+.liq-blob3{position:absolute;width:160px;height:160px;background:linear-gradient(135deg,#06b6d4,#3b82f6);opacity:.25;filter:blur(40px);bottom:30%;left:20%;animation:blob3 13s ease-in-out infinite}
+.liq-card{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 24px}
+.liq-title-area{text-align:center;margin-bottom:20px}
+.liq-icon{width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;box-shadow:0 8px 24px rgba(99,102,241,.4),inset 0 1px 0 rgba(255,255,255,.3)}
+.liq-app-title{font-size:19px;font-weight:800;background:linear-gradient(135deg,#1d4ed8,#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:3px}
+.liq-app-sub{font-size:11px;color:#94a3b8;letter-spacing:.3px}
+.liq-glass{background:rgba(255,255,255,.75);backdrop-filter:blur(30px);border:1px solid rgba(255,255,255,.9);border-radius:20px;padding:20px;width:100%;box-shadow:0 8px 32px rgba(99,102,241,.1),inset 0 1px 0 rgba(255,255,255,.9)}
+.liq-glass .field-lbl3{font-size:11px;font-weight:700;color:#64748b;letter-spacing:.4px;margin-bottom:5px}
+.liq-glass .field-inp3{width:100%;padding:9px 12px;background:rgba(255,255,255,.8);border:1px solid rgba(148,163,184,.3);border-radius:8px;color:#1e293b;font-size:13px;margin-bottom:12px}
+.liq-glass .btn3{width:100%;padding:11px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;box-shadow:0 4px 16px rgba(99,102,241,.4),inset 0 1px 0 rgba(255,255,255,.2);margin-top:2px}
+</style>
+</head>
+<body>
+<h1>LOGIN SCREEN — MOCKUP OPTIONS</h1>
+<h2>เลือก Effect ที่ชอบ</h2>
+<div class="grid">
+
+  <!-- Option 1 -->
+  <div class="option">
+    <div class="frame frame1">
+      <div class="aurora-bg"></div>
+      <div class="aurora-blob1"></div>
+      <div class="aurora-blob2"></div>
+      <div class="aurora-blob3"></div>
+      <div class="aurora-card">
+        <div class="logo-box">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><path d="M9 12l2 2 4-4"/></svg>
+        </div>
+        <div class="app-title">ระบบเช็คชื่อกิจกรรม</div>
+        <div class="app-sub">เข้าสู่ระบบเพื่อดำเนินการต่อ</div>
+        <div class="glass-box">
+          <div class="field-lbl">อีเมล</div>
+          <div class="field-inp">email@school.ac.th</div>
+          <div class="field-lbl">รหัสผ่าน</div>
+          <div class="field-inp">••••••••</div>
+          <div class="btn1">เข้าสู่ระบบ</div>
+        </div>
+      </div>
+    </div>
+    <div class="label">ตัวเลือกที่ 1</div>
+    <div class="badge">✨ Aurora Glow — พื้นหลังไล่สีเคลื่อนไหว</div>
+  </div>
+
+  <!-- Option 2 -->
+  <div class="option">
+    <div class="frame frame2">
+      <div class="mesh-bg"></div>
+      <svg class="mesh-svg" viewBox="0 0 280 480" xmlns="http://www.w3.org/2000/svg">
+        <defs><linearGradient id="mg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#6366f1"/></linearGradient></defs>
+        <line x1="0" y1="80" x2="280" y2="80" stroke="url(#mg)" stroke-width=".8"/>
+        <line x1="0" y1="160" x2="280" y2="160" stroke="url(#mg)" stroke-width=".8"/>
+        <line x1="0" y1="240" x2="280" y2="240" stroke="url(#mg)" stroke-width=".8"/>
+        <line x1="0" y1="320" x2="280" y2="320" stroke="url(#mg)" stroke-width=".8"/>
+        <line x1="0" y1="400" x2="280" y2="400" stroke="url(#mg)" stroke-width=".8"/>
+        <line x1="56" y1="0" x2="56" y2="480" stroke="url(#mg)" stroke-width=".8"/>
+        <line x1="112" y1="0" x2="112" y2="480" stroke="url(#mg)" stroke-width=".8"/>
+        <line x1="168" y1="0" x2="168" y2="480" stroke="url(#mg)" stroke-width=".8"/>
+        <line x1="224" y1="0" x2="224" y2="480" stroke="url(#mg)" stroke-width=".8"/>
+        <line x1="0" y1="480" x2="280" y2="0" stroke="url(#mg)" stroke-width=".5"/>
+        <line x1="0" y1="240" x2="280" y2="0" stroke="url(#mg)" stroke-width=".4"/>
+        <line x1="0" y1="480" x2="280" y2="240" stroke="url(#mg)" stroke-width=".4"/>
+      </svg>
+      <div class="mesh-card">
+        <div class="mesh-logo-wrap">
+          <div class="mesh-ring1"></div>
+          <div class="mesh-ring2"></div>
+          <div class="mesh-logo">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><path d="M9 12l2 2 4-4"/></svg>
+          </div>
+        </div>
+        <div class="mesh-title">ระบบเช็คชื่อกิจกรรม</div>
+        <div class="mesh-sub">เข้าสู่ระบบเพื่อดำเนินการต่อ</div>
+        <div class="mesh-form">
+          <div class="field-lbl2">อีเมล</div>
+          <div class="field-inp2">email@school.ac.th</div>
+          <div class="field-lbl2">รหัสผ่าน</div>
+          <div class="field-inp2">••••••••</div>
+          <div class="btn2">เข้าสู่ระบบ</div>
+        </div>
+      </div>
+    </div>
+    <div class="label">ตัวเลือกที่ 2</div>
+    <div class="badge">🔷 Geometric Mesh — ตาข่ายเส้น + card ขาว</div>
+  </div>
+
+  <!-- Option 3 -->
+  <div class="option">
+    <div class="frame frame3">
+      <div class="liq-blob1"></div>
+      <div class="liq-blob2"></div>
+      <div class="liq-blob3"></div>
+      <div class="liq-card">
+        <div class="liq-title-area">
+          <div class="liq-icon">
+            <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><path d="M9 12l2 2 4-4"/></svg>
+          </div>
+          <div class="liq-app-title">ระบบเช็คชื่อกิจกรรม</div>
+          <div class="liq-app-sub">เข้าสู่ระบบเพื่อดำเนินการต่อ</div>
+        </div>
+        <div class="liq-glass">
+          <div class="field-lbl3">อีเมล</div>
+          <div class="field-inp3">email@school.ac.th</div>
+          <div class="field-lbl3">รหัสผ่าน</div>
+          <div class="field-inp3">••••••••</div>
+          <div class="btn3">เข้าสู่ระบบ</div>
+        </div>
+      </div>
+    </div>
+    <div class="label">ตัวเลือกที่ 3</div>
+    <div class="badge">🫧 Liquid Color — วงสีลอยตัว + frosted glass</div>
+  </div>
+
+</div>
+<p style="text-align:center;color:#475569;font-size:12px;margin-top:36px">เปิดไฟล์นี้ในเบราว์เซอร์เพื่อดู animation จริง</p>
+</body>
+</html>
