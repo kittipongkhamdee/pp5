@@ -153,10 +153,12 @@ html,body{height:100%;background:var(--bg);font-family:var(--font);color:var(--t
 /* ── Report tabs ── */
 #rpt-tabs{
   display:flex;background:var(--card);border-bottom:1px solid var(--sep);
-  padding:0 8px;gap:0;flex-shrink:0;
+  padding:0 4px;gap:0;flex-shrink:0;
+  overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;
 }
+#rpt-tabs::-webkit-scrollbar{display:none}
 .rpt-tab{
-  flex:1;padding:11px 2px;font-size:12px;font-weight:500;color:var(--txt2);
+  flex:0 0 auto;padding:11px 14px;font-size:13px;font-weight:500;color:var(--txt2);
   border:none;background:none;font-family:var(--font);cursor:pointer;
   border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;
 }
@@ -424,6 +426,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--font);color:var(--t
     <div id="rpt-tabs">
       <button class="rpt-tab active" id="rpt-tab-activity" onclick="switchRptTab('activity')">รายกิจกรรม</button>
       <button class="rpt-tab" id="rpt-tab-student" onclick="switchRptTab('student')">รายนักเรียน</button>
+      <button class="rpt-tab" id="rpt-tab-class" onclick="switchRptTab('class')">ทั้งห้อง</button>
       <button class="rpt-tab" id="rpt-tab-school" onclick="switchRptTab('school')">ทั้งโรงเรียน</button>
       <button class="rpt-tab" id="rpt-tab-percent" onclick="switchRptTab('percent')">ร้อยละ</button>
     </div>
@@ -538,7 +541,8 @@ const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 const S={
   activities:[],students:[],classes:[],schoolName:'โรงเรียน',
   ckActivityId:null,ckDate:todayStr(),ckSession:'morning',ckAttend:{},ckFilter:'',
-  rptTab:'activity',rptActivityId:null,rptDate:todayStr(),rptSession:'morning',rptStuId:null,rptStuClass:null,rptStuSearch:'',rptStuActivityId:null,rptSchoolData:null,rptActData:null, rptStuData:null, rptPctData:null,rptPctThreshold:80,rptPctActivityId:null,rptPctClass:null,
+  rptTab:'activity',rptActivityId:null,rptDate:todayStr(),rptSession:'morning',rptStuId:null,rptStuClass:null,rptStuSearch:'',rptStuActivityId:null,rptSchoolData:null,rptActData:null,rptStuData:null,rptPctData:null,rptPctThreshold:80,rptPctActivityId:null,rptPctClass:null,
+  rptClassActivityId:null,rptClassClass:null,rptClassDate:null,rptClassSession:'morning',rptClassData:null,
   page:'home',
 };
 
@@ -813,9 +817,10 @@ async function onCkSessionChange(s){S.ckSession=s;await renderCheckin()}
 
 // ─── REPORT ────────────────────────────────────────────────────────────────
 function renderReport(){
-  ['activity','student','school','percent'].forEach(t=>$('rpt-tab-'+t)?.classList.toggle('active',S.rptTab===t));
+  ['activity','student','class','school','percent'].forEach(t=>$('rpt-tab-'+t)?.classList.toggle('active',S.rptTab===t));
   if(S.rptTab==='activity')renderRptActivity();
   else if(S.rptTab==='student')renderRptStudent();
+  else if(S.rptTab==='class')renderRptClass();
   else if(S.rptTab==='school')renderRptSchool();
   else renderRptPercent();
 }
@@ -954,6 +959,89 @@ async function renderRptStudent(){
     </div>
     <div id="rpt-stu-body">${S.rptStuId?'<div class="loading-text">กำลังโหลด...</div>':'<div class="empty-state">พิมพ์ชื่อหรือรหัสนักเรียน แล้วเลือกจากรายชื่อ</div>'}</div>`;
   if(S.rptStuId){_renderStuSelectedTag(S.rptStuSearch);await _loadRptStudentData();}
+}
+
+// ── Report: per class ──
+async function renderRptClass(){
+  if(!S.rptClassDate) S.rptClassDate=todayStr();
+  const aOpts=S.activities.map(a=>`<option value="${a.id}"${S.rptClassActivityId==a.id?' selected':''}>${esc(a.name)}</option>`).join('');
+  const cOpts=S.classes.map(c=>`<option value="${c.grade_level}_${c.room}"${S.rptClassClass===`${c.grade_level}_${c.room}`?' selected':''}>${classLabel(c.grade_level,c.room)}</option>`).join('');
+  const selAct=S.activities.find(a=>a.id==S.rptClassActivityId);
+  const ev=selAct?.has_evening;
+  $('rpt-content').innerHTML=`
+    <div class="filter-row">
+      <select class="ios-select" onchange="S.rptClassActivityId=+this.value||null;renderRptClass()">${'<option value="">-- เลือกกิจกรรม --</option>'+aOpts}</select>
+    </div>
+    <div class="filter-row">
+      <select class="ios-select" onchange="S.rptClassClass=this.value||null;renderRptClass()">${'<option value="">-- เลือกชั้นเรียน --</option>'+cOpts}</select>
+    </div>
+    <div class="filter-row" style="flex-direction:row;gap:8px;align-items:center">
+      <input type="date" class="ios-input" style="flex:1" value="${S.rptClassDate}" onchange="S.rptClassDate=this.value;renderRptClass()">
+      ${ev?`<div class="seg-ctrl"><button class="${S.rptClassSession==='morning'?'active':''}" onclick="S.rptClassSession='morning';renderRptClass()">เช้า</button><button class="${S.rptClassSession==='evening'?'active':''}" onclick="S.rptClassSession='evening';renderRptClass()">บ่าย</button></div>`:''}
+    </div>
+    <div id="rpt-class-body">${(!S.rptClassActivityId||!S.rptClassClass)?'<div class="empty-state">เลือกกิจกรรมและชั้นเรียนเพื่อดูรายงาน</div>':'<div class="loading-text">กำลังโหลด...</div>'}</div>`;
+  if(!S.rptClassActivityId||!S.rptClassClass)return;
+  try{
+    const session=ev?S.rptClassSession:'morning';
+    const[gl,room]=S.rptClassClass.split('_');
+    const classStudents=S.students.filter(s=>String(s.grade_level)===gl&&String(s.room)===room);
+    const rows=await q(sb.from('activity_attend').select('student_id,status').eq('activity_id',S.rptClassActivityId).eq('date',S.rptClassDate).eq('session',session));
+    const aMap={};rows.forEach(r=>aMap[r.student_id]=r.status);
+    const stuWithStatus=classStudents.map(s=>({...s,status:aMap[s.id]||'unrecorded'}));
+    const pr=stuWithStatus.filter(s=>s.status==='present').length;
+    const la=stuWithStatus.filter(s=>s.status==='late').length;
+    const ab=stuWithStatus.filter(s=>s.status==='absent').length;
+    const un=stuWithStatus.filter(s=>s.status==='unrecorded').length;
+    const cls={gl,r:room};
+    const sessLbl=session==='morning'?'รอบเช้า':'รอบบ่าย';
+    S.rptClassData={stuWithStatus,act:selAct,cls,date:S.rptClassDate,session,sessLbl};
+    let h=`<div class="stu-stat-cards" style="margin-bottom:12px">
+      <div class="stat-mini green"><div class="sn">${pr}</div><div class="sl">มา</div></div>
+      <div class="stat-mini orange"><div class="sn">${la}</div><div class="sl">สาย</div></div>
+      <div class="stat-mini red"><div class="sn">${ab}</div><div class="sl">ขาด</div></div>
+      <div class="stat-mini"><div class="sn" style="color:var(--txt3)">${un}</div><div class="sl">ไม่ได้เช็ค</div></div>
+    </div>
+    <div class="table-wrap"><table class="rpt-table">
+      <thead><tr><th>#</th><th class="left">ชื่อ-สกุล</th><th>รหัส</th><th>สถานะ</th></tr></thead><tbody>`;
+    stuWithStatus.forEach((s,i)=>{
+      const b=s.status==='present'?`<span class="badge green">มา</span>`:s.status==='late'?`<span class="badge orange">สาย</span>`:s.status==='absent'?`<span class="badge red">ขาด</span>`:`<span style="color:var(--txt3);font-size:12px">—</span>`;
+      h+=`<tr><td>${i+1}</td><td class="left">${esc(s.student_name)}</td><td style="font-size:12px;color:var(--txt3)">${esc(s.student_code||'')}</td><td>${b}</td></tr>`;
+    });
+    h+=`</tbody></table></div>`;
+    $('rpt-class-body').innerHTML=_expBar('exportClassPDF','exportClassExcel','exportClassImage')+`<div id="rpt-class-doc"><div style="font-size:13px;font-weight:600;margin-bottom:8px">${classLabel(gl,room)} · ${esc(selAct?.name||'')} · ${thDate(S.rptClassDate)} · ${sessLbl}</div>${h}</div>`;
+  }catch(e){$('rpt-class-body').innerHTML=`<div class="empty-state">เกิดข้อผิดพลาด: ${esc(e.message)}</div>`}
+}
+
+// ── Export: per class ──
+function exportClassPDF(){
+  if(!S.rptClassData){toast('กรุณาโหลดรายงานก่อน','er');return}
+  const{stuWithStatus,act,cls,date,sessLbl}=S.rptClassData;
+  const pr=stuWithStatus.filter(s=>s.status==='present').length,la=stuWithStatus.filter(s=>s.status==='late').length,ab=stuWithStatus.filter(s=>s.status==='absent').length;
+  let trs='';
+  stuWithStatus.forEach((s,i)=>{
+    const st=s.status==='present'?'มา':s.status==='late'?'สาย':s.status==='absent'?'ขาด':'—';
+    trs+=`<tr><td>${i+1}</td><td class="left">${esc(s.student_name)}</td><td>${esc(s.student_code||'')}</td><td>${st}</td></tr>`;
+  });
+  const body=`<div class="sr-header"><div class="sr-school">${esc(S.schoolName)}</div><div class="sr-title">รายงานการเข้าร่วมกิจกรรม รายห้องเรียน</div><div class="sr-act">${classLabel(cls.gl,cls.r)} · ${esc(act?.name||'')}</div><div class="sr-date">วันที่ ${thDate(date)} · ${sessLbl}</div></div>
+    <div style="display:flex;gap:24px;margin-bottom:12px;font-size:13px"><span>มา: <strong style="color:#1a7c35">${pr}</strong></span><span>สาย: <strong style="color:#b35900">${la}</strong></span><span>ขาด: <strong style="color:#c0000a">${ab}</strong></span><span style="color:#888">รวม: ${stuWithStatus.length} คน</span></div>
+    <table><thead><tr><th>#</th><th>ชื่อ-สกุล</th><th>รหัส</th><th>สถานะ</th></tr></thead><tbody>${trs}</tbody></table>`;
+  _openPrintWin(`${classLabel(cls.gl,cls.r)} ${act?.name||''}`,body);
+}
+function exportClassExcel(){
+  if(!S.rptClassData){toast('กรุณาโหลดรายงานก่อน','er');return}
+  if(typeof XLSX==='undefined'){toast('XLSX ยังโหลดไม่เสร็จ','er');return}
+  const{stuWithStatus,act,cls,date,sessLbl}=S.rptClassData;
+  const a1=[[S.schoolName],[`${classLabel(cls.gl,cls.r)} · ${act?.name||''}`],[`วันที่: ${thDate(date)} · ${sessLbl}`],[],['#','ชื่อ-สกุล','รหัสนักเรียน','สถานะ']];
+  stuWithStatus.forEach((s,i)=>a1.push([i+1,s.student_name,s.student_code||'',s.status==='present'?'มา':s.status==='late'?'สาย':s.status==='absent'?'ขาด':'ไม่ได้เช็ค']));
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(a1),classLabel(cls.gl,cls.r));
+  XLSX.writeFile(wb,`รายห้อง_${classLabel(cls.gl,cls.r)}_${act?.name||''}_${date}.xlsx`);
+  toast('ดาวน์โหลด Excel แล้ว');
+}
+function exportClassImage(){
+  if(!S.rptClassData){toast('กรุณาโหลดรายงานก่อน','er');return}
+  const{act,cls,date}=S.rptClassData;
+  _captureImage('rpt-class-doc',`รายห้อง_${classLabel(cls.gl,cls.r)}_${act?.name||''}_${date}.png`);
 }
 
 // ── Report: school-wide ──
