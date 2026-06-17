@@ -1134,12 +1134,20 @@ async function _captureImage(elId,filename){
   if(typeof html2canvas==='undefined'){toast('html2canvas ยังโหลดไม่เสร็จ','er');return}
   const el=$(elId);if(!el){toast('ไม่พบเอกสาร','er');return}
   loading(true);
+  const scrollEls=el.querySelectorAll('.table-wrap');
+  scrollEls.forEach(e=>{e.style.overflow='visible';e.style.width='max-content'});
   try{
-    const canvas=await html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#fff'});
+    const canvas=await html2canvas(el,{
+      scale:2,useCORS:true,backgroundColor:'#fff',
+      width:el.scrollWidth,height:el.scrollHeight,windowWidth:1200,
+    });
     const a=document.createElement('a');a.href=canvas.toDataURL('image/png');a.download=filename;a.click();
     toast('ดาวน์โหลดรูปภาพแล้ว');
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er')}
-  finally{loading(false)}
+  finally{
+    scrollEls.forEach(e=>{e.style.overflow='';e.style.width=''});
+    loading(false);
+  }
 }
 
 // ─── EXPORT ────────────────────────────────────────────────────────────────
@@ -1210,17 +1218,7 @@ async function exportSchoolExcel(){
 
 async function exportSchoolImage(){
   if(!S.rptSchoolData){toast('กรุณาโหลดรายงานก่อน','er');return}
-  if(typeof html2canvas==='undefined'){toast('html2canvas ยังโหลดไม่เสร็จ','er');return}
-  const el=$('school-report-doc');
-  if(!el){toast('ไม่พบเอกสาร','er');return}
-  loading(true);
-  try{
-    const canvas=await html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#fff'});
-    const a=document.createElement('a');a.href=canvas.toDataURL('image/png');
-    a.download=`รายงาน_${S.rptSchoolData.act?.name||'กิจกรรม'}_${S.rptDate}.png`;a.click();
-    toast('ดาวน์โหลดรูปภาพแล้ว');
-  }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er')}
-  finally{loading(false)}
+  _captureImage('school-report-doc',`รายงาน_${S.rptSchoolData.act?.name||'กิจกรรม'}_${S.rptDate}.png`);
 }
 
 // ── Export: per activity ──
