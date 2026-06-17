@@ -1084,7 +1084,11 @@ async function renderRptActivity(){
     });
     const ev=act?.has_evening;
     S.rptActData={cs,act,ev,date:S.rptDate};
-    let h=`<div style="font-size:14px;font-weight:600;margin-bottom:4px">${esc(act?.name||'')} · ${thDate(S.rptDate)}</div>
+    let h=`<div style="text-align:center;border-bottom:2px solid #e5e7eb;padding-bottom:12px;margin-bottom:14px">
+      <div style="font-size:17px;font-weight:700;color:#111827">${esc(S.schoolName)}</div>
+      <div style="font-size:13px;font-weight:600;color:#374151;margin-top:4px">รายงานการเข้าร่วมกิจกรรม รายชั้นเรียน</div>
+      <div style="font-size:13px;color:#6b7280;margin-top:3px">กิจกรรม: ${esc(act?.name||'')} · วันที่ ${thDate(S.rptDate)}</div>
+    </div>
     <div class="table-wrap"><table class="rpt-table">
       <thead><tr><th rowspan="2">ชั้น</th><th rowspan="2">ทั้งหมด</th><th colspan="3">รอบเช้า</th>${ev?'<th colspan="3">รอบบ่าย</th>':''}</tr>
       <tr><th>มา</th><th>สาย</th><th>ขาด</th>${ev?'<th>มา</th><th>สาย</th><th>ขาด</th>':''}</tr></thead><tbody>`;
@@ -1098,7 +1102,7 @@ async function renderRptActivity(){
     });
     h+=`<tr class="total-row"><td class="left">รวม</td><td>${tot.total}</td><td class="green">${tot.mP}</td><td class="orange">${tot.mL}</td><td class="red">${tot.mA}</td>${ev?`<td class="green">${tot.eP}</td><td class="orange">${tot.eL}</td><td class="red">${tot.eA}</td>`:''}</tr>`;
     h+=`</tbody></table></div>`;
-    $('rpt-act-body').innerHTML=_expBar('exportActPDF','exportActExcel','exportActImage')+`<div id="rpt-act-doc">${h}</div>`;
+    $('rpt-act-body').innerHTML=_expBar('exportActPDF','exportActExcel','exportActImage')+`<div id="rpt-act-doc" style="background:#fff;border-radius:10px;border:1px solid #e5e7eb;padding:20px">${h}</div>`;
   }catch(e){$('rpt-act-body').innerHTML=`<div class="empty-state">เกิดข้อผิดพลาด: ${esc(e.message)}</div>`}
 }
 
@@ -1188,7 +1192,13 @@ async function _loadRptStudentData(){
       h+=`<tr><td>${thDate(r.date)}</td><td class="left">${esc(r.activities?.name||'')}</td><td>${r.session==='morning'?'เช้า':'บ่าย'}</td><td>${b}</td></tr>`;
     });
     h+=`</tbody></table></div>`;
-    $('rpt-stu-body').innerHTML=_expBar('exportStuPDF','exportStuExcel','exportStuImage')+`<div id="rpt-stu-doc">${h}</div>`;
+    const _stuDocH=`<div style="text-align:center;border-bottom:2px solid #e5e7eb;padding-bottom:12px;margin-bottom:14px">
+      <div style="font-size:17px;font-weight:700;color:#111827">${esc(S.schoolName)}</div>
+      <div style="font-size:13px;font-weight:600;color:#374151;margin-top:4px">รายงานการเข้าร่วมกิจกรรม รายนักเรียน</div>
+      <div style="font-size:13px;color:#6b7280;margin-top:3px">${esc(stu.student_name||'')}${stu.student_code?` · ${esc(stu.student_code)}`:''}</div>
+      <div style="font-size:12px;color:#6b7280;margin-top:3px">มา ${pr} · สาย ${la} · ขาด ${ab} ครั้ง</div>
+    </div>`;
+    $('rpt-stu-body').innerHTML=_expBar('exportStuPDF','exportStuExcel','exportStuImage')+`<div id="rpt-stu-doc" style="background:#fff;border-radius:10px;border:1px solid #e5e7eb;padding:20px">${_stuDocH}${h}</div>`;
   }catch(e){$('rpt-stu-body').innerHTML=`<div class="empty-state">เกิดข้อผิดพลาด: ${esc(e.message)}</div>`}
 }
 async function renderRptStudent(){
@@ -1257,12 +1267,18 @@ async function renderRptClass(){
     </div>
     <div class="table-wrap"><table class="rpt-table">
       <thead><tr><th>#</th><th>รหัส</th><th class="left">ชื่อ-สกุล</th><th>สถานะ</th></tr></thead><tbody>`;
+    const _docH=`<div style="text-align:center;border-bottom:2px solid #e5e7eb;padding-bottom:12px;margin-bottom:14px">
+      <div style="font-size:17px;font-weight:700;color:#111827">${esc(S.schoolName)}</div>
+      <div style="font-size:13px;font-weight:600;color:#374151;margin-top:4px">รายงานการเข้าร่วมกิจกรรม รายห้องเรียน</div>
+      <div style="font-size:13px;color:#6b7280;margin-top:3px">${classLabel(gl,room)} · ${esc(selAct?.name||'')} · ${thDate(S.rptClassDate)} · ${sessLbl}</div>
+      <div style="font-size:12px;color:#6b7280;margin-top:4px">มา ${pr} · สาย ${la} · ขาด ${ab} · ไม่ได้เช็ค ${un} คน</div>
+    </div>`;
     stuWithStatus.forEach((s,i)=>{
       const b=s.status==='present'?`<span class="badge green">มา</span>`:s.status==='late'?`<span class="badge orange">สาย</span>`:s.status==='absent'?`<span class="badge red">ขาด</span>`:`<span style="color:var(--txt3);font-size:12px">—</span>`;
       h+=`<tr><td>${i+1}</td><td>${esc(s.student_code||'')}</td><td class="left">${esc(s.student_name)}</td><td>${b}</td></tr>`;
     });
     h+=`</tbody></table></div>`;
-    $('rpt-class-body').innerHTML=_expBar('exportClassPDF','exportClassExcel','exportClassImage')+`<div id="rpt-class-doc"><div style="font-size:13px;font-weight:600;margin-bottom:8px">${classLabel(gl,room)} · ${esc(selAct?.name||'')} · ${thDate(S.rptClassDate)} · ${sessLbl}</div>${h}</div>`;
+    $('rpt-class-body').innerHTML=_expBar('exportClassPDF','exportClassExcel','exportClassImage')+`<div id="rpt-class-doc" style="background:#fff;border-radius:10px;border:1px solid #e5e7eb;padding:20px">${_docH}${h}</div>`;
   }catch(e){$('rpt-class-body').innerHTML=`<div class="empty-state">เกิดข้อผิดพลาด: ${esc(e.message)}</div>`}
 }
 
@@ -1436,7 +1452,13 @@ async function renderRptPercent(){
       if(!byClass[k])byClass[k]={gl:s.grade_level,r:s.room,stus:[]};
       byClass[k].stus.push(s);
     });
-    let h=`<div style="font-size:13px;color:var(--txt2);margin-bottom:10px">พบ <strong>${below.length}</strong> คน ที่มีร้อยละการเข้าร่วมต่ำกว่า ${thr}%</div>`;
+    const _pctAct=S.rptPctActivityId?S.activities.find(a=>a.id===S.rptPctActivityId):null;
+    let h=`<div style="text-align:center;border-bottom:2px solid #e5e7eb;padding-bottom:12px;margin-bottom:14px">
+      <div style="font-size:17px;font-weight:700;color:#111827">${esc(S.schoolName)}</div>
+      <div style="font-size:13px;font-weight:600;color:#374151;margin-top:4px">รายงานร้อยละการเข้าร่วมกิจกรรม</div>
+      ${_pctAct?`<div style="font-size:13px;color:#6b7280;margin-top:3px">กิจกรรม: ${esc(_pctAct.name)}</div>`:''}
+      <div style="font-size:12px;color:#6b7280;margin-top:3px">พบ ${below.length} คน ที่มีร้อยละต่ำกว่า ${thr}%</div>
+    </div>`;
     Object.values(byClass).forEach(cls=>{
       h+=`<div class="sr-class-group">
         <div class="sr-class-hd">${classLabel(cls.gl,cls.r)} <span>(${cls.stus.length} คน)</span></div>
@@ -1450,7 +1472,7 @@ async function renderRptPercent(){
       h+=`</tbody></table></div></div>`;
     });
     S.rptPctData={below,thr};
-    $('rpt-pct-body').innerHTML=_expBar('exportPctPDF','exportPctExcel','exportPctImage')+`<div id="rpt-pct-doc">${h}</div>`;
+    $('rpt-pct-body').innerHTML=_expBar('exportPctPDF','exportPctExcel','exportPctImage')+`<div id="rpt-pct-doc" style="background:#fff;border-radius:10px;border:1px solid #e5e7eb;padding:20px">${h}</div>`;
   }catch(e){$('rpt-pct-body').innerHTML=`<div class="empty-state">เกิดข้อผิดพลาด: ${esc(e.message)}</div>`}
 }
 
