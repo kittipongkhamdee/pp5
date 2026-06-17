@@ -1348,20 +1348,29 @@ async function _captureImage(elId,filename){
   if(typeof html2canvas==='undefined'){toast('html2canvas ยังโหลดไม่เสร็จ','er');return}
   const el=$(elId);if(!el){toast('ไม่พบเอกสาร','er');return}
   loading(true);
-  const scrollEls=el.querySelectorAll('.table-wrap');
-  scrollEls.forEach(e=>{e.style.overflow='visible';e.style.width='max-content'});
+  /* สร้าง off-screen wrapper ที่ไม่มีข้อจำกัดความกว้าง + บังคับ light-mode */
+  const lightVars='--bg:#fff;--card:#fff;--card2:#F0F2F5;--txt:#111827;--txt2:#6B7280;--txt3:#9CA3AF;--sep:#E5E7EB;--primary:#2563EB;--primary-light:#EFF6FF;--nav:#fff;--green:#059669;--red:#DC2626;--orange:#D97706;--blue:#2563EB;--radius:12px;--radius-sm:8px;--shadow:0 1px 4px rgba(0,0,0,.07);';
+  const wrap=document.createElement('div');
+  wrap.style.cssText=`position:absolute;left:-10000px;top:0;background:#fff;padding:20px;width:auto;min-width:0;${lightVars}`;
+  const clone=el.cloneNode(true);
+  clone.style.cssText='background:#fff;overflow:visible;width:auto;';
+  clone.querySelectorAll('.table-wrap').forEach(e=>{e.style.cssText='overflow:visible;width:auto;max-width:none;'});
+  clone.querySelectorAll('table').forEach(t=>{t.style.width='auto';t.style.tableLayout='auto';});
+  wrap.appendChild(clone);
+  document.body.appendChild(wrap);
   try{
-    const canvas=await html2canvas(el,{
-      scale:2,useCORS:true,backgroundColor:'#fff',
-      width:el.scrollWidth,height:el.scrollHeight,windowWidth:1200,
+    await new Promise(r=>setTimeout(r,80));
+    const W=wrap.scrollWidth,H=wrap.scrollHeight;
+    const canvas=await html2canvas(wrap,{
+      scale:2,useCORS:true,backgroundColor:'#ffffff',
+      scrollX:-10000,scrollY:0,
+      width:W,height:H,
+      windowWidth:Math.max(W,1024),windowHeight:H,
     });
     const a=document.createElement('a');a.href=canvas.toDataURL('image/png');a.download=filename;a.click();
     toast('ดาวน์โหลดรูปภาพแล้ว');
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er')}
-  finally{
-    scrollEls.forEach(e=>{e.style.overflow='';e.style.width=''});
-    loading(false);
-  }
+  finally{if(wrap.parentNode)wrap.parentNode.removeChild(wrap);loading(false)}
 }
 
 // ─── EXPORT ────────────────────────────────────────────────────────────────
