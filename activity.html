@@ -698,9 +698,9 @@ function renderCkList(){
         <div class="stu-meta">${esc(s.student_code)} · ${classLabel(s.grade_level,s.room)}</div>
       </div>
       <div class="stu-btns">
-        <button class="sb-btn present${st==='present'?' active':''}" onclick="setStatus(${s.id},'present')">มา</button>
-        <button class="sb-btn late${st==='late'?' active':''}" onclick="setStatus(${s.id},'late')">สาย</button>
-        <button class="sb-btn absent${st==='absent'?' active':''}" onclick="setStatus(${s.id},'absent')">ขาด</button>
+        <button class="sb-btn present${st==='present'?' active':''}" onclick="setStatus('${s.id}','present')">มา</button>
+        <button class="sb-btn late${st==='late'?' active':''}" onclick="setStatus('${s.id}','late')">สาย</button>
+        <button class="sb-btn absent${st==='absent'?' active':''}" onclick="setStatus('${s.id}','absent')">ขาด</button>
       </div>
     </div>`;
   }).join('');
@@ -715,7 +715,7 @@ function _filteredStudents(){
 function updateCkStats(){
   const stus=_filteredStudents();
   const ids=new Set(stus.map(s=>s.id));
-  const v=Object.entries(S.ckAttend).filter(([id])=>ids.has(+id)).map(([,a])=>a);
+  const v=Object.entries(S.ckAttend).filter(([id])=>ids.has(id)).map(([,a])=>a);
   $('ck-stat-total').textContent=stus.length;
   $('ck-stat-present').textContent=v.filter(a=>a.status==='present').length;
   $('ck-stat-late').textContent=v.filter(a=>a.status==='late').length;
@@ -763,7 +763,7 @@ function saveCk(){
   if(!S.ckActivityId){toast('เลือกกิจกรรมก่อน','er');return}
   const stus=_filteredStudents();
   const ids=new Set(stus.map(s=>s.id));
-  const v=Object.entries(S.ckAttend).filter(([id])=>ids.has(+id)).map(([,a])=>a);
+  const v=Object.entries(S.ckAttend).filter(([id])=>ids.has(id)).map(([,a])=>a);
   const pr=v.filter(a=>a.status==='present').length;
   const la=v.filter(a=>a.status==='late').length;
   const ab=v.filter(a=>a.status==='absent').length;
