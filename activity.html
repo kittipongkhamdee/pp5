@@ -1127,7 +1127,7 @@ function _pdfCss(){
 function _openPrintWin(title,bodyHtml){
   const w=window.open('','_blank');
   if(!w){toast('บล็อก Popup — กรุณาอนุญาต popup','er');return}
-  w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><style>${_pdfCss()}</style><title>${title}</title></head><body>${bodyHtml}<div style="text-align:center;margin-top:20px"><button onclick="window.print()" style="background:#007aff;color:#fff;border:none;padding:10px 28px;border-radius:8px;font-size:15px;font-family:'Sarabun';cursor:pointer">💾 บันทึก PDF</button></div><script>setTimeout(()=>window.print(),800)<\/script></body></html>`);
+  w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><style>${_pdfCss()}</style><title>${title}</title></head><body>${bodyHtml}<script>setTimeout(()=>window.print(),800)<\/script></body></html>`);
   w.document.close();
 }
 async function _captureImage(elId,filename){
@@ -1187,7 +1187,7 @@ async function exportSchoolPDF(){
   const body=buildSchoolDoc(classData,act,sessLbl);
   const w=window.open('','_blank');
   if(!w){toast('บล็อก Popup — กรุณาอนุญาต popup','er');return}
-  w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><style>${css}</style><title>รายงาน ${esc(act?.name||'')}</title></head><body>${body}<div style="text-align:center;margin-top:20px"><button onclick="window.print()" style="background:#007aff;color:#fff;border:none;padding:10px 28px;border-radius:8px;font-size:15px;font-family:'Sarabun';cursor:pointer">💾 บันทึก PDF</button></div><script>setTimeout(()=>window.print(),800)<\/script></body></html>`);
+  w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><style>${css}</style><title>รายงาน ${esc(act?.name||'')}</title></head><body>${body}<script>setTimeout(()=>window.print(),800)<\/script></body></html>`);
   w.document.close();
 }
 
