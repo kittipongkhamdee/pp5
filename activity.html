@@ -186,6 +186,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--font);color:var(--t
 .rpt-table td.red{color:var(--red);font-weight:600}
 .rpt-table td.not-checked{color:#aaa;font-style:italic;font-size:12px}
 .rpt-table td.left{text-align:left;padding-left:10px}
+.rpt-table td.nowrap{white-space:nowrap}
 
 .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:12px;font-weight:600;color:#fff}
 .badge.green{background:var(--green)}
@@ -987,7 +988,7 @@ async function renderRptActivity(){
       const mRec=c.mP+c.mL+c.mA;const eRec=c.eP+c.eL+c.eA;
       const mCols=mRec===0?`<td colspan="3" class="not-checked">ยังไม่เช็คชื่อ</td>`:`<td class="green">${c.mP}</td><td class="orange">${c.mL}</td><td class="red">${c.mA}</td>`;
       const eCols=eRec===0?`<td colspan="3" class="not-checked">ยังไม่เช็คชื่อ</td>`:`<td class="green">${c.eP}</td><td class="orange">${c.eL}</td><td class="red">${c.eA}</td>`;
-      h+=`<tr><td class="left">${classLabel(c.gl,c.r)}</td><td>${c.total}</td>${mCols}${ev?eCols:''}</tr>`;
+      h+=`<tr><td class="left nowrap">${classLabel(c.gl,c.r)}</td><td>${c.total}</td>${mCols}${ev?eCols:''}</tr>`;
       tot.total+=c.total;tot.mP+=c.mP;tot.mL+=c.mL;tot.mA+=c.mA;tot.eP+=c.eP;tot.eL+=c.eL;tot.eA+=c.eA;
     });
     h+=`<tr class="total-row"><td class="left">รวม</td><td>${tot.total}</td><td class="green">${tot.mP}</td><td class="orange">${tot.mL}</td><td class="red">${tot.mA}</td>${ev?`<td class="green">${tot.eP}</td><td class="orange">${tot.eL}</td><td class="red">${tot.eA}</td>`:''}</tr>`;
@@ -1245,9 +1246,9 @@ function buildSchoolDoc(classData,act,sessLbl){
   entries.forEach(c=>{
     const rec=c.present+c.late+c.absent;
     if(rec===0){
-      h+=`<tr><td class="left">${classLabel(c.gl,c.r)}</td><td>${c.stus.length}</td><td colspan="4" class="not-checked">ยังไม่เช็คชื่อ</td></tr>`;
+      h+=`<tr><td class="left nowrap">${classLabel(c.gl,c.r)}</td><td>${c.stus.length}</td><td colspan="4" class="not-checked">ยังไม่เช็คชื่อ</td></tr>`;
     }else{
-      h+=`<tr><td class="left">${classLabel(c.gl,c.r)}</td><td>${c.stus.length}</td><td class="green">${c.present}</td><td class="orange">${c.late}</td><td class="red">${c.absent}</td><td>${pct(c.present+c.late,rec)}</td></tr>`;
+      h+=`<tr><td class="left nowrap">${classLabel(c.gl,c.r)}</td><td>${c.stus.length}</td><td class="green">${c.present}</td><td class="orange">${c.late}</td><td class="red">${c.absent}</td><td>${pct(c.present+c.late,rec)}</td></tr>`;
     }
   });
   h+=`<tr class="total-row"><td class="left">รวม</td><td>${tot.total}</td><td class="green">${tot.present}</td><td class="orange">${tot.late}</td><td class="red">${tot.absent}</td><td>${pct(tot.present+tot.late,totRec||tot.total)}</td></tr>`;
@@ -1495,7 +1496,7 @@ function exportActPDF(){
     const mRec=c.mP+c.mL+c.mA;const eRec=c.eP+c.eL+c.eA;
     const mCols=mRec===0?`<td colspan="3" style="color:#aaa;font-style:italic">ยังไม่เช็คชื่อ</td>`:`<td>${c.mP}</td><td>${c.mL}</td><td>${c.mA}</td>`;
     const eCols=eRec===0?`<td colspan="3" style="color:#aaa;font-style:italic">ยังไม่เช็คชื่อ</td>`:`<td>${c.eP}</td><td>${c.eL}</td><td>${c.eA}</td>`;
-    rows+=`<tr><td class="left">${classLabel(c.gl,c.r)}</td><td>${c.total}</td>${mCols}${ev?eCols:''}</tr>`;
+    rows+=`<tr><td class="left" style="white-space:nowrap">${classLabel(c.gl,c.r)}</td><td>${c.total}</td>${mCols}${ev?eCols:''}</tr>`;
     tot.total+=c.total;tot.mP+=c.mP;tot.mL+=c.mL;tot.mA+=c.mA;tot.eP+=c.eP;tot.eL+=c.eL;tot.eA+=c.eA;
   });
   const body=`<div class="sr-header"><div class="sr-school">${esc(S.schoolName)}</div><div class="sr-title">รายงานการเข้าร่วมกิจกรรม รายกิจกรรม</div><div class="sr-act">${esc(act?.name||'')}</div><div class="sr-date">วันที่ ${thDate(date)}</div></div>
