@@ -522,7 +522,7 @@ html[data-theme="dark"] .sb-btn{background:rgba(55,65,81,0.75);border-color:rgba
 
 /* Desktop: 1024px+ */
 @media(min-width:1024px){
-  #app{max-width:1440px}
+  #app{max-width:none}
   #app-body{flex-direction:row}
   #side-nav{
     display:flex;
@@ -535,20 +535,37 @@ html[data-theme="dark"] .sb-btn{background:rgba(55,65,81,0.75);border-color:rgba
   }
   #bottom-nav{display:none}
   .page-scroll{padding-bottom:32px}
-  #rpt-content{padding-bottom:32px;padding-left:32px;padding-right:32px}
-  #ck-controls{padding-left:32px;padding-right:32px}
-  #ck-actions{padding-left:32px;padding-right:32px}
-  .stu-row{padding-left:32px;padding-right:32px}
-  .section{padding-left:32px;padding-right:32px}
-  .stats-grid{padding-left:32px;padding-right:32px}
-  #topbar{padding:14px 32px;padding-top:calc(14px + env(safe-area-inset-top,0px))}
+  #rpt-content{padding-bottom:32px;padding-left:40px;padding-right:40px}
+  #ck-controls{padding-left:40px;padding-right:40px}
+  #ck-actions{padding-left:40px;padding-right:40px}
+  .stu-row{padding-left:40px;padding-right:40px}
+  .section{padding-left:40px;padding-right:40px}
+  .stats-grid{padding-left:40px;padding-right:40px}
+  #topbar{padding:14px 40px;padding-top:calc(14px + env(safe-area-inset-top,0px))}
   #topbar-title{font-size:20px}
   #toast{bottom:24px}
+  #home-acts-wrap{
+    display:grid;grid-template-columns:repeat(2,1fr);gap:10px;
+    background:transparent;border:none;box-shadow:none;padding:0;
+  }
+  #home-acts-wrap .card-row{
+    background:var(--card);border:1px solid var(--sep);border-radius:var(--radius);
+    border-bottom:1px solid var(--sep);
+    box-shadow:0 2px 8px rgba(0,0,0,0.04),inset 0 1px 0 rgba(255,255,255,0.6);
+  }
+  #home-acts-wrap .card-row:last-child{border-bottom:1px solid var(--sep)}
+  .home-stats-row{gap:16px}
+  .home-stats-row>div{padding:20px 16px}
+  .home-stats-row>div>div:first-child{font-size:32px}
 }
 
 /* Large Desktop: 1280px+ */
 @media(min-width:1280px){
-  #side-nav{width:260px;min-width:260px}
+  #side-nav{width:280px;min-width:280px}
+  #home-acts-wrap{grid-template-columns:repeat(3,1fr)}
+  .section{padding-left:48px;padding-right:48px}
+  .stats-grid{padding-left:48px;padding-right:48px}
+  #topbar{padding-left:48px;padding-right:48px}
 }
 
 /* ── PIN modal ── */
@@ -907,7 +924,7 @@ function renderHome(){
   const greet=hour<12?'อรุณสวัสดิ์':hour<18?'สวัสดีตอนบ่าย':'สวัสดีตอนเย็น';
   const greetIcon=hour<12?'🌅':hour<18?'☀️':'🌙';
   let html=`<div class="section" style="padding-top:20px">
-  <div style="display:flex;gap:10px;margin-bottom:20px">
+  <div class="home-stats-row" style="display:flex;gap:10px;margin-bottom:20px">
     <div style="flex:1;background:var(--card);border:1px solid var(--sep);border-radius:var(--radius);padding:14px 12px;text-align:center">
       <div style="font-size:24px;font-weight:800;color:var(--primary)">${acts.length}</div>
       <div style="font-size:12px;color:var(--txt2);margin-top:3px">กิจกรรม</div>
@@ -924,7 +941,7 @@ function renderHome(){
   if(!acts.length){
     html+=`<div style="background:var(--card);border:1px solid var(--sep);border-radius:var(--radius);padding:40px 24px;text-align:center;color:var(--txt2)">ยังไม่มีกิจกรรม<br><small style="font-size:13px;color:var(--txt3)">กด Admin → เพิ่มกิจกรรม</small></div>`;
   }else{
-    html+=`<div class="section-title">กิจกรรมทั้งหมด</div><div class="card">`;
+    html+=`<div class="section-title">กิจกรรมทั้งหมด</div><div class="card" id="home-acts-wrap">`;
     acts.forEach(a=>{
       html+=`<div class="card-row" onclick="quickCheckin(${a.id})">
         <div class="card-row-icon" style="background:${actBg(a.id)}15">${actEmoji(a.name)}</div>
