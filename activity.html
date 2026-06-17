@@ -216,6 +216,18 @@ html,body{height:100%;background:var(--bg);font-family:var(--font);color:var(--t
 /* ── Filter row ── */
 .filter-row{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
 
+/* ── Student autocomplete ── */
+.suggest-wrap{position:relative;margin-bottom:12px}
+.suggest-list{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--card);border:1px solid var(--sep);border-radius:var(--radius-sm);box-shadow:var(--shadow);max-height:220px;overflow-y:auto;z-index:50}
+.suggest-item{padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--sep);transition:background .1s}
+.suggest-item:last-child{border-bottom:none}
+.suggest-item:hover,.suggest-item:active{background:var(--primary-light)}
+.suggest-name{font-size:14px;font-weight:500;color:var(--txt)}
+.suggest-meta{font-size:12px;color:var(--txt3);margin-top:2px}
+.suggest-empty{padding:12px 14px;color:var(--txt3);font-size:13px;text-align:center}
+.suggest-selected-tag{display:flex;align-items:center;gap:8px;background:var(--primary-light);border:1px solid var(--primary);border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:12px;font-size:14px;color:var(--primary)}
+.suggest-selected-tag button{margin-left:auto;background:none;border:none;cursor:pointer;color:var(--txt3);font-size:16px;line-height:1;padding:0}
+
 /* ── Percent report run button ── */
 .pct-run-btn{
   display:flex;align-items:center;justify-content:center;gap:8px;
@@ -855,32 +867,45 @@ async function renderRptActivity(){
 }
 
 // ── Report: per student ──
-function _rptStuFiltered(){
-  let stus=S.students;
-  if(S.rptStuClass){
-    const[gl,r]=S.rptStuClass.split('_');
-    stus=stus.filter(s=>String(s.grade_level)===gl&&String(s.room)===r);
-  }
-  if(S.rptStuSearch){
-    const kw=S.rptStuSearch.toLowerCase();
-    stus=stus.filter(s=>s.student_name.toLowerCase().includes(kw)||(s.student_code||'').toLowerCase().includes(kw));
-  }
-  return stus;
+function _stuByClass(){
+  if(!S.rptStuClass)return S.students;
+  const[gl,r]=S.rptStuClass.split('_');
+  return S.students.filter(s=>String(s.grade_level)===gl&&String(s.room)===r);
 }
-function _updateRptStuSelect(){
-  const sel=$('rpt-stu-select');if(!sel)return;
-  const filtered=_rptStuFiltered();
-  sel.innerHTML='<option value="">-- เลือกนักเรียน --</option>'+filtered.map(s=>`<option value="${s.id}"${S.rptStuId===s.id?' selected':''}>${esc(s.student_name)} (${esc(s.student_code||'')})</option>`).join('');
+function _showSuggestions(val){
+  const sl=$('rpt-stu-suggest');if(!sl)return;
+  const kw=(val||'').trim().toLowerCase();
+  if(!kw){sl.style.display='none';sl.innerHTML='';return}
+  const pool=_stuByClass();
+  const hits=pool.filter(s=>s.student_name.toLowerCase().includes(kw)||(s.student_code||'').toLowerCase().includes(kw)).slice(0,15);
+  if(!hits.length){
+    sl.innerHTML='<div class="suggest-empty">ไม่พบนักเรียน</div>';
+  }else{
+    sl.innerHTML=hits.map(s=>`<div class="suggest-item" onmousedown="_selectRptStu('${s.id}','${esc(s.student_name).replace(/'/g,"\\'")}')"><div class="suggest-name">${esc(s.student_name)}</div><div class="suggest-meta">${esc(s.student_code||'')} · ${classLabel(s.grade_level,s.room)}</div></div>`).join('');
+  }
+  sl.style.display='block';
+}
+function _selectRptStu(id,name){
+  S.rptStuId=id;S.rptStuSearch=name;
+  const inp=$('rpt-stu-search-inp');if(inp)inp.value=name;
+  const sl=$('rpt-stu-suggest');if(sl){sl.style.display='none';sl.innerHTML=''}
+  _renderStuSelectedTag(name);
+  _loadRptStudentData();
+}
+function _renderStuSelectedTag(name){
+  const wrap=$('rpt-stu-tag-wrap');if(!wrap)return;
+  wrap.innerHTML=`<div class="suggest-selected-tag"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>${esc(name)}<button onclick="_clearRptStu()" title="ล้าง">✕</button></div>`;
+}
+function _clearRptStu(){
+  S.rptStuId=null;S.rptStuSearch='';
+  const inp=$('rpt-stu-search-inp');if(inp){inp.value='';inp.focus();}
+  const wrap=$('rpt-stu-tag-wrap');if(wrap)wrap.innerHTML='';
+  const sl=$('rpt-stu-suggest');if(sl){sl.style.display='none';sl.innerHTML=''}
+  $('rpt-stu-body').innerHTML='<div class="empty-state">เลือกนักเรียนเพื่อดูประวัติ</div>';
 }
 function _onRptClassChange(val){
-  S.rptStuClass=val||null;S.rptStuId=null;
-  _updateRptStuSelect();
-  $('rpt-stu-body').innerHTML='<div class="empty-state">เลือกนักเรียนเพื่อดูประวัติ</div>';
-}
-function _onRptStuSearch(val){
-  S.rptStuSearch=val;S.rptStuId=null;
-  _updateRptStuSelect();
-  $('rpt-stu-body').innerHTML='<div class="empty-state">เลือกนักเรียนเพื่อดูประวัติ</div>';
+  S.rptStuClass=val||null;
+  _clearRptStu();
 }
 async function _loadRptStudentData(){
   if(!S.rptStuId){$('rpt-stu-body').innerHTML='<div class="empty-state">เลือกนักเรียนเพื่อดูประวัติ</div>';return}
@@ -911,23 +936,24 @@ async function _loadRptStudentData(){
 async function renderRptStudent(){
   const cOpts=S.classes.map(c=>`<option value="${c.grade_level}_${c.room}"${S.rptStuClass===`${c.grade_level}_${c.room}`?' selected':''}>${classLabel(c.grade_level,c.room)}</option>`).join('');
   const aOpts=S.activities.map(a=>`<option value="${a.id}"${S.rptStuActivityId==a.id?' selected':''}>${esc(a.name)}</option>`).join('');
-  const filtered=_rptStuFiltered();
-  const sOpts=filtered.map(s=>`<option value="${s.id}"${S.rptStuId===s.id?' selected':''}>${esc(s.student_name)} (${esc(s.student_code||'')})</option>`).join('');
   $('rpt-content').innerHTML=`
-    <div class="filter-row">
-      <input type="text" class="ios-input" placeholder="🔍 ค้นหาชื่อ / รหัสนักเรียน..." value="${esc(S.rptStuSearch||'')}" oninput="_onRptStuSearch(this.value)" style="flex:1">
+    <div class="suggest-wrap">
+      <input id="rpt-stu-search-inp" type="text" class="ios-input" placeholder="🔍 ค้นหาชื่อ / รหัสนักเรียน..."
+        value="${esc(S.rptStuId?S.rptStuSearch:S.rptStuSearch||'')}"
+        oninput="S.rptStuId=null;S.rptStuSearch=this.value;_showSuggestions(this.value)"
+        onblur="setTimeout(()=>{const sl=$('rpt-stu-suggest');if(sl)sl.style.display='none'},200)"
+        autocomplete="off">
+      <div id="rpt-stu-suggest" class="suggest-list"></div>
     </div>
+    <div id="rpt-stu-tag-wrap"></div>
     <div class="filter-row">
       <select class="ios-select" onchange="_onRptClassChange(this.value)">${'<option value="">-- ทุกชั้นเรียน --</option>'+cOpts}</select>
     </div>
     <div class="filter-row">
-      <select id="rpt-stu-select" class="ios-select" onchange="S.rptStuId=this.value||null;_loadRptStudentData()">${'<option value="">-- เลือกนักเรียน ('+filtered.length+' คน) --</option>'+sOpts}</select>
-    </div>
-    <div class="filter-row">
       <select class="ios-select" onchange="S.rptStuActivityId=+this.value||null;_loadRptStudentData()">${'<option value="">ทุกกิจกรรม</option>'+aOpts}</select>
     </div>
-    <div id="rpt-stu-body">${S.rptStuId?'<div class="loading-text">กำลังโหลด...</div>':'<div class="empty-state">เลือกนักเรียนเพื่อดูประวัติ</div>'}</div>`;
-  if(S.rptStuId) await _loadRptStudentData();
+    <div id="rpt-stu-body">${S.rptStuId?'<div class="loading-text">กำลังโหลด...</div>':'<div class="empty-state">พิมพ์ชื่อหรือรหัสนักเรียน แล้วเลือกจากรายชื่อ</div>'}</div>`;
+  if(S.rptStuId){_renderStuSelectedTag(S.rptStuSearch);await _loadRptStudentData();}
 }
 
 // ── Report: school-wide ──
