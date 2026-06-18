@@ -108,12 +108,15 @@ html[data-theme="dark"] .ios-select,html[data-theme="dark"] .ios-input{backgroun
 .unif-stat{display:flex;flex-direction:column;align-items:center;gap:1px}
 .unif-stat-val{font-size:18px;font-weight:800;color:var(--txt)}
 .unif-stat-lbl{font-size:9.5px;color:var(--txt2);font-weight:500;text-align:center}
-.unif-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
-.unif-row{display:flex;align-items:flex-start;gap:10px;padding:10px 16px;border-bottom:1px solid var(--sep)}
-.unif-row:last-child{border-bottom:none}
-.unif-num{font-size:12px;color:var(--txt3);width:20px;flex-shrink:0;padding-top:3px;text-align:right}
+.unif-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.unif-row{background:var(--card);border:1px solid var(--sep);border-radius:var(--radius);padding:12px 14px;box-shadow:var(--shadow)}
+.unif-row.status-pass{border-left:4px solid var(--green)}
+.unif-row.status-fail{border-left:4px solid var(--red)}
+.unif-row.status-absent{border-left:4px solid #9CA3AF}
+.unif-row-top{display:flex;align-items:center;gap:10px}
+.unif-num{font-size:11px;color:var(--txt3);width:18px;flex-shrink:0;text-align:right;font-weight:600}
 .unif-info{flex:1;min-width:0}
-.unif-name{font-size:14px;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.unif-name{font-size:14px;font-weight:700;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .unif-meta{font-size:11px;color:var(--txt3);margin-top:1px}
 .unif-fail-detail{display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap}
 .unif-fail-detail input{font-size:11.5px;padding:4px 8px;border:1px solid var(--sep);border-radius:8px;background:var(--card);color:var(--txt);font-family:inherit;outline:none;max-width:180px}
@@ -2285,18 +2288,20 @@ function renderUnifList(){
       <input type="text" placeholder="หมายเหตุเพิ่มเติม" value="${esc(note)}" maxlength="80"
         onchange="setUnifNote('${s.id}',this.value)" oninput="setUnifNote('${s.id}',this.value)">
     </div>`:'';
-    h+=`<div class="unif-row" id="urow-${s.id}">
-      <div class="unif-num">${i+1}</div>
-      <div class="unif-info">
-        <div class="unif-name">${esc(s.student_name)}</div>
-        <div class="unif-meta">${esc(s.student_code)}</div>
-        ${failDetail}
+    h+=`<div class="unif-row${st?' status-'+st:''}" id="urow-${s.id}">
+      <div class="unif-row-top">
+        <div class="unif-num">${i+1}</div>
+        <div class="unif-info">
+          <div class="unif-name">${esc(s.student_name)}</div>
+          <div class="unif-meta">${esc(s.student_code)}</div>
+        </div>
+        <div class="unif-btns">
+          <button class="ub pass${st==='pass'?' active':''}" onclick="setUnifStatus('${s.id}','pass')">✓<span class="ub-txt"> ผ่าน</span></button>
+          <button class="ub fail${st==='fail'?' active':''}" onclick="setUnifStatus('${s.id}','fail')">✗<span class="ub-txt"> ไม่ผ่าน</span></button>
+          <button class="ub absent${st==='absent'?' active':''}" onclick="setUnifStatus('${s.id}','absent')">ข<span class="ub-txt"> ขาด</span></button>
+        </div>
       </div>
-      <div class="unif-btns">
-        <button class="ub pass${st==='pass'?' active':''}" onclick="setUnifStatus('${s.id}','pass')">✓<span class="ub-txt"> ผ่าน</span></button>
-        <button class="ub fail${st==='fail'?' active':''}" onclick="setUnifStatus('${s.id}','fail')">✗<span class="ub-txt"> ไม่ผ่าน</span></button>
-        <button class="ub absent${st==='absent'?' active':''}" onclick="setUnifStatus('${s.id}','absent')">ข<span class="ub-txt"> ขาด</span></button>
-      </div>
+      ${failDetail}
     </div>`;
   });
   $('unif-list').innerHTML=h||`<div class="empty-state">ไม่พบนักเรียนในชั้นนี้</div>`;
