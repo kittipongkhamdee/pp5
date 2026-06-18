@@ -104,7 +104,7 @@ html[data-theme="dark"] .ios-select,html[data-theme="dark"] .ios-input{backgroun
 .unif-tab{flex:1;padding:11px 0;font-size:13px;font-weight:600;color:var(--txt2);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:inherit;transition:color .15s}
 .unif-tab.active{color:var(--primary);border-bottom-color:var(--primary)}
 .unif-controls{display:flex;flex-direction:column;gap:8px;padding:10px 16px;flex-shrink:0;background:var(--card);border-bottom:1px solid var(--sep)}
-.unif-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:10px 16px;background:var(--card2);border-bottom:1px solid var(--sep);flex-shrink:0}
+.unif-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:10px 16px;background:var(--card2);border-bottom:1px solid var(--sep);flex-shrink:0}
 .unif-stat{display:flex;flex-direction:column;align-items:center;gap:1px}
 .unif-stat-val{font-size:18px;font-weight:800;color:var(--txt)}
 .unif-stat-lbl{font-size:9.5px;color:var(--txt2);font-weight:500;text-align:center}
@@ -127,6 +127,8 @@ html[data-theme="dark"] .ios-select,html[data-theme="dark"] .ios-input{backgroun
 .ub.pass.active{background:var(--green);color:#fff}
 .ub.fail{background:rgba(220,38,38,.08);color:var(--red)}
 .ub.fail.active{background:var(--red);color:#fff}
+.ub.absent{background:rgba(107,114,128,.1);color:var(--txt3)}
+.ub.absent.active{background:#6B7280;color:#fff}
 .unif-rpt-doc{background:var(--card);border-radius:var(--radius);border:1px solid var(--sep);padding:16px;margin:12px 16px}
 
 /* ── Cards / Lists ── */
@@ -2277,7 +2279,7 @@ function renderUnifList(){
     const note=chk.note||'';
     const selViols=chk.violations||[];
     const checkboxes=viols.map(v=>`<label class="unif-viol-chk${selViols.includes(v.id)?' checked':''}"><input type="checkbox"${selViols.includes(v.id)?' checked':''} onchange="setUnifViolationCheck('${s.id}',${v.id},this.checked)">${esc(v.name)}</label>`).join('');
-    const failDetail=st==='fail'?`<div class="unif-fail-detail">
+    const failDetail=st==='fail'?`<div class="unif-fail-detail" style="margin-top:4px">
       ${viols.length?`<div class="unif-viol-grid">${checkboxes}</div>`:'<span style="font-size:11px;color:var(--txt3)">ยังไม่มีประเภทความผิด (เพิ่มในหน้า Admin)</span>'}
       <input type="text" placeholder="หมายเหตุเพิ่มเติม" value="${esc(note)}" maxlength="80"
         onchange="setUnifNote('${s.id}',this.value)" oninput="setUnifNote('${s.id}',this.value)">
@@ -2292,6 +2294,7 @@ function renderUnifList(){
       <div class="unif-btns">
         <button class="ub pass${st==='pass'?' active':''}" onclick="setUnifStatus('${s.id}','pass')">✓ ผ่าน</button>
         <button class="ub fail${st==='fail'?' active':''}" onclick="setUnifStatus('${s.id}','fail')">✗ ไม่ผ่าน</button>
+        <button class="ub absent${st==='absent'?' active':''}" onclick="setUnifStatus('${s.id}','absent')">— ขาด</button>
       </div>
     </div>`;
   });
@@ -2305,11 +2308,13 @@ function updateUnifStats(checks){
   const vals=Object.values(checks||{});
   const pass=vals.filter(v=>v.status==='pass').length;
   const fail=vals.filter(v=>v.status==='fail').length;
-  const none=total-pass-fail;
+  const absent=vals.filter(v=>v.status==='absent').length;
+  const none=total-pass-fail-absent;
   $('unif-stats').innerHTML=`
     <div class="unif-stat"><div class="unif-stat-val">${total}</div><div class="unif-stat-lbl">ทั้งหมด</div></div>
     <div class="unif-stat"><div class="unif-stat-val" style="color:var(--green)">${pass}</div><div class="unif-stat-lbl">ผ่าน</div></div>
     <div class="unif-stat"><div class="unif-stat-val" style="color:var(--red)">${fail}</div><div class="unif-stat-lbl">ไม่ผ่าน</div></div>
+    <div class="unif-stat"><div class="unif-stat-val" style="color:#6B7280">${absent}</div><div class="unif-stat-lbl">ขาด</div></div>
     <div class="unif-stat"><div class="unif-stat-val" style="color:var(--txt3)">${none}</div><div class="unif-stat-lbl">ยังไม่ตรวจ</div></div>`;
 }
 
