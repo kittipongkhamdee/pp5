@@ -180,7 +180,7 @@ details.unif-viol-summary-wrap{margin-bottom:8px}
 details[open] .unif-viol-summary{border-radius:var(--radius) var(--radius) 0 0;border-bottom-color:transparent}
 details[open] .unif-viol-summary+.table-wrap{border:1px solid var(--sep);border-top:none;border-radius:0 0 var(--radius) var(--radius);overflow-x:auto;-webkit-overflow-scrolling:touch}
 .unif-viol-badge{background:rgba(220,38,38,.1);color:var(--red);font-size:13px;font-weight:700;padding:2px 10px;border-radius:20px}
-.unif-viol-chevron{margin-left:auto;font-size:12px;color:var(--txt3);transition:transform .2s}
+.unif-viol-chevron{margin-left:auto;font-size:18px;color:#374151;font-weight:700;transition:transform .2s;line-height:1}
 details[open] .unif-viol-chevron{transform:rotate(180deg)}
 
 /* ── Cards / Lists ── */
@@ -2540,7 +2540,7 @@ async function renderUnifRptSummary(){
         byClass[k].items.push(item);
       });
       Object.entries(byClass).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([,cls],ci)=>{
-        body+=`<details style="margin-bottom:8px" ${ci===0?'open':''}>
+        body+=`<details style="margin-bottom:8px">
           <summary class="unif-viol-summary">
             <span style="font-size:13px;font-weight:700;color:var(--txt)">${classLabel(cls.gl,cls.r)}</span>
             <span style="font-size:13px;font-weight:700;color:var(--red);margin-left:6px">${cls.items.length} คน</span>
