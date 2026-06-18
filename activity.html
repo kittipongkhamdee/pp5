@@ -1015,7 +1015,7 @@ async function loadUniformChecks(date,classKey){
   if(!stuIds.length)return{};
   try{
     const rows=await q(sb.from('uniform_checks').select('id,student_id,status,violation_id,note').eq('date',date).in('student_id',stuIds));
-    const map={};rows.forEach(r=>{map[r.student_id]={id:r.id,status:r.status,violation_id:r.violation_id,note:r.note||''}});
+    const map={};rows.forEach(r=>{map[String(r.student_id)]={id:r.id,status:r.status,violation_id:r.violation_id,note:r.note||''}});
     return map;
   }catch(e){return{}}
 }
@@ -2261,16 +2261,16 @@ function renderUnifList(){
 
   let h='';
   stus.forEach((s,i)=>{
-    const chk=S.unifChecks[s.id]||{};
+    const chk=S.unifChecks[String(s.id)]||{};
     const st=chk.status||'';
     const note=chk.note||'';
     const vSel=viols.map(v=>`<option value="${v.id}"${chk.violation_id==v.id?' selected':''}>${esc(v.name)}</option>`).join('');
     const failDetail=st==='fail'?`<div class="unif-fail-detail">
-      <select onchange="setUnifViolation(${s.id},this.value)">
+      <select onchange="setUnifViolation('${s.id}',this.value)">
         <option value="">-- ประเภทความผิด --</option>${vSel}
       </select>
       <input type="text" placeholder="หมายเหตุ" value="${esc(note)}" maxlength="60"
-        onchange="setUnifNote(${s.id},this.value)" oninput="setUnifNote(${s.id},this.value)">
+        onchange="setUnifNote('${s.id}',this.value)" oninput="setUnifNote('${s.id}',this.value)">
     </div>`:'';
     h+=`<div class="unif-row" id="urow-${s.id}">
       <div class="unif-num">${i+1}</div>
@@ -2280,8 +2280,8 @@ function renderUnifList(){
         ${failDetail}
       </div>
       <div class="unif-btns">
-        <button class="ub pass${st==='pass'?' active':''}" onclick="setUnifStatus(${s.id},'pass')">✓ ผ่าน</button>
-        <button class="ub fail${st==='fail'?' active':''}" onclick="setUnifStatus(${s.id},'fail')">✗ ไม่ผ่าน</button>
+        <button class="ub pass${st==='pass'?' active':''}" onclick="setUnifStatus('${s.id}','pass')">✓ ผ่าน</button>
+        <button class="ub fail${st==='fail'?' active':''}" onclick="setUnifStatus('${s.id}','fail')">✗ ไม่ผ่าน</button>
       </div>
     </div>`;
   });
@@ -2304,31 +2304,27 @@ function updateUnifStats(checks){
 }
 
 async function setUnifStatus(stuId,status){
-  const prev=S.unifChecks[stuId]||{};
-  // Toggle off if same status
+  const key=String(stuId);
+  const prev=S.unifChecks[key]||{};
   if(prev.status===status){
-    if(prev.id){
-      try{await q(sb.from('uniform_checks').delete().eq('id',prev.id))}catch(e){}
-    }
-    delete S.unifChecks[stuId];
-    renderUnifList();
-    return;
+    if(prev.id){try{await q(sb.from('uniform_checks').delete().eq('id',prev.id))}catch(e){}}
+    delete S.unifChecks[key];renderUnifList();return;
   }
   const payload={student_id:stuId,date:S.unifDate,status,violation_id:status==='pass'?null:(prev.violation_id||null),note:status==='pass'?null:(prev.note||null),updated_at:new Date().toISOString()};
   try{
     if(prev.id){
       await q(sb.from('uniform_checks').update(payload).eq('id',prev.id));
-      S.unifChecks[stuId]={...S.unifChecks[stuId],...payload};
+      S.unifChecks[key]={...S.unifChecks[key],...payload};
     }else{
       const rows=await q(sb.from('uniform_checks').insert(payload).select('id'));
-      S.unifChecks[stuId]={id:rows[0].id,...payload};
+      S.unifChecks[key]={id:rows[0].id,...payload};
     }
   }catch(e){toast('บันทึกไม่สำเร็จ: '+e.message,'er');return}
   renderUnifList();
 }
 
 async function setUnifViolation(stuId,violId){
-  const chk=S.unifChecks[stuId];if(!chk||chk.status!=='fail')return;
+  const chk=S.unifChecks[String(stuId)];if(!chk||chk.status!=='fail')return;
   const val=violId?+violId:null;
   chk.violation_id=val;
   if(chk.id){
@@ -2338,7 +2334,7 @@ async function setUnifViolation(stuId,violId){
 }
 
 async function setUnifNote(stuId,note){
-  const chk=S.unifChecks[stuId];if(!chk||chk.status!=='fail')return;
+  const chk=S.unifChecks[String(stuId)];if(!chk||chk.status!=='fail')return;
   chk.note=note;
   if(chk.id){
     try{await q(sb.from('uniform_checks').update({note,updated_at:new Date().toISOString()}).eq('id',chk.id))}
