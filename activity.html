@@ -142,7 +142,9 @@ html[data-theme="dark"] .ios-select,html[data-theme="dark"] .ios-input{backgroun
 /* ── Uniform report table ── */
 .unif-rpt-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
 .unif-rpt-table th{background:var(--card2);padding:8px 6px;text-align:center;font-weight:600;border:1px solid #666;font-size:12px}
-.unif-rpt-table td{padding:7px 6px;text-align:center;border:1px solid #666}
+.unif-rpt-table td{padding:7px 6px;text-align:center;border:1px solid #666;vertical-align:top}
+.rpt-table td{vertical-align:top}
+.screen-hide{display:none}
 .unif-rpt-table tr.total-row td{font-weight:700;background:var(--card2)}
 .unif-rpt-table td.left{text-align:left;padding-left:10px}
 .unif-rpt-table td.nowrap{white-space:nowrap}
@@ -1917,7 +1919,7 @@ async function _captureImage(elId,filename){
   clone.querySelectorAll('table').forEach(t=>{t.style.width='auto';t.style.tableLayout='auto';});
   /* scale:2 → 1px border = 2px physical → ลด border เป็น 0.5px สำหรับ export */
   const capStyle=document.createElement('style');
-  capStyle.textContent='table th,table td{border-width:0.5px !important}';
+  capStyle.textContent='table th,table td{border-width:0.5px !important}.screen-hide{display:table-cell !important}';
   wrap.appendChild(capStyle);
   wrap.appendChild(clone);
   document.body.appendChild(wrap);
@@ -2559,7 +2561,7 @@ async function renderUnifRptSummary(){
           <div class="table-wrap" style="margin-top:4px"><table class="unif-rpt-table" style="background:#fff;color:#000">
             <thead><tr>
               <th style="width:28px;background:#f3f4f6;color:#111">#</th>
-              <th style="min-width:52px;background:#f3f4f6;color:#111">รหัส</th>
+              <th class="screen-hide" style="min-width:52px;background:#f3f4f6;color:#111">รหัส</th>
               <th class="left" style="background:#f3f4f6;color:#111">ชื่อ-สกุล</th>
               <th class="left" style="min-width:70px;background:#f3f4f6;color:#111">สาเหตุ</th>
               <th class="left" style="min-width:60px;background:#f3f4f6;color:#111">หมายเหตุ</th>
@@ -2569,7 +2571,7 @@ async function renderUnifRptSummary(){
           const{stu,viols,note}=item;
           body+=`<tr>
             <td style="color:#6b7280">${i+1}</td>
-            <td style="font-size:12px;white-space:nowrap;color:#111">${esc(stu.student_code)}</td>
+            <td class="screen-hide" style="font-size:12px;white-space:nowrap;color:#111">${esc(stu.student_code)}</td>
             <td class="left" style="color:#111;font-weight:500;white-space:nowrap">${esc(stu.student_name)}</td>
             <td class="left" style="font-size:12px;color:#dc2626">${esc(viols.join(', '))}</td>
             <td class="left" style="font-size:12px;color:#374151">${esc(note)}</td>
@@ -2655,7 +2657,7 @@ async function renderUnifRptClass(){
     <div class="table-wrap"><table class="unif-rpt-table" style="background:#fff;color:#000">
       <thead><tr>
         <th style="background:#f3f4f6;color:#111;width:28px">#</th>
-        <th style="background:#f3f4f6;color:#111;min-width:52px">รหัส</th>
+        <th class="screen-hide" style="background:#f3f4f6;color:#111;min-width:52px">รหัส</th>
         <th class="left" style="background:#f3f4f6;color:#111">ชื่อ-สกุล</th>
         <th style="background:#f3f4f6;color:#111;min-width:70px">สถานะ</th>
         <th class="left" style="background:#f3f4f6;color:#111;min-width:70px">สาเหตุ</th>
@@ -2667,7 +2669,7 @@ async function renderUnifRptClass(){
       const isFail=d?.status==='fail';
       body+=`<tr>
         <td style="color:#6b7280">${i+1}</td>
-        <td style="font-size:12px;color:#111;white-space:nowrap">${esc(s.student_code)}</td>
+        <td class="screen-hide" style="font-size:12px;color:#111;white-space:nowrap">${esc(s.student_code)}</td>
         <td class="left" style="color:#111;font-weight:500;white-space:nowrap">${esc(s.student_name)}</td>
         <td>${statusBadge(d?.status)}</td>
         <td class="left" style="font-size:12px;color:#dc2626">${isFail&&d.viols.length?esc(d.viols.join(', ')):''}  </td>
