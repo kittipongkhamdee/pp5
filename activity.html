@@ -1161,6 +1161,7 @@ async function setStatus(stuId,status){
     delete S.ckAttend[stuId];
     if(S.attendCache[cacheKey])delete S.attendCache[cacheKey][stuId];
     if(S.ckDate===todayStr())S.homeCache=null;
+    S.rptActCacheKey=null;S.rptSchoolCacheKey=null;S.rptClassCacheKey=null;
     _updateStuRow(stuId,'');updateCkStats();toast('ลบข้อมูลแล้ว','ok',1200);return;
   }
   const payload={activity_id:S.ckActivityId,student_id:stuId,date:S.ckDate,session:S.ckSession,status,updated_at:new Date().toISOString()};
@@ -1177,6 +1178,7 @@ async function setStatus(stuId,status){
       if(S.attendCache[cacheKey])S.attendCache[cacheKey][stuId]=rec;
     }
     if(S.ckDate===todayStr())S.homeCache=null;
+    S.rptActCacheKey=null;S.rptSchoolCacheKey=null;S.rptClassCacheKey=null;
     _updateStuRow(stuId,status);updateCkStats();toast('✓ บันทึกแล้ว','ok',1200);
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er')}
 }
@@ -1199,6 +1201,7 @@ async function checkAll(status){
     const cacheKey=`${S.ckActivityId}_${S.ckDate}_${S.ckSession}`;
     delete S.attendCache[cacheKey];
     if(S.ckDate===todayStr())S.homeCache=null;
+    S.rptActCacheKey=null;S.rptSchoolCacheKey=null;S.rptClassCacheKey=null;
     renderCkList();updateCkStats();
     toast(`✓ เช็ค${status==='present'?'มา':'ขาด'} ${label} ${targets.length} คน`);
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er')}
@@ -1218,6 +1221,7 @@ async function clearAllCk(){
     const cacheKey=`${S.ckActivityId}_${S.ckDate}_${S.ckSession}`;
     delete S.attendCache[cacheKey];
     if(S.ckDate===todayStr())S.homeCache=null;
+    S.rptActCacheKey=null;S.rptSchoolCacheKey=null;S.rptClassCacheKey=null;
     renderCkList();updateCkStats();
     toast(`✓ ล้างค่า${label} ${targets.length} คน`);
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er')}
