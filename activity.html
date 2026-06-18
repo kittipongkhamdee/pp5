@@ -2468,16 +2468,22 @@ async function renderUnifRptSummary(){
     const totalFail=rows.filter(r=>r.status==='fail').length;
     const totalAbsent=rows.filter(r=>r.status==='absent').length;
     const pct=(n,d)=>d>0?(n/d*100).toFixed(1)+'%':'—';
-    const violFreq={};const stuFail={};
+
+    // Build violation → students map, sorted by class
+    const violStudents={};
     rows.filter(r=>r.status==='fail').forEach(r=>{
-      if(!stuFail[r.student_id])stuFail[r.student_id]={count:0,viols:{}};
-      stuFail[r.student_id].count++;
+      const stu=S.students.find(s=>String(s.id)===String(r.student_id));
+      if(!stu)return;
       const vcvs=r.uniform_check_violations||[];
-      if(vcvs.length){
-        vcvs.forEach(cv=>{const vn=cv.uniform_violations?.name||'ไม่ระบุ';violFreq[vn]=(violFreq[vn]||0)+1;stuFail[r.student_id].viols[vn]=(stuFail[r.student_id].viols[vn]||0)+1});
-      }else{violFreq['ไม่ระบุ']=(violFreq['ไม่ระบุ']||0)+1;stuFail[r.student_id].viols['ไม่ระบุ']=(stuFail[r.student_id].viols['ไม่ระบุ']||0)+1}
+      const names=vcvs.length?vcvs.map(cv=>cv.uniform_violations?.name||'ไม่ระบุ'):['ไม่ระบุ'];
+      names.forEach(vn=>{if(!violStudents[vn])violStudents[vn]=[];violStudents[vn].push(stu)});
     });
-    const topViols=Object.entries(violFreq).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    Object.values(violStudents).forEach(arr=>arr.sort((a,b)=>{
+      const k=s=>`${String(s.grade_level).padStart(2,'0')}_${String(s.room).padStart(2,'0')}_${s.student_code}`;
+      return k(a).localeCompare(k(b));
+    }));
+    const sortedViols=Object.entries(violStudents).sort((a,b)=>b[1].length-a[1].length);
+
     let body=`
       <div class="unif-sr-header"><div class="unif-sr-school">${esc(S.schoolName||'')}</div>
         <div class="unif-sr-title">รายงานการตรวจเครื่องแต่งกาย</div>
@@ -2489,33 +2495,29 @@ async function renderUnifRptSummary(){
         <div class="stat-box s-absent"><div class="stat-num red">${totalFail}</div><div class="stat-lbl">ไม่ผ่าน</div></div>
         <div class="stat-box s-late"><div class="stat-num orange">${totalAbsent}</div><div class="stat-lbl">ขาด</div></div>
       </div>
-      <div style="text-align:center;font-size:22px;font-weight:800;margin-bottom:14px;color:${totalPass/Math.max(rows.length,1)>=0.9?'var(--green)':'var(--red)'}">ร้อยละผ่าน ${pct(totalPass,rows.length)}</div>`;
-    if(topViols.length){
-      body+=`<div style="font-size:13px;font-weight:700;margin-bottom:8px">ความผิดระเบียบที่พบบ่อย (Top 5)</div><div class="card" style="margin-bottom:14px">`;
-      topViols.forEach(([name,cnt],i)=>{
-        const barW=Math.round(cnt/topViols[0][1]*100);
-        body+=`<div class="card-row" style="flex-direction:column;align-items:stretch;padding:10px 14px">
-          <div style="display:flex;justify-content:space-between;margin-bottom:5px">
-            <span style="font-size:13px;font-weight:600">${i+1}. ${esc(name)}</span>
-            <span style="font-size:13px;font-weight:700;color:var(--red)">${cnt} ครั้ง</span>
+      <div style="text-align:center;font-size:22px;font-weight:800;margin-bottom:16px;color:${totalPass/Math.max(rows.length,1)>=0.9?'var(--green)':'var(--red)'}">ร้อยละผ่าน ${pct(totalPass,rows.length)}</div>`;
+
+    if(sortedViols.length){
+      body+=`<div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--txt)">รายละเอียดความผิดระเบียบ แยกตามประเภท</div>`;
+      sortedViols.forEach(([vname,stus])=>{
+        body+=`<div style="margin-bottom:14px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <span style="background:rgba(220,38,38,.1);color:var(--red);font-size:13px;font-weight:700;padding:3px 10px;border-radius:20px">${esc(vname)}</span>
+            <span style="font-size:13px;font-weight:600;color:var(--red)">${stus.length} คน</span>
           </div>
-          <div style="height:6px;border-radius:3px;background:var(--sep)"><div style="height:6px;border-radius:3px;background:var(--red);width:${barW}%"></div></div>
-        </div>`;
+          <div class="table-wrap"><table class="unif-rpt-table">
+            <thead><tr><th style="width:32px">#</th><th>ชั้น</th><th class="left">ชื่อ-สกุล</th><th>รหัส</th></tr></thead>
+            <tbody>`;
+        stus.forEach((s,i)=>{
+          body+=`<tr>
+            <td class="grey">${i+1}</td>
+            <td class="nowrap">${classLabel(s.grade_level,s.room)}</td>
+            <td class="left">${esc(s.student_name)}</td>
+            <td class="grey" style="font-size:12px">${esc(s.student_code)}</td>
+          </tr>`;
+        });
+        body+=`</tbody></table></div></div>`;
       });
-      body+=`</div>`;
-    }
-    if(Object.keys(stuFail).length){
-      const stuList=Object.entries(stuFail).sort((a,b)=>b[1].count-a[1].count).slice(0,20);
-      body+=`<div style="font-size:13px;font-weight:700;margin-bottom:8px">นักเรียนที่ผิดระเบียบบ่อยสุด</div><div class="card" style="margin-bottom:14px">`;
-      stuList.forEach(([sid,data])=>{
-        const stu=S.students.find(s=>String(s.id)===String(sid))||{student_name:'?',student_code:'?'};
-        const vSummary=Object.entries(data.viols).map(([k,v])=>k+(v>1?'('+v+')':'')).join(', ');
-        body+=`<div class="card-row"><div class="card-row-info">
-          <div class="card-row-name">${esc(stu.student_name)}</div>
-          <div class="card-row-sub">${esc(stu.student_code)} · ${esc(vSummary)}</div>
-        </div><div style="font-size:14px;font-weight:700;color:var(--red)">${data.count} ครั้ง</div></div>`;
-      });
-      body+=`</div>`;
     }
     if(!rows.length) body+=`<div class="empty-state">ไม่มีข้อมูลในช่วงเวลานี้</div>`;
     $('unif-rpt-summary-doc').innerHTML=body;
