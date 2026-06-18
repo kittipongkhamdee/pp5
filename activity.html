@@ -51,8 +51,10 @@ html[data-theme="dark"],html[data-theme="dark"] body{background:linear-gradient(
 }
 html[data-theme="dark"] #topbar{background:rgba(17,24,39,0.82);border-bottom-color:rgba(255,255,255,0.07);box-shadow:0 1px 0 rgba(0,0,0,0.3)}
 @media(prefers-color-scheme:dark){html:not([data-theme="light"]) #topbar{background:rgba(17,24,39,0.82);border-bottom-color:rgba(255,255,255,0.07);box-shadow:0 1px 0 rgba(0,0,0,0.3)}}
-#topbar-title{font-size:18px;font-weight:700;letter-spacing:-.4px;color:var(--txt)}
-#topbar-sub{font-size:13px;color:var(--txt2);margin-top:1px}
+#topbar-title{font-size:18px;font-weight:700;letter-spacing:-.4px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#topbar-sub{font-size:12px;color:var(--txt2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#clock-mobile{display:none;font-size:12px;font-weight:700;color:var(--primary);flex-shrink:0;margin-top:1px}
+@media(max-width:1023px){#clock-mobile{display:inline}}
 
 /* ── Pages ── */
 .page{flex:1;display:none;flex-direction:column;overflow:hidden}
@@ -620,9 +622,12 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
         <div id="app-logo" style="flex-shrink:0">
           <svg width="30" height="30" viewBox="0 0 32 32"><defs><linearGradient id="appGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#3B82F6"/><stop offset="100%" stop-color="#818CF8"/></linearGradient></defs><rect width="32" height="32" rx="9" fill="url(#appGrad)"/><rect x="9" y="10" width="14" height="13" rx="2" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.6"/><path d="M13 9v2.5M19 9v2.5" stroke="white" stroke-width="1.6" stroke-linecap="round"/><path d="M9.5 14.5h13" stroke="rgba(255,255,255,0.65)" stroke-width="1.2"/><path d="M12.5 18l2.5 2.5 4.5-4" stroke="white" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
-        <div>
+        <div style="min-width:0">
           <div id="topbar-title">ระบบเช็คชื่อกิจกรรม</div>
-          <div id="topbar-sub"></div>
+          <div style="display:flex;align-items:center;gap:5px;min-width:0">
+            <div id="topbar-sub"></div>
+            <span id="clock-mobile"></span>
+          </div>
         </div>
       </div>
     </div>
@@ -2040,9 +2045,11 @@ function startClock(){
   const M=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
   function tick(){
     const n=new Date();
-    const cd=$('clock-date'),ct=$('clock-time');if(!ct)return;
+    const hh=String(n.getHours()).padStart(2,'0'),mm=String(n.getMinutes()).padStart(2,'0'),ss=String(n.getSeconds()).padStart(2,'0');
+    const cd=$('clock-date'),ct=$('clock-time'),cm=$('clock-mobile');if(!ct)return;
     cd.textContent=`วัน${D[n.getDay()]} ${n.getDate()} ${M[n.getMonth()]} ${n.getFullYear()+543}`;
-    ct.textContent=`${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}:${String(n.getSeconds()).padStart(2,'0')}`;
+    ct.textContent=`${hh}:${mm}:${ss}`;
+    if(cm)cm.textContent=`· ${hh}:${mm}`;
   }
   tick();setInterval(tick,1000);
 }
