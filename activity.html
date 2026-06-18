@@ -95,8 +95,37 @@ html[data-theme="dark"] .ios-select,html[data-theme="dark"] .ios-input{backgroun
 }
 .nav-item.active{color:var(--primary)}
 .nav-item svg{width:22px;height:22px}
-.nav-item span{font-size:10px;font-weight:500}
+.nav-item span{font-size:9.5px;font-weight:500}
 .nav-item.active span{font-weight:700}
+
+/* ── Uniform Inspection ── */
+.unif-wrap{display:flex;flex-direction:column;height:100%}
+.unif-tabs{display:flex;border-bottom:1px solid var(--sep);background:var(--card);flex-shrink:0}
+.unif-tab{flex:1;padding:11px 0;font-size:13px;font-weight:600;color:var(--txt2);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:inherit;transition:color .15s}
+.unif-tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+.unif-controls{display:flex;flex-direction:column;gap:8px;padding:10px 16px;flex-shrink:0;background:var(--card);border-bottom:1px solid var(--sep)}
+.unif-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:10px 16px;background:var(--card2);border-bottom:1px solid var(--sep);flex-shrink:0}
+.unif-stat{display:flex;flex-direction:column;align-items:center;gap:1px}
+.unif-stat-val{font-size:18px;font-weight:800;color:var(--txt)}
+.unif-stat-lbl{font-size:9.5px;color:var(--txt2);font-weight:500;text-align:center}
+.unif-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.unif-row{display:flex;align-items:flex-start;gap:10px;padding:10px 16px;border-bottom:1px solid var(--sep)}
+.unif-row:last-child{border-bottom:none}
+.unif-num{font-size:12px;color:var(--txt3);width:20px;flex-shrink:0;padding-top:3px;text-align:right}
+.unif-info{flex:1;min-width:0}
+.unif-name{font-size:14px;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.unif-meta{font-size:11px;color:var(--txt3);margin-top:1px}
+.unif-fail-detail{display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap}
+.unif-fail-detail select,.unif-fail-detail input{font-size:11.5px;padding:4px 8px;border:1px solid var(--sep);border-radius:8px;background:var(--card);color:var(--txt);font-family:inherit;outline:none}
+.unif-fail-detail select{max-width:160px}
+.unif-fail-detail input{max-width:130px}
+.unif-btns{display:flex;gap:5px;flex-shrink:0}
+.ub{padding:5px 11px;border:none;border-radius:18px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .12s;background:var(--card2);color:var(--txt2)}
+.ub.pass{background:rgba(5,150,105,.1);color:var(--green)}
+.ub.pass.active{background:var(--green);color:#fff}
+.ub.fail{background:rgba(220,38,38,.08);color:var(--red)}
+.ub.fail.active{background:var(--red);color:#fff}
+.unif-rpt-doc{background:var(--card);border-radius:var(--radius);border:1px solid var(--sep);padding:16px;margin:12px 16px}
 
 /* ── Cards / Lists ── */
 .section{padding:16px 20px 0}
@@ -651,6 +680,10 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-5-5z"/><path d="M14 2v6h6"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="12" y2="17"/></svg>
       รายงาน
     </button>
+    <button class="side-nav-item" data-nav="uniform" onclick="nav('uniform')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H5v10a2 2 0 002 2h10a2 2 0 002-2V10h1.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>
+      แต่งกาย
+    </button>
   </nav>
   <div id="pages-wrap">
 
@@ -721,6 +754,31 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
     <div class="page-scroll" id="admin-content"></div>
   </div>
 
+  <!-- ═══ UNIFORM PAGE ═══ -->
+  <div class="page" id="uniform-page">
+    <div class="unif-wrap">
+      <div class="unif-tabs">
+        <button class="unif-tab active" id="unif-tab-check" onclick="switchUnifTab('check')">ตรวจเครื่องแต่งกาย</button>
+        <button class="unif-tab" id="unif-tab-report" onclick="switchUnifTab('report')">รายงาน</button>
+      </div>
+      <div id="unif-check-section" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+        <div class="unif-controls">
+          <div style="display:flex;gap:8px">
+            <input type="date" class="ios-select" style="flex:1" id="unif-date-inp" onchange="S.unifDate=this.value;onUnifClassChange()">
+            <select class="ios-select" style="flex:1.4" id="unif-class-sel" onchange="S.unifClass=this.value||null;onUnifClassChange()">
+              <option value="">-- เลือกชั้นเรียน --</option>
+            </select>
+          </div>
+        </div>
+        <div class="unif-stats" id="unif-stats"></div>
+        <div class="unif-list" id="unif-list"></div>
+      </div>
+      <div id="unif-report-section" style="display:none;flex:1;overflow-y:auto">
+        <div id="unif-rpt-content" class="page-scroll"></div>
+      </div>
+    </div>
+  </div>
+
   </div><!-- /pages-wrap -->
 
   <!-- ═══ BOTTOM NAV ═══ -->
@@ -740,6 +798,10 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
     <button class="nav-item" data-nav="report" id="nav-report" onclick="nav('report')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-5-5z"/><path d="M14 2v6h6"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="12" y2="17"/></svg>
       <span>รายงาน</span>
+    </button>
+    <button class="nav-item" data-nav="uniform" id="nav-uniform" onclick="nav('uniform')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H5v10a2 2 0 002 2h10a2 2 0 002-2V10h1.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>
+      <span>แต่งกาย</span>
     </button>
   </nav>
   </div><!-- /app-body -->
@@ -770,6 +832,30 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
       <div class="toggle-row">
         <label>เปิดใช้งาน</label>
         <input type="checkbox" class="ios-toggle" id="modal-act-active" checked>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Violation Modal -->
+<div class="modal-overlay" id="violation-modal">
+  <div class="modal-sheet">
+    <div class="modal-hd">
+      <button onclick="closeViolationModal()">ยกเลิก</button>
+      <div class="modal-hd-title" id="violation-modal-title">เพิ่มประเภทความผิด</div>
+      <button onclick="saveViolation()" style="font-weight:700">บันทึก</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="modal-viol-id">
+      <div class="form-group">
+        <label class="form-label">ชื่อประเภทความผิดระเบียบ</label>
+        <input type="text" class="ios-input" id="modal-viol-name" placeholder="เช่น ผมยาว, ไม่สวมเนคไท">
+      </div>
+      <div class="form-group">
+        <label class="form-label" style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="modal-viol-active" checked style="accent-color:var(--primary)">
+          เปิดใช้งาน
+        </label>
       </div>
     </div>
   </div>
@@ -854,6 +940,8 @@ const S={
   ckActivityId:null,ckDate:todayStr(),ckSession:'morning',ckAttend:{},ckFilter:'',
   rptTab:'activity',rptActivityId:null,rptDate:todayStr(),rptSession:'morning',rptStuId:null,rptStuClass:null,rptStuSearch:'',rptStuActivityId:null,rptSchoolData:null,rptActData:null,rptStuData:null,rptPctData:null,rptPctThreshold:80,rptPctActivityId:null,rptPctClass:null,
   rptClassActivityId:null,rptClassClass:null,rptClassDate:null,rptClassSession:'morning',rptClassData:null,
+  unifViolations:[],unifDate:todayStr(),unifClass:null,unifChecks:{},unifTab:'check',
+  unifRptDate:todayStr(),unifRptDateEnd:todayStr(),unifRptClass:null,
   page:'home',
 };
 
@@ -916,6 +1004,21 @@ async function loadAttend(actId,date,session){
   S.attendCache[key]=map;
   return map;
 }
+async function loadViolations(){
+  try{S.unifViolations=await q(sb.from('uniform_violations').select('id,name,is_active').order('id'))}
+  catch(e){S.unifViolations=[]}
+}
+async function loadUniformChecks(date,classKey){
+  if(!date||!classKey)return{};
+  const[gl,r]=classKey.split('_');
+  const stuIds=S.students.filter(s=>String(s.grade_level)===gl&&String(s.room)===r).map(s=>s.id);
+  if(!stuIds.length)return{};
+  try{
+    const rows=await q(sb.from('uniform_checks').select('id,student_id,status,violation_id,note').eq('date',date).in('student_id',stuIds));
+    const map={};rows.forEach(r=>{map[r.student_id]={id:r.id,status:r.status,violation_id:r.violation_id,note:r.note||''}});
+    return map;
+  }catch(e){return{}}
+}
 
 // ─── PIN ───────────────────────────────────────────────────────────────────
 let _pinBuf='';
@@ -958,7 +1061,7 @@ function nav(page){
   S.page=page;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item,.side-nav-item').forEach(n=>n.classList.remove('active'));
-  const titles={home:'ระบบเช็คชื่อกิจกรรม',checkin:'เช็คชื่อ',school:'ทั้งโรงเรียน',report:'รายงาน',admin:'จัดการกิจกรรม'};
+  const titles={home:'ระบบเช็คชื่อกิจกรรม',checkin:'เช็คชื่อ',school:'ทั้งโรงเรียน',report:'รายงาน',admin:'จัดการกิจกรรม',uniform:'แต่งกาย'};
   $('topbar-title').textContent=titles[page]||'';
   if(page==='school'){
     $('report-page').classList.add('active');
@@ -973,6 +1076,7 @@ function nav(page){
     else if(page==='checkin')renderCheckin();
     else if(page==='report')renderReport();
     else if(page==='admin')renderAdmin();
+    else if(page==='uniform')renderUniform();
   }
 }
 
@@ -1989,6 +2093,32 @@ function renderAdmin(){
       </div>
     </div>
   </div>`;
+  // Violations section
+  h+=`<div class="section" style="margin-top:16px">
+    <div class="admin-hd">
+      <div class="admin-hd-title">ประเภทความผิดระเบียบ (เครื่องแต่งกาย)</div>
+      <button class="btn btn-blue btn-sm" onclick="showViolationModal(null)">+ เพิ่ม</button>
+    </div>`;
+  if(!S.unifViolations.length){
+    h+=`<div class="empty-state">ยังไม่มีประเภทความผิด<small>กด "+ เพิ่ม" เพื่อสร้าง</small></div>`;
+  }else{
+    h+=`<div class="card">`;
+    S.unifViolations.forEach(v=>{
+      h+=`<div class="card-row">
+        <div class="card-row-icon" style="background:rgba(220,38,38,.1);color:var(--red)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+        <div class="card-row-info">
+          <div class="card-row-name">${esc(v.name)}</div>
+          <div class="card-row-sub">${v.is_active?'<span style="color:var(--green)">เปิดใช้งาน</span>':'<span style="color:var(--txt3)">ปิด</span>'}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button class="icon-btn" onclick="showViolationModal(${v.id})"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 014 4L7.5 20.5 3 21l.5-4.5L17 3z"/></svg></button>
+          <button class="icon-btn red" onclick="deleteViolation(${v.id})"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button>
+        </div>
+      </div>`;
+    });
+    h+=`</div>`;
+  }
+  h+=`</div>`;
   $('admin-content').innerHTML=h;
 }
 
@@ -2083,10 +2213,283 @@ async function confirmLogout(){
   }finally{loading(false)}
 }
 
+// ─── UNIFORM INSPECTION ────────────────────────────────────────────────────
+
+function switchUnifTab(tab){
+  S.unifTab=tab;
+  $('unif-tab-check').classList.toggle('active',tab==='check');
+  $('unif-tab-report').classList.toggle('active',tab==='report');
+  $('unif-check-section').style.display=tab==='check'?'flex':'none';
+  $('unif-report-section').style.display=tab==='report'?'block':'none';
+  if(tab==='report')renderUnifReport();
+}
+
+async function renderUniform(){
+  $('unif-date-inp').value=S.unifDate;
+  const sel=$('unif-class-sel');
+  sel.innerHTML=`<option value="">-- เลือกชั้นเรียน --</option>`+
+    S.classes.map(c=>{
+      const k=`${c.grade_level}_${c.room}`;
+      return`<option value="${k}"${S.unifClass===k?' selected':''}>${classLabel(c.grade_level,c.room)}</option>`;
+    }).join('');
+  switchUnifTab(S.unifTab);
+  if(S.unifTab==='check') await renderUnifCheck();
+}
+
+async function renderUnifCheck(){
+  updateUnifStats({});
+  if(!S.unifClass){
+    $('unif-list').innerHTML=`<div class="empty-state">เลือกชั้นเรียนเพื่อเริ่มตรวจ<small>กรุณาเลือกชั้นเรียนด้านบน</small></div>`;
+    $('unif-stats').innerHTML='';
+    return;
+  }
+  loading(true);
+  try{S.unifChecks=await loadUniformChecks(S.unifDate,S.unifClass)}
+  finally{loading(false)}
+  renderUnifList();
+}
+
+async function onUnifClassChange(){
+  if(S.unifTab==='check') await renderUnifCheck();
+  else renderUnifReport();
+}
+
+function renderUnifList(){
+  const[gl,r]=(S.unifClass||'_').split('_');
+  const stus=S.students.filter(s=>String(s.grade_level)===gl&&String(s.room)===r);
+  const viols=S.unifViolations.filter(v=>v.is_active);
+
+  let h='';
+  stus.forEach((s,i)=>{
+    const chk=S.unifChecks[s.id]||{};
+    const st=chk.status||'';
+    const note=chk.note||'';
+    const vSel=viols.map(v=>`<option value="${v.id}"${chk.violation_id==v.id?' selected':''}>${esc(v.name)}</option>`).join('');
+    const failDetail=st==='fail'?`<div class="unif-fail-detail">
+      <select onchange="setUnifViolation(${s.id},this.value)">
+        <option value="">-- ประเภทความผิด --</option>${vSel}
+      </select>
+      <input type="text" placeholder="หมายเหตุ" value="${esc(note)}" maxlength="60"
+        onchange="setUnifNote(${s.id},this.value)" oninput="setUnifNote(${s.id},this.value)">
+    </div>`:'';
+    h+=`<div class="unif-row" id="urow-${s.id}">
+      <div class="unif-num">${i+1}</div>
+      <div class="unif-info">
+        <div class="unif-name">${esc(s.student_name)}</div>
+        <div class="unif-meta">${esc(s.student_code)}</div>
+        ${failDetail}
+      </div>
+      <div class="unif-btns">
+        <button class="ub pass${st==='pass'?' active':''}" onclick="setUnifStatus(${s.id},'pass')">✓ ผ่าน</button>
+        <button class="ub fail${st==='fail'?' active':''}" onclick="setUnifStatus(${s.id},'fail')">✗ ไม่ผ่าน</button>
+      </div>
+    </div>`;
+  });
+  $('unif-list').innerHTML=h||`<div class="empty-state">ไม่พบนักเรียนในชั้นนี้</div>`;
+  updateUnifStats(S.unifChecks);
+}
+
+function updateUnifStats(checks){
+  const[gl,r]=(S.unifClass||'_').split('_');
+  const total=S.unifClass?S.students.filter(s=>String(s.grade_level)===gl&&String(s.room)===r).length:0;
+  const vals=Object.values(checks||{});
+  const pass=vals.filter(v=>v.status==='pass').length;
+  const fail=vals.filter(v=>v.status==='fail').length;
+  const none=total-pass-fail;
+  $('unif-stats').innerHTML=`
+    <div class="unif-stat"><div class="unif-stat-val">${total}</div><div class="unif-stat-lbl">ทั้งหมด</div></div>
+    <div class="unif-stat"><div class="unif-stat-val" style="color:var(--green)">${pass}</div><div class="unif-stat-lbl">ผ่าน</div></div>
+    <div class="unif-stat"><div class="unif-stat-val" style="color:var(--red)">${fail}</div><div class="unif-stat-lbl">ไม่ผ่าน</div></div>
+    <div class="unif-stat"><div class="unif-stat-val" style="color:var(--txt3)">${none}</div><div class="unif-stat-lbl">ยังไม่ตรวจ</div></div>`;
+}
+
+async function setUnifStatus(stuId,status){
+  const prev=S.unifChecks[stuId]||{};
+  // Toggle off if same status
+  if(prev.status===status){
+    if(prev.id){
+      try{await q(sb.from('uniform_checks').delete().eq('id',prev.id))}catch(e){}
+    }
+    delete S.unifChecks[stuId];
+    renderUnifList();
+    return;
+  }
+  const payload={student_id:stuId,date:S.unifDate,status,violation_id:status==='pass'?null:(prev.violation_id||null),note:status==='pass'?null:(prev.note||null),updated_at:new Date().toISOString()};
+  try{
+    if(prev.id){
+      await q(sb.from('uniform_checks').update(payload).eq('id',prev.id));
+      S.unifChecks[stuId]={...S.unifChecks[stuId],...payload};
+    }else{
+      const rows=await q(sb.from('uniform_checks').insert(payload).select('id'));
+      S.unifChecks[stuId]={id:rows[0].id,...payload};
+    }
+  }catch(e){toast('บันทึกไม่สำเร็จ: '+e.message,'er');return}
+  renderUnifList();
+}
+
+async function setUnifViolation(stuId,violId){
+  const chk=S.unifChecks[stuId];if(!chk||chk.status!=='fail')return;
+  const val=violId?+violId:null;
+  chk.violation_id=val;
+  if(chk.id){
+    try{await q(sb.from('uniform_checks').update({violation_id:val,updated_at:new Date().toISOString()}).eq('id',chk.id))}
+    catch(e){toast('บันทึกไม่สำเร็จ','er')}
+  }
+}
+
+async function setUnifNote(stuId,note){
+  const chk=S.unifChecks[stuId];if(!chk||chk.status!=='fail')return;
+  chk.note=note;
+  if(chk.id){
+    try{await q(sb.from('uniform_checks').update({note,updated_at:new Date().toISOString()}).eq('id',chk.id))}
+    catch(e){}
+  }
+}
+
+async function renderUnifReport(){
+  const el=$('unif-rpt-content');
+  const dateFrom=S.unifRptDate,dateTo=S.unifRptDateEnd;
+  let h=`<div class="section" style="padding-top:16px">
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--txt2)">
+        <span>ตั้งแต่</span>
+        <input type="date" class="ios-select" value="${dateFrom}" style="max-width:150px"
+          onchange="S.unifRptDate=this.value;renderUnifReport()">
+        <span>ถึง</span>
+        <input type="date" class="ios-select" value="${dateTo}" style="max-width:150px"
+          onchange="S.unifRptDateEnd=this.value;renderUnifReport()">
+      </div>
+      <select class="ios-select" style="max-width:200px"
+        onchange="S.unifRptClass=this.value||null;renderUnifReport()">
+        <option value="">ทุกชั้นเรียน</option>
+        ${S.classes.map(c=>`<option value="${c.grade_level}_${c.room}"${S.unifRptClass===c.grade_level+'_'+c.room?' selected':''}>${classLabel(c.grade_level,c.room)}</option>`).join('')}
+      </select>
+      <button class="btn bs" onclick="_captureImage('unif-rpt-doc','รายงานแต่งกาย_'+S.unifRptDate+'_'+S.unifRptDateEnd+'.png')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>บันทึกรูป
+      </button>
+    </div>`;
+  loading(true);
+  try{
+    let qb=sb.from('uniform_checks').select('student_id,date,status,violation_id,uniform_violations(name)').gte('date',dateFrom).lte('date',dateTo).order('date');
+    if(S.unifRptClass){
+      const[gl,r]=S.unifRptClass.split('_');
+      const ids=S.students.filter(s=>String(s.grade_level)===gl&&String(s.room)===r).map(s=>s.id);
+      if(ids.length) qb=qb.in('student_id',ids);
+    }
+    const rows=await q(qb);
+    loading(false);
+
+    // Build per-student fail counts
+    const stuFail={};
+    rows.filter(r=>r.status==='fail').forEach(r=>{
+      if(!stuFail[r.student_id]) stuFail[r.student_id]={count:0,viols:{}};
+      stuFail[r.student_id].count++;
+      const vn=r.uniform_violations?.name||'ไม่ระบุ';
+      stuFail[r.student_id].viols[vn]=(stuFail[r.student_id].viols[vn]||0)+1;
+    });
+
+    const totalPass=rows.filter(r=>r.status==='pass').length;
+    const totalFail=rows.filter(r=>r.status==='fail').length;
+
+    // Violation frequency
+    const violFreq={};
+    rows.filter(r=>r.status==='fail').forEach(r=>{
+      const vn=r.uniform_violations?.name||'ไม่ระบุ';
+      violFreq[vn]=(violFreq[vn]||0)+1;
+    });
+    const topViols=Object.entries(violFreq).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+    h+=`<div id="unif-rpt-doc">
+      <div style="text-align:center;font-size:15px;font-weight:800;margin-bottom:4px">${esc(S.schoolName||'')}</div>
+      <div style="text-align:center;font-size:13px;color:var(--txt2);margin-bottom:12px">รายงานการตรวจเครื่องแต่งกาย ${thDate(dateFrom)}${dateFrom!==dateTo?' — '+thDate(dateTo):''}</div>
+      <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+        <div class="unif-stat" style="flex:1;background:rgba(5,150,105,.08);border-radius:10px;padding:10px"><div class="unif-stat-val" style="color:var(--green)">${totalPass}</div><div class="unif-stat-lbl">ผ่านทั้งหมด</div></div>
+        <div class="unif-stat" style="flex:1;background:rgba(220,38,38,.08);border-radius:10px;padding:10px"><div class="unif-stat-val" style="color:var(--red)">${totalFail}</div><div class="unif-stat-lbl">ไม่ผ่านทั้งหมด</div></div>
+        <div class="unif-stat" style="flex:1;background:var(--card2);border-radius:10px;padding:10px"><div class="unif-stat-val">${rows.length}</div><div class="unif-stat-lbl">บันทึกทั้งหมด</div></div>
+      </div>`;
+
+    if(topViols.length){
+      h+=`<div style="font-size:13px;font-weight:700;margin-bottom:8px">ความผิดระเบียบที่พบบ่อย</div>
+      <div class="card" style="margin-bottom:14px">`;
+      topViols.forEach(([name,cnt],i)=>{
+        h+=`<div class="card-row"><div class="card-row-icon" style="background:rgba(220,38,38,.1);color:var(--red);font-size:13px;font-weight:800">${i+1}</div>
+          <div class="card-row-info"><div class="card-row-name">${esc(name)}</div></div>
+          <div style="font-size:14px;font-weight:700;color:var(--red)">${cnt} ครั้ง</div></div>`;
+      });
+      h+=`</div>`;
+    }
+
+    if(Object.keys(stuFail).length){
+      const stuList=Object.entries(stuFail).sort((a,b)=>b[1].count-a[1].count).slice(0,20);
+      h+=`<div style="font-size:13px;font-weight:700;margin-bottom:8px">นักเรียนที่ถูกบันทึกบ่อยสุด</div>
+      <div class="card" style="margin-bottom:14px">`;
+      stuList.forEach(([sid,data])=>{
+        const stu=S.students.find(s=>s.id==sid)||{student_name:'?',student_code:'?'};
+        const vSummary=Object.entries(data.viols).map(([k,v])=>k+'('+v+')').join(', ');
+        h+=`<div class="card-row"><div class="card-row-info">
+          <div class="card-row-name">${esc(stu.student_name)}</div>
+          <div class="card-row-sub">${esc(stu.student_code)} · ${esc(vSummary)}</div>
+        </div><div style="font-size:14px;font-weight:700;color:var(--red)">${data.count} ครั้ง</div></div>`;
+      });
+      h+=`</div>`;
+    }
+
+    if(!rows.length) h+=`<div class="empty-state">ไม่มีข้อมูลในช่วงเวลานี้</div>`;
+    h+=`</div>`;
+  }catch(e){
+    loading(false);
+    h+=`<div class="empty-state">ไม่สามารถโหลดข้อมูลได้<small>${esc(e.message)}</small></div>`;
+  }
+  h+=`</div>`;
+  el.innerHTML=h;
+}
+
+// ─── VIOLATION CRUD ────────────────────────────────────────────────────────
+function showViolationModal(id){
+  const v=id?S.unifViolations.find(x=>x.id===id):null;
+  $('modal-viol-id').value=id||'';
+  $('modal-viol-name').value=v?.name||'';
+  $('modal-viol-active').checked=v?v.is_active:true;
+  $('violation-modal-title').textContent=id?'แก้ไขประเภทความผิด':'เพิ่มประเภทความผิด';
+  $('violation-modal').classList.add('open');
+  setTimeout(()=>$('modal-viol-name').focus(),100);
+}
+function closeViolationModal(){$('violation-modal').classList.remove('open')}
+
+async function saveViolation(){
+  const id=$('modal-viol-id').value;
+  const name=$('modal-viol-name').value.trim();
+  if(!name){toast('กรุณาใส่ชื่อประเภทความผิด','er');return}
+  const payload={name,is_active:$('modal-viol-active').checked};
+  loading(true);
+  try{
+    if(id) await q(sb.from('uniform_violations').update(payload).eq('id',+id));
+    else    await q(sb.from('uniform_violations').insert(payload));
+    await loadViolations();
+    closeViolationModal();
+    renderAdmin();
+    toast(id?'แก้ไขเรียบร้อย':'เพิ่มประเภทความผิดแล้ว');
+  }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er')}
+  finally{loading(false)}
+}
+
+async function deleteViolation(id){
+  const v=S.unifViolations.find(x=>x.id===id);
+  if(!confirm(`ลบ "${v?.name||''}"?`))return;
+  loading(true);
+  try{
+    await q(sb.from('uniform_violations').delete().eq('id',id));
+    await loadViolations();
+    renderAdmin();
+    toast('ลบแล้ว');
+  }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er')}
+  finally{loading(false)}
+}
+
 async function loadAppData(){
   loading(true);
   try{
-    const[actR,stuR,nameR,pinR]=await Promise.allSettled([loadActivities(),loadStudents(),loadSchoolName(),loadAdminPin()]);
+    const[actR,stuR,nameR,pinR]=await Promise.allSettled([loadActivities(),loadStudents(),loadSchoolName(),loadAdminPin(),loadViolations()]);
     if(actR.status==='rejected')throw actR.reason;
     if(stuR.status==='rejected')throw stuR.reason;
     const sn=$('side-school-name');if(sn)sn.textContent=S.schoolName;
