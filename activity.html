@@ -53,8 +53,6 @@ html[data-theme="dark"] #topbar{background:rgba(17,24,39,0.82);border-bottom-col
 @media(prefers-color-scheme:dark){html:not([data-theme="light"]) #topbar{background:rgba(17,24,39,0.82);border-bottom-color:rgba(255,255,255,0.07);box-shadow:0 1px 0 rgba(0,0,0,0.3)}}
 #topbar-title{font-size:18px;font-weight:700;letter-spacing:-.4px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #topbar-sub{font-size:12px;color:var(--txt2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#clock-mobile{display:none;font-size:12px;font-weight:700;color:var(--primary);flex-shrink:0;margin-top:1px}
-@media(max-width:1023px){#clock-mobile{display:inline}}
 
 /* ── Pages ── */
 .page{flex:1;display:none;flex-direction:column;overflow:hidden}
@@ -624,10 +622,7 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
         </div>
         <div style="min-width:0">
           <div id="topbar-title">ระบบเช็คชื่อกิจกรรม</div>
-          <div style="display:flex;align-items:center;gap:5px;min-width:0">
-            <div id="topbar-sub"></div>
-            <span id="clock-mobile"></span>
-          </div>
+          <div id="topbar-sub"></div>
         </div>
       </div>
     </div>
@@ -2058,10 +2053,9 @@ function startClock(){
   function tick(){
     const n=new Date();
     const hh=String(n.getHours()).padStart(2,'0'),mm=String(n.getMinutes()).padStart(2,'0'),ss=String(n.getSeconds()).padStart(2,'0');
-    const cd=$('clock-date'),ct=$('clock-time'),cm=$('clock-mobile');if(!ct)return;
+    const cd=$('clock-date'),ct=$('clock-time');if(!ct)return;
     cd.textContent=`วัน${D[n.getDay()]} ${n.getDate()} ${M[n.getMonth()]} ${n.getFullYear()+543}`;
     ct.textContent=`${hh}:${mm}:${ss}`;
-    if(cm)cm.textContent=`· ${hh}:${mm}`;
     const ht=$('hclock-time'),hday=$('hclock-day'),hdt=$('hclock-date');
     if(ht)ht.textContent=`${hh}:${mm}:${ss}`;
     if(hday)hday.textContent=`วัน${D[n.getDay()]}`;
