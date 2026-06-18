@@ -2716,15 +2716,14 @@ async function renderUnifRptSchool(){
       <div class="stat-box s-late"><div class="stat-num orange">${totAbsent}</div><div class="stat-lbl">ขาด</div></div>
     </div>
     <div class="table-wrap"><table class="unif-rpt-table">
-      <thead><tr><th class="left nowrap">ชั้นเรียน</th><th>นักเรียน</th><th>ผ่าน</th><th>ไม่ผ่าน</th><th>ขาด</th><th>ยังไม่ตรวจ</th><th>%ผ่าน</th></tr></thead>
+      <thead><tr><th class="left nowrap">ชั้นเรียน</th><th>นักเรียน</th><th>ผ่าน</th><th>ไม่ผ่าน</th><th>ขาด</th><th>%ผ่าน</th></tr></thead>
       <tbody>`;
     entries.forEach(c=>{
       const rec=c.pass+c.fail+c.absent;
-      const notChecked=c.total-rec;
       const pctNum=rec>0?c.pass/rec:null;
       const pctCls=pctNum===null?'grey':pctNum>=0.9?'green':'red';
       if(rec===0){
-        body+=`<tr><td class="left nowrap">${classLabel(c.gl,c.r)}</td><td>${c.total}</td><td colspan="5" class="not-checked">ยังไม่ตรวจ</td></tr>`;
+        body+=`<tr><td class="left nowrap">${classLabel(c.gl,c.r)}</td><td>${c.total}</td><td colspan="4" class="not-checked">ยังไม่ตรวจ</td></tr>`;
       }else{
         body+=`<tr>
           <td class="left nowrap">${classLabel(c.gl,c.r)}</td>
@@ -2732,16 +2731,14 @@ async function renderUnifRptSchool(){
           <td class="green">${c.pass}</td>
           <td class="red">${c.fail}</td>
           <td class="grey">${c.absent}</td>
-          <td class="grey">${notChecked>0?notChecked:''}</td>
           <td class="${pctCls}">${pct(c.pass,rec)}</td>
         </tr>`;
       }
     });
-    const totNotChecked=totStu-totRec;
     body+=`<tr class="total-row">
       <td class="left">รวมทั้งหมด</td><td>${totStu}</td>
       <td class="green">${totPass}</td><td class="red">${totFail}</td>
-      <td class="grey">${totAbsent}</td><td class="grey">${totNotChecked>0?totNotChecked:''}</td>
+      <td class="grey">${totAbsent}</td>
       <td>${pct(totPass,totRec)}</td>
     </tr>`;
     body+=`</tbody></table></div>`;
