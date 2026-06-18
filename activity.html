@@ -2526,28 +2526,43 @@ async function renderUnifRptSummary(){
       });
       body+=`</div>`;
 
-      // ── Collapsible failed students table ──
-      body+=`<details open>
-        <summary class="unif-viol-summary">
-          <span style="font-size:13px;font-weight:700;color:var(--txt)">นักเรียนที่แต่งกายไม่เรียบร้อย</span>
-          <span style="font-size:13px;font-weight:700;color:var(--red);margin-left:6px">${failedList.length} คน</span>
-          <span class="unif-viol-chevron">▾</span>
-        </summary>
-        <div class="table-wrap" style="margin-top:4px"><table class="unif-rpt-table">
-          <thead><tr><th style="width:28px">#</th><th style="min-width:52px">รหัส</th><th class="left">ชื่อ-สกุล</th><th style="min-width:52px">ชั้น</th><th class="left" style="min-width:70px">สาเหตุ</th><th class="left" style="min-width:60px">หมายเหตุ</th></tr></thead>
-          <tbody>`;
-      failedList.forEach((item,i)=>{
-        const{stu,viols,note}=item;
-        body+=`<tr>
-          <td class="grey">${i+1}</td>
-          <td class="grey" style="font-size:12px;white-space:nowrap">${esc(stu.student_code)}</td>
-          <td class="left">${esc(stu.student_name)}</td>
-          <td class="nowrap">${classLabel(stu.grade_level,stu.room)}</td>
-          <td class="left" style="font-size:12px;color:var(--red)">${esc(viols.join(', '))}</td>
-          <td class="left" style="font-size:12px;color:var(--txt2)">${esc(note)}</td>
-        </tr>`;
+      // ── Collapsible per-class failed students cards ──
+      body+=`<div style="font-size:13px;font-weight:700;margin-bottom:8px">นักเรียนที่แต่งกายไม่เรียบร้อย <span style="color:var(--red)">(${failedList.length} คน)</span></div>`;
+      // Group by class
+      const byClass={};
+      failedList.forEach(item=>{
+        const k=`${String(item.stu.grade_level).padStart(2,'0')}_${String(item.stu.room).padStart(2,'0')}`;
+        if(!byClass[k])byClass[k]={gl:item.stu.grade_level,r:item.stu.room,items:[]};
+        byClass[k].items.push(item);
       });
-      body+=`</tbody></table></div></details>`;
+      Object.entries(byClass).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([,cls],ci)=>{
+        body+=`<details style="margin-bottom:8px" ${ci===0?'open':''}>
+          <summary class="unif-viol-summary">
+            <span style="font-size:13px;font-weight:700;color:var(--txt)">${classLabel(cls.gl,cls.r)}</span>
+            <span style="font-size:13px;font-weight:700;color:var(--red);margin-left:6px">${cls.items.length} คน</span>
+            <span class="unif-viol-chevron">▾</span>
+          </summary>
+          <div class="table-wrap" style="margin-top:4px"><table class="unif-rpt-table" style="background:#fff;color:#000">
+            <thead><tr>
+              <th style="width:28px;background:#f3f4f6;color:#111">#</th>
+              <th style="min-width:52px;background:#f3f4f6;color:#111">รหัส</th>
+              <th class="left" style="background:#f3f4f6;color:#111">ชื่อ-สกุล</th>
+              <th class="left" style="min-width:70px;background:#f3f4f6;color:#111">สาเหตุ</th>
+              <th class="left" style="min-width:60px;background:#f3f4f6;color:#111">หมายเหตุ</th>
+            </tr></thead>
+            <tbody>`;
+        cls.items.forEach((item,i)=>{
+          const{stu,viols,note}=item;
+          body+=`<tr>
+            <td style="color:#6b7280">${i+1}</td>
+            <td style="font-size:12px;white-space:nowrap;color:#374151">${esc(stu.student_code)}</td>
+            <td class="left" style="color:#111;font-weight:500">${esc(stu.student_name)}</td>
+            <td class="left" style="font-size:12px;color:#dc2626">${esc(viols.join(', '))}</td>
+            <td class="left" style="font-size:12px;color:#374151">${esc(note)}</td>
+          </tr>`;
+        });
+        body+=`</tbody></table></div></details>`;
+      });
     }
     if(!rows.length) body+=`<div class="empty-state">ไม่มีข้อมูลในช่วงเวลานี้</div>`;
     $('unif-rpt-summary-doc').innerHTML=body;
