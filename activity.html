@@ -123,6 +123,7 @@ html[data-theme="dark"] .ios-select,html[data-theme="dark"] .ios-input{backgroun
 .unif-viol-chk.checked{background:rgba(220,38,38,.08);border-color:rgba(220,38,38,.3);color:var(--red);font-weight:600}
 .unif-btns{display:flex;gap:5px;flex-shrink:0}
 .ub{padding:5px 11px;border:none;border-radius:18px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .12s;background:var(--card2);color:var(--txt2)}
+@media(max-width:639px){.ub{padding:6px 10px;font-size:14px;border-radius:50%;width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center}.ub-txt{display:none}}
 .ub.pass{background:rgba(5,150,105,.1);color:var(--green)}
 .ub.pass.active{background:var(--green);color:#fff}
 .ub.fail{background:rgba(220,38,38,.08);color:var(--red)}
@@ -2292,9 +2293,9 @@ function renderUnifList(){
         ${failDetail}
       </div>
       <div class="unif-btns">
-        <button class="ub pass${st==='pass'?' active':''}" onclick="setUnifStatus('${s.id}','pass')">✓ ผ่าน</button>
-        <button class="ub fail${st==='fail'?' active':''}" onclick="setUnifStatus('${s.id}','fail')">✗ ไม่ผ่าน</button>
-        <button class="ub absent${st==='absent'?' active':''}" onclick="setUnifStatus('${s.id}','absent')">— ขาด</button>
+        <button class="ub pass${st==='pass'?' active':''}" onclick="setUnifStatus('${s.id}','pass')">✓<span class="ub-txt"> ผ่าน</span></button>
+        <button class="ub fail${st==='fail'?' active':''}" onclick="setUnifStatus('${s.id}','fail')">✗<span class="ub-txt"> ไม่ผ่าน</span></button>
+        <button class="ub absent${st==='absent'?' active':''}" onclick="setUnifStatus('${s.id}','absent')">ข<span class="ub-txt"> ขาด</span></button>
       </div>
     </div>`;
   });
