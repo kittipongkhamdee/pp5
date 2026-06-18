@@ -1915,6 +1915,10 @@ async function _captureImage(elId,filename){
   clone.style.cssText='background:#fff;overflow:visible;width:auto;';
   clone.querySelectorAll('.table-wrap').forEach(e=>{e.style.cssText='overflow:visible;width:auto;max-width:none;'});
   clone.querySelectorAll('table').forEach(t=>{t.style.width='auto';t.style.tableLayout='auto';});
+  /* scale:2 → 1px border = 2px physical → ลด border เป็น 0.5px สำหรับ export */
+  const capStyle=document.createElement('style');
+  capStyle.textContent='table th,table td{border-width:0.5px !important}';
+  wrap.appendChild(capStyle);
   wrap.appendChild(clone);
   document.body.appendChild(wrap);
   try{
