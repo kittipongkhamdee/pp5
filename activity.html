@@ -993,7 +993,7 @@ const S={
   rptTab:'activity',rptActivityId:null,rptDate:todayStr(),rptSession:'morning',rptStuId:null,rptStuClass:null,rptStuSearch:'',rptStuActivityId:null,rptSchoolData:null,rptActData:null,rptStuData:null,rptPctData:null,rptPctThreshold:80,rptPctActivityId:null,rptPctClass:null,
   rptClassActivityId:null,rptClassClass:null,rptClassDate:null,rptClassSession:'morning',rptClassData:null,
   unifViolations:[],unifDate:todayStr(),unifClass:null,unifChecks:{},unifTab:'check',
-  unifRptDate:todayStr(),unifRptDateEnd:todayStr(),unifRptClass:null,
+  unifRptDate:todayStr(),unifRptClass:null,
   unifRptTab:'summary',unifRptClassKey:null,unifRptSchoolDate:todayStr(),
   page:'home',
 };
@@ -2432,21 +2432,17 @@ function renderUnifReport(){
 // ── Uniform Report: สรุปรายวัน ──────────────────────────────────────────────
 async function renderUnifRptSummary(){
   const el=$('unif-rpt-content');
-  const dateFrom=S.unifRptDate,dateTo=S.unifRptDateEnd;
+  const date=S.unifRptDate;
   const cOpts=S.classes.map(c=>`<option value="${c.grade_level}_${c.room}"${S.unifRptClass===c.grade_level+'_'+c.room?' selected':''}>${classLabel(c.grade_level,c.room)}</option>`).join('');
   let h=`<div class="section" style="padding-top:14px">
     <div class="unif-filter-card">
-      <div class="unif-filter-dates">
-        <div><div class="unif-filter-label">ตั้งแต่</div>
-          <input type="date" class="ios-select" value="${dateFrom}" onchange="S.unifRptDate=this.value;renderUnifRptSummary()"></div>
-        <div><div class="unif-filter-label">ถึง</div>
-          <input type="date" class="ios-select" value="${dateTo}" onchange="S.unifRptDateEnd=this.value;renderUnifRptSummary()"></div>
-      </div>
       <div class="unif-filter-row2">
+        <div><div class="unif-filter-label">วันที่</div>
+          <input type="date" class="ios-select" value="${date}" onchange="S.unifRptDate=this.value;renderUnifRptSummary()"></div>
         <select class="ios-select" style="flex:1" onchange="S.unifRptClass=this.value||null;renderUnifRptSummary()">
           <option value="">ทุกชั้นเรียน</option>${cOpts}
         </select>
-        <button class="btn bs" style="flex-shrink:0" onclick="_captureImage('unif-rpt-summary-doc','สรุปแต่งกาย_${dateFrom}_${dateTo}.png')">
+        <button class="btn bs" style="flex-shrink:0" onclick="_captureImage('unif-rpt-summary-doc','สรุปแต่งกาย_${date}.png')">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>บันทึกรูป
         </button>
       </div>
@@ -2455,7 +2451,7 @@ async function renderUnifRptSummary(){
   el.innerHTML=h+'<div class="loading-text">กำลังโหลด...</div></div></div>';
   loading(true);
   try{
-    let qb=sb.from('uniform_checks').select('id,student_id,date,status,uniform_check_violations(violation_id,uniform_violations(name))').gte('date',dateFrom).lte('date',dateTo).order('date');
+    let qb=sb.from('uniform_checks').select('id,student_id,date,status,uniform_check_violations(violation_id,uniform_violations(name))').eq('date',date);
     if(S.unifRptClass){
       const[gl,r]=S.unifRptClass.split('_');
       const ids=S.students.filter(s=>String(s.grade_level)===gl&&String(s.room)===r).map(s=>s.id);
@@ -2480,7 +2476,7 @@ async function renderUnifRptSummary(){
     let body=`
       <div class="unif-sr-header"><div class="unif-sr-school">${esc(S.schoolName||'')}</div>
         <div class="unif-sr-title">รายงานการตรวจเครื่องแต่งกาย</div>
-        <div class="unif-sr-date">${thDate(dateFrom)}${dateFrom!==dateTo?' — '+thDate(dateTo):''}</div>
+        <div class="unif-sr-date">${thDate(date)}</div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">
         <div class="stat-box s-all"><div class="stat-num">${rows.length}</div><div class="stat-lbl">บันทึก</div></div>
@@ -2527,13 +2523,9 @@ async function renderUnifRptClass(){
   const cOpts=S.classes.map(c=>`<option value="${c.grade_level}_${c.room}"${S.unifRptClassKey===c.grade_level+'_'+c.room?' selected':''}>${classLabel(c.grade_level,c.room)}</option>`).join('');
   let h=`<div class="section" style="padding-top:14px">
     <div class="unif-filter-card">
-      <div class="unif-filter-dates">
-        <div><div class="unif-filter-label">ตั้งแต่</div>
-          <input type="date" class="ios-select" value="${S.unifRptDate}" onchange="S.unifRptDate=this.value;renderUnifRptClass()"></div>
-        <div><div class="unif-filter-label">ถึง</div>
-          <input type="date" class="ios-select" value="${S.unifRptDateEnd}" onchange="S.unifRptDateEnd=this.value;renderUnifRptClass()"></div>
-      </div>
       <div class="unif-filter-row2">
+        <div><div class="unif-filter-label">วันที่</div>
+          <input type="date" class="ios-select" value="${S.unifRptDate}" onchange="S.unifRptDate=this.value;renderUnifRptClass()"></div>
         <select class="ios-select" style="flex:1" onchange="S.unifRptClassKey=this.value||null;renderUnifRptClass()">
           <option value="">-- เลือกชั้นเรียน --</option>${cOpts}
         </select>
@@ -2553,7 +2545,7 @@ async function renderUnifRptClass(){
     const ids=stus.map(s=>s.id);
     let rows=[];
     if(ids.length){
-      rows=await q(sb.from('uniform_checks').select('id,student_id,date,status,uniform_check_violations(violation_id,uniform_violations(name))').in('student_id',ids).gte('date',S.unifRptDate).lte('date',S.unifRptDateEnd).order('date'));
+      rows=await q(sb.from('uniform_checks').select('id,student_id,date,status,uniform_check_violations(violation_id,uniform_violations(name))').in('student_id',ids).eq('date',S.unifRptDate));
     }
     loading(false);
     // Group by student
@@ -2568,13 +2560,12 @@ async function renderUnifRptClass(){
       }
       else if(r.status==='absent')stuMap[k].absent++;
     });
-    const totalDays=S.unifRptDate===S.unifRptDateEnd?1:Math.max(1,rows.reduce((s,r)=>{s.add(r.date);return s},new Set()).size);
     const pct=(n,d)=>d>0?Math.round(n/d*100)+'%':'—';
     const clsLbl=classLabel(gl,room);
     let body=`<div class="unif-sr-header">
       <div class="unif-sr-school">${esc(S.schoolName||'')}</div>
       <div class="unif-sr-title">รายงานการตรวจเครื่องแต่งกาย — ${clsLbl}</div>
-      <div class="unif-sr-date">${thDate(S.unifRptDate)}${S.unifRptDate!==S.unifRptDateEnd?' — '+thDate(S.unifRptDateEnd):''}</div>
+      <div class="unif-sr-date">${thDate(S.unifRptDate)}</div>
     </div>
     <div class="table-wrap"><table class="unif-rpt-table">
       <thead><tr><th>#</th><th class="left">ชื่อ-สกุล</th><th>ผ่าน</th><th>ไม่ผ่าน</th><th>ขาด</th><th>%ผ่าน</th><th class="left">ความผิด</th></tr></thead>
@@ -2611,14 +2602,10 @@ async function renderUnifRptSchool(){
   const el=$('unif-rpt-content');
   let h=`<div class="section" style="padding-top:14px">
     <div class="unif-filter-card">
-      <div class="unif-filter-dates">
-        <div><div class="unif-filter-label">ตั้งแต่</div>
+      <div class="unif-filter-row2">
+        <div><div class="unif-filter-label">วันที่</div>
           <input type="date" class="ios-select" value="${S.unifRptDate}" onchange="S.unifRptDate=this.value;renderUnifRptSchool()"></div>
-        <div><div class="unif-filter-label">ถึง</div>
-          <input type="date" class="ios-select" value="${S.unifRptDateEnd}" onchange="S.unifRptDateEnd=this.value;renderUnifRptSchool()"></div>
-      </div>
-      <div class="unif-filter-row2" style="justify-content:flex-end">
-        <button class="btn bs" onclick="_captureImage('unif-rpt-school-doc','รายงานแต่งกายโรงเรียน_${S.unifRptDate}.png')">
+        <button class="btn bs" style="flex-shrink:0;margin-top:auto" onclick="_captureImage('unif-rpt-school-doc','รายงานแต่งกายโรงเรียน_${S.unifRptDate}.png')">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>บันทึกรูป
         </button>
       </div>
@@ -2626,7 +2613,7 @@ async function renderUnifRptSchool(){
   el.innerHTML=h+`<div id="unif-rpt-school-doc"><div class="loading-text">กำลังโหลด...</div></div></div>`;
   loading(true);
   try{
-    const rows=await q(sb.from('uniform_checks').select('student_id,status').gte('date',S.unifRptDate).lte('date',S.unifRptDateEnd));
+    const rows=await q(sb.from('uniform_checks').select('student_id,status').eq('date',S.unifRptDate));
     loading(false);
     // Build per-class map
     const classMap={};
@@ -2649,7 +2636,7 @@ async function renderUnifRptSchool(){
     let body=`<div class="unif-sr-header">
       <div class="unif-sr-school">${esc(S.schoolName||'')}</div>
       <div class="unif-sr-title">รายงานการตรวจเครื่องแต่งกาย — ทั้งโรงเรียน</div>
-      <div class="unif-sr-date">${thDate(S.unifRptDate)}${S.unifRptDate!==S.unifRptDateEnd?' — '+thDate(S.unifRptDateEnd):''}</div>
+      <div class="unif-sr-date">${thDate(S.unifRptDate)}</div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">
       <div class="stat-box s-all"><div class="stat-num">${totStu}</div><div class="stat-lbl">นักเรียนทั้งหมด</div></div>
