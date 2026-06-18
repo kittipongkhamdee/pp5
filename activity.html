@@ -1655,7 +1655,7 @@ async function renderRptClass(){
       <div class="stat-mini"><div class="sn" style="color:var(--txt3)">${un}</div><div class="sl">ไม่ได้เช็ค</div></div>
     </div>
     <div class="table-wrap"><table class="rpt-table">
-      <thead><tr><th>#</th><th>รหัส</th><th class="left">ชื่อ-สกุล</th><th>สถานะ</th></tr></thead><tbody>`;
+      <thead><tr><th>#</th><th class="screen-hide">รหัส</th><th class="left">ชื่อ-สกุล</th><th>สถานะ</th></tr></thead><tbody>`;
     const _docH=`<div style="text-align:center;border-bottom:2px solid #e5e7eb;padding-bottom:12px;margin-bottom:14px">
       <div style="font-size:17px;font-weight:700;color:#111827">${esc(S.schoolName)}</div>
       <div style="font-size:13px;font-weight:600;color:#374151;margin-top:4px">รายงานการเข้าร่วมกิจกรรม รายห้องเรียน</div>
@@ -1664,7 +1664,7 @@ async function renderRptClass(){
     </div>`;
     stuWithStatus.forEach((s,i)=>{
       const b=s.status==='present'?`<span class="badge green">มา</span>`:s.status==='late'?`<span class="badge orange">สาย</span>`:s.status==='absent'?`<span class="badge red">ขาด</span>`:`<span style="color:var(--txt3);font-size:12px">—</span>`;
-      h+=`<tr><td>${i+1}</td><td>${esc(s.student_code||'')}</td><td class="left">${esc(s.student_name)}</td><td>${b}</td></tr>`;
+      h+=`<tr><td>${i+1}</td><td class="screen-hide">${esc(s.student_code||'')}</td><td class="left">${esc(s.student_name)}</td><td>${b}</td></tr>`;
     });
     h+=`</tbody></table></div>`;
     $('rpt-class-body').innerHTML=_expBar('exportClassPDF','exportClassExcel','exportClassImage')+`<div id="rpt-class-doc" style="background:#fff;border-radius:10px;border:1px solid #e5e7eb;padding:20px">${_docH}${h}</div>`;
@@ -1856,11 +1856,11 @@ async function renderRptPercent(){
       h+=`<div class="sr-class-group">
         <div class="sr-class-hd">${classLabel(cls.gl,cls.r)} <span>(${cls.stus.length} คน)</span></div>
         <div class="table-wrap"><table class="rpt-table">
-          <thead><tr><th>#</th><th>รหัส</th><th class="left">ชื่อ-สกุล</th><th>มา</th><th>สาย</th><th>ขาด</th><th>ร้อยละ</th></tr></thead><tbody>`;
+          <thead><tr><th>#</th><th class="screen-hide">รหัส</th><th class="left">ชื่อ-สกุล</th><th>มา</th><th>สาย</th><th>ขาด</th><th>ร้อยละ</th></tr></thead><tbody>`;
       cls.stus.sort((a,b)=>a.pct-b.pct).forEach((s,i)=>{
         const pc=s.pct.toFixed(1);
         const cl=s.pct<50?'red':s.pct<70?'orange':'';
-        h+=`<tr><td>${i+1}</td><td>${esc(s.student_code||'')}</td><td class="left">${esc(s.student_name)}</td><td class="green">${s.present}</td><td class="orange">${s.late}</td><td class="red">${s.absent}</td><td class="${cl}" style="font-weight:600">${pc}%</td></tr>`;
+        h+=`<tr><td>${i+1}</td><td class="screen-hide">${esc(s.student_code||'')}</td><td class="left">${esc(s.student_name)}</td><td class="green">${s.present}</td><td class="orange">${s.late}</td><td class="red">${s.absent}</td><td class="${cl}" style="font-weight:600">${pc}%</td></tr>`;
       });
       h+=`</tbody></table></div></div>`;
     });
