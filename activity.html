@@ -173,6 +173,15 @@ html[data-theme="dark"] .ios-select,html[data-theme="dark"] .ios-input{backgroun
 .badge-unif.fail{background:#FEE2E2;color:#991B1B}
 .badge-unif.absent{background:#F3F4F6;color:#374151}
 .badge-unif.none{background:#EFF6FF;color:#1E40AF}
+/* ── Collapsible violation card ── */
+details.unif-viol-summary-wrap{margin-bottom:8px}
+.unif-viol-summary{display:flex;align-items:center;gap:4px;list-style:none;cursor:pointer;padding:10px 14px;background:var(--card);border:1px solid var(--sep);border-radius:var(--radius);user-select:none}
+.unif-viol-summary::-webkit-details-marker{display:none}
+details[open] .unif-viol-summary{border-radius:var(--radius) var(--radius) 0 0;border-bottom-color:transparent}
+details[open] .unif-viol-summary+.table-wrap{border:1px solid var(--sep);border-top:none;border-radius:0 0 var(--radius) var(--radius);overflow:hidden}
+.unif-viol-badge{background:rgba(220,38,38,.1);color:var(--red);font-size:13px;font-weight:700;padding:2px 10px;border-radius:20px}
+.unif-viol-chevron{margin-left:auto;font-size:12px;color:var(--txt3);transition:transform .2s}
+details[open] .unif-viol-chevron{transform:rotate(180deg)}
 
 /* ── Cards / Lists ── */
 .section{padding:16px 20px 0}
@@ -2498,25 +2507,45 @@ async function renderUnifRptSummary(){
       <div style="text-align:center;font-size:22px;font-weight:800;margin-bottom:16px;color:${totalPass/Math.max(rows.length,1)>=0.9?'var(--green)':'var(--red)'}">ร้อยละผ่าน ${pct(totalPass,rows.length)}</div>`;
 
     if(sortedViols.length){
-      body+=`<div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--txt)">รายละเอียดความผิดระเบียบ แยกตามประเภท</div>`;
+      // ── Bar chart ──
+      const maxCnt=sortedViols[0][1].length;
+      body+=`<div style="font-size:13px;font-weight:700;margin-bottom:8px">สถิติความผิดระเบียบ</div>
+        <div style="background:var(--card);border:1px solid var(--sep);border-radius:var(--radius);padding:12px 14px;margin-bottom:16px">`;
       sortedViols.forEach(([vname,stus])=>{
-        body+=`<div style="margin-bottom:14px">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-            <span style="background:rgba(220,38,38,.1);color:var(--red);font-size:13px;font-weight:700;padding:3px 10px;border-radius:20px">${esc(vname)}</span>
-            <span style="font-size:13px;font-weight:600;color:var(--red)">${stus.length} คน</span>
+        const w=Math.round(stus.length/maxCnt*100);
+        body+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <div style="min-width:80px;max-width:110px;font-size:12px;font-weight:600;color:var(--txt);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(vname)}</div>
+          <div style="flex:1;height:20px;background:var(--sep);border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:${w}%;background:var(--red);border-radius:4px;transition:width .4s;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;box-sizing:border-box">
+              ${stus.length>=3?`<span style="font-size:11px;font-weight:700;color:#fff">${stus.length}</span>`:''}
+            </div>
           </div>
-          <div class="table-wrap"><table class="unif-rpt-table">
-            <thead><tr><th style="width:32px">#</th><th>ชั้น</th><th class="left">ชื่อ-สกุล</th><th>รหัส</th></tr></thead>
+          <div style="min-width:28px;font-size:13px;font-weight:700;color:var(--red);text-align:right">${stus.length}</div>
+        </div>`;
+      });
+      body+=`</div>`;
+
+      // ── Collapsible violation cards ──
+      body+=`<div style="font-size:13px;font-weight:700;margin-bottom:8px">รายละเอียดแยกตามประเภท</div>`;
+      sortedViols.forEach(([vname,stus],vi)=>{
+        body+=`<details style="margin-bottom:8px" ${vi===0?'open':''}>
+          <summary class="unif-viol-summary">
+            <span class="unif-viol-badge">${esc(vname)}</span>
+            <span style="font-size:13px;font-weight:700;color:var(--red);margin-left:6px">${stus.length} คน</span>
+            <span class="unif-viol-chevron">▾</span>
+          </summary>
+          <div class="table-wrap" style="margin-top:4px"><table class="unif-rpt-table">
+            <thead><tr><th style="width:30px">#</th><th>รหัส</th><th class="left">ชื่อ-สกุล</th><th>ชั้น</th></tr></thead>
             <tbody>`;
         stus.forEach((s,i)=>{
           body+=`<tr>
             <td class="grey">${i+1}</td>
-            <td class="nowrap">${classLabel(s.grade_level,s.room)}</td>
+            <td class="grey" style="font-size:12px;white-space:nowrap">${esc(s.student_code)}</td>
             <td class="left">${esc(s.student_name)}</td>
-            <td class="grey" style="font-size:12px">${esc(s.student_code)}</td>
+            <td class="nowrap">${classLabel(s.grade_level,s.room)}</td>
           </tr>`;
         });
-        body+=`</tbody></table></div></div>`;
+        body+=`</tbody></table></div></details>`;
       });
     }
     if(!rows.length) body+=`<div class="empty-state">ไม่มีข้อมูลในช่วงเวลานี้</div>`;
