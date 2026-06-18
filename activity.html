@@ -814,7 +814,7 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
   <div class="page" id="uniform-page">
     <div class="unif-wrap">
       <div class="unif-tabs">
-        <button class="unif-tab active" id="unif-tab-check" onclick="switchUnifTab('check')">ตรวจเครื่องแต่งกาย</button>
+        <button class="unif-tab active" id="unif-tab-check" onclick="switchUnifTab('check')">ตรวจการแต่งกาย</button>
         <button class="unif-tab" id="unif-tab-report" onclick="switchUnifTab('report')">รายงาน</button>
       </div>
       <div id="unif-check-section" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
@@ -2167,7 +2167,7 @@ function renderAdmin(){
   // Violations section
   h+=`<div class="section" style="margin-top:16px">
     <div class="admin-hd">
-      <div class="admin-hd-title">ประเภทความผิดระเบียบ (เครื่องแต่งกาย)</div>
+      <div class="admin-hd-title">ประเภทความผิดระเบียบ (การแต่งกาย)</div>
       <button class="btn btn-blue btn-sm" onclick="showViolationModal(null)">+ เพิ่ม</button>
     </div>`;
   if(!S.unifViolations.length){
@@ -2496,7 +2496,7 @@ async function renderUnifRptSummary(){
 
     let body=`
       <div class="unif-sr-header"><div class="unif-sr-school">${esc(S.schoolName||'')}</div>
-        <div class="unif-sr-title">รายงานการตรวจเครื่องแต่งกาย</div>
+        <div class="unif-sr-title">รายงานการตรวจการแต่งกาย</div>
         <div class="unif-sr-date">${thDate(date)}</div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">
@@ -2629,7 +2629,7 @@ async function renderUnifRptClass(){
     };
     let body=`<div class="unif-sr-header">
       <div class="unif-sr-school">${esc(S.schoolName||'')}</div>
-      <div class="unif-sr-title">รายงานการตรวจเครื่องแต่งกาย — ${clsLbl}</div>
+      <div class="unif-sr-title">รายงานการตรวจการแต่งกาย — ${clsLbl}</div>
       <div class="unif-sr-date">${thDate(S.unifRptDate)}</div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">
@@ -2706,7 +2706,7 @@ async function renderUnifRptSchool(){
 
     let body=`<div class="unif-sr-header">
       <div class="unif-sr-school">${esc(S.schoolName||'')}</div>
-      <div class="unif-sr-title">รายงานการตรวจเครื่องแต่งกาย — ทั้งโรงเรียน</div>
+      <div class="unif-sr-title">รายงานการตรวจการแต่งกาย — ทั้งโรงเรียน</div>
       <div class="unif-sr-date">${thDate(S.unifRptDate)}</div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">
