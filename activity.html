@@ -1735,7 +1735,7 @@ async function _captureImage(elId,filename){
   /* สร้าง off-screen wrapper ที่ไม่มีข้อจำกัดความกว้าง + บังคับ light-mode */
   const lightVars='--bg:#fff;--card:#fff;--card2:#F0F2F5;--txt:#111827;--txt2:#6B7280;--txt3:#9CA3AF;--sep:#E5E7EB;--primary:#2563EB;--primary-light:#EFF6FF;--nav:#fff;--green:#059669;--red:#DC2626;--orange:#D97706;--blue:#2563EB;--radius:12px;--radius-sm:8px;--shadow:0 1px 4px rgba(0,0,0,.07);';
   const wrap=document.createElement('div');
-  wrap.style.cssText=`position:absolute;left:-10000px;top:0;background:#fff;padding:20px;width:auto;min-width:0;${lightVars}`;
+  wrap.style.cssText=`position:absolute;left:-10000px;top:0;background:#fff;padding:20px 20px 48px;width:auto;min-width:0;${lightVars}`;
   const clone=el.cloneNode(true);
   clone.style.cssText='background:#fff;overflow:visible;width:auto;';
   clone.querySelectorAll('.table-wrap').forEach(e=>{e.style.cssText='overflow:visible;width:auto;max-width:none;'});
@@ -1743,8 +1743,9 @@ async function _captureImage(elId,filename){
   wrap.appendChild(clone);
   document.body.appendChild(wrap);
   try{
-    await new Promise(r=>setTimeout(r,80));
-    const W=wrap.scrollWidth,H=wrap.scrollHeight;
+    await new Promise(r=>setTimeout(r,150));
+    const W=wrap.scrollWidth;
+    const H=Math.max(wrap.scrollHeight,wrap.getBoundingClientRect().height)+4;
     const canvas=await html2canvas(wrap,{
       scale:2,useCORS:true,backgroundColor:'#ffffff',
       scrollX:-10000,scrollY:0,
