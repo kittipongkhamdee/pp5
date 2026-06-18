@@ -10,8 +10,8 @@
 <title>ระบบเช็คชื่อกิจกรรม</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4"></script>
-<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
 <style>
 :root{
   --bg:#ffffff;--card:#ffffff;--card2:#F0F2F5;--txt:#111827;--txt2:#6B7280;--txt3:#9CA3AF;
@@ -847,7 +847,10 @@ const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 
 // ─── State ────────────────────────────────────────────────────────────────
 const S={
-  activities:[],students:[],classes:[],schoolName:'',
+  activities:[],students:[],classes:[],classLabelMap:{},classStudentCounts:{},
+  attendCache:{},homeCache:null,
+  rptActCacheKey:null,rptSchoolCacheKey:null,rptClassCacheKey:null,
+  schoolName:'',
   ckActivityId:null,ckDate:todayStr(),ckSession:'morning',ckAttend:{},ckFilter:'',
   rptTab:'activity',rptActivityId:null,rptDate:todayStr(),rptSession:'morning',rptStuId:null,rptStuClass:null,rptStuSearch:'',rptStuActivityId:null,rptSchoolData:null,rptActData:null,rptStuData:null,rptPctData:null,rptPctThreshold:80,rptPctActivityId:null,rptPctClass:null,
   rptClassActivityId:null,rptClassClass:null,rptClassDate:null,rptClassSession:'morning',rptClassData:null,
@@ -863,8 +866,7 @@ function thDate(d){
   return`${+day} ${M[+m-1]} ${+y+543}`;
 }
 function classLabel(gl,r){
-  const cnt=S.classes.filter(c=>String(c.grade_level)===String(gl)).length;
-  return cnt<=1?`มัธยมศึกษาปีที่ ${gl}`:`มัธยมศึกษาปีที่ ${gl}/${r}`;
+  return S.classLabelMap[`${gl}_${r}`]||`มัธยมศึกษาปีที่ ${gl}/${r}`;
 }
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function $(id){return document.getElementById(id)}
@@ -892,18 +894,27 @@ function actEmoji(name){
 }
 
 // ─── Data ──────────────────────────────────────────────────────────────────
-async function loadActivities(){S.activities=await q(sb.from('activities').select('*').order('id'))}
+async function loadActivities(){S.activities=await q(sb.from('activities').select('id,name,description,has_evening,is_active').order('id'))}
 async function loadStudents(){
   S.students=await q(sb.from('students').select('id,student_code,student_name,grade_level,room').order('grade_level').order('room').order('student_code'));
   const seen=new Set();S.classes=[];
   S.students.forEach(s=>{const k=`${s.grade_level}_${s.room}`;if(!seen.has(k)){seen.add(k);S.classes.push({grade_level:s.grade_level,room:s.room})}});
+  const gradeCnt={};S.classes.forEach(c=>{gradeCnt[c.grade_level]=(gradeCnt[c.grade_level]||0)+1});
+  S.classLabelMap={};
+  S.classes.forEach(c=>{S.classLabelMap[`${c.grade_level}_${c.room}`]=gradeCnt[c.grade_level]<=1?`มัธยมศึกษาปีที่ ${c.grade_level}`:`มัธยมศึกษาปีที่ ${c.grade_level}/${c.room}`});
+  S.classStudentCounts={};
+  S.students.forEach(s=>{const k=`${s.grade_level}_${s.room}`;S.classStudentCounts[k]=(S.classStudentCounts[k]||0)+1});
 }
 async function loadSchoolName(){
   try{const r=await q(sb.from('config').select('value').eq('key','school_name').limit(1));if(r&&r[0])S.schoolName=r[0].value}catch(e){}
 }
 async function loadAttend(actId,date,session){
+  const key=`${actId}_${date}_${session}`;
+  if(S.attendCache[key])return S.attendCache[key];
   const rows=await q(sb.from('activity_attend').select('id,student_id,status').eq('activity_id',actId).eq('date',date).eq('session',session));
-  const map={};rows.forEach(r=>{map[r.student_id]={id:r.id,status:r.status}});return map;
+  const map={};rows.forEach(r=>{map[r.student_id]={id:r.id,status:r.status}});
+  S.attendCache[key]=map;
+  return map;
 }
 
 // ─── PIN ───────────────────────────────────────────────────────────────────
@@ -1004,7 +1015,10 @@ async function renderHome(){
     html+=`<div style="background:var(--card);border:1px solid var(--sep);border-radius:var(--radius);padding:40px 24px;text-align:center;color:var(--txt2)">ยังไม่มีกิจกรรม<br><small style="font-size:13px;color:var(--txt3)">กด Admin → เพิ่มกิจกรรม</small></div>`;
   }else{
     let aMap={};
-    if(total>0){
+    const now=Date.now();const TTL=30000;
+    if(S.homeCache&&S.homeCache.date===today&&(now-S.homeCache.ts)<TTL){
+      aMap=S.homeCache.aMap;
+    }else if(total>0){
       try{
         const ids=acts.map(a=>a.id);
         const rows=await q(sb.from('activity_attend').select('activity_id,session,status,student_id').in('activity_id',ids).eq('date',today));
@@ -1016,6 +1030,7 @@ async function renderHome(){
           sess.n++;
           const ck=stuCls[r.student_id];if(ck)sess.cls.add(ck);
         });
+        S.homeCache={aMap,ts:now,date:today};
       }catch(e){}
     }
     const _pCol=p=>p>=80?'#059669':p>=50?'#D97706':'#DC2626';
@@ -1079,7 +1094,7 @@ async function renderCheckin(){
   const sel=$('ck-class-sel');
   if(sel){
     sel.innerHTML=`<option value="">ทุกชั้นเรียน (${S.students.length} คน)</option>`+
-      S.classes.map(c=>{const k=`${c.grade_level}_${c.room}`;const cnt=S.students.filter(s=>String(s.grade_level)===String(c.grade_level)&&String(s.room)===String(c.room)).length;return`<option value="${k}"${S.ckFilter===k?' selected':''}>${classLabel(c.grade_level,c.room)} (${cnt} คน)</option>`}).join('');
+      S.classes.map(c=>{const k=`${c.grade_level}_${c.room}`;const cnt=S.classStudentCounts[k]||0;return`<option value="${k}"${S.ckFilter===k?' selected':''}>${classLabel(c.grade_level,c.room)} (${cnt} คน)</option>`}).join('');
   }
   if(!S.ckActivityId){
     $('ck-list').innerHTML=`<div class="empty-state">เลือกกิจกรรมเพื่อเริ่มเช็คชื่อ<small>กรุณาเลือกกิจกรรมด้านบน</small></div>`;
@@ -1124,24 +1139,44 @@ function _filteredStudents(){
 function updateCkStats(){
   const stus=_filteredStudents();
   const ids=new Set(stus.map(s=>s.id));
-  const v=Object.entries(S.ckAttend).filter(([id])=>ids.has(id)).map(([,a])=>a);
+  let present=0,late=0,absent=0;
+  for(const [id,a] of Object.entries(S.ckAttend)){
+    if(!ids.has(id))continue;
+    if(a.status==='present')present++;
+    else if(a.status==='late')late++;
+    else if(a.status==='absent')absent++;
+  }
   $('ck-stat-total').textContent=stus.length;
-  $('ck-stat-present').textContent=v.filter(a=>a.status==='present').length;
-  $('ck-stat-late').textContent=v.filter(a=>a.status==='late').length;
-  $('ck-stat-absent').textContent=v.filter(a=>a.status==='absent').length;
+  $('ck-stat-present').textContent=present;
+  $('ck-stat-late').textContent=late;
+  $('ck-stat-absent').textContent=absent;
 }
 
 async function setStatus(stuId,status){
   if(!S.ckActivityId)return;
   const ex=S.ckAttend[stuId];
+  const cacheKey=`${S.ckActivityId}_${S.ckDate}_${S.ckSession}`;
   if(ex?.status===status){
     if(ex.id){try{await q(sb.from('activity_attend').delete().eq('id',ex.id))}catch(e){toast('เกิดข้อผิดพลาด','er');return}}
-    delete S.ckAttend[stuId];_updateStuRow(stuId,'');updateCkStats();toast('ลบข้อมูลแล้ว','ok',1200);return;
+    delete S.ckAttend[stuId];
+    if(S.attendCache[cacheKey])delete S.attendCache[cacheKey][stuId];
+    if(S.ckDate===todayStr())S.homeCache=null;
+    _updateStuRow(stuId,'');updateCkStats();toast('ลบข้อมูลแล้ว','ok',1200);return;
   }
   const payload={activity_id:S.ckActivityId,student_id:stuId,date:S.ckDate,session:S.ckSession,status,updated_at:new Date().toISOString()};
   try{
-    if(ex?.id){await q(sb.from('activity_attend').update({status,updated_at:payload.updated_at}).eq('id',ex.id));S.ckAttend[stuId]={id:ex.id,status}}
-    else{const r=await q(sb.from('activity_attend').insert(payload).select());S.ckAttend[stuId]={id:r[0].id,status}}
+    if(ex?.id){
+      await q(sb.from('activity_attend').update({status,updated_at:payload.updated_at}).eq('id',ex.id));
+      const rec={id:ex.id,status};
+      S.ckAttend[stuId]=rec;
+      if(S.attendCache[cacheKey])S.attendCache[cacheKey][stuId]=rec;
+    }else{
+      const r=await q(sb.from('activity_attend').insert(payload).select('id,status'));
+      const rec={id:r[0].id,status};
+      S.ckAttend[stuId]=rec;
+      if(S.attendCache[cacheKey])S.attendCache[cacheKey][stuId]=rec;
+    }
+    if(S.ckDate===todayStr())S.homeCache=null;
     _updateStuRow(stuId,status);updateCkStats();toast('✓ บันทึกแล้ว','ok',1200);
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er')}
 }
@@ -1161,6 +1196,9 @@ async function checkAll(status){
     const rows=targets.map(s=>({activity_id:S.ckActivityId,student_id:s.id,date:S.ckDate,session:S.ckSession,status,updated_at:new Date().toISOString()}));
     const result=await q(sb.from('activity_attend').upsert(rows,{onConflict:'activity_id,student_id,date,session'}).select());
     result.forEach(r=>{S.ckAttend[r.student_id]={id:r.id,status:r.status}});
+    const cacheKey=`${S.ckActivityId}_${S.ckDate}_${S.ckSession}`;
+    delete S.attendCache[cacheKey];
+    if(S.ckDate===todayStr())S.homeCache=null;
     renderCkList();updateCkStats();
     toast(`✓ เช็ค${status==='present'?'มา':'ขาด'} ${label} ${targets.length} คน`);
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er')}
@@ -1177,6 +1215,9 @@ async function clearAllCk(){
     const ids=targets.map(s=>s.id);
     await q(sb.from('activity_attend').delete().eq('activity_id',S.ckActivityId).eq('date',S.ckDate).eq('session',S.ckSession).in('student_id',ids));
     ids.forEach(id=>{delete S.ckAttend[id]});
+    const cacheKey=`${S.ckActivityId}_${S.ckDate}_${S.ckSession}`;
+    delete S.attendCache[cacheKey];
+    if(S.ckDate===todayStr())S.homeCache=null;
     renderCkList();updateCkStats();
     toast(`✓ ล้างค่า${label} ${targets.length} คน`);
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er')}
@@ -1228,6 +1269,8 @@ async function renderRptActivity(){
     </div>
     <div id="rpt-act-body">${S.rptActivityId?'<div class="loading-text">กำลังโหลด...</div>':'<div class="empty-state">เลือกกิจกรรมเพื่อดูรายงาน</div>'}</div>`;
   if(!S.rptActivityId)return;
+  const _rptActKey=`${S.rptActivityId}_${S.rptDate}`;
+  if(S.rptActCacheKey===_rptActKey&&S.rptActData?.bodyHtml){$('rpt-act-body').innerHTML=S.rptActData.bodyHtml;return}
   try{
     const[mR,eR]=await Promise.all([
       q(sb.from('activity_attend').select('student_id,status').eq('activity_id',S.rptActivityId).eq('date',S.rptDate).eq('session','morning')),
@@ -1264,6 +1307,8 @@ async function renderRptActivity(){
     h+=`<tr class="total-row"><td class="left">รวม</td><td>${tot.total}</td><td class="green">${tot.mP}</td><td class="orange">${tot.mL}</td><td class="red">${tot.mA}</td>${ev?`<td class="green">${tot.eP}</td><td class="orange">${tot.eL}</td><td class="red">${tot.eA}</td>`:''}</tr>`;
     h+=`</tbody></table></div>`;
     $('rpt-act-body').innerHTML=_expBar('exportActPDF','exportActExcel','exportActImage')+`<div id="rpt-act-doc" style="background:#fff;border-radius:10px;border:1px solid #e5e7eb;padding:20px">${h}</div>`;
+    S.rptActData.bodyHtml=$('rpt-act-body').innerHTML;
+    S.rptActCacheKey=_rptActKey;
   }catch(e){$('rpt-act-body').innerHTML=`<div class="empty-state">เกิดข้อผิดพลาด: ${esc(e.message)}</div>`}
 }
 
@@ -1334,7 +1379,7 @@ async function _loadRptStudentData(){
   if(!S.rptStuId){$('rpt-stu-body').innerHTML='<div class="empty-state">เลือกนักเรียนเพื่อดูประวัติ</div>';return}
   $('rpt-stu-body').innerHTML='<div class="loading-text">กำลังโหลด...</div>';
   try{
-    let qb=sb.from('activity_attend').select('*,activities(name)').eq('student_id',S.rptStuId).order('date',{ascending:false}).order('session');
+    let qb=sb.from('activity_attend').select('date,session,status,activities(name)').eq('student_id',S.rptStuId).order('date',{ascending:false}).order('session');
     if(S.rptStuActivityId) qb=qb.eq('activity_id',S.rptStuActivityId);
     const rows=await q(qb);
     if(!rows.length){$('rpt-stu-body').innerHTML='<div class="empty-state">ยังไม่มีข้อมูลการเข้าร่วมกิจกรรม</div>';return}
@@ -1406,6 +1451,8 @@ async function renderRptClass(){
     </div>
     <div id="rpt-class-body">${(!S.rptClassActivityId||!S.rptClassClass)?'<div class="empty-state">เลือกกิจกรรมและชั้นเรียนเพื่อดูรายงาน</div>':'<div class="loading-text">กำลังโหลด...</div>'}</div>`;
   if(!S.rptClassActivityId||!S.rptClassClass)return;
+  const _rptClsKey=`${S.rptClassActivityId}_${S.rptClassClass}_${S.rptClassDate}_${S.rptClassSession}`;
+  if(S.rptClassCacheKey===_rptClsKey&&S.rptClassData?.bodyHtml){$('rpt-class-body').innerHTML=S.rptClassData.bodyHtml;return}
   try{
     const session=ev?S.rptClassSession:'morning';
     const[gl,room]=S.rptClassClass.split('_');
@@ -1440,6 +1487,7 @@ async function renderRptClass(){
     });
     h+=`</tbody></table></div>`;
     $('rpt-class-body').innerHTML=_expBar('exportClassPDF','exportClassExcel','exportClassImage')+`<div id="rpt-class-doc" style="background:#fff;border-radius:10px;border:1px solid #e5e7eb;padding:20px">${_docH}${h}</div>`;
+    S.rptClassData.bodyHtml=$('rpt-class-body').innerHTML;S.rptClassCacheKey=_rptClsKey;
   }catch(e){$('rpt-class-body').innerHTML=`<div class="empty-state">เกิดข้อผิดพลาด: ${esc(e.message)}</div>`}
 }
 
@@ -1488,6 +1536,8 @@ async function renderRptSchool(){
     </div>
     <div id="rpt-school-body">${S.rptActivityId?'<div class="loading-text">กำลังโหลด...</div>':'<div class="empty-state">เลือกกิจกรรมเพื่อดูรายงานทั้งโรงเรียน</div>'}</div>`;
   if(!S.rptActivityId)return;
+  const _rptSchKey=`${S.rptActivityId}_${S.rptDate}_${S.rptSession||'morning'}`;
+  if(S.rptSchoolCacheKey===_rptSchKey&&S.rptSchoolData?.bodyHtml){$('rpt-school-body').innerHTML=S.rptSchoolData.bodyHtml;return}
   try{
     const session=ev?S.rptSession:'morning';
     const rows=await q(sb.from('activity_attend').select('student_id,status').eq('activity_id',S.rptActivityId).eq('date',S.rptDate).eq('session',session));
@@ -1505,6 +1555,7 @@ async function renderRptSchool(){
     S.rptSchoolData={classData,act,sessLbl};
     const docHTML=buildSchoolDoc(classData,act,sessLbl);
     $('rpt-school-body').innerHTML=_expBar('exportSchoolPDF','exportSchoolExcel','exportSchoolImage')+docHTML;
+    S.rptSchoolData.bodyHtml=$('rpt-school-body').innerHTML;S.rptSchoolCacheKey=_rptSchKey;
   }catch(e){$('rpt-school-body').innerHTML=`<div class="empty-state">เกิดข้อผิดพลาด: ${esc(e.message)}</div>`}
 }
 
@@ -2029,7 +2080,9 @@ async function confirmLogout(){
 async function loadAppData(){
   loading(true);
   try{
-    await Promise.all([loadActivities(),loadStudents(),loadSchoolName(),loadAdminPin()]);
+    const[actR,stuR,nameR,pinR]=await Promise.allSettled([loadActivities(),loadStudents(),loadSchoolName(),loadAdminPin()]);
+    if(actR.status==='rejected')throw actR.reason;
+    if(stuR.status==='rejected')throw stuR.reason;
     const sn=$('side-school-name');if(sn)sn.textContent=S.schoolName;
     const ts=$('topbar-sub');if(ts)ts.textContent=S.schoolName;
     const firstActive=S.activities.find(a=>a.is_active);
