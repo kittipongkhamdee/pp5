@@ -116,9 +116,11 @@ html[data-theme="dark"] .ios-select,html[data-theme="dark"] .ios-input{backgroun
 .unif-name{font-size:14px;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .unif-meta{font-size:11px;color:var(--txt3);margin-top:1px}
 .unif-fail-detail{display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap}
-.unif-fail-detail select,.unif-fail-detail input{font-size:11.5px;padding:4px 8px;border:1px solid var(--sep);border-radius:8px;background:var(--card);color:var(--txt);font-family:inherit;outline:none}
-.unif-fail-detail select{max-width:160px}
-.unif-fail-detail input{max-width:130px}
+.unif-fail-detail input{font-size:11.5px;padding:4px 8px;border:1px solid var(--sep);border-radius:8px;background:var(--card);color:var(--txt);font-family:inherit;outline:none;max-width:180px}
+.unif-viol-grid{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}
+.unif-viol-chk{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;color:var(--txt2);background:var(--card2);border:1px solid var(--sep);border-radius:8px;padding:4px 9px;cursor:pointer;user-select:none;transition:all .12s}
+.unif-viol-chk input{accent-color:var(--red);cursor:pointer;width:13px;height:13px;flex-shrink:0}
+.unif-viol-chk.checked{background:rgba(220,38,38,.08);border-color:rgba(220,38,38,.3);color:var(--red);font-weight:600}
 .unif-btns{display:flex;gap:5px;flex-shrink:0}
 .ub{padding:5px 11px;border:none;border-radius:18px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .12s;background:var(--card2);color:var(--txt2)}
 .ub.pass{background:rgba(5,150,105,.1);color:var(--green)}
@@ -1014,8 +1016,17 @@ async function loadUniformChecks(date,classKey){
   const stuIds=S.students.filter(s=>String(s.grade_level)===gl&&String(s.room)===r).map(s=>s.id);
   if(!stuIds.length)return{};
   try{
-    const rows=await q(sb.from('uniform_checks').select('id,student_id,status,violation_id,note').eq('date',date).in('student_id',stuIds));
-    const map={};rows.forEach(r=>{map[String(r.student_id)]={id:r.id,status:r.status,violation_id:r.violation_id,note:r.note||''}});
+    const rows=await q(sb.from('uniform_checks').select('id,student_id,status,note').eq('date',date).in('student_id',stuIds));
+    const map={};
+    rows.forEach(r=>{map[String(r.student_id)]={id:r.id,status:r.status,note:r.note||'',violations:[]}});
+    const checkIds=rows.map(r=>r.id);
+    if(checkIds.length){
+      const vrows=await q(sb.from('uniform_check_violations').select('check_id,violation_id').in('check_id',checkIds));
+      vrows.forEach(v=>{
+        const entry=Object.values(map).find(m=>m.id===v.check_id);
+        if(entry)entry.violations.push(v.violation_id);
+      });
+    }
     return map;
   }catch(e){return{}}
 }
@@ -2264,12 +2275,11 @@ function renderUnifList(){
     const chk=S.unifChecks[String(s.id)]||{};
     const st=chk.status||'';
     const note=chk.note||'';
-    const vSel=viols.map(v=>`<option value="${v.id}"${chk.violation_id==v.id?' selected':''}>${esc(v.name)}</option>`).join('');
+    const selViols=chk.violations||[];
+    const checkboxes=viols.map(v=>`<label class="unif-viol-chk${selViols.includes(v.id)?' checked':''}"><input type="checkbox"${selViols.includes(v.id)?' checked':''} onchange="setUnifViolationCheck('${s.id}',${v.id},this.checked)">${esc(v.name)}</label>`).join('');
     const failDetail=st==='fail'?`<div class="unif-fail-detail">
-      <select onchange="setUnifViolation('${s.id}',this.value)">
-        <option value="">-- ประเภทความผิด --</option>${vSel}
-      </select>
-      <input type="text" placeholder="หมายเหตุ" value="${esc(note)}" maxlength="60"
+      ${viols.length?`<div class="unif-viol-grid">${checkboxes}</div>`:'<span style="font-size:11px;color:var(--txt3)">ยังไม่มีประเภทความผิด (เพิ่มในหน้า Admin)</span>'}
+      <input type="text" placeholder="หมายเหตุเพิ่มเติม" value="${esc(note)}" maxlength="80"
         onchange="setUnifNote('${s.id}',this.value)" oninput="setUnifNote('${s.id}',this.value)">
     </div>`:'';
     h+=`<div class="unif-row" id="urow-${s.id}">
@@ -2310,26 +2320,34 @@ async function setUnifStatus(stuId,status){
     if(prev.id){try{await q(sb.from('uniform_checks').delete().eq('id',prev.id))}catch(e){}}
     delete S.unifChecks[key];renderUnifList();return;
   }
-  const payload={student_id:stuId,date:S.unifDate,status,violation_id:status==='pass'?null:(prev.violation_id||null),note:status==='pass'?null:(prev.note||null),updated_at:new Date().toISOString()};
+  const ts=new Date().toISOString();
+  const note=status==='pass'?null:(prev.note||null);
   try{
     if(prev.id){
-      await q(sb.from('uniform_checks').update(payload).eq('id',prev.id));
-      S.unifChecks[key]={...S.unifChecks[key],...payload};
+      await q(sb.from('uniform_checks').update({status,note,updated_at:ts}).eq('id',prev.id));
+      S.unifChecks[key]={...prev,status,note:note||'',violations:status==='pass'?[]:(prev.violations||[])};
     }else{
-      const rows=await q(sb.from('uniform_checks').insert(payload).select('id'));
-      S.unifChecks[key]={id:rows[0].id,...payload};
+      const rows=await q(sb.from('uniform_checks').insert({student_id:stuId,date:S.unifDate,status,note,updated_at:ts}).select('id'));
+      S.unifChecks[key]={id:rows[0].id,status,note:note||'',violations:[]};
     }
   }catch(e){toast('บันทึกไม่สำเร็จ: '+e.message,'er');return}
   renderUnifList();
 }
 
-async function setUnifViolation(stuId,violId){
-  const chk=S.unifChecks[String(stuId)];if(!chk||chk.status!=='fail')return;
-  const val=violId?+violId:null;
-  chk.violation_id=val;
-  if(chk.id){
-    try{await q(sb.from('uniform_checks').update({violation_id:val,updated_at:new Date().toISOString()}).eq('id',chk.id))}
-    catch(e){toast('บันทึกไม่สำเร็จ','er')}
+async function setUnifViolationCheck(stuId,violId,checked){
+  const chk=S.unifChecks[String(stuId)];if(!chk||chk.status!=='fail'||!chk.id)return;
+  const vid=+violId;
+  if(checked){
+    try{
+      await q(sb.from('uniform_check_violations').insert({check_id:chk.id,violation_id:vid}));
+      if(!chk.violations)chk.violations=[];
+      if(!chk.violations.includes(vid))chk.violations.push(vid);
+    }catch(e){toast('บันทึกไม่สำเร็จ','er');}
+  }else{
+    try{
+      await q(sb.from('uniform_check_violations').delete().eq('check_id',chk.id).eq('violation_id',vid));
+      chk.violations=(chk.violations||[]).filter(v=>v!==vid);
+    }catch(e){toast('ลบไม่สำเร็จ','er');}
   }
 }
 
@@ -2366,32 +2384,35 @@ async function renderUnifReport(){
     </div>`;
   loading(true);
   try{
-    let qb=sb.from('uniform_checks').select('student_id,date,status,violation_id,uniform_violations(name)').gte('date',dateFrom).lte('date',dateTo).order('date');
+    let qb=sb.from('uniform_checks').select('id,student_id,date,status,uniform_check_violations(violation_id,uniform_violations(name))').gte('date',dateFrom).lte('date',dateTo).order('date');
     if(S.unifRptClass){
       const[gl,r]=S.unifRptClass.split('_');
       const ids=S.students.filter(s=>String(s.grade_level)===gl&&String(s.room)===r).map(s=>s.id);
-      if(ids.length) qb=qb.in('student_id',ids);
+      if(ids.length)qb=qb.in('student_id',ids);
     }
     const rows=await q(qb);
     loading(false);
 
-    // Build per-student fail counts
-    const stuFail={};
-    rows.filter(r=>r.status==='fail').forEach(r=>{
-      if(!stuFail[r.student_id]) stuFail[r.student_id]={count:0,viols:{}};
-      stuFail[r.student_id].count++;
-      const vn=r.uniform_violations?.name||'ไม่ระบุ';
-      stuFail[r.student_id].viols[vn]=(stuFail[r.student_id].viols[vn]||0)+1;
-    });
-
     const totalPass=rows.filter(r=>r.status==='pass').length;
     const totalFail=rows.filter(r=>r.status==='fail').length;
 
-    // Violation frequency
+    // Violation frequency across all checks
     const violFreq={};
+    const stuFail={};
     rows.filter(r=>r.status==='fail').forEach(r=>{
-      const vn=r.uniform_violations?.name||'ไม่ระบุ';
-      violFreq[vn]=(violFreq[vn]||0)+1;
+      if(!stuFail[r.student_id])stuFail[r.student_id]={count:0,viols:{}};
+      stuFail[r.student_id].count++;
+      const vcvs=r.uniform_check_violations||[];
+      if(vcvs.length){
+        vcvs.forEach(cv=>{
+          const vn=cv.uniform_violations?.name||'ไม่ระบุ';
+          violFreq[vn]=(violFreq[vn]||0)+1;
+          stuFail[r.student_id].viols[vn]=(stuFail[r.student_id].viols[vn]||0)+1;
+        });
+      }else{
+        violFreq['ไม่ระบุ']=(violFreq['ไม่ระบุ']||0)+1;
+        stuFail[r.student_id].viols['ไม่ระบุ']=(stuFail[r.student_id].viols['ไม่ระบุ']||0)+1;
+      }
     });
     const topViols=Object.entries(violFreq).sort((a,b)=>b[1]-a[1]).slice(0,5);
 
