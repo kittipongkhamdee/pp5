@@ -2290,9 +2290,8 @@ function renderUnifList(){
     </div>`:'';
     h+=`<div class="unif-row${st?' status-'+st:''}" id="urow-${s.id}">
       <div class="unif-row-top">
-        <div class="unif-num">${i+1}</div>
         <div class="unif-info">
-          <div class="unif-name">${esc(s.student_name)}</div>
+          <div class="unif-name"><span class="unif-num">${i+1}.</span> ${esc(s.student_name)}</div>
           <div class="unif-meta">${esc(s.student_code)}</div>
         </div>
         <div class="unif-btns">
