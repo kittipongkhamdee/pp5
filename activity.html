@@ -2602,52 +2602,64 @@ async function renderUnifRptClass(){
     const ids=stus.map(s=>s.id);
     let rows=[];
     if(ids.length){
-      rows=await q(sb.from('uniform_checks').select('id,student_id,date,status,uniform_check_violations(violation_id,uniform_violations(name))').in('student_id',ids).eq('date',S.unifRptDate));
+      rows=await q(sb.from('uniform_checks').select('student_id,status,note,uniform_check_violations(violation_id,uniform_violations(name))').in('student_id',ids).eq('date',S.unifRptDate));
     }
     loading(false);
-    // Group by student
+    // Map student_id → check result
     const stuMap={};
-    stus.forEach(s=>{stuMap[String(s.id)]={pass:0,fail:0,absent:0,viols:{}}});
     rows.forEach(r=>{
-      const k=String(r.student_id);
-      if(!stuMap[k])return;
-      if(r.status==='pass')stuMap[k].pass++;
-      else if(r.status==='fail'){stuMap[k].fail++;
-        (r.uniform_check_violations||[]).forEach(cv=>{const vn=cv.uniform_violations?.name||'ไม่ระบุ';stuMap[k].viols[vn]=(stuMap[k].viols[vn]||0)+1});
-      }
-      else if(r.status==='absent')stuMap[k].absent++;
+      const vcvs=r.uniform_check_violations||[];
+      const viols=vcvs.map(cv=>cv.uniform_violations?.name||'ไม่ระบุ');
+      stuMap[String(r.student_id)]={status:r.status,viols,note:r.note||''};
     });
-    const pct=(n,d)=>d>0?Math.round(n/d*100)+'%':'—';
     const clsLbl=classLabel(gl,room);
+    let totPass=0,totFail=0,totAbsent=0,totUnchecked=0;
+    stus.forEach(s=>{
+      const d=stuMap[String(s.id)];
+      if(!d)totUnchecked++;
+      else if(d.status==='pass')totPass++;
+      else if(d.status==='fail')totFail++;
+      else if(d.status==='absent')totAbsent++;
+    });
+    const statusBadge=st=>{
+      if(st==='pass') return`<span style="background:#d1fae5;color:#065f46;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap">✓ ผ่าน</span>`;
+      if(st==='fail') return`<span style="background:#fee2e2;color:#991b1b;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap">✗ ไม่ผ่าน</span>`;
+      if(st==='absent') return`<span style="background:#f3f4f6;color:#374151;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap">ขาด</span>`;
+      return`<span style="color:#9ca3af;font-size:12px">—</span>`;
+    };
     let body=`<div class="unif-sr-header">
       <div class="unif-sr-school">${esc(S.schoolName||'')}</div>
       <div class="unif-sr-title">รายงานการตรวจเครื่องแต่งกาย — ${clsLbl}</div>
       <div class="unif-sr-date">${thDate(S.unifRptDate)}</div>
     </div>
-    <div class="table-wrap"><table class="unif-rpt-table">
-      <thead><tr><th>#</th><th class="left">ชื่อ-สกุล</th><th>ผ่าน</th><th>ไม่ผ่าน</th><th>ขาด</th><th>%ผ่าน</th><th class="left">ความผิด</th></tr></thead>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">
+      <div class="stat-box s-present"><div class="stat-num green">${totPass}</div><div class="stat-lbl">ผ่าน</div></div>
+      <div class="stat-box s-absent"><div class="stat-num red">${totFail}</div><div class="stat-lbl">ไม่ผ่าน</div></div>
+      <div class="stat-box s-late"><div class="stat-num orange">${totAbsent}</div><div class="stat-lbl">ขาด</div></div>
+      <div class="stat-box s-all"><div class="stat-num">${totUnchecked}</div><div class="stat-lbl">ยังไม่ตรวจ</div></div>
+    </div>
+    <div class="table-wrap"><table class="unif-rpt-table" style="background:#fff;color:#000">
+      <thead><tr>
+        <th style="background:#f3f4f6;color:#111;width:28px">#</th>
+        <th style="background:#f3f4f6;color:#111;min-width:52px">รหัส</th>
+        <th class="left" style="background:#f3f4f6;color:#111">ชื่อ-สกุล</th>
+        <th style="background:#f3f4f6;color:#111;min-width:70px">สถานะ</th>
+        <th class="left" style="background:#f3f4f6;color:#111;min-width:70px">สาเหตุ</th>
+        <th class="left" style="background:#f3f4f6;color:#111;min-width:60px">หมายเหตุ</th>
+      </tr></thead>
       <tbody>`;
-    let totPass=0,totFail=0,totAbsent=0;
     stus.forEach((s,i)=>{
-      const d=stuMap[String(s.id)]||{pass:0,fail:0,absent:0,viols:{}};
-      const total=d.pass+d.fail+d.absent;
-      const violStr=Object.entries(d.viols).sort((a,b)=>b[1]-a[1]).map(([k,v])=>k+(v>1?' x'+v:'')).join(', ')||'—';
-      const pctPass=pct(d.pass,total);
-      const pctNum=total>0?d.pass/total:null;
-      const pctCls=pctNum===null?'grey':pctNum>=0.9?'green':'red';
-      totPass+=d.pass;totFail+=d.fail;totAbsent+=d.absent;
+      const d=stuMap[String(s.id)];
+      const isFail=d?.status==='fail';
       body+=`<tr>
-        <td class="grey">${i+1}</td>
-        <td class="left"><div style="font-weight:600;font-size:13px">${esc(s.student_name)}</div><div style="font-size:11px;color:var(--txt3)">${esc(s.student_code)}</div></td>
-        <td class="green">${d.pass}</td>
-        <td class="red">${d.fail}</td>
-        <td class="grey">${d.absent}</td>
-        <td class="${pctCls}">${pctPass}</td>
-        <td class="left" style="font-size:11px;color:var(--txt2)">${esc(violStr)}</td>
+        <td style="color:#6b7280">${i+1}</td>
+        <td style="font-size:12px;color:#374151;white-space:nowrap">${esc(s.student_code)}</td>
+        <td class="left" style="color:#111;font-weight:500">${esc(s.student_name)}</td>
+        <td>${statusBadge(d?.status)}</td>
+        <td class="left" style="font-size:12px;color:#dc2626">${isFail&&d.viols.length?esc(d.viols.join(', ')):''}  </td>
+        <td class="left" style="font-size:12px;color:#374151">${isFail?esc(d.note):''}</td>
       </tr>`;
     });
-    const totTotal=totPass+totFail+totAbsent;
-    body+=`<tr class="total-row"><td></td><td class="left">รวม</td><td class="green">${totPass}</td><td class="red">${totFail}</td><td class="grey">${totAbsent}</td><td>${pct(totPass,totTotal)}</td><td></td></tr>`;
     body+=`</tbody></table></div>`;
     if(!rows.length)body+=`<div class="empty-state">ยังไม่มีข้อมูลการตรวจ</div>`;
     $('unif-rpt-class-doc').innerHTML=body;
