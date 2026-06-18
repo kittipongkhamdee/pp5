@@ -2512,20 +2512,30 @@ async function renderUnifRptSummary(){
       <div style="text-align:center;font-size:22px;font-weight:800;margin-bottom:16px;color:${totalPass/Math.max(rows.length,1)>=0.9?'var(--green)':'var(--red)'}">ร้อยละผ่าน ${pct(totalPass,rows.length)}</div>`;
 
     if(sortedViols.length){
-      // ── Bar chart ──
+      // ── Ranked Cards ──
       const maxCnt=sortedViols[0][1].length;
-      body+=`<div style="font-size:13px;font-weight:700;margin-bottom:8px">สถิติแต่งกายไม่เรียบร้อย</div>
-        <div style="background:var(--card);border:1px solid var(--sep);border-radius:var(--radius);padding:12px 14px;margin-bottom:16px">`;
-      sortedViols.forEach(([vname,stus])=>{
+      const totalFailed=failedList.length||1;
+      const rankColors=['#C0392B','#E74C3C','#E67E22','#F39C12','#8E44AD'];
+      const rankBg=['rgba(192,57,43,.1)','rgba(231,76,60,.08)','rgba(230,126,18,.08)','rgba(243,156,18,.08)','rgba(142,68,173,.08)'];
+      body+=`<div style="font-size:13px;font-weight:700;margin-bottom:10px">สถิติแต่งกายไม่เรียบร้อย</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">`;
+      sortedViols.forEach(([vname,stus],ri)=>{
         const w=Math.round(stus.length/maxCnt*100);
-        body+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-          <div style="min-width:80px;max-width:110px;font-size:12px;font-weight:600;color:var(--txt);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(vname)}</div>
-          <div style="flex:1;height:20px;background:var(--sep);border-radius:4px;overflow:hidden">
-            <div style="height:100%;width:${w}%;background:var(--red);border-radius:4px;transition:width .4s;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;box-sizing:border-box">
-              ${stus.length>=3?`<span style="font-size:11px;font-weight:700;color:#fff">${stus.length}</span>`:''}
+        const pct=Math.round(stus.length/totalFailed*100);
+        const col=rankColors[Math.min(ri,rankColors.length-1)];
+        const bg=rankBg[Math.min(ri,rankBg.length-1)];
+        body+=`<div style="background:var(--card);border:1px solid var(--sep);border-radius:var(--radius);padding:12px 14px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+            <div style="width:28px;height:28px;border-radius:50%;background:${col};color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">${ri+1}</div>
+            <div style="font-size:15px;font-weight:700;color:var(--txt);flex:1">${esc(vname)}</div>
+            <div style="text-align:right">
+              <div style="font-size:20px;font-weight:800;color:${col};line-height:1">${stus.length}</div>
+              <div style="font-size:11px;color:var(--txt3);margin-top:1px">คน (${pct}%)</div>
             </div>
           </div>
-          <div style="min-width:28px;font-size:13px;font-weight:700;color:var(--red);text-align:right">${stus.length}</div>
+          <div style="height:8px;background:var(--sep);border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:${w}%;background:${col};border-radius:4px"></div>
+          </div>
         </div>`;
       });
       body+=`</div>`;
