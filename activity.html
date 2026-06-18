@@ -958,6 +958,18 @@ async function renderHome(){
   const stuCls={};
   S.students.forEach(s=>{stuCls[s.id]=`${s.grade_level}_${s.room}`});
   let html=`<div class="section" style="padding-top:20px">
+  <div style="background:linear-gradient(135deg,rgba(59,130,246,0.11) 0%,rgba(99,102,241,0.09) 100%);
+    border:1px solid rgba(59,130,246,0.2);border-radius:var(--radius);
+    padding:18px 20px;margin-bottom:16px;
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    box-shadow:0 2px 16px rgba(59,130,246,0.09),inset 0 1px 0 rgba(255,255,255,0.55)">
+    <div id="hclock-time" style="font-size:42px;font-weight:800;color:var(--txt);
+      font-variant-numeric:tabular-nums;letter-spacing:2px;line-height:1;flex-shrink:0">--:--:--</div>
+    <div style="text-align:right;min-width:0">
+      <div id="hclock-day" style="font-size:15px;font-weight:700;color:#3B82F6;line-height:1.4;white-space:nowrap"></div>
+      <div id="hclock-date" style="font-size:13px;color:var(--txt2);margin-top:2px;white-space:nowrap"></div>
+    </div>
+  </div>
   <div class="home-stats-row" style="display:flex;gap:10px;margin-bottom:20px">
     <div style="flex:1;background:var(--card);border:1px solid var(--sep);border-radius:var(--radius);padding:14px 12px;text-align:center">
       <div style="font-size:24px;font-weight:800;color:var(--primary)">${acts.length}</div>
@@ -2050,6 +2062,10 @@ function startClock(){
     cd.textContent=`วัน${D[n.getDay()]} ${n.getDate()} ${M[n.getMonth()]} ${n.getFullYear()+543}`;
     ct.textContent=`${hh}:${mm}:${ss}`;
     if(cm)cm.textContent=`· ${hh}:${mm}`;
+    const ht=$('hclock-time'),hday=$('hclock-day'),hdt=$('hclock-date');
+    if(ht)ht.textContent=`${hh}:${mm}:${ss}`;
+    if(hday)hday.textContent=`วัน${D[n.getDay()]}`;
+    if(hdt)hdt.textContent=`${n.getDate()} ${M[n.getMonth()]} ${n.getFullYear()+543}`;
   }
   tick();setInterval(tick,1000);
 }
