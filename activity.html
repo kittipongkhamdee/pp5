@@ -1615,10 +1615,10 @@ function _expBar(p,x,i){
   return`<div class="export-bar"><button class="exp-btn blue" onclick="${p}()">${pdfSvg}PDF</button><button class="exp-btn green" onclick="${x}()">${xlSvg}Excel</button><button class="exp-btn orange" onclick="${i}()">${imgSvg}ภาพ</button></div>`;
 }
 function _pdfCss(){
-  return`@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap');
+  return`@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
     @page{size:A4 portrait;margin:18mm 20mm}
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'Noto Sans Thai',sans-serif;color:#000;background:#fff;font-size:14px}
+    body{font-family:'Sarabun',sans-serif;color:#000;background:#fff;font-size:14px}
     .sr-header{text-align:center;border-bottom:2px solid #000;padding-bottom:12px;margin-bottom:16px}
     .sr-school{font-size:17px;font-weight:700}.sr-title{font-size:14px;font-weight:600;margin-top:3px}
     .sr-act{font-size:13px;color:#444;margin-top:2px}.sr-date{font-size:12px;color:#666;margin-top:2px}
@@ -1694,10 +1694,10 @@ async function exportSchoolPDF(){
   if(!S.rptSchoolData){toast('กรุณาโหลดรายงานก่อน','er');return}
   const{classData,act,sessLbl}=S.rptSchoolData;
   const css=`
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
     @page{size:A4 portrait;margin:18mm 20mm}
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'Noto Sans Thai',sans-serif;color:#000;background:#fff;font-size:14px}
+    body{font-family:'Sarabun',sans-serif;color:#000;background:#fff;font-size:14px}
     .school-report{margin-bottom:30px}
     .sr-page2{page-break-before:always;margin-top:0}
     .sr-header{text-align:center;border-bottom:2px solid #000;padding-bottom:12px;margin-bottom:16px}
