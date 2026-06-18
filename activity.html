@@ -2465,7 +2465,7 @@ async function renderUnifRptSummary(){
   el.innerHTML=h+'<div class="loading-text">กำลังโหลด...</div></div></div>';
   loading(true);
   try{
-    let qb=sb.from('uniform_checks').select('id,student_id,date,status,uniform_check_violations(violation_id,uniform_violations(name))').eq('date',date);
+    let qb=sb.from('uniform_checks').select('id,student_id,status,note,uniform_check_violations(violation_id,uniform_violations(name))').eq('date',date);
     if(S.unifRptClass){
       const[gl,r]=S.unifRptClass.split('_');
       const ids=S.students.filter(s=>String(s.grade_level)===gl&&String(s.room)===r).map(s=>s.id);
@@ -2478,19 +2478,20 @@ async function renderUnifRptSummary(){
     const totalAbsent=rows.filter(r=>r.status==='absent').length;
     const pct=(n,d)=>d>0?(n/d*100).toFixed(1)+'%':'—';
 
-    // Build violation → students map, sorted by class
+    // Build violation → students map (for bar chart) and failed student list (for table)
     const violStudents={};
+    const failedList=[];
+    const sortKey=s=>`${String(s.grade_level).padStart(2,'0')}_${String(s.room).padStart(2,'0')}_${s.student_code}`;
     rows.filter(r=>r.status==='fail').forEach(r=>{
       const stu=S.students.find(s=>String(s.id)===String(r.student_id));
       if(!stu)return;
       const vcvs=r.uniform_check_violations||[];
       const names=vcvs.length?vcvs.map(cv=>cv.uniform_violations?.name||'ไม่ระบุ'):['ไม่ระบุ'];
       names.forEach(vn=>{if(!violStudents[vn])violStudents[vn]=[];violStudents[vn].push(stu)});
+      failedList.push({stu,viols:names,note:r.note||''});
     });
-    Object.values(violStudents).forEach(arr=>arr.sort((a,b)=>{
-      const k=s=>`${String(s.grade_level).padStart(2,'0')}_${String(s.room).padStart(2,'0')}_${s.student_code}`;
-      return k(a).localeCompare(k(b));
-    }));
+    failedList.sort((a,b)=>sortKey(a.stu).localeCompare(sortKey(b.stu)));
+    Object.values(violStudents).forEach(arr=>arr.sort((a,b)=>sortKey(a).localeCompare(sortKey(b))));
     const sortedViols=Object.entries(violStudents).sort((a,b)=>b[1].length-a[1].length);
 
     let body=`
@@ -2525,28 +2526,28 @@ async function renderUnifRptSummary(){
       });
       body+=`</div>`;
 
-      // ── Collapsible violation cards ──
-      body+=`<div style="font-size:13px;font-weight:700;margin-bottom:8px">รายละเอียดแยกตามประเภท</div>`;
-      sortedViols.forEach(([vname,stus],vi)=>{
-        body+=`<details style="margin-bottom:8px" ${vi===0?'open':''}>
-          <summary class="unif-viol-summary">
-            <span class="unif-viol-badge">${esc(vname)}</span>
-            <span style="font-size:13px;font-weight:700;color:var(--red);margin-left:6px">${stus.length} คน</span>
-            <span class="unif-viol-chevron">▾</span>
-          </summary>
-          <div class="table-wrap" style="margin-top:4px"><table class="unif-rpt-table">
-            <thead><tr><th style="width:30px">#</th><th>รหัส</th><th class="left">ชื่อ-สกุล</th><th>ชั้น</th></tr></thead>
-            <tbody>`;
-        stus.forEach((s,i)=>{
-          body+=`<tr>
-            <td class="grey">${i+1}</td>
-            <td class="grey" style="font-size:12px;white-space:nowrap">${esc(s.student_code)}</td>
-            <td class="left">${esc(s.student_name)}</td>
-            <td class="nowrap">${classLabel(s.grade_level,s.room)}</td>
-          </tr>`;
-        });
-        body+=`</tbody></table></div></details>`;
+      // ── Collapsible failed students table ──
+      body+=`<details open>
+        <summary class="unif-viol-summary">
+          <span style="font-size:13px;font-weight:700;color:var(--txt)">นักเรียนที่แต่งกายไม่เรียบร้อย</span>
+          <span style="font-size:13px;font-weight:700;color:var(--red);margin-left:6px">${failedList.length} คน</span>
+          <span class="unif-viol-chevron">▾</span>
+        </summary>
+        <div class="table-wrap" style="margin-top:4px"><table class="unif-rpt-table">
+          <thead><tr><th style="width:28px">#</th><th style="min-width:52px">รหัส</th><th class="left">ชื่อ-สกุล</th><th style="min-width:52px">ชั้น</th><th class="left" style="min-width:70px">สาเหตุ</th><th class="left" style="min-width:60px">หมายเหตุ</th></tr></thead>
+          <tbody>`;
+      failedList.forEach((item,i)=>{
+        const{stu,viols,note}=item;
+        body+=`<tr>
+          <td class="grey">${i+1}</td>
+          <td class="grey" style="font-size:12px;white-space:nowrap">${esc(stu.student_code)}</td>
+          <td class="left">${esc(stu.student_name)}</td>
+          <td class="nowrap">${classLabel(stu.grade_level,stu.room)}</td>
+          <td class="left" style="font-size:12px;color:var(--red)">${esc(viols.join(', '))}</td>
+          <td class="left" style="font-size:12px;color:var(--txt2)">${esc(note)}</td>
+        </tr>`;
       });
+      body+=`</tbody></table></div></details>`;
     }
     if(!rows.length) body+=`<div class="empty-state">ไม่มีข้อมูลในช่วงเวลานี้</div>`;
     $('unif-rpt-summary-doc').innerHTML=body;
