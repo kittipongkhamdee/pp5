@@ -2510,7 +2510,7 @@ async function renderUnifRptSummary(){
     if(sortedViols.length){
       // ── Bar chart ──
       const maxCnt=sortedViols[0][1].length;
-      body+=`<div style="font-size:13px;font-weight:700;margin-bottom:8px">สถิติความผิดระเบียบ</div>
+      body+=`<div style="font-size:13px;font-weight:700;margin-bottom:8px">สถิติแต่งกายไม่เรียบร้อย</div>
         <div style="background:var(--card);border:1px solid var(--sep);border-radius:var(--radius);padding:12px 14px;margin-bottom:16px">`;
       sortedViols.forEach(([vname,stus])=>{
         const w=Math.round(stus.length/maxCnt*100);
