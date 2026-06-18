@@ -134,6 +134,40 @@ html[data-theme="dark"] .ios-select,html[data-theme="dark"] .ios-input{backgroun
 .ub.absent{background:rgba(107,114,128,.1);color:var(--txt3)}
 .ub.absent.active{background:#6B7280;color:#fff}
 .unif-rpt-doc{background:var(--card);border-radius:var(--radius);border:1px solid var(--sep);padding:16px;margin:12px 16px}
+/* ── Uniform Report sub-tabs ── */
+#unif-rpt-tabs{display:flex;gap:0;padding:0 16px;border-bottom:1px solid var(--sep);background:var(--card);flex-shrink:0;overflow-x:auto;scrollbar-width:none}
+#unif-rpt-tabs::-webkit-scrollbar{display:none}
+.unif-rpt-tab{flex-shrink:0;padding:10px 14px;font-size:13px;font-weight:500;color:var(--txt2);border:none;background:none;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:color .15s}
+.unif-rpt-tab.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:700}
+/* ── Uniform report table ── */
+.unif-rpt-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+.unif-rpt-table th{background:var(--card2);padding:8px 6px;text-align:center;font-weight:600;border:1px solid var(--sep);font-size:12px}
+.unif-rpt-table td{padding:7px 6px;text-align:center;border:1px solid var(--sep)}
+.unif-rpt-table tr.total-row td{font-weight:700;background:var(--card2)}
+.unif-rpt-table td.left{text-align:left;padding-left:10px}
+.unif-rpt-table td.nowrap{white-space:nowrap}
+.unif-rpt-table td.green{color:var(--green);font-weight:600}
+.unif-rpt-table td.red{color:var(--red);font-weight:600}
+.unif-rpt-table td.grey{color:var(--txt3)}
+.unif-rpt-table td.not-checked{color:#aaa;font-style:italic;font-size:12px}
+.unif-school-doc{background:var(--card);border-radius:var(--radius);border:1px solid var(--sep);padding:16px;margin:12px 16px}
+.unif-sr-header{text-align:center;margin-bottom:14px}
+.unif-sr-school{font-size:16px;font-weight:800;margin-bottom:2px}
+.unif-sr-title{font-size:13px;font-weight:600;color:var(--txt2)}
+.unif-sr-date{font-size:12px;color:var(--txt3);margin-top:2px}
+/* fail student list in class report */
+.unif-cls-fail-group{margin-top:14px}
+.unif-cls-fail-hd{font-size:13px;font-weight:700;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--sep)}
+.unif-stu-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--sep);font-size:13px}
+.unif-stu-row:last-child{border-bottom:none}
+.unif-stu-num{color:var(--txt3);min-width:22px;font-size:12px}
+.unif-stu-code{color:var(--txt2);min-width:60px;font-size:12px}
+.unif-stu-name{flex:1;font-weight:500}
+.badge-unif{font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;white-space:nowrap}
+.badge-unif.pass{background:#D1FAE5;color:#065F46}
+.badge-unif.fail{background:#FEE2E2;color:#991B1B}
+.badge-unif.absent{background:#F3F4F6;color:#374151}
+.badge-unif.none{background:#EFF6FF;color:#1E40AF}
 
 /* ── Cards / Lists ── */
 .section{padding:16px 20px 0}
@@ -781,8 +815,13 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
         <div class="unif-stats" id="unif-stats"></div>
         <div class="unif-list" id="unif-list"></div>
       </div>
-      <div id="unif-report-section" style="display:none;flex:1;overflow-y:auto">
-        <div id="unif-rpt-content" class="page-scroll"></div>
+      <div id="unif-report-section" style="display:none;flex:1;overflow:hidden;display:none;flex-direction:column">
+        <div id="unif-rpt-tabs">
+          <button class="unif-rpt-tab active" id="unif-rpt-tab-summary" onclick="switchUnifRptTab('summary')">สรุปรายวัน</button>
+          <button class="unif-rpt-tab" id="unif-rpt-tab-class" onclick="switchUnifRptTab('class')">ทั้งห้อง</button>
+          <button class="unif-rpt-tab" id="unif-rpt-tab-school" onclick="switchUnifRptTab('school')">ทั้งโรงเรียน</button>
+        </div>
+        <div id="unif-rpt-content" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch"></div>
       </div>
     </div>
   </div>
@@ -950,6 +989,7 @@ const S={
   rptClassActivityId:null,rptClassClass:null,rptClassDate:null,rptClassSession:'morning',rptClassData:null,
   unifViolations:[],unifDate:todayStr(),unifClass:null,unifChecks:{},unifTab:'check',
   unifRptDate:todayStr(),unifRptDateEnd:todayStr(),unifRptClass:null,
+  unifRptTab:'summary',unifRptClassKey:null,unifRptSchoolDate:todayStr(),
   page:'home',
 };
 
@@ -2237,8 +2277,15 @@ function switchUnifTab(tab){
   $('unif-tab-check').classList.toggle('active',tab==='check');
   $('unif-tab-report').classList.toggle('active',tab==='report');
   $('unif-check-section').style.display=tab==='check'?'flex':'none';
-  $('unif-report-section').style.display=tab==='report'?'block':'none';
+  const rptSec=$('unif-report-section');
+  rptSec.style.display=tab==='report'?'flex':'none';
   if(tab==='report')renderUnifReport();
+}
+
+function switchUnifRptTab(tab){
+  S.unifRptTab=tab;
+  ['summary','class','school'].forEach(t=>$('unif-rpt-tab-'+t)?.classList.toggle('active',t===tab));
+  renderUnifReport();
 }
 
 async function renderUniform(){
@@ -2370,28 +2417,35 @@ async function setUnifNote(stuId,note){
   }
 }
 
-async function renderUnifReport(){
+function renderUnifReport(){
+  ['summary','class','school'].forEach(t=>$('unif-rpt-tab-'+t)?.classList.toggle('active',t===S.unifRptTab));
+  if(S.unifRptTab==='summary') renderUnifRptSummary();
+  else if(S.unifRptTab==='class') renderUnifRptClass();
+  else renderUnifRptSchool();
+}
+
+// ── Uniform Report: สรุปรายวัน ──────────────────────────────────────────────
+async function renderUnifRptSummary(){
   const el=$('unif-rpt-content');
   const dateFrom=S.unifRptDate,dateTo=S.unifRptDateEnd;
-  let h=`<div class="section" style="padding-top:16px">
+  const cOpts=S.classes.map(c=>`<option value="${c.grade_level}_${c.room}"${S.unifRptClass===c.grade_level+'_'+c.room?' selected':''}>${classLabel(c.grade_level,c.room)}</option>`).join('');
+  let h=`<div class="section" style="padding-top:14px">
     <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-      <div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--txt2)">
+      <div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--txt2);flex-wrap:wrap">
         <span>ตั้งแต่</span>
-        <input type="date" class="ios-select" value="${dateFrom}" style="max-width:150px"
-          onchange="S.unifRptDate=this.value;renderUnifReport()">
+        <input type="date" class="ios-select" value="${dateFrom}" style="max-width:145px" onchange="S.unifRptDate=this.value;renderUnifRptSummary()">
         <span>ถึง</span>
-        <input type="date" class="ios-select" value="${dateTo}" style="max-width:150px"
-          onchange="S.unifRptDateEnd=this.value;renderUnifReport()">
+        <input type="date" class="ios-select" value="${dateTo}" style="max-width:145px" onchange="S.unifRptDateEnd=this.value;renderUnifRptSummary()">
       </div>
-      <select class="ios-select" style="max-width:200px"
-        onchange="S.unifRptClass=this.value||null;renderUnifReport()">
-        <option value="">ทุกชั้นเรียน</option>
-        ${S.classes.map(c=>`<option value="${c.grade_level}_${c.room}"${S.unifRptClass===c.grade_level+'_'+c.room?' selected':''}>${classLabel(c.grade_level,c.room)}</option>`).join('')}
+      <select class="ios-select" style="max-width:200px" onchange="S.unifRptClass=this.value||null;renderUnifRptSummary()">
+        <option value="">ทุกชั้นเรียน</option>${cOpts}
       </select>
-      <button class="btn bs" onclick="_captureImage('unif-rpt-doc','รายงานแต่งกาย_'+S.unifRptDate+'_'+S.unifRptDateEnd+'.png')">
+      <button class="btn bs" onclick="_captureImage('unif-rpt-summary-doc','สรุปแต่งกาย_${dateFrom}_${dateTo}.png')">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>บันทึกรูป
       </button>
-    </div>`;
+    </div>
+    <div id="unif-rpt-summary-doc">`;
+  el.innerHTML=h+'<div class="loading-text">กำลังโหลด...</div></div></div>';
   loading(true);
   try{
     let qb=sb.from('uniform_checks').select('id,student_id,date,status,uniform_check_violations(violation_id,uniform_violations(name))').gte('date',dateFrom).lte('date',dateTo).order('date');
@@ -2402,73 +2456,228 @@ async function renderUnifReport(){
     }
     const rows=await q(qb);
     loading(false);
-
     const totalPass=rows.filter(r=>r.status==='pass').length;
     const totalFail=rows.filter(r=>r.status==='fail').length;
-
-    // Violation frequency across all checks
-    const violFreq={};
-    const stuFail={};
+    const totalAbsent=rows.filter(r=>r.status==='absent').length;
+    const pct=(n,d)=>d>0?(n/d*100).toFixed(1)+'%':'—';
+    const violFreq={};const stuFail={};
     rows.filter(r=>r.status==='fail').forEach(r=>{
       if(!stuFail[r.student_id])stuFail[r.student_id]={count:0,viols:{}};
       stuFail[r.student_id].count++;
       const vcvs=r.uniform_check_violations||[];
       if(vcvs.length){
-        vcvs.forEach(cv=>{
-          const vn=cv.uniform_violations?.name||'ไม่ระบุ';
-          violFreq[vn]=(violFreq[vn]||0)+1;
-          stuFail[r.student_id].viols[vn]=(stuFail[r.student_id].viols[vn]||0)+1;
-        });
-      }else{
-        violFreq['ไม่ระบุ']=(violFreq['ไม่ระบุ']||0)+1;
-        stuFail[r.student_id].viols['ไม่ระบุ']=(stuFail[r.student_id].viols['ไม่ระบุ']||0)+1;
-      }
+        vcvs.forEach(cv=>{const vn=cv.uniform_violations?.name||'ไม่ระบุ';violFreq[vn]=(violFreq[vn]||0)+1;stuFail[r.student_id].viols[vn]=(stuFail[r.student_id].viols[vn]||0)+1});
+      }else{violFreq['ไม่ระบุ']=(violFreq['ไม่ระบุ']||0)+1;stuFail[r.student_id].viols['ไม่ระบุ']=(stuFail[r.student_id].viols['ไม่ระบุ']||0)+1}
     });
     const topViols=Object.entries(violFreq).sort((a,b)=>b[1]-a[1]).slice(0,5);
-
-    h+=`<div id="unif-rpt-doc">
-      <div style="text-align:center;font-size:15px;font-weight:800;margin-bottom:4px">${esc(S.schoolName||'')}</div>
-      <div style="text-align:center;font-size:13px;color:var(--txt2);margin-bottom:12px">รายงานการตรวจเครื่องแต่งกาย ${thDate(dateFrom)}${dateFrom!==dateTo?' — '+thDate(dateTo):''}</div>
-      <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
-        <div class="unif-stat" style="flex:1;background:rgba(5,150,105,.08);border-radius:10px;padding:10px"><div class="unif-stat-val" style="color:var(--green)">${totalPass}</div><div class="unif-stat-lbl">ผ่านทั้งหมด</div></div>
-        <div class="unif-stat" style="flex:1;background:rgba(220,38,38,.08);border-radius:10px;padding:10px"><div class="unif-stat-val" style="color:var(--red)">${totalFail}</div><div class="unif-stat-lbl">ไม่ผ่านทั้งหมด</div></div>
-        <div class="unif-stat" style="flex:1;background:var(--card2);border-radius:10px;padding:10px"><div class="unif-stat-val">${rows.length}</div><div class="unif-stat-lbl">บันทึกทั้งหมด</div></div>
-      </div>`;
-
+    let body=`
+      <div class="unif-sr-header"><div class="unif-sr-school">${esc(S.schoolName||'')}</div>
+        <div class="unif-sr-title">รายงานการตรวจเครื่องแต่งกาย</div>
+        <div class="unif-sr-date">${thDate(dateFrom)}${dateFrom!==dateTo?' — '+thDate(dateTo):''}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">
+        <div class="stat-box s-all"><div class="stat-num">${rows.length}</div><div class="stat-lbl">บันทึก</div></div>
+        <div class="stat-box s-present"><div class="stat-num green">${totalPass}</div><div class="stat-lbl">ผ่าน</div></div>
+        <div class="stat-box s-absent"><div class="stat-num red">${totalFail}</div><div class="stat-lbl">ไม่ผ่าน</div></div>
+        <div class="stat-box s-late"><div class="stat-num orange">${totalAbsent}</div><div class="stat-lbl">ขาด</div></div>
+      </div>
+      <div style="text-align:center;font-size:22px;font-weight:800;margin-bottom:14px;color:${totalPass/Math.max(rows.length,1)>=0.9?'var(--green)':'var(--red)'}">ร้อยละผ่าน ${pct(totalPass,rows.length)}</div>`;
     if(topViols.length){
-      h+=`<div style="font-size:13px;font-weight:700;margin-bottom:8px">ความผิดระเบียบที่พบบ่อย</div>
-      <div class="card" style="margin-bottom:14px">`;
+      body+=`<div style="font-size:13px;font-weight:700;margin-bottom:8px">ความผิดระเบียบที่พบบ่อย (Top 5)</div><div class="card" style="margin-bottom:14px">`;
       topViols.forEach(([name,cnt],i)=>{
-        h+=`<div class="card-row"><div class="card-row-icon" style="background:rgba(220,38,38,.1);color:var(--red);font-size:13px;font-weight:800">${i+1}</div>
-          <div class="card-row-info"><div class="card-row-name">${esc(name)}</div></div>
-          <div style="font-size:14px;font-weight:700;color:var(--red)">${cnt} ครั้ง</div></div>`;
+        const barW=Math.round(cnt/topViols[0][1]*100);
+        body+=`<div class="card-row" style="flex-direction:column;align-items:stretch;padding:10px 14px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+            <span style="font-size:13px;font-weight:600">${i+1}. ${esc(name)}</span>
+            <span style="font-size:13px;font-weight:700;color:var(--red)">${cnt} ครั้ง</span>
+          </div>
+          <div style="height:6px;border-radius:3px;background:var(--sep)"><div style="height:6px;border-radius:3px;background:var(--red);width:${barW}%"></div></div>
+        </div>`;
       });
-      h+=`</div>`;
+      body+=`</div>`;
     }
-
     if(Object.keys(stuFail).length){
       const stuList=Object.entries(stuFail).sort((a,b)=>b[1].count-a[1].count).slice(0,20);
-      h+=`<div style="font-size:13px;font-weight:700;margin-bottom:8px">นักเรียนที่ถูกบันทึกบ่อยสุด</div>
-      <div class="card" style="margin-bottom:14px">`;
+      body+=`<div style="font-size:13px;font-weight:700;margin-bottom:8px">นักเรียนที่ผิดระเบียบบ่อยสุด</div><div class="card" style="margin-bottom:14px">`;
       stuList.forEach(([sid,data])=>{
-        const stu=S.students.find(s=>s.id==sid)||{student_name:'?',student_code:'?'};
-        const vSummary=Object.entries(data.viols).map(([k,v])=>k+'('+v+')').join(', ');
-        h+=`<div class="card-row"><div class="card-row-info">
+        const stu=S.students.find(s=>String(s.id)===String(sid))||{student_name:'?',student_code:'?'};
+        const vSummary=Object.entries(data.viols).map(([k,v])=>k+(v>1?'('+v+')':'')).join(', ');
+        body+=`<div class="card-row"><div class="card-row-info">
           <div class="card-row-name">${esc(stu.student_name)}</div>
           <div class="card-row-sub">${esc(stu.student_code)} · ${esc(vSummary)}</div>
         </div><div style="font-size:14px;font-weight:700;color:var(--red)">${data.count} ครั้ง</div></div>`;
       });
-      h+=`</div>`;
+      body+=`</div>`;
     }
+    if(!rows.length) body+=`<div class="empty-state">ไม่มีข้อมูลในช่วงเวลานี้</div>`;
+    $('unif-rpt-summary-doc').innerHTML=body;
+  }catch(e){loading(false);$('unif-rpt-summary-doc').innerHTML=`<div class="empty-state">โหลดข้อมูลไม่สำเร็จ<small>${esc(e.message)}</small></div>`}
+}
 
-    if(!rows.length) h+=`<div class="empty-state">ไม่มีข้อมูลในช่วงเวลานี้</div>`;
-    h+=`</div>`;
-  }catch(e){
-    loading(false);
-    h+=`<div class="empty-state">ไม่สามารถโหลดข้อมูลได้<small>${esc(e.message)}</small></div>`;
+// ── Uniform Report: ทั้งห้อง ──────────────────────────────────────────────────
+async function renderUnifRptClass(){
+  const el=$('unif-rpt-content');
+  const cOpts=S.classes.map(c=>`<option value="${c.grade_level}_${c.room}"${S.unifRptClassKey===c.grade_level+'_'+c.room?' selected':''}>${classLabel(c.grade_level,c.room)}</option>`).join('');
+  let h=`<div class="section" style="padding-top:14px">
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <select class="ios-select" style="flex:1" onchange="S.unifRptClassKey=this.value||null;renderUnifRptClass()">
+        <option value="">-- เลือกชั้นเรียน --</option>${cOpts}
+      </select>
+      <div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--txt2)">
+        <input type="date" class="ios-select" value="${S.unifRptDate}" style="max-width:145px" onchange="S.unifRptDate=this.value;renderUnifRptClass()">
+        <span>ถึง</span>
+        <input type="date" class="ios-select" value="${S.unifRptDateEnd}" style="max-width:145px" onchange="S.unifRptDateEnd=this.value;renderUnifRptClass()">
+      </div>
+      <button class="btn bs" onclick="_captureImage('unif-rpt-class-doc','รายงานแต่งกายห้อง_${S.unifRptDate}.png')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>บันทึกรูป
+      </button>
+    </div>`;
+  if(!S.unifRptClassKey){
+    el.innerHTML=h+`<div class="empty-state">เลือกชั้นเรียนเพื่อดูรายงาน</div></div>`;return;
   }
-  h+=`</div>`;
-  el.innerHTML=h;
+  el.innerHTML=h+`<div id="unif-rpt-class-doc"><div class="loading-text">กำลังโหลด...</div></div></div>`;
+  loading(true);
+  try{
+    const[gl,room]=S.unifRptClassKey.split('_');
+    const stus=S.students.filter(s=>String(s.grade_level)===gl&&String(s.room)===room).sort((a,b)=>String(a.student_code).localeCompare(String(b.student_code)));
+    const ids=stus.map(s=>s.id);
+    let rows=[];
+    if(ids.length){
+      rows=await q(sb.from('uniform_checks').select('id,student_id,date,status,uniform_check_violations(violation_id,uniform_violations(name))').in('student_id',ids).gte('date',S.unifRptDate).lte('date',S.unifRptDateEnd).order('date'));
+    }
+    loading(false);
+    // Group by student
+    const stuMap={};
+    stus.forEach(s=>{stuMap[String(s.id)]={pass:0,fail:0,absent:0,viols:{}}});
+    rows.forEach(r=>{
+      const k=String(r.student_id);
+      if(!stuMap[k])return;
+      if(r.status==='pass')stuMap[k].pass++;
+      else if(r.status==='fail'){stuMap[k].fail++;
+        (r.uniform_check_violations||[]).forEach(cv=>{const vn=cv.uniform_violations?.name||'ไม่ระบุ';stuMap[k].viols[vn]=(stuMap[k].viols[vn]||0)+1});
+      }
+      else if(r.status==='absent')stuMap[k].absent++;
+    });
+    const totalDays=S.unifRptDate===S.unifRptDateEnd?1:Math.max(1,rows.reduce((s,r)=>{s.add(r.date);return s},new Set()).size);
+    const pct=(n,d)=>d>0?Math.round(n/d*100)+'%':'—';
+    const clsLbl=classLabel(gl,room);
+    let body=`<div class="unif-sr-header">
+      <div class="unif-sr-school">${esc(S.schoolName||'')}</div>
+      <div class="unif-sr-title">รายงานการตรวจเครื่องแต่งกาย — ${clsLbl}</div>
+      <div class="unif-sr-date">${thDate(S.unifRptDate)}${S.unifRptDate!==S.unifRptDateEnd?' — '+thDate(S.unifRptDateEnd):''}</div>
+    </div>
+    <div class="table-wrap"><table class="unif-rpt-table">
+      <thead><tr><th>#</th><th class="left">ชื่อ-สกุล</th><th>ผ่าน</th><th>ไม่ผ่าน</th><th>ขาด</th><th>%ผ่าน</th><th class="left">ความผิด</th></tr></thead>
+      <tbody>`;
+    let totPass=0,totFail=0,totAbsent=0;
+    stus.forEach((s,i)=>{
+      const d=stuMap[String(s.id)]||{pass:0,fail:0,absent:0,viols:{}};
+      const total=d.pass+d.fail+d.absent;
+      const violStr=Object.entries(d.viols).sort((a,b)=>b[1]-a[1]).map(([k,v])=>k+(v>1?' x'+v:'')).join(', ')||'—';
+      const pctPass=pct(d.pass,total);
+      const pctNum=total>0?d.pass/total:null;
+      const pctCls=pctNum===null?'grey':pctNum>=0.9?'green':'red';
+      totPass+=d.pass;totFail+=d.fail;totAbsent+=d.absent;
+      body+=`<tr>
+        <td class="grey">${i+1}</td>
+        <td class="left"><div style="font-weight:600;font-size:13px">${esc(s.student_name)}</div><div style="font-size:11px;color:var(--txt3)">${esc(s.student_code)}</div></td>
+        <td class="green">${d.pass}</td>
+        <td class="red">${d.fail}</td>
+        <td class="grey">${d.absent}</td>
+        <td class="${pctCls}">${pctPass}</td>
+        <td class="left" style="font-size:11px;color:var(--txt2)">${esc(violStr)}</td>
+      </tr>`;
+    });
+    const totTotal=totPass+totFail+totAbsent;
+    body+=`<tr class="total-row"><td></td><td class="left">รวม</td><td class="green">${totPass}</td><td class="red">${totFail}</td><td class="grey">${totAbsent}</td><td>${pct(totPass,totTotal)}</td><td></td></tr>`;
+    body+=`</tbody></table></div>`;
+    if(!rows.length)body+=`<div class="empty-state">ยังไม่มีข้อมูลการตรวจ</div>`;
+    $('unif-rpt-class-doc').innerHTML=body;
+  }catch(e){loading(false);$('unif-rpt-class-doc').innerHTML=`<div class="empty-state">โหลดข้อมูลไม่สำเร็จ<small>${esc(e.message)}</small></div>`}
+}
+
+// ── Uniform Report: ทั้งโรงเรียน ─────────────────────────────────────────────
+async function renderUnifRptSchool(){
+  const el=$('unif-rpt-content');
+  let h=`<div class="section" style="padding-top:14px">
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+      <div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--txt2)">
+        <span>ตั้งแต่</span>
+        <input type="date" class="ios-select" value="${S.unifRptDate}" style="max-width:145px" onchange="S.unifRptDate=this.value;renderUnifRptSchool()">
+        <span>ถึง</span>
+        <input type="date" class="ios-select" value="${S.unifRptDateEnd}" style="max-width:145px" onchange="S.unifRptDateEnd=this.value;renderUnifRptSchool()">
+      </div>
+      <button class="btn bs" onclick="_captureImage('unif-rpt-school-doc','รายงานแต่งกายโรงเรียน_${S.unifRptDate}.png')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>บันทึกรูป
+      </button>
+    </div>`;
+  el.innerHTML=h+`<div id="unif-rpt-school-doc"><div class="loading-text">กำลังโหลด...</div></div></div>`;
+  loading(true);
+  try{
+    const rows=await q(sb.from('uniform_checks').select('student_id,status').gte('date',S.unifRptDate).lte('date',S.unifRptDateEnd));
+    loading(false);
+    // Build per-class map
+    const classMap={};
+    S.classes.forEach(c=>{const k=`${c.grade_level}_${c.room}`;classMap[k]={gl:c.grade_level,r:c.room,pass:0,fail:0,absent:0,total:0}});
+    const stuClass={};
+    S.students.forEach(s=>{stuClass[String(s.id)]=`${s.grade_level}_${s.room}`});
+    rows.forEach(r=>{
+      const k=stuClass[String(r.student_id)];if(!k||!classMap[k])return;
+      if(r.status==='pass')classMap[k].pass++;
+      else if(r.status==='fail')classMap[k].fail++;
+      else if(r.status==='absent')classMap[k].absent++;
+    });
+    // total students per class
+    S.students.forEach(s=>{const k=`${s.grade_level}_${s.room}`;if(classMap[k])classMap[k].total++});
+    const entries=Object.values(classMap).filter(c=>c.total>0);
+    const pct=(n,d)=>d>0?Math.round(n/d*100)+'%':'—';
+    let totPass=0,totFail=0,totAbsent=0,totRec=0,totStu=0;
+    entries.forEach(c=>{const rec=c.pass+c.fail+c.absent;totPass+=c.pass;totFail+=c.fail;totAbsent+=c.absent;totRec+=rec;totStu+=c.total});
+
+    let body=`<div class="unif-sr-header">
+      <div class="unif-sr-school">${esc(S.schoolName||'')}</div>
+      <div class="unif-sr-title">รายงานการตรวจเครื่องแต่งกาย — ทั้งโรงเรียน</div>
+      <div class="unif-sr-date">${thDate(S.unifRptDate)}${S.unifRptDate!==S.unifRptDateEnd?' — '+thDate(S.unifRptDateEnd):''}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">
+      <div class="stat-box s-all"><div class="stat-num">${totStu}</div><div class="stat-lbl">นักเรียนทั้งหมด</div></div>
+      <div class="stat-box s-present"><div class="stat-num green">${totPass}</div><div class="stat-lbl">ผ่าน</div></div>
+      <div class="stat-box s-absent"><div class="stat-num red">${totFail}</div><div class="stat-lbl">ไม่ผ่าน</div></div>
+      <div class="stat-box s-late"><div class="stat-num orange">${totAbsent}</div><div class="stat-lbl">ขาด</div></div>
+    </div>
+    <div class="table-wrap"><table class="unif-rpt-table">
+      <thead><tr><th class="left nowrap">ชั้นเรียน</th><th>นักเรียน</th><th>ผ่าน</th><th>ไม่ผ่าน</th><th>ขาด</th><th>ยังไม่ตรวจ</th><th>%ผ่าน</th></tr></thead>
+      <tbody>`;
+    entries.forEach(c=>{
+      const rec=c.pass+c.fail+c.absent;
+      const notChecked=c.total-rec;
+      const pctNum=rec>0?c.pass/rec:null;
+      const pctCls=pctNum===null?'grey':pctNum>=0.9?'green':'red';
+      if(rec===0){
+        body+=`<tr><td class="left nowrap">${classLabel(c.gl,c.r)}</td><td>${c.total}</td><td colspan="5" class="not-checked">ยังไม่ตรวจ</td></tr>`;
+      }else{
+        body+=`<tr>
+          <td class="left nowrap">${classLabel(c.gl,c.r)}</td>
+          <td>${c.total}</td>
+          <td class="green">${c.pass}</td>
+          <td class="red">${c.fail}</td>
+          <td class="grey">${c.absent}</td>
+          <td class="grey">${notChecked>0?notChecked:''}</td>
+          <td class="${pctCls}">${pct(c.pass,rec)}</td>
+        </tr>`;
+      }
+    });
+    const totNotChecked=totStu-totRec;
+    body+=`<tr class="total-row">
+      <td class="left">รวมทั้งหมด</td><td>${totStu}</td>
+      <td class="green">${totPass}</td><td class="red">${totFail}</td>
+      <td class="grey">${totAbsent}</td><td class="grey">${totNotChecked>0?totNotChecked:''}</td>
+      <td>${pct(totPass,totRec)}</td>
+    </tr>`;
+    body+=`</tbody></table></div>`;
+    if(!rows.length)body+=`<div class="empty-state">ยังไม่มีข้อมูลการตรวจในช่วงนี้</div>`;
+    $('unif-rpt-school-doc').innerHTML=body;
+  }catch(e){loading(false);$('unif-rpt-school-doc').innerHTML=`<div class="empty-state">โหลดข้อมูลไม่สำเร็จ<small>${esc(e.message)}</small></div>`}
 }
 
 // ─── VIOLATION CRUD ────────────────────────────────────────────────────────
