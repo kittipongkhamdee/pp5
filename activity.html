@@ -2715,8 +2715,8 @@ async function renderUnifRptSchool(){
       <div class="stat-box s-absent"><div class="stat-num red">${totFail}</div><div class="stat-lbl">ไม่ผ่าน</div></div>
       <div class="stat-box s-late"><div class="stat-num orange">${totAbsent}</div><div class="stat-lbl">ขาด</div></div>
     </div>
-    <div class="table-wrap"><table class="unif-rpt-table">
-      <thead><tr><th class="left nowrap">ชั้นเรียน</th><th>นักเรียน</th><th>ผ่าน</th><th>ไม่ผ่าน</th><th>ขาด</th><th>%ผ่าน</th></tr></thead>
+    <div class="table-wrap"><table class="unif-rpt-table" style="background:#fff;color:#000">
+      <thead><tr><th class="left nowrap" style="background:#f3f4f6;color:#111">ชั้นเรียน</th><th style="background:#f3f4f6;color:#111">นักเรียน</th><th style="background:#f3f4f6;color:#111">ผ่าน</th><th style="background:#f3f4f6;color:#111">ไม่ผ่าน</th><th style="background:#f3f4f6;color:#111">ขาด</th><th style="background:#f3f4f6;color:#111">%ผ่าน</th></tr></thead>
       <tbody>`;
     entries.forEach(c=>{
       const rec=c.pass+c.fail+c.absent;
