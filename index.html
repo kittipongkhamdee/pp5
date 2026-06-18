@@ -5089,7 +5089,7 @@ async function pgCover(){
   loading(true);
   const sub=getSubject(S.selSub);
   const [sumRows,erRows,ecRows]=await Promise.all([
-    qc('sc_sum_cvr_'+S.selSub,  ()=>q(sb.from('score_summary').select('grade,special_result').eq('subject_id',S.selSub))),
+    qc('sc_sum_cvr_'+S.selSub,  ()=>q(sb.from('score_summary').select('student_id,grade,special_result').eq('subject_id',S.selSub))),
     qc('ev_read_cvr_'+S.selSub, ()=>q(sb.from('eval_read').select('student_id,result').eq('subject_id',S.selSub))),
     qc('ev_char_cvr_'+S.selSub, ()=>q(sb.from('eval_char').select('student_id,overall_result').eq('subject_id',S.selSub)))
   ]);
