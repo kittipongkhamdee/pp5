@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Mockup — เช็คกิจกรรม + แต่งกาย</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --primary:#3B82F6;--green:#059669;--red:#DC2626;--orange:#D97706;
+  --purple:#7c3aed;
+  --txt:#111827;--txt2:#6B7280;--txt3:#9CA3AF;
+  --card:#fff;--card2:#F9FAFB;--sep:#E5E7EB;
+  --font:'Noto Sans Thai',system-ui,sans-serif;
+  --radius:12px;--radius-sm:8px;
+}
+body{font-family:var(--font);background:#F3F4F6;color:var(--txt);font-size:14px;max-width:430px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+
+/* ── Top bar ── */
+.topbar{background:#fff;padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--sep);flex-shrink:0}
+.topbar-icon{width:36px;height:36px;background:var(--primary);border-radius:10px;display:flex;align-items:center;justify-content:center}
+.topbar-title{font-size:16px;font-weight:700}
+.topbar-sub{font-size:12px;color:var(--txt2)}
+
+/* ── Tabs ── */
+.tab-bar{display:flex;background:#fff;border-bottom:2px solid var(--sep);flex-shrink:0}
+.tab{flex:1;padding:11px 0;font-size:13px;font-weight:600;color:var(--txt2);text-align:center;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}
+.tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+
+/* ── Section label ── */
+.section-label{font-size:11px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;padding:14px 16px 6px}
+
+/* ── Controls ── */
+.controls{background:#fff;padding:10px 14px;border-bottom:1px solid var(--sep);display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+.ctrl-row{display:flex;gap:8px;align-items:center}
+.ios-select{padding:8px 12px;border:1px solid var(--sep);border-radius:var(--radius-sm);font-family:var(--font);font-size:13px;color:var(--txt);background:#fff;flex:1}
+.sess-btns{display:flex;gap:6px}
+.sess-btn{padding:7px 16px;border:1px solid var(--sep);border-radius:20px;font-size:13px;font-weight:600;background:#fff;color:var(--txt2);cursor:pointer}
+.sess-btn.active{background:var(--primary);border-color:var(--primary);color:#fff}
+
+/* ── Uniform toggle badge in controls ── */
+.unif-toggle-row{display:flex;align-items:center;gap:8px;padding:6px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:var(--radius-sm)}
+.unif-toggle-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0}
+.unif-toggle-txt{font-size:12px;font-weight:600;color:var(--green);flex:1}
+.unif-toggle-off{background:#fef2f2;border-color:#fecaca}
+.unif-toggle-off .unif-toggle-dot{background:#9ca3af}
+.unif-toggle-off .unif-toggle-txt{color:var(--txt2)}
+
+/* ── Stats ── */
+.stats{display:flex;background:#fff;border-bottom:1px solid var(--sep);flex-shrink:0}
+.stat{flex:1;text-align:center;padding:10px 4px}
+.stat-val{font-size:20px;font-weight:800;line-height:1}
+.stat-lbl{font-size:10px;color:var(--txt2);margin-top:2px;font-weight:500}
+
+/* ── Student list ── */
+.list{flex:1;overflow-y:auto}
+.stu-row{background:#fff;border-bottom:1px solid var(--sep);padding:10px 14px;transition:background .1s}
+.stu-row-top{display:flex;align-items:center;gap:8px}
+.stu-num{font-size:12px;color:var(--txt3);width:20px;flex-shrink:0;font-weight:600;text-align:right}
+.stu-info{flex:1;min-width:0}
+.stu-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stu-meta{font-size:11px;color:var(--txt3);margin-top:1px}
+.ck-btns{display:flex;gap:5px;flex-shrink:0}
+.cb{width:36px;height:36px;border:none;border-radius:50%;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);transition:all .12s;display:flex;align-items:center;justify-content:center}
+.cb.present{background:rgba(5,150,105,.1);color:var(--green)}
+.cb.present.active{background:var(--green);color:#fff;box-shadow:0 3px 10px rgba(5,150,105,.35)}
+.cb.late{background:rgba(217,119,6,.1);color:#b45309}
+.cb.late.active{background:#d97706;color:#fff;box-shadow:0 3px 10px rgba(217,119,6,.35)}
+.cb.absent{background:rgba(220,38,38,.08);color:var(--red)}
+.cb.absent.active{background:var(--red);color:#fff;box-shadow:0 3px 10px rgba(220,38,38,.35)}
+
+/* ── Uniform sub-row ── */
+.unif-row{display:flex;align-items:center;gap:8px;margin-top:7px;padding:7px 10px;background:#f0fdf4;border-radius:var(--radius-sm);border:1px solid #bbf7d0}
+.unif-row-lbl{font-size:11px;font-weight:700;color:#15803d;flex:1}
+.unif-row .ub{width:34px;height:34px;border:none;border-radius:50%;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;transition:all .12s}
+.unif-row .ub.pass{background:rgba(5,150,105,.15);color:var(--green)}
+.unif-row .ub.pass.active{background:var(--green);color:#fff;box-shadow:0 2px 8px rgba(5,150,105,.4)}
+.unif-row .ub.fail{background:rgba(220,38,38,.08);color:var(--red)}
+.unif-row .ub.fail.active{background:var(--red);color:#fff;box-shadow:0 2px 8px rgba(220,38,38,.4)}
+.unif-row-absent{background:#f9fafb;border-color:var(--sep)}
+.unif-row-absent .unif-row-lbl{color:var(--txt3)}
+
+/* ── Violation chips (when fail) ── */
+.viol-row{margin-top:5px;display:flex;flex-wrap:wrap;gap:5px;padding:0 10px}
+.viol-chip{display:flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--sep);background:#fff;color:var(--txt2);transition:all .12s}
+.viol-chip.checked{background:#fef2f2;border-color:#fca5a5;color:var(--red)}
+.viol-chip input{display:none}
+
+/* ── Status row color tint ── */
+.stu-row.s-absent{background:#fff7f7}
+.stu-row.s-late{background:#fffbf0}
+.stu-row.s-unif-fail{background:#fff7f7}
+
+/* ── Admin settings panel ── */
+.settings-card{background:#fff;border-radius:var(--radius);border:1px solid var(--sep);margin:12px 14px;overflow:hidden}
+.settings-hd{padding:14px 16px;border-bottom:1px solid var(--sep);font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
+.settings-hd svg{color:var(--txt2)}
+.settings-item{display:flex;align-items:center;padding:14px 16px;gap:12px;border-bottom:1px solid var(--sep)}
+.settings-item:last-child{border-bottom:none}
+.settings-txt{flex:1}
+.settings-lbl{font-size:14px;font-weight:500}
+.settings-sub{font-size:12px;color:var(--txt2);margin-top:2px}
+.toggle{width:44px;height:26px;border-radius:13px;background:#d1d5db;border:none;cursor:pointer;position:relative;flex-shrink:0;transition:background .2s}
+.toggle::after{content:'';position:absolute;width:22px;height:22px;border-radius:50%;background:#fff;top:2px;left:2px;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle.on{background:var(--green)}
+.toggle.on::after{left:20px}
+.sess-select-row{display:flex;gap:8px;padding:0 16px 14px}
+.sess-pill{flex:1;padding:8px;text-align:center;border:1px solid var(--sep);border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;background:#fff;color:var(--txt2)}
+.sess-pill.on{border-color:var(--green);background:#f0fdf4;color:#15803d}
+
+/* ── Bottom nav ── */
+.bottom-nav{display:flex;background:#fff;border-top:1px solid var(--sep);flex-shrink:0;padding-bottom:env(safe-area-inset-bottom)}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 0;color:var(--txt3);border:none;background:none;cursor:pointer;font-family:var(--font);gap:3px;transition:color .12s}
+.nav-item.active{color:var(--primary)}
+.nav-item.uniform{color:#16a34a}
+.nav-item.active.uniform{color:#15803d}
+.nav-item svg{width:22px;height:22px}
+.nav-item span{font-size:9.5px;font-weight:500}
+.nav-item.active span{font-weight:700}
+
+.page{display:none;flex:1;flex-direction:column;overflow:hidden}
+.page.active{display:flex}
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="topbar">
+  <div class="topbar-icon">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><path d="M9 12l2 2 4-4"/></svg>
+  </div>
+  <div>
+    <div class="topbar-title">เช็คชื่อ</div>
+    <div class="topbar-sub">โรงเรียนตาเบาวิทยา</div>
+  </div>
+</div>
+
+<!-- Page: Check-in (ผสาน) -->
+<div class="page active" id="page-checkin">
+
+  <!-- Controls -->
+  <div class="controls">
+    <div class="ctrl-row">
+      <select class="ios-select" style="flex:2">
+        <option>กิจกรรมเข้าแถว</option>
+      </select>
+      <div class="sess-btns">
+        <button class="sess-btn active">เช้า</button>
+        <button class="sess-btn">บ่าย</button>
+      </div>
+    </div>
+    <div class="ctrl-row">
+      <input type="date" class="ios-select" value="2026-06-19" style="flex:1">
+      <!-- badge บอกว่ารอบนี้เช็คแต่งกายด้วย -->
+      <div class="unif-toggle-row" style="flex:1.2">
+        <div class="unif-toggle-dot"></div>
+        <span class="unif-toggle-txt">เช็คแต่งกายด้วย</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="color:#16a34a"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H5v10a2 2 0 002 2h10a2 2 0 002-2V10h1.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat"><div class="stat-val">25</div><div class="stat-lbl">ทั้งหมด</div></div>
+    <div class="stat"><div class="stat-val" style="color:var(--green)">3</div><div class="stat-lbl">มา</div></div>
+    <div class="stat"><div class="stat-val" style="color:var(--orange)">0</div><div class="stat-lbl">สาย</div></div>
+    <div class="stat"><div class="stat-val" style="color:var(--red)">1</div><div class="stat-lbl">ขาด</div></div>
+    <div class="stat"><div class="stat-val" style="color:#7c3aed">2</div><div class="stat-lbl">ไม่ผ่านแต่งกาย</div></div>
+  </div>
+
+  <!-- Student list -->
+  <div class="list">
+
+    <!-- 1. มา + แต่งกายผ่าน -->
+    <div class="stu-row">
+      <div class="stu-row-top">
+        <span class="stu-num">1</span>
+        <div class="stu-info">
+          <div class="stu-name">เด็กชายณัฐวุฒิ ฉัตรเงิน</div>
+          <div class="stu-meta">02413 · มัธยมศึกษาปีที่ 1</div>
+        </div>
+        <div class="ck-btns">
+          <button class="cb present active">มา</button>
+          <button class="cb late">สาย</button>
+          <button class="cb absent">ขาด</button>
+        </div>
+      </div>
+      <!-- sub-row แต่งกาย: โชว์เมื่อ "มา" -->
+      <div class="unif-row" style="margin-left:28px">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="#15803d"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H5v10a2 2 0 002 2h10a2 2 0 002-2V10h1.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>
+        <span class="unif-row-lbl">การแต่งกาย</span>
+        <button class="ub pass active">✓</button>
+        <button class="ub fail">✗</button>
+      </div>
+    </div>
+
+    <!-- 2. มา + แต่งกายไม่ผ่าน + เลือกสาเหตุ -->
+    <div class="stu-row s-unif-fail">
+      <div class="stu-row-top">
+        <span class="stu-num">2</span>
+        <div class="stu-info">
+          <div class="stu-name">เด็กชายจิรายุ แรงจบ</div>
+          <div class="stu-meta">02426 · มัธยมศึกษาปีที่ 1</div>
+        </div>
+        <div class="ck-btns">
+          <button class="cb present active">มา</button>
+          <button class="cb late">สาย</button>
+          <button class="cb absent">ขาด</button>
+        </div>
+      </div>
+      <div class="unif-row" style="margin-left:28px;background:#fef2f2;border-color:#fca5a5">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="#dc2626"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H5v10a2 2 0 002 2h10a2 2 0 002-2V10h1.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>
+        <span class="unif-row-lbl" style="color:#dc2626">การแต่งกาย</span>
+        <button class="ub pass">✓</button>
+        <button class="ub fail active">✗</button>
+      </div>
+      <!-- violation chips -->
+      <div class="viol-row" style="margin-left:28px">
+        <label class="viol-chip checked"><input type="checkbox" checked>เสื้อผ้า</label>
+        <label class="viol-chip"><input type="checkbox">ทรงผม</label>
+        <label class="viol-chip"><input type="checkbox">เล็บ</label>
+        <label class="viol-chip"><input type="checkbox">รองเท้า</label>
+      </div>
+    </div>
+
+    <!-- 3. มา + ยังไม่เช็คแต่งกาย -->
+    <div class="stu-row">
+      <div class="stu-row-top">
+        <span class="stu-num">3</span>
+        <div class="stu-info">
+          <div class="stu-name">เด็กชายนราธิป สิทธิ์ประโคน</div>
+          <div class="stu-meta">02430 · มัธยมศึกษาปีที่ 1</div>
+        </div>
+        <div class="ck-btns">
+          <button class="cb present active">มา</button>
+          <button class="cb late">สาย</button>
+          <button class="cb absent">ขาด</button>
+        </div>
+      </div>
+      <div class="unif-row" style="margin-left:28px;background:#f9fafb;border-color:#e5e7eb">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="#9ca3af"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H5v10a2 2 0 002 2h10a2 2 0 002-2V10h1.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>
+        <span class="unif-row-lbl" style="color:var(--txt3)">การแต่งกาย (ยังไม่เช็ค)</span>
+        <button class="ub pass">✓</button>
+        <button class="ub fail">✗</button>
+      </div>
+    </div>
+
+    <!-- 4. ขาด → ไม่มีแถวแต่งกาย -->
+    <div class="stu-row s-absent">
+      <div class="stu-row-top">
+        <span class="stu-num">4</span>
+        <div class="stu-info">
+          <div class="stu-name">เด็กชายรัฐศาสตร์ ขนวน</div>
+          <div class="stu-meta">02433 · มัธยมศึกษาปีที่ 1</div>
+        </div>
+        <div class="ck-btns">
+          <button class="cb present">มา</button>
+          <button class="cb late">สาย</button>
+          <button class="cb absent active">ขาด</button>
+        </div>
+      </div>
+      <!-- ไม่มีแถวแต่งกาย เพราะขาด -->
+    </div>
+
+    <!-- 5. ยังไม่เช็ค -->
+    <div class="stu-row">
+      <div class="stu-row-top">
+        <span class="stu-num">5</span>
+        <div class="stu-info">
+          <div class="stu-name">เด็กชายจิรพัฒน์ ลอยเลื่อน</div>
+          <div class="stu-meta">02445 · มัธยมศึกษาปีที่ 1</div>
+        </div>
+        <div class="ck-btns">
+          <button class="cb present">มา</button>
+          <button class="cb late">สาย</button>
+          <button class="cb absent">ขาด</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- spacer -->
+    <div style="height:16px"></div>
+  </div>
+</div>
+
+<!-- Page: Admin settings -->
+<div class="page" id="page-admin">
+  <div style="overflow-y:auto;flex:1;padding-bottom:16px">
+    <div class="section-label">ตั้งค่าการเช็คการแต่งกาย</div>
+
+    <div class="settings-card">
+      <div class="settings-hd">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H5v10a2 2 0 002 2h10a2 2 0 002-2V10h1.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>
+        เช็คการแต่งกายพร้อมกิจกรรม
+      </div>
+
+      <div class="settings-item">
+        <div class="settings-txt">
+          <div class="settings-lbl">เปิดใช้งาน</div>
+          <div class="settings-sub">เมื่อนักเรียนมา ให้เช็คการแต่งกายด้วย</div>
+        </div>
+        <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+      </div>
+
+      <div class="settings-item" style="flex-direction:column;align-items:flex-start;gap:10px">
+        <div class="settings-txt">
+          <div class="settings-lbl">เช็คในรอบใดบ้าง</div>
+          <div class="settings-sub">เลือกได้มากกว่า 1 รอบ</div>
+        </div>
+        <div class="sess-select-row" style="width:100%;padding:0">
+          <button class="sess-pill on" onclick="this.classList.toggle('on')">☀️ เช้า</button>
+          <button class="sess-pill" onclick="this.classList.toggle('on')">🌤 บ่าย</button>
+        </div>
+      </div>
+
+      <div class="settings-item">
+        <div class="settings-txt">
+          <div class="settings-lbl">บันทึกแยกตาราง</div>
+          <div class="settings-sub">เก็บข้อมูลแต่งกายใน uniform_checks เหมือนเดิม (แนะนำ)</div>
+        </div>
+        <button class="toggle on"></button>
+      </div>
+    </div>
+
+    <div class="section-label">ตัวอย่างผลลัพธ์</div>
+    <div style="margin:0 14px;padding:14px;background:#fff;border-radius:var(--radius);border:1px solid var(--sep);font-size:13px;line-height:2;color:var(--txt2)">
+      <div>✅ <b>มา</b> → แสดงแถวเช็คการแต่งกาย (ผ่าน / ไม่ผ่าน)</div>
+      <div>⏰ <b>สาย</b> → <span style="color:var(--txt3)">ไม่แสดงแถวแต่งกาย</span></div>
+      <div>❌ <b>ขาด</b> → <span style="color:var(--txt3)">ไม่แสดงแถวแต่งกาย</span></div>
+      <div>➖ <b>ยังไม่เช็ค</b> → <span style="color:var(--txt3)">ไม่แสดงแถวแต่งกาย</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom nav -->
+<nav class="bottom-nav">
+  <button class="nav-item" onclick="showPage('home')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1v-9.5z"/><path d="M9 21v-7h6v7"/></svg>
+    <span>หน้าหลัก</span>
+  </button>
+  <button class="nav-item active" onclick="showPage('checkin')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><path d="M9 12l2 2 4-4"/></svg>
+    <span>เช็คชื่อ</span>
+  </button>
+  <button class="nav-item uniform" onclick="showPage('admin')">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H5v10a2 2 0 002 2h10a2 2 0 002-2V10h1.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>
+    <span>แต่งกาย</span>
+  </button>
+  <button class="nav-item" onclick="showPage('admin')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+    <span>Admin</span>
+  </button>
+</nav>
+
+<script>
+function showPage(p){
+  document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  if(p==='checkin'){
+    document.getElementById('page-checkin').classList.add('active');
+    document.querySelectorAll('.nav-item')[1].classList.add('active');
+  } else if(p==='admin'){
+    document.getElementById('page-admin').classList.add('active');
+    document.querySelectorAll('.nav-item')[3].classList.add('active');
+  }
+}
+</script>
+</body>
+</html>
