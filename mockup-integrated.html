@@ -3,12 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<title>Mockup — เช็คกิจกรรม + แต่งกาย</title>
+<title>Mockup — การ์ดนักเรียน</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --primary:#3B82F6;--green:#059669;--red:#DC2626;--orange:#D97706;
-  --purple:#7c3aed;
   --txt:#111827;--txt2:#6B7280;--txt3:#9CA3AF;
   --card:#fff;--card2:#F9FAFB;--sep:#E5E7EB;
   --font:'Noto Sans Thai',system-ui,sans-serif;
@@ -18,33 +17,19 @@ body{font-family:var(--font);background:#F3F4F6;color:var(--txt);font-size:14px;
 
 /* ── Top bar ── */
 .topbar{background:#fff;padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--sep);flex-shrink:0}
-.topbar-icon{width:36px;height:36px;background:var(--primary);border-radius:10px;display:flex;align-items:center;justify-content:center}
+.topbar-icon{width:36px;height:36px;background:var(--primary);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .topbar-title{font-size:16px;font-weight:700}
 .topbar-sub{font-size:12px;color:var(--txt2)}
-
-/* ── Tabs ── */
-.tab-bar{display:flex;background:#fff;border-bottom:2px solid var(--sep);flex-shrink:0}
-.tab{flex:1;padding:11px 0;font-size:13px;font-weight:600;color:var(--txt2);text-align:center;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}
-.tab.active{color:var(--primary);border-bottom-color:var(--primary)}
-
-/* ── Section label ── */
-.section-label{font-size:11px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;padding:14px 16px 6px}
 
 /* ── Controls ── */
 .controls{background:#fff;padding:10px 14px;border-bottom:1px solid var(--sep);display:flex;flex-direction:column;gap:8px;flex-shrink:0}
 .ctrl-row{display:flex;gap:8px;align-items:center}
 .ios-select{padding:8px 12px;border:1px solid var(--sep);border-radius:var(--radius-sm);font-family:var(--font);font-size:13px;color:var(--txt);background:#fff;flex:1}
 .sess-btns{display:flex;gap:6px}
-.sess-btn{padding:7px 16px;border:1px solid var(--sep);border-radius:20px;font-size:13px;font-weight:600;background:#fff;color:var(--txt2);cursor:pointer}
+.sess-btn{padding:7px 16px;border:1px solid var(--sep);border-radius:20px;font-size:13px;font-weight:600;background:#fff;color:var(--txt2);cursor:pointer;font-family:var(--font)}
 .sess-btn.active{background:var(--primary);border-color:var(--primary);color:#fff}
-
-/* ── Uniform toggle badge in controls ── */
-.unif-toggle-row{display:flex;align-items:center;gap:8px;padding:6px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:var(--radius-sm)}
-.unif-toggle-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0}
-.unif-toggle-txt{font-size:12px;font-weight:600;color:var(--green);flex:1}
-.unif-toggle-off{background:#fef2f2;border-color:#fecaca}
-.unif-toggle-off .unif-toggle-dot{background:#9ca3af}
-.unif-toggle-off .unif-toggle-txt{color:var(--txt2)}
+.unif-badge{display:flex;align-items:center;gap:6px;padding:6px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:var(--radius-sm);flex:1.2}
+.unif-badge span{font-size:12px;font-weight:600;color:#15803d}
 
 /* ── Stats ── */
 .stats{display:flex;background:#fff;border-bottom:1px solid var(--sep);flex-shrink:0}
@@ -52,79 +37,77 @@ body{font-family:var(--font);background:#F3F4F6;color:var(--txt);font-size:14px;
 .stat-val{font-size:20px;font-weight:800;line-height:1}
 .stat-lbl{font-size:10px;color:var(--txt2);margin-top:2px;font-weight:500}
 
-/* ── Student list ── */
-.list{flex:1;overflow-y:auto}
-.stu-row{background:#fff;border-bottom:1px solid var(--sep);padding:10px 14px;transition:background .1s}
-.stu-row-top{display:flex;align-items:center;gap:8px}
-.stu-num{font-size:12px;color:var(--txt3);width:20px;flex-shrink:0;font-weight:600;text-align:right}
-.stu-info{flex:1;min-width:0}
-.stu-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.stu-meta{font-size:11px;color:var(--txt3);margin-top:1px}
-.ck-btns{display:flex;gap:5px;flex-shrink:0}
-.cb{width:36px;height:36px;border:none;border-radius:50%;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);transition:all .12s;display:flex;align-items:center;justify-content:center}
+/* ── List ── */
+.list{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+
+/* ── Student card ── */
+.stu-card{background:#fff;border-radius:var(--radius);border:1px solid var(--sep);overflow:hidden;transition:border-color .15s}
+.stu-card.done{border-color:#d1fae5}
+.stu-card.done-fail{border-color:#fecaca}
+.stu-card.absent-card{border-color:var(--sep);opacity:.75}
+
+/* card header */
+.card-hd{display:flex;align-items:center;gap:10px;padding:11px 14px}
+.card-num{font-size:12px;color:var(--txt3);width:18px;text-align:right;flex-shrink:0;font-weight:600}
+.card-info{flex:1;min-width:0}
+.card-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-meta{font-size:11px;color:var(--txt3);margin-top:1px}
+.card-status-badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;flex-shrink:0}
+.badge-present{background:#d1fae5;color:#065f46}
+.badge-late{background:#fef3c7;color:#92400e}
+.badge-absent{background:#fee2e2;color:#991b1b}
+.badge-unif-pass{background:#d1fae5;color:#065f46}
+.badge-unif-fail{background:#fee2e2;color:#991b1b}
+
+/* attendance buttons */
+.card-ck{display:flex;gap:6px;padding:0 14px 12px;padding-left:42px}
+.cb{height:34px;border:none;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);transition:all .12s;padding:0 14px;color:var(--txt2);background:var(--card2)}
 .cb.present{background:rgba(5,150,105,.1);color:var(--green)}
-.cb.present.active{background:var(--green);color:#fff;box-shadow:0 3px 10px rgba(5,150,105,.35)}
+.cb.present.active{background:var(--green);color:#fff;box-shadow:0 3px 10px rgba(5,150,105,.3)}
 .cb.late{background:rgba(217,119,6,.1);color:#b45309}
-.cb.late.active{background:#d97706;color:#fff;box-shadow:0 3px 10px rgba(217,119,6,.35)}
+.cb.late.active{background:#d97706;color:#fff;box-shadow:0 3px 10px rgba(217,119,6,.3)}
 .cb.absent{background:rgba(220,38,38,.08);color:var(--red)}
-.cb.absent.active{background:var(--red);color:#fff;box-shadow:0 3px 10px rgba(220,38,38,.35)}
+.cb.absent.active{background:var(--red);color:#fff;box-shadow:0 3px 10px rgba(220,38,38,.3)}
 
-/* ── Uniform sub-row ── */
-.unif-row{display:flex;align-items:center;gap:8px;margin-top:7px;padding:7px 10px;background:#f0fdf4;border-radius:var(--radius-sm);border:1px solid #bbf7d0}
-.unif-row-lbl{font-size:11px;font-weight:700;color:#15803d;flex:1}
-.unif-row .ub{width:34px;height:34px;border:none;border-radius:50%;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;transition:all .12s}
-.unif-row .ub.pass{background:rgba(5,150,105,.15);color:var(--green)}
-.unif-row .ub.pass.active{background:var(--green);color:#fff;box-shadow:0 2px 8px rgba(5,150,105,.4)}
-.unif-row .ub.fail{background:rgba(220,38,38,.08);color:var(--red)}
-.unif-row .ub.fail.active{background:var(--red);color:#fff;box-shadow:0 2px 8px rgba(220,38,38,.4)}
-.unif-row-absent{background:#f9fafb;border-color:var(--sep)}
-.unif-row-absent .unif-row-lbl{color:var(--txt3)}
+/* uniform section */
+.unif-section{margin:0 14px 12px;margin-left:42px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:var(--radius-sm);overflow:hidden}
+.unif-hd{display:flex;align-items:center;gap:6px;padding:8px 12px;border-bottom:1px solid #e2e8f0}
+.unif-hd-lbl{font-size:12px;font-weight:700;color:#475569;flex:1}
+.unif-btns{display:flex;gap:6px}
+.ub{width:34px;height:34px;border:none;border-radius:50%;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;transition:all .12s}
+.ub.pass{background:rgba(5,150,105,.12);color:var(--green)}
+.ub.pass.active{background:var(--green);color:#fff;box-shadow:0 2px 8px rgba(5,150,105,.4)}
+.ub.fail{background:rgba(220,38,38,.08);color:var(--red)}
+.ub.fail.active{background:var(--red);color:#fff;box-shadow:0 2px 8px rgba(220,38,38,.4)}
 
-/* ── Violation chips (when fail) ── */
-.viol-row{margin-top:5px;display:flex;flex-wrap:wrap;gap:5px;padding:0 10px}
-.viol-chip{display:flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--sep);background:#fff;color:var(--txt2);transition:all .12s}
-.viol-chip.checked{background:#fef2f2;border-color:#fca5a5;color:var(--red)}
-.viol-chip input{display:none}
+/* violation chips */
+.viol-wrap{padding:8px 10px;display:flex;flex-wrap:wrap;gap:5px}
+.vchip{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--sep);background:#fff;color:var(--txt2);transition:all .12s;user-select:none}
+.vchip.on{background:#fef2f2;border-color:#fca5a5;color:var(--red)}
 
-/* ── Status row color tint ── */
-.stu-row.s-absent{background:#fff7f7}
-.stu-row.s-late{background:#fffbf0}
-.stu-row.s-unif-fail{background:#fff7f7}
+/* collapsed card (เช็คครบแล้ว) */
+.stu-card.collapsed .card-ck{display:none}
+.stu-card.collapsed .unif-section{display:none}
+.stu-card.collapsed .card-hd{padding-bottom:11px}
 
-/* ── Admin settings panel ── */
-.settings-card{background:#fff;border-radius:var(--radius);border:1px solid var(--sep);margin:12px 14px;overflow:hidden}
-.settings-hd{padding:14px 16px;border-bottom:1px solid var(--sep);font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
-.settings-hd svg{color:var(--txt2)}
-.settings-item{display:flex;align-items:center;padding:14px 16px;gap:12px;border-bottom:1px solid var(--sep)}
-.settings-item:last-child{border-bottom:none}
-.settings-txt{flex:1}
-.settings-lbl{font-size:14px;font-weight:500}
-.settings-sub{font-size:12px;color:var(--txt2);margin-top:2px}
-.toggle{width:44px;height:26px;border-radius:13px;background:#d1d5db;border:none;cursor:pointer;position:relative;flex-shrink:0;transition:background .2s}
-.toggle::after{content:'';position:absolute;width:22px;height:22px;border-radius:50%;background:#fff;top:2px;left:2px;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
-.toggle.on{background:var(--green)}
-.toggle.on::after{left:20px}
-.sess-select-row{display:flex;gap:8px;padding:0 16px 14px}
-.sess-pill{flex:1;padding:8px;text-align:center;border:1px solid var(--sep);border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;background:#fff;color:var(--txt2)}
-.sess-pill.on{border-color:var(--green);background:#f0fdf4;color:#15803d}
+/* divider */
+.divider{height:1px;background:var(--sep);margin:2px 0}
 
 /* ── Bottom nav ── */
-.bottom-nav{display:flex;background:#fff;border-top:1px solid var(--sep);flex-shrink:0;padding-bottom:env(safe-area-inset-bottom)}
-.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 0;color:var(--txt3);border:none;background:none;cursor:pointer;font-family:var(--font);gap:3px;transition:color .12s}
+.bottom-nav{display:flex;background:#fff;border-top:1px solid var(--sep);flex-shrink:0}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 0;color:var(--txt3);border:none;background:none;cursor:pointer;font-family:var(--font);gap:3px}
 .nav-item.active{color:var(--primary)}
-.nav-item.uniform{color:#16a34a}
-.nav-item.active.uniform{color:#15803d}
+.nav-item.unif{color:#16a34a}
 .nav-item svg{width:22px;height:22px}
 .nav-item span{font-size:9.5px;font-weight:500}
-.nav-item.active span{font-weight:700}
+.nav-item.active span,.nav-item.active.unif span{font-weight:700}
 
-.page{display:none;flex:1;flex-direction:column;overflow:hidden}
-.page.active{display:flex}
+/* hint box */
+.hint{margin:4px 0 0;font-size:11px;color:var(--txt3);text-align:center;padding-bottom:4px}
 </style>
 </head>
 <body>
 
-<!-- Top bar -->
 <div class="topbar">
   <div class="topbar-icon">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><path d="M9 12l2 2 4-4"/></svg>
@@ -135,235 +118,256 @@ body{font-family:var(--font);background:#F3F4F6;color:var(--txt);font-size:14px;
   </div>
 </div>
 
-<!-- Page: Check-in (ผสาน) -->
-<div class="page active" id="page-checkin">
-
-  <!-- Controls -->
-  <div class="controls">
-    <div class="ctrl-row">
-      <select class="ios-select" style="flex:2">
-        <option>กิจกรรมเข้าแถว</option>
-      </select>
-      <div class="sess-btns">
-        <button class="sess-btn active">เช้า</button>
-        <button class="sess-btn">บ่าย</button>
-      </div>
-    </div>
-    <div class="ctrl-row">
-      <input type="date" class="ios-select" value="2026-06-19" style="flex:1">
-      <!-- badge บอกว่ารอบนี้เช็คแต่งกายด้วย -->
-      <div class="unif-toggle-row" style="flex:1.2">
-        <div class="unif-toggle-dot"></div>
-        <span class="unif-toggle-txt">เช็คแต่งกายด้วย</span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="color:#16a34a"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H5v10a2 2 0 002 2h10a2 2 0 002-2V10h1.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>
-      </div>
+<div class="controls">
+  <div class="ctrl-row">
+    <select class="ios-select" style="flex:2"><option>กิจกรรมเข้าแถว</option></select>
+    <div class="sess-btns">
+      <button class="sess-btn active">เช้า</button>
+      <button class="sess-btn">บ่าย</button>
     </div>
   </div>
-
-  <!-- Stats -->
-  <div class="stats">
-    <div class="stat"><div class="stat-val">25</div><div class="stat-lbl">ทั้งหมด</div></div>
-    <div class="stat"><div class="stat-val" style="color:var(--green)">3</div><div class="stat-lbl">มา</div></div>
-    <div class="stat"><div class="stat-val" style="color:var(--orange)">0</div><div class="stat-lbl">สาย</div></div>
-    <div class="stat"><div class="stat-val" style="color:var(--red)">1</div><div class="stat-lbl">ขาด</div></div>
-    <div class="stat"><div class="stat-val" style="color:#7c3aed">2</div><div class="stat-lbl">ไม่ผ่านแต่งกาย</div></div>
-  </div>
-
-  <!-- Student list -->
-  <div class="list">
-
-    <!-- 1. มา + แต่งกายผ่าน -->
-    <div class="stu-row">
-      <div class="stu-row-top">
-        <span class="stu-num">1</span>
-        <div class="stu-info">
-          <div class="stu-name">เด็กชายณัฐวุฒิ ฉัตรเงิน</div>
-          <div class="stu-meta">02413 · มัธยมศึกษาปีที่ 1</div>
-        </div>
-        <div class="ck-btns">
-          <button class="cb present active">มา</button>
-          <button class="cb late">สาย</button>
-          <button class="cb absent">ขาด</button>
-        </div>
-      </div>
-      <!-- sub-row แต่งกาย: โชว์เมื่อ "มา" -->
-      <div class="unif-row" style="margin-left:28px">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="#15803d"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H5v10a2 2 0 002 2h10a2 2 0 002-2V10h1.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>
-        <span class="unif-row-lbl">การแต่งกาย</span>
-        <button class="ub pass active">✓</button>
-        <button class="ub fail">✗</button>
-      </div>
-    </div>
-
-    <!-- 2. มา + แต่งกายไม่ผ่าน + เลือกสาเหตุ -->
-    <div class="stu-row s-unif-fail">
-      <div class="stu-row-top">
-        <span class="stu-num">2</span>
-        <div class="stu-info">
-          <div class="stu-name">เด็กชายจิรายุ แรงจบ</div>
-          <div class="stu-meta">02426 · มัธยมศึกษาปีที่ 1</div>
-        </div>
-        <div class="ck-btns">
-          <button class="cb present active">มา</button>
-          <button class="cb late">สาย</button>
-          <button class="cb absent">ขาด</button>
-        </div>
-      </div>
-      <div class="unif-row" style="margin-left:28px;background:#fef2f2;border-color:#fca5a5">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="#dc2626"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H5v10a2 2 0 002 2h10a2 2 0 002-2V10h1.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>
-        <span class="unif-row-lbl" style="color:#dc2626">การแต่งกาย</span>
-        <button class="ub pass">✓</button>
-        <button class="ub fail active">✗</button>
-      </div>
-      <!-- violation chips -->
-      <div class="viol-row" style="margin-left:28px">
-        <label class="viol-chip checked"><input type="checkbox" checked>เสื้อผ้า</label>
-        <label class="viol-chip"><input type="checkbox">ทรงผม</label>
-        <label class="viol-chip"><input type="checkbox">เล็บ</label>
-        <label class="viol-chip"><input type="checkbox">รองเท้า</label>
-      </div>
-    </div>
-
-    <!-- 3. มา + ยังไม่เช็คแต่งกาย -->
-    <div class="stu-row">
-      <div class="stu-row-top">
-        <span class="stu-num">3</span>
-        <div class="stu-info">
-          <div class="stu-name">เด็กชายนราธิป สิทธิ์ประโคน</div>
-          <div class="stu-meta">02430 · มัธยมศึกษาปีที่ 1</div>
-        </div>
-        <div class="ck-btns">
-          <button class="cb present active">มา</button>
-          <button class="cb late">สาย</button>
-          <button class="cb absent">ขาด</button>
-        </div>
-      </div>
-      <div class="unif-row" style="margin-left:28px;background:#f9fafb;border-color:#e5e7eb">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="#9ca3af"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H5v10a2 2 0 002 2h10a2 2 0 002-2V10h1.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>
-        <span class="unif-row-lbl" style="color:var(--txt3)">การแต่งกาย (ยังไม่เช็ค)</span>
-        <button class="ub pass">✓</button>
-        <button class="ub fail">✗</button>
-      </div>
-    </div>
-
-    <!-- 4. ขาด → ไม่มีแถวแต่งกาย -->
-    <div class="stu-row s-absent">
-      <div class="stu-row-top">
-        <span class="stu-num">4</span>
-        <div class="stu-info">
-          <div class="stu-name">เด็กชายรัฐศาสตร์ ขนวน</div>
-          <div class="stu-meta">02433 · มัธยมศึกษาปีที่ 1</div>
-        </div>
-        <div class="ck-btns">
-          <button class="cb present">มา</button>
-          <button class="cb late">สาย</button>
-          <button class="cb absent active">ขาด</button>
-        </div>
-      </div>
-      <!-- ไม่มีแถวแต่งกาย เพราะขาด -->
-    </div>
-
-    <!-- 5. ยังไม่เช็ค -->
-    <div class="stu-row">
-      <div class="stu-row-top">
-        <span class="stu-num">5</span>
-        <div class="stu-info">
-          <div class="stu-name">เด็กชายจิรพัฒน์ ลอยเลื่อน</div>
-          <div class="stu-meta">02445 · มัธยมศึกษาปีที่ 1</div>
-        </div>
-        <div class="ck-btns">
-          <button class="cb present">มา</button>
-          <button class="cb late">สาย</button>
-          <button class="cb absent">ขาด</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- spacer -->
-    <div style="height:16px"></div>
-  </div>
-</div>
-
-<!-- Page: Admin settings -->
-<div class="page" id="page-admin">
-  <div style="overflow-y:auto;flex:1;padding-bottom:16px">
-    <div class="section-label">ตั้งค่าการเช็คการแต่งกาย</div>
-
-    <div class="settings-card">
-      <div class="settings-hd">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H5v10a2 2 0 002 2h10a2 2 0 002-2V10h1.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>
-        เช็คการแต่งกายพร้อมกิจกรรม
-      </div>
-
-      <div class="settings-item">
-        <div class="settings-txt">
-          <div class="settings-lbl">เปิดใช้งาน</div>
-          <div class="settings-sub">เมื่อนักเรียนมา ให้เช็คการแต่งกายด้วย</div>
-        </div>
-        <button class="toggle on" onclick="this.classList.toggle('on')"></button>
-      </div>
-
-      <div class="settings-item" style="flex-direction:column;align-items:flex-start;gap:10px">
-        <div class="settings-txt">
-          <div class="settings-lbl">เช็คในรอบใดบ้าง</div>
-          <div class="settings-sub">เลือกได้มากกว่า 1 รอบ</div>
-        </div>
-        <div class="sess-select-row" style="width:100%;padding:0">
-          <button class="sess-pill on" onclick="this.classList.toggle('on')">☀️ เช้า</button>
-          <button class="sess-pill" onclick="this.classList.toggle('on')">🌤 บ่าย</button>
-        </div>
-      </div>
-
-      <div class="settings-item">
-        <div class="settings-txt">
-          <div class="settings-lbl">บันทึกแยกตาราง</div>
-          <div class="settings-sub">เก็บข้อมูลแต่งกายใน uniform_checks เหมือนเดิม (แนะนำ)</div>
-        </div>
-        <button class="toggle on"></button>
-      </div>
-    </div>
-
-    <div class="section-label">ตัวอย่างผลลัพธ์</div>
-    <div style="margin:0 14px;padding:14px;background:#fff;border-radius:var(--radius);border:1px solid var(--sep);font-size:13px;line-height:2;color:var(--txt2)">
-      <div>✅ <b>มา</b> → แสดงแถวเช็คการแต่งกาย (ผ่าน / ไม่ผ่าน)</div>
-      <div>⏰ <b>สาย</b> → <span style="color:var(--txt3)">ไม่แสดงแถวแต่งกาย</span></div>
-      <div>❌ <b>ขาด</b> → <span style="color:var(--txt3)">ไม่แสดงแถวแต่งกาย</span></div>
-      <div>➖ <b>ยังไม่เช็ค</b> → <span style="color:var(--txt3)">ไม่แสดงแถวแต่งกาย</span></div>
+  <div class="ctrl-row">
+    <input type="date" class="ios-select" value="2026-06-19" style="flex:1">
+    <div class="unif-badge" style="flex:1.2">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="#16a34a"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H5v10a2 2 0 002 2h10a2 2 0 002-2V10h1.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>
+      <span>เช็คแต่งกายด้วย</span>
     </div>
   </div>
 </div>
 
-<!-- Bottom nav -->
+<div class="stats">
+  <div class="stat"><div class="stat-val">25</div><div class="stat-lbl">ทั้งหมด</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--green)">3</div><div class="stat-lbl">มา</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--orange)">0</div><div class="stat-lbl">สาย</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--red)">1</div><div class="stat-lbl">ขาด</div></div>
+  <div class="stat"><div class="stat-val" style="color:#dc2626">2</div><div class="stat-lbl">ไม่ผ่านแต่งกาย</div></div>
+</div>
+
+<div class="list">
+
+  <!-- 1. มา + แต่งกายผ่าน → collapsed -->
+  <div class="stu-card done collapsed" id="c1">
+    <div class="card-hd">
+      <span class="card-num">1</span>
+      <div class="card-info">
+        <div class="card-name">เด็กชายณัฐวุฒิ ฉัตรเงิน</div>
+        <div class="card-meta">02413 · ม.1/1</div>
+      </div>
+      <span class="card-status-badge badge-present">มา</span>
+      <span class="card-status-badge badge-unif-pass" style="margin-left:4px">👕 ผ่าน</span>
+      <button onclick="expand('c1')" style="background:none;border:none;color:var(--txt3);cursor:pointer;padding:4px;margin-left:2px;font-size:18px">›</button>
+    </div>
+  </div>
+
+  <!-- 2. มา + แต่งกายไม่ผ่าน → collapsed -->
+  <div class="stu-card done-fail collapsed" id="c2">
+    <div class="card-hd">
+      <span class="card-num">2</span>
+      <div class="card-info">
+        <div class="card-name">เด็กชายจิรายุ แรงจบ</div>
+        <div class="card-meta">02426 · ม.1/1</div>
+      </div>
+      <span class="card-status-badge badge-present">มา</span>
+      <span class="card-status-badge badge-unif-fail" style="margin-left:4px">👕 ไม่ผ่าน</span>
+      <button onclick="expand('c2')" style="background:none;border:none;color:var(--txt3);cursor:pointer;padding:4px;margin-left:2px;font-size:18px">›</button>
+    </div>
+  </div>
+
+  <!-- 3. มา + ยังไม่เช็คแต่งกาย → expanded -->
+  <div class="stu-card" id="c3">
+    <div class="card-hd">
+      <span class="card-num">3</span>
+      <div class="card-info">
+        <div class="card-name">เด็กชายนราธิป สิทธิ์ประโคน</div>
+        <div class="card-meta">02430 · ม.1/1</div>
+      </div>
+      <span class="card-status-badge badge-present">มา</span>
+    </div>
+    <div class="card-ck">
+      <button class="cb present active">มา</button>
+      <button class="cb late">สาย</button>
+      <button class="cb absent">ขาด</button>
+    </div>
+    <div class="unif-section">
+      <div class="unif-hd">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="#475569"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H5v10a2 2 0 002 2h10a2 2 0 002-2V10h1.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>
+        <span class="unif-hd-lbl">การแต่งกาย</span>
+        <div class="unif-btns">
+          <button class="ub pass" onclick="setUnif('c3','pass')">✓</button>
+          <button class="ub fail" onclick="setUnif('c3','fail')">✗</button>
+        </div>
+      </div>
+    </div>
+    <div class="hint">กด ✓ หรือ ✗ เพื่อบันทึกการแต่งกาย</div>
+  </div>
+
+  <!-- 4. ยังไม่เช็ค → แสดงปุ่มครบ -->
+  <div class="stu-card" id="c4">
+    <div class="card-hd">
+      <span class="card-num">4</span>
+      <div class="card-info">
+        <div class="card-name">เด็กชายรัฐศาสตร์ ขนวน</div>
+        <div class="card-meta">02433 · ม.1/1</div>
+      </div>
+    </div>
+    <div class="card-ck">
+      <button class="cb present" onclick="markPresent('c4')">มา</button>
+      <button class="cb late" onclick="markLate('c4')">สาย</button>
+      <button class="cb absent" onclick="markAbsent('c4')">ขาด</button>
+    </div>
+  </div>
+
+  <!-- 5. ขาด → collapsed ไม่มีแถวแต่งกาย -->
+  <div class="stu-card absent-card collapsed" id="c5">
+    <div class="card-hd">
+      <span class="card-num">5</span>
+      <div class="card-info">
+        <div class="card-name">เด็กชายจิรพัฒน์ ลอยเลื่อน</div>
+        <div class="card-meta">02445 · ม.1/1</div>
+      </div>
+      <span class="card-status-badge badge-absent">ขาด</span>
+      <button onclick="expand('c5')" style="background:none;border:none;color:var(--txt3);cursor:pointer;padding:4px;margin-left:2px;font-size:18px">›</button>
+    </div>
+  </div>
+
+  <!-- 6. ยังไม่เช็ค -->
+  <div class="stu-card" id="c6">
+    <div class="card-hd">
+      <span class="card-num">6</span>
+      <div class="card-info">
+        <div class="card-name">เด็กหญิงปิยะดา มีสุข</div>
+        <div class="card-meta">02450 · ม.1/1</div>
+      </div>
+    </div>
+    <div class="card-ck">
+      <button class="cb present">มา</button>
+      <button class="cb late">สาย</button>
+      <button class="cb absent">ขาด</button>
+    </div>
+  </div>
+
+  <div style="height:8px"></div>
+</div>
+
 <nav class="bottom-nav">
-  <button class="nav-item" onclick="showPage('home')">
+  <button class="nav-item">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1v-9.5z"/><path d="M9 21v-7h6v7"/></svg>
     <span>หน้าหลัก</span>
   </button>
-  <button class="nav-item active" onclick="showPage('checkin')">
+  <button class="nav-item active">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><path d="M9 12l2 2 4-4"/></svg>
     <span>เช็คชื่อ</span>
   </button>
-  <button class="nav-item uniform" onclick="showPage('admin')">
+  <button class="nav-item unif">
     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H5v10a2 2 0 002 2h10a2 2 0 002-2V10h1.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>
     <span>แต่งกาย</span>
   </button>
-  <button class="nav-item" onclick="showPage('admin')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-    <span>Admin</span>
+  <button class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    <span>รายงาน</span>
   </button>
 </nav>
 
 <script>
-function showPage(p){
-  document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
-  if(p==='checkin'){
-    document.getElementById('page-checkin').classList.add('active');
-    document.querySelectorAll('.nav-item')[1].classList.add('active');
-  } else if(p==='admin'){
-    document.getElementById('page-admin').classList.add('active');
-    document.querySelectorAll('.nav-item')[3].classList.add('active');
+function expand(id){
+  const c=document.getElementById(id);
+  c.classList.remove('collapsed');
+}
+
+function setUnif(id,result){
+  const c=document.getElementById(id);
+  const passBtn=c.querySelector('.ub.pass');
+  const failBtn=c.querySelector('.ub.fail');
+  passBtn.classList.toggle('active', result==='pass');
+  failBtn.classList.toggle('active', result==='fail');
+
+  // show violation chips if fail
+  const existing=c.querySelector('.viol-wrap');
+  if(existing) existing.remove();
+
+  if(result==='fail'){
+    const wrap=document.createElement('div');
+    wrap.className='viol-wrap';
+    ['เสื้อผ้า','ทรงผม','เล็บ','รองเท้า','เครื่องประดับ'].forEach(v=>{
+      const chip=document.createElement('div');
+      chip.className='vchip';
+      chip.textContent=v;
+      chip.onclick=()=>chip.classList.toggle('on');
+      wrap.appendChild(chip);
+    });
+    c.querySelector('.unif-section').appendChild(wrap);
   }
+
+  // update header badge
+  const hd=c.querySelector('.card-hd');
+  let badge=hd.querySelector('.badge-unif-pass,.badge-unif-fail');
+  if(!badge){badge=document.createElement('span');badge.className='card-status-badge';badge.style.marginLeft='4px';hd.insertBefore(badge,hd.lastElementChild)}
+  badge.className='card-status-badge '+(result==='pass'?'badge-unif-pass':'badge-unif-fail');
+  badge.textContent=result==='pass'?'👕 ผ่าน':'👕 ไม่ผ่าน';
+
+  c.querySelector('.hint')?.remove();
+
+  // collapse after 1.2s
+  if(result==='pass'){
+    setTimeout(()=>{
+      c.classList.add('done','collapsed');
+    },900);
+  }
+}
+
+function markPresent(id){
+  const c=document.getElementById(id);
+  c.querySelectorAll('.cb').forEach(b=>b.classList.remove('active'));
+  c.querySelector('.cb.present').classList.add('active');
+
+  // add header badge
+  let badge=c.querySelector('.card-status-badge');
+  if(!badge){badge=document.createElement('span');badge.style.marginLeft='auto';c.querySelector('.card-hd').appendChild(badge)}
+  badge.className='card-status-badge badge-present';
+  badge.textContent='มา';
+
+  // show uniform section
+  if(!c.querySelector('.unif-section')){
+    const sec=document.createElement('div');
+    sec.className='unif-section';
+    sec.innerHTML=`
+      <div class="unif-hd">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="#475569"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H5v10a2 2 0 002 2h10a2 2 0 002-2V10h1.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>
+        <span class="unif-hd-lbl">การแต่งกาย</span>
+        <div class="unif-btns">
+          <button class="ub pass" onclick="setUnif('${id}','pass')">✓</button>
+          <button class="ub fail" onclick="setUnif('${id}','fail')">✗</button>
+        </div>
+      </div>`;
+    c.appendChild(sec);
+    const hint=document.createElement('div');
+    hint.className='hint';hint.textContent='กด ✓ หรือ ✗ เพื่อบันทึกการแต่งกาย';
+    c.appendChild(hint);
+  }
+}
+
+function markLate(id){
+  const c=document.getElementById(id);
+  c.querySelectorAll('.cb').forEach(b=>b.classList.remove('active'));
+  c.querySelector('.cb.late').classList.add('active');
+  c.querySelector('.unif-section')?.remove();
+  c.querySelector('.hint')?.remove();
+  let badge=c.querySelector('.card-status-badge');
+  if(!badge){badge=document.createElement('span');badge.style.marginLeft='auto';c.querySelector('.card-hd').appendChild(badge)}
+  badge.className='card-status-badge badge-late';badge.textContent='สาย';
+  setTimeout(()=>c.classList.add('absent-card','collapsed'),700);
+}
+
+function markAbsent(id){
+  const c=document.getElementById(id);
+  c.querySelectorAll('.cb').forEach(b=>b.classList.remove('active'));
+  c.querySelector('.cb.absent').classList.add('active');
+  c.querySelector('.unif-section')?.remove();
+  c.querySelector('.hint')?.remove();
+  let badge=c.querySelector('.card-status-badge');
+  if(!badge){badge=document.createElement('span');badge.style.marginLeft='auto';c.querySelector('.card-hd').appendChild(badge)}
+  badge.className='card-status-badge badge-absent';badge.textContent='ขาด';
+  setTimeout(()=>c.classList.add('absent-card','collapsed'),700);
 }
 </script>
 </body>
