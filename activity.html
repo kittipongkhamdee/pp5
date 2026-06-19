@@ -697,10 +697,6 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><path d="M9 12l2 2 4-4"/></svg>
       เช็คชื่อ
     </button>
-    <button class="side-nav-item" data-nav="school" onclick="nav('school')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-4h6v4"/><path d="M9 11h.01M15 11h.01M9 15h.01M15 15h.01"/></svg>
-      ทั้งโรงเรียน
-    </button>
     <button class="side-nav-item" data-nav="report" onclick="nav('report')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-5-5z"/><path d="M14 2v6h6"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="12" y2="17"/></svg>
       รายงาน
@@ -766,6 +762,7 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
       <button class="rpt-tab active" id="rpt-tab-activity" onclick="switchRptTab('activity')">รายกิจกรรม</button>
       <button class="rpt-tab" id="rpt-tab-student" onclick="switchRptTab('student')">รายนักเรียน</button>
       <button class="rpt-tab" id="rpt-tab-class" onclick="switchRptTab('class')">ทั้งห้อง</button>
+      <button class="rpt-tab" id="rpt-tab-school" onclick="switchRptTab('school')">ทั้งโรงเรียน</button>
       <button class="rpt-tab" id="rpt-tab-percent" onclick="switchRptTab('percent')">ร้อยละ</button>
     </div>
     <div id="rpt-content"></div>
@@ -787,10 +784,6 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
     <button class="nav-item" data-nav="checkin" id="nav-checkin" onclick="nav('checkin')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><path d="M9 12l2 2 4-4"/></svg>
       <span>เช็คชื่อ</span>
-    </button>
-    <button class="nav-item" data-nav="school" id="nav-school" onclick="nav('school')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-4h6v4"/><path d="M9 11h.01M15 11h.01M9 15h.01M15 15h.01"/></svg>
-      <span>ทั้งโรงเรียน</span>
     </button>
     <button class="nav-item" data-nav="report" id="nav-report" onclick="nav('report')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-5-5z"/><path d="M14 2v6h6"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="12" y2="17"/></svg>
@@ -1081,22 +1074,14 @@ function nav(page){
   S.page=page;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item,.side-nav-item').forEach(n=>n.classList.remove('active'));
-  const titles={home:'ระบบเช็คชื่อกิจกรรม',checkin:'เช็คชื่อ',school:'ทั้งโรงเรียน',report:'รายงาน',admin:'จัดการกิจกรรม'};
+  const titles={home:'ระบบเช็คชื่อกิจกรรม',checkin:'เช็คชื่อ',report:'รายงาน',admin:'จัดการกิจกรรม'};
   $('topbar-title').textContent=titles[page]||'';
-  if(page==='school'){
-    $('report-page').classList.add('active');
-    document.querySelectorAll('[data-nav="school"]').forEach(el=>el.classList.add('active'));
-    S.rptTab='school';
-    renderReport();
-  } else {
-    if(page==='report'&&S.rptTab==='school')S.rptTab='activity';
-    $(`${page}-page`).classList.add('active');
-    document.querySelectorAll(`[data-nav="${page}"]`).forEach(el=>el.classList.add('active'));
-    if(page==='home')renderHome();
-    else if(page==='checkin')renderCheckin();
-    else if(page==='report')renderReport();
-    else if(page==='admin')renderAdmin();
-  }
+  $(`${page}-page`).classList.add('active');
+  document.querySelectorAll(`[data-nav="${page}"]`).forEach(el=>el.classList.add('active'));
+  if(page==='home')renderHome();
+  else if(page==='checkin')renderCheckin();
+  else if(page==='report')renderReport();
+  else if(page==='admin')renderAdmin();
 }
 
 // ─── HOME ──────────────────────────────────────────────────────────────────
@@ -1514,8 +1499,8 @@ async function onCkSessionChange(s){S.ckSession=s;await renderCheckin()}
 
 // ─── REPORT ────────────────────────────────────────────────────────────────
 function renderReport(){
-  const tabs=$('rpt-tabs');if(tabs)tabs.style.display=S.rptTab==='school'?'none':'flex';
-  ['activity','student','class','percent'].forEach(t=>$('rpt-tab-'+t)?.classList.toggle('active',S.rptTab===t));
+  const tabs=$('rpt-tabs');if(tabs)tabs.style.display='flex';
+  ['activity','student','class','school','percent'].forEach(t=>$('rpt-tab-'+t)?.classList.toggle('active',S.rptTab===t));
   if(S.rptTab==='activity')renderRptActivity();
   else if(S.rptTab==='student')renderRptStudent();
   else if(S.rptTab==='class')renderRptClass();
@@ -1523,10 +1508,10 @@ function renderReport(){
   else renderRptPercent();
 }
 function switchRptTab(tab){
-  S.rptTab=tab;S.page=tab==='school'?'school':'report';
+  S.rptTab=tab;S.page='report';
   document.querySelectorAll('.nav-item,.side-nav-item').forEach(n=>n.classList.remove('active'));
-  document.querySelectorAll(`[data-nav="${S.page}"]`).forEach(el=>el.classList.add('active'));
-  const titles={school:'ทั้งโรงเรียน',activity:'รายงาน',student:'รายงาน',class:'รายงาน',percent:'รายงาน'};
+  document.querySelectorAll('[data-nav="report"]').forEach(el=>el.classList.add('active'));
+  const titles={school:'รายงาน',activity:'รายงาน',student:'รายงาน',class:'รายงาน',percent:'รายงาน'};
   $('topbar-title').textContent=titles[tab]||'รายงาน';
   renderReport();
 }
