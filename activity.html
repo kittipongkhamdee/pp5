@@ -2655,6 +2655,16 @@ function renderAdmin(){
   const unifSel=$('unif-check-sess-sel');if(unifSel)unifSel.value=S.unifCheckSessions||'';
 }
 
+async function saveUnifCheckSetting(val){
+  loading(true);
+  try{
+    await q(sb.from('config').upsert({key:'unif_check_sessions',value:val},{onConflict:'key'}));
+    S.unifCheckSessions=val;
+    toast(val?'บันทึกการตั้งค่าแต่งกายแล้ว':'ปิดการเช็คแต่งกายแล้ว');
+  }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er')}
+  finally{loading(false)}
+}
+
 async function saveSchoolName(){
   const inp=$('admin-school-name-inp');
   const val=inp?inp.value.trim():'';
