@@ -261,7 +261,38 @@ details[open] .unif-viol-chevron{transform:rotate(180deg)}
 #ck-btn-group .btn{flex:1;min-width:0;white-space:nowrap}
 
 /* ── Student rows ── */
-#ck-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(20px + var(--safe-bottom))}
+/* ── Check-in Card Style ── */
+#ck-list{padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.stu-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--sep);overflow:hidden;transition:border-color .15s}
+.stu-card.ck-done{border-color:#d1fae5}
+.stu-card.ck-fail{border-color:#fecaca}
+.stu-card.ck-other{opacity:.75}
+.stu-card.collapsed .card-btns-wrap{display:none}
+.stu-card.collapsed .stu-card-hd{cursor:pointer}
+.stu-card.collapsed .stu-card-hd:active{background:var(--card2)}
+.stu-card-hd{display:flex;align-items:center;gap:10px;padding:11px 14px}
+.stu-card-num{font-size:12px;color:var(--txt3);width:20px;text-align:right;flex-shrink:0;font-weight:600}
+.stu-card-info{flex:1;min-width:0}
+.stu-card-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stu-card-meta{font-size:11px;color:var(--txt3);margin-top:1px}
+.stu-card-badges{display:flex;gap:4px;align-items:center;flex-shrink:0}
+.stu-cbadge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;flex-shrink:0}
+.stu-cbadge.present{background:#d1fae5;color:#065f46}
+.stu-cbadge.late{background:#fef3c7;color:#92400e}
+.stu-cbadge.absent{background:#fee2e2;color:#991b1b}
+.stu-cbadge.unif-pass{background:#d1fae5;color:#065f46}
+.stu-cbadge.unif-fail{background:#fee2e2;color:#991b1b}
+.stu-chevron{color:var(--txt3);font-size:16px;transition:transform .2s;flex-shrink:0;line-height:1;margin-left:4px}
+.stu-card:not(.collapsed) .stu-chevron{transform:rotate(180deg)}
+.card-btns-wrap{padding:0 14px 12px;padding-left:44px;display:flex;flex-direction:column;gap:8px}
+.card-ck-btns{display:flex;gap:6px}
+.card-unif-sec{padding:8px 10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:var(--radius-sm)}
+.card-unif-hd{display:flex;align-items:center;gap:6px}
+.card-unif-lbl{font-size:12px;font-weight:700;color:#475569;flex:1}
+.card-unif-btns{display:flex;gap:5px}
+.card-viol-wrap{margin-top:6px;display:flex;flex-wrap:wrap;gap:5px}
+.card-vchip{display:inline-flex;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--sep);background:#fff;color:var(--txt2);transition:all .12s;user-select:none}
+.card-vchip.on{background:#fef2f2;border-color:#fca5a5;color:var(--red)}
 .stu-row{
   display:flex;align-items:center;gap:10px;padding:11px 20px;
   background:var(--card);border-bottom:1px solid var(--sep);transition:background .1s;
@@ -777,8 +808,9 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
       <div class="stats-grid">
         <div class="stat-box s-all"><div class="stat-num" id="ck-stat-total">0</div><div class="stat-lbl">ทั้งหมด</div></div>
         <div class="stat-box s-present"><div class="stat-num green" id="ck-stat-present">0</div><div class="stat-lbl">มา</div></div>
-        <div class="stat-box s-late"><div class="stat-num orange" id="ck-stat-late">0</div><div class="stat-lbl">สาย</div></div>
+        <div class="stat-box s-late"><div class="stat-num orange" id="ck-stat-late">0</div><div class="stat-lbl">ลา</div></div>
         <div class="stat-box s-absent"><div class="stat-num red" id="ck-stat-absent">0</div><div class="stat-lbl">ขาด</div></div>
+        <div class="stat-box s-red" id="ck-stat-unif-box" style="display:none"><div class="stat-num" id="ck-stat-unif-fail">0</div><div class="stat-lbl">ไม่ผ่านแต่งกาย</div></div>
       </div>
       <div id="ck-actions">
         <select class="ios-select" id="ck-class-sel" onchange="setCkFilterFromDrop()">
@@ -1031,6 +1063,7 @@ const S={
   rptTab:'activity',rptActivityId:null,rptDate:todayStr(),rptSession:'morning',rptStuId:null,rptStuClass:null,rptStuSearch:'',rptStuActivityId:null,rptSchoolData:null,rptActData:null,rptStuData:null,rptPctData:null,rptPctThreshold:80,rptPctActivityId:null,rptPctClass:null,
   rptClassActivityId:null,rptClassClass:null,rptClassDate:null,rptClassSession:'morning',rptClassData:null,
   unifViolations:[],unifDate:todayStr(),unifClass:null,unifChecks:{},unifTab:'check',
+  ckUnifChecks:{},unifCheckSessions:'',
   unifRptDate:todayStr(),unifRptClass:null,
   unifRptTab:'summary',unifRptClassKey:null,unifRptSchoolDate:todayStr(),
   page:'home',
@@ -1086,6 +1119,9 @@ async function loadStudents(){
 }
 async function loadSchoolName(){
   try{const r=await q(sb.from('config').select('value').eq('key','school_name').limit(1));if(r&&r[0])S.schoolName=r[0].value}catch(e){}
+}
+async function loadUnifCheckSetting(){
+  try{const r=await q(sb.from('config').select('value').eq('key','unif_check_sessions').limit(1));if(r&&r[0])S.unifCheckSessions=r[0].value||'';}catch(e){}
 }
 async function loadAttend(actId,date,session){
   const key=`${actId}_${date}_${session}`;
@@ -1305,33 +1341,103 @@ async function renderCheckin(){
     updateCkStats();return;
   }
   loading(true);
-  try{S.ckAttend=await loadAttend(S.ckActivityId,S.ckDate,S.ckSession)}
-  finally{loading(false)}
+  try{
+    S.ckAttend=await loadAttend(S.ckActivityId,S.ckDate,S.ckSession);
+    await loadCkUnifChecks();
+  }finally{loading(false)}
   renderCkList();updateCkStats();
 }
 
 function setCkFilterFromDrop(){S.ckFilter=$('ck-class-sel').value;renderCkList();updateCkStats()}
 
 function renderCkList(){
+  const unifOn=_unifCheckActive();
   let stus=S.students;
   if(S.ckFilter){const[gl,r]=S.ckFilter.split('_');stus=stus.filter(s=>String(s.grade_level)===gl&&String(s.room)===r)}
   if(!stus.length){$('ck-list').innerHTML=`<div class="empty-state">ไม่พบนักเรียน</div>`;return}
-  let i=0;
-  $('ck-list').innerHTML=stus.map(s=>{
-    i++;const att=S.ckAttend[s.id];const st=att?.status||'';
-    return`<div class="stu-row" id="stu-${s.id}">
-      <div class="stu-num">${i}</div>
-      <div class="stu-info">
-        <div class="stu-name">${esc(s.student_name)}</div>
-        <div class="stu-meta">${esc(s.student_code)} · ${classLabel(s.grade_level,s.room)}</div>
-      </div>
-      <div class="stu-btns">
-        <button class="sb-btn present${st==='present'?' active':''}" onclick="setStatus('${s.id}','present')">มา</button>
-        <button class="sb-btn late${st==='late'?' active':''}" onclick="setStatus('${s.id}','late')">สาย</button>
-        <button class="sb-btn absent${st==='absent'?' active':''}" onclick="setStatus('${s.id}','absent')">ขาด</button>
-      </div>
+  $('ck-list').innerHTML=stus.map((s,i)=>_stuCardHtml(s,i+1,unifOn)).join('');
+}
+
+function _stuCardHtml(s,num,unifOn){
+  const att=S.ckAttend[s.id];const st=att?.status||'';
+  const uchk=S.ckUnifChecks[String(s.id)];
+  const unifDone=unifOn&&st==='present'&&uchk?.status;
+  const isDone=(st==='present'&&(!unifOn||unifDone))||(st==='late'||st==='absent');
+  const cardClass=isDone?(st==='present'?(uchk?.status==='fail'?'ck-fail':'ck-done'):'ck-other'):'';
+  const collapsed=isDone?' collapsed':'';
+
+  // header badges
+  let badges='';
+  if(st){
+    const lblMap={present:'มา',late:'ลา',absent:'ขาด'};
+    badges+=`<span class="stu-cbadge ${st}">${lblMap[st]}</span>`;
+  }
+  if(uchk?.status){
+    badges+=`<span class="stu-cbadge ${uchk.status==='pass'?'unif-pass':'unif-fail'}">${uchk.status==='pass'?'ผ่าน':'ไม่ผ่าน'}</span>`;
+  }
+  const chevron=isDone?`<span class="stu-chevron">▾</span>`:'';
+
+  // attendance buttons
+  const ckBtns=`<div class="card-ck-btns">
+    <button class="sb-btn present${st==='present'?' active':''}" onclick="setStatus('${s.id}','present')">มา</button>
+    <button class="sb-btn late${st==='late'?' active':''}" onclick="setStatus('${s.id}','late')">ลา</button>
+    <button class="sb-btn absent${st==='absent'?' active':''}" onclick="setStatus('${s.id}','absent')">ขาด</button>
+  </div>`;
+
+  // uniform section (only if มา + setting enabled)
+  let unifSec='';
+  if(unifOn&&st==='present'){
+    const viols=S.unifViolations.filter(v=>v.is_active);
+    const selViols=(uchk?.viols||[]).map(v=>v.id);
+    const chips=viols.map(v=>`<div class="card-vchip${selViols.includes(v.id)?' on':''}" onclick="setCkUnifViol('${s.id}',${v.id},this)">${esc(v.name)}</div>`).join('');
+    const violWrap=uchk?.status==='fail'?`<div class="card-viol-wrap">${chips}</div>`:'';
+    unifSec=`<div class="card-unif-sec">
+      <div class="card-unif-hd">
+        <span class="card-unif-lbl">การแต่งกาย</span>
+        <div class="card-unif-btns">
+          <button class="ub pass${uchk?.status==='pass'?' active':''}" onclick="setCkUnifStatus('${s.id}','pass')">✓</button>
+          <button class="ub fail${uchk?.status==='fail'?' active':''}" onclick="setCkUnifStatus('${s.id}','fail')">✗</button>
+        </div>
+      </div>${violWrap}
     </div>`;
-  }).join('');
+  }
+
+  const hdClick=isDone?`onclick="toggleCkCard('stu-${s.id}')"` :'';
+  return`<div class="stu-card${cardClass?' '+cardClass:''}${collapsed}" id="stu-${s.id}">
+    <div class="stu-card-hd" ${hdClick}>
+      <span class="stu-card-num">${num}</span>
+      <div class="stu-card-info">
+        <div class="stu-card-name">${esc(s.student_name)}</div>
+        <div class="stu-card-meta">${esc(s.student_code)} · ${classLabel(s.grade_level,s.room)}</div>
+      </div>
+      <div class="stu-card-badges">${badges}</div>
+      ${chevron}
+    </div>
+    <div class="card-btns-wrap">${ckBtns}${unifSec}</div>
+  </div>`;
+}
+
+function _unifCheckActive(){
+  const s=S.unifCheckSessions;
+  if(!s||s==='none')return false;
+  if(s==='both')return true;
+  const sess=S.ckSession==='morning'?'morning':'evening';
+  return s===sess;
+}
+
+async function loadCkUnifChecks(){
+  if(!_unifCheckActive())return;
+  const stus=_filteredStudents();
+  if(!stus.length)return;
+  const ids=stus.map(s=>s.id);
+  try{
+    const rows=await q(sb.from('uniform_checks').select('id,student_id,status,note,uniform_check_violations(violation_id,uniform_violations(name))').in('student_id',ids).eq('date',S.ckDate));
+    S.ckUnifChecks={};
+    rows.forEach(r=>{
+      const viols=(r.uniform_check_violations||[]).map(cv=>({id:cv.violation_id,name:cv.uniform_violations?.name||''}));
+      S.ckUnifChecks[String(r.student_id)]={id:r.id,status:r.status,note:r.note||'',viols};
+    });
+  }catch(e){}
 }
 
 function _filteredStudents(){
@@ -1342,18 +1448,25 @@ function _filteredStudents(){
 
 function updateCkStats(){
   const stus=_filteredStudents();
-  const ids=new Set(stus.map(s=>s.id));
-  let present=0,late=0,absent=0;
+  const ids=new Set(stus.map(s=>String(s.id)));
+  let present=0,late=0,absent=0,unifFail=0;
   for(const [id,a] of Object.entries(S.ckAttend)){
-    if(!ids.has(id))continue;
+    if(!ids.has(String(id)))continue;
     if(a.status==='present')present++;
     else if(a.status==='late')late++;
     else if(a.status==='absent')absent++;
+  }
+  if(_unifCheckActive()){
+    for(const [id,u] of Object.entries(S.ckUnifChecks)){
+      if(ids.has(String(id))&&u.status==='fail')unifFail++;
+    }
   }
   $('ck-stat-total').textContent=stus.length;
   $('ck-stat-present').textContent=present;
   $('ck-stat-late').textContent=late;
   $('ck-stat-absent').textContent=absent;
+  const unifEl=$('ck-stat-unif-fail');
+  if(unifEl){unifEl.textContent=unifFail;unifEl.closest('.stat-box')?.style.setProperty('display',_unifCheckActive()?'':'none')}
 }
 
 async function setStatus(stuId,status){
@@ -1388,8 +1501,19 @@ async function setStatus(stuId,status){
 }
 
 function _updateStuRow(stuId,status){
-  const row=$('stu-'+stuId);if(!row)return;
-  ['present','late','absent'].forEach(s=>row.querySelector('.sb-btn.'+s)?.classList.toggle('active',s===status));
+  const card=$('stu-'+stuId);if(!card)return;
+  const unifOn=_unifCheckActive();
+  const s=S.students.find(s=>String(s.id)===String(stuId));if(!s)return;
+  const stus=_filteredStudents();
+  const num=stus.findIndex(x=>String(x.id)===String(stuId))+1;
+  const newHtml=_stuCardHtml(s,num,unifOn);
+  const tmp=document.createElement('div');tmp.innerHTML=newHtml;
+  card.replaceWith(tmp.firstElementChild);
+
+  // if now 'present' and unifOn, scroll into view so user can check uniform
+  if(status==='present'&&unifOn){
+    const el=$('stu-'+stuId);if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
 }
 
 async function checkAll(status){
@@ -1410,6 +1534,55 @@ async function checkAll(status){
     toast(`✓ เช็ค${status==='present'?'มา':'ขาด'} ${label} ${targets.length} คน`);
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er')}
   finally{loading(false)}
+}
+
+function toggleCkCard(id){
+  const c=$(id);if(!c)return;
+  c.classList.toggle('collapsed');
+}
+
+async function setCkUnifStatus(stuId,status){
+  const key=String(stuId);
+  const prev=S.ckUnifChecks[key]||{};
+  // toggle off if same
+  if(prev.status===status){
+    if(prev.id){try{await q(sb.from('uniform_checks').delete().eq('id',prev.id))}catch(e){toast('ลบไม่สำเร็จ','er');return}}
+    delete S.ckUnifChecks[key];
+    _updateStuRow(stuId,S.ckAttend[stuId]?.status||'');
+    updateCkStats();return;
+  }
+  const ts=new Date().toISOString();
+  try{
+    if(prev.id){
+      await q(sb.from('uniform_checks').update({status,note:null,updated_at:ts}).eq('id',prev.id));
+      S.ckUnifChecks[key]={...prev,status,viols:status==='pass'?[]:(prev.viols||[])};
+    }else{
+      const rows=await q(sb.from('uniform_checks').insert({student_id:stuId,date:S.ckDate,status,updated_at:ts}).select('id'));
+      S.ckUnifChecks[key]={id:rows[0].id,status,viols:[],note:''};
+    }
+  }catch(e){toast('บันทึกไม่สำเร็จ: '+e.message,'er');return}
+  _updateStuRow(stuId,S.ckAttend[stuId]?.status||'');
+  updateCkStats();
+  if(status==='pass'){toast('✓ บันทึกแล้ว','ok',1000);}
+}
+
+async function setCkUnifViol(stuId,violId,el){
+  const key=String(stuId);
+  const chk=S.ckUnifChecks[key];if(!chk||chk.status!=='fail'||!chk.id)return;
+  const vid=+violId;
+  const checked=!el.classList.contains('on');
+  if(checked){
+    try{await q(sb.from('uniform_check_violations').insert({check_id:chk.id,violation_id:vid}))}
+    catch(e){toast('บันทึกไม่สำเร็จ','er');return}
+    el.classList.add('on');
+    if(!chk.viols)chk.viols=[];
+    if(!chk.viols.find(v=>v.id===vid))chk.viols.push({id:vid,name:''});
+  }else{
+    try{await q(sb.from('uniform_check_violations').delete().eq('check_id',chk.id).eq('violation_id',vid))}
+    catch(e){toast('ลบไม่สำเร็จ','er');return}
+    el.classList.remove('on');
+    chk.viols=(chk.viols||[]).filter(v=>v.id!==vid);
+  }
 }
 
 async function clearAllCk(){
@@ -2223,7 +2396,23 @@ function renderAdmin(){
     h+=`</div>`;
   }
   h+=`</div>`;
+  // Uniform check sessions setting
+  h+=`<div class="section" style="margin-top:16px">
+    <div class="admin-section-title">เช็คการแต่งกายพร้อมกิจกรรม</div>
+    <div class="admin-card" style="background:var(--card);border:1px solid var(--sep);border-radius:var(--radius);padding:12px 16px">
+      <div class="toggle-row">
+        <label>เปิดใช้งาน</label>
+        <select id="unif-check-sess-sel" class="ios-select" style="width:140px" onchange="saveUnifCheckSetting(this.value)">
+          <option value="">ปิด</option>
+          <option value="morning">รอบเช้า</option>
+          <option value="evening">รอบบ่าย</option>
+          <option value="both">ทั้งสองรอบ</option>
+        </select>
+      </div>
+    </div>
+  </div>`;
   $('admin-content').innerHTML=h;
+  const unifSel=$('unif-check-sess-sel');if(unifSel)unifSel.value=S.unifCheckSessions||'';
 }
 
 async function saveSchoolName(){
@@ -2433,6 +2622,12 @@ function showConfirm(title,msg,onOk){
 }
 function _confirmOk(){$('confirm-dialog').classList.remove('open');const cb=_confirmCb;_confirmCb=null;if(cb)cb();}
 function _confirmCancel(){$('confirm-dialog').classList.remove('open');_confirmCb=null;}
+
+async function saveUnifCheckSetting(val){
+  S.unifCheckSessions=val;
+  try{await q(sb.from('config').upsert({key:'unif_check_sessions',value:val},{onConflict:'key'}));toast('บันทึกแล้ว');}
+  catch(e){toast('บันทึกไม่สำเร็จ','er')}
+}
 
 async function clearUnifClass(){
   if(!S.unifClass){toast('กรุณาเลือกชั้นเรียนก่อน','er');return}
@@ -2873,7 +3068,7 @@ async function deleteViolation(id){
 async function loadAppData(){
   loading(true);
   try{
-    const[actR,stuR,nameR,pinR]=await Promise.allSettled([loadActivities(),loadStudents(),loadSchoolName(),loadAdminPin(),loadViolations()]);
+    const[actR,stuR,nameR,pinR]=await Promise.allSettled([loadActivities(),loadStudents(),loadSchoolName(),loadAdminPin(),loadViolations(),loadUnifCheckSetting()]);
     if(actR.status==='rejected')throw actR.reason;
     if(stuR.status==='rejected')throw stuR.reason;
     const sn=$('side-school-name');if(sn)sn.textContent=S.schoolName;
