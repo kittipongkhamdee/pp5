@@ -2378,7 +2378,6 @@ function renderUnifList(){
           <button class="ub pass${st==='pass'?' active':''}" onclick="setUnifStatus('${s.id}','pass')">✓<span class="ub-txt"> ผ่าน</span></button>
           <button class="ub fail${st==='fail'?' active':''}" onclick="setUnifStatus('${s.id}','fail')">✗<span class="ub-txt"> ไม่ผ่าน</span></button>
           <button class="ub absent${st==='absent'?' active':''}" onclick="setUnifStatus('${s.id}','absent')">ข<span class="ub-txt"> ขาด</span></button>
-          ${st?`<button class="ub" style="background:rgba(156,163,175,.15);color:#9ca3af;font-size:16px;line-height:1" onclick="clearUnifStatus('${s.id}')" title="ล้างค่า">×</button>`:''}
         </div>
       </div>
       ${failDetail}
@@ -2420,17 +2419,6 @@ async function clearUnifClass(){
     toast('ล้างค่าเรียบร้อย');
   }catch(e){toast('ลบไม่สำเร็จ: '+e.message,'er')}
   finally{loading(false)}
-}
-
-async function clearUnifStatus(stuId){
-  const key=String(stuId);
-  const prev=S.unifChecks[key]||{};
-  if(prev.id){
-    try{await q(sb.from('uniform_checks').delete().eq('id',prev.id))}
-    catch(e){toast('ลบไม่สำเร็จ: '+e.message,'er');return}
-  }
-  delete S.unifChecks[key];
-  renderUnifList();
 }
 
 async function setUnifStatus(stuId,status){
