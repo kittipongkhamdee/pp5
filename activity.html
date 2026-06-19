@@ -319,7 +319,7 @@ html[data-theme="dark"] .ios-select,html[data-theme="dark"] .ios-input{backgroun
 .badge.red{background:var(--red)}
 
 /* ── School-wide report (print preview) ── */
-.school-report{background:var(--card);border-radius:var(--radius);padding:20px;margin-top:12px}
+.school-report{background:var(--card);border-radius:var(--radius);padding:16px 12px;margin-top:8px}
 .sr-header{text-align:center;padding-bottom:14px;border-bottom:2px solid var(--sep);margin-bottom:16px}
 .sr-school{font-size:16px;font-weight:700}
 .sr-title{font-size:14px;font-weight:600;margin-top:4px}
@@ -785,7 +785,7 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
       <button class="rpt-tab active" id="unifrpt-tab-school" onclick="switchUnifRptTab('school')">ทั้งโรงเรียน</button>
       <button class="rpt-tab" id="unifrpt-tab-class" onclick="switchUnifRptTab('class')">ทั้งห้อง</button>
     </div>
-    <div id="unifrpt-content" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 20px;padding-bottom:calc(80px + var(--safe-bottom))"></div>
+    <div id="unifrpt-content" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 10px;padding-bottom:calc(80px + var(--safe-bottom))"></div>
   </div>
 
   </div><!-- /pages-wrap -->
@@ -1188,7 +1188,7 @@ async function renderUnifRptSchool(){
       h+=`</div>`;
     }
     S.unifSchoolData={date,entries,tot,chkMap};
-    $('unifrpt-school-body').innerHTML=_expBar('exportUnifSchoolPDF','exportUnifSchoolXLSX','exportUnifSchoolImage')+`<div id="unifrpt-school-doc" style="background:#fff;border-radius:10px;border:1px solid #e5e7eb;padding:20px">${h}</div>`;
+    $('unifrpt-school-body').innerHTML=_expBar('exportUnifSchoolPDF','exportUnifSchoolXLSX','exportUnifSchoolImage')+`<div id="unifrpt-school-doc">${h}</div>`;
   }catch(e){$('unifrpt-school-body').innerHTML=`<div class="empty-state">เกิดข้อผิดพลาด: ${esc(e.message)}</div>`}
 }
 
@@ -1241,7 +1241,7 @@ async function renderUnifRptClass(){
     });
     h+=`</tbody></table></div></div>`;
     S.unifClassData={date:S.unifRptDate,gl,room,classStus,chkMap};
-    $('unifrpt-class-body').innerHTML=_expBar('exportUnifClassPDF','exportUnifClassXLSX','exportUnifClassImage')+`<div id="unifrpt-class-doc" style="background:#fff;border-radius:10px;border:1px solid #e5e7eb;padding:20px">${h}</div>`;
+    $('unifrpt-class-body').innerHTML=_expBar('exportUnifClassPDF','exportUnifClassXLSX','exportUnifClassImage')+`<div id="unifrpt-class-doc">${h}</div>`;
   }catch(e){$('unifrpt-class-body').innerHTML=`<div class="empty-state">เกิดข้อผิดพลาด: ${esc(e.message)}</div>`}
 }
 
