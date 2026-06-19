@@ -1224,7 +1224,7 @@ async function renderUnifRptClass(){
         <div class="sr-date">${thDate(S.unifRptDate)} · ผ่าน ${pr} · ไม่ผ่าน ${fa} · ยังไม่ตรวจ ${un} คน</div>
       </div>
       <div class="table-wrap"><table class="rpt-table">
-        <thead><tr><th>#</th><th class="screen-hide">รหัส</th><th class="left">ชื่อ-สกุล</th><th>ผล</th><th class="left">หมายเหตุ</th></tr></thead>
+        <thead><tr><th>#</th><th class="screen-hide">รหัส</th><th class="left">ชื่อ-สกุล</th><th>ผล</th><th class="left" style="white-space:nowrap">หมายเหตุ</th></tr></thead>
         <tbody>`;
     classStus.forEach((s,i)=>{
       const c=chkMap[s.id];
@@ -1235,7 +1235,8 @@ async function renderUnifRptClass(){
         badge='<span class="badge red">ไม่ผ่าน</span>';
         note=esc([...(c.viols||[]),c.note].filter(Boolean).join(', '));
       }
-      h+=`<tr style="vertical-align:top"><td style="padding-top:9px">${i+1}</td><td class="screen-hide" style="padding-top:9px">${esc(s.student_code||'')}</td><td class="left" style="white-space:nowrap;padding-top:8px">${esc(s.student_name)}</td><td style="white-space:nowrap;padding-top:2px">${badge}</td><td class="left" style="font-size:12px;color:var(--txt2);max-width:140px;word-break:break-word;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${note}</td></tr>`;
+      const noteStyle=note?'font-size:12px;color:var(--txt2);max-width:140px;word-break:break-word;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden':'';
+      h+=`<tr style="vertical-align:top"><td style="padding-top:9px">${i+1}</td><td class="screen-hide" style="padding-top:9px">${esc(s.student_code||'')}</td><td class="left" style="white-space:nowrap;padding-top:8px">${esc(s.student_name)}</td><td style="white-space:nowrap;padding-top:2px">${badge}</td><td class="left" style="${noteStyle}">${note}</td></tr>`;
     });
     h+=`</tbody></table></div></div>`;
     $('unifrpt-class-body').innerHTML=h;
