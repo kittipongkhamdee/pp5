@@ -1365,7 +1365,7 @@ function _stuCardHtml(s,num,unifOn){
   const hasUnif=unifOn&&st==='present';
   const unifDone=hasUnif&&uchk?.status;
   const cardClass=unifDone?(uchk.status==='fail'?'ck-fail':'ck-done'):(st==='late'||st==='absent'?'ck-other':'');
-  const collapsed=unifDone?' collapsed':'';
+  const collapsed=(unifDone&&uchk?.status==='pass')?' collapsed':'';
 
   // unif badge (shown when done, beside chevron)
   const unifBadge=uchk?.status?`<span class="stu-cbadge ${uchk.status==='pass'?'unif-pass':'unif-fail'}" style="flex-shrink:0">${uchk.status==='pass'?'ผ่าน':'ไม่ผ่าน'}</span>`:'';
