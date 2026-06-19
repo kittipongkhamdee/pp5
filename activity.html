@@ -1127,14 +1127,17 @@ async function renderUnifRptSchool(){
     const date=S.unifRptSchoolDate;
     const stuIds=S.students.map(s=>s.id);
     if(!stuIds.length){$('unifrpt-school-body').innerHTML='<div class="empty-state">ไม่พบข้อมูลนักเรียน</div>';return}
-    const rows=await q(sb.from('uniform_checks').select('student_id,status').eq('date',date).in('student_id',stuIds));
-    const chkMap={};rows.forEach(r=>chkMap[r.student_id]=r.status);
+    const rows=await q(sb.from('uniform_checks').select('student_id,status,note,uniform_check_violations(violation_id,uniform_violations(name))').eq('date',date).in('student_id',stuIds));
+    const chkMap={};rows.forEach(r=>{
+      const viols=(r.uniform_check_violations||[]).map(cv=>cv.uniform_violations?.name||'').filter(Boolean);
+      chkMap[r.student_id]={status:r.status,viols,note:r.note||''};
+    });
     const classData={};
     S.classes.forEach(c=>{classData[`${c.grade_level}_${c.room}`]={gl:c.grade_level,r:c.room,total:0,pass:0,fail:0,absent:0}});
     S.students.forEach(s=>{
       const k=`${s.grade_level}_${s.room}`;if(!classData[k])return;
       classData[k].total++;
-      const st=chkMap[s.id];
+      const st=chkMap[s.id]?.status;
       if(st==='pass')classData[k].pass++;
       else if(st==='fail')classData[k].fail++;
     });
@@ -1163,19 +1166,22 @@ async function renderUnifRptSchool(){
     h+=`</tbody></table></div></div>`;
     // Fail list grouped by class
     const failEntries=entries.filter(c=>{
-      const stus=S.students.filter(s=>String(s.grade_level)===String(c.gl)&&String(s.room)===String(c.r)&&chkMap[s.id]==='fail');
+      const stus=S.students.filter(s=>String(s.grade_level)===String(c.gl)&&String(s.room)===String(c.r)&&chkMap[s.id]?.status==='fail');
       return stus.length>0;
     });
     if(failEntries.length){
       h+=`<div class="sr-page2">
-        <div class="sr-p2-title">รายชื่อนักเรียนที่ไม่ผ่านการตรวจ</div>
+        <div class="sr-p2-title">รายชื่อนักเรียนที่แต่งกายไม่เรียบร้อย</div>
         <div class="sr-p2-sub">${thDate(date)}</div>`;
       failEntries.forEach(c=>{
-        const failStus=S.students.filter(s=>String(s.grade_level)===String(c.gl)&&String(s.room)===String(c.r)&&chkMap[s.id]==='fail');
+        const failStus=S.students.filter(s=>String(s.grade_level)===String(c.gl)&&String(s.room)===String(c.r)&&chkMap[s.id]?.status==='fail');
         h+=`<div class="sr-class-group">
           <div class="sr-class-hd">${classLabel(c.gl,c.r)} <span>(${failStus.length} คน)</span></div>`;
         failStus.forEach((s,i)=>{
-          h+=`<div class="sr-stu-row"><span class="sr-stu-num">${i+1}.</span><span class="sr-stu-code">${esc(s.student_code||'')}</span><span class="sr-stu-name">${esc(s.student_name)}</span><span class="badge-sm red">ไม่ผ่าน</span></div>`;
+          const chk=chkMap[s.id];
+          const violList=[...(chk?.viols||[]),chk?.note].filter(Boolean);
+          const violHtml=violList.length?`<div style="font-size:11px;color:#dc2626;margin-top:2px;padding-left:2px">${violList.map(v=>`· ${esc(v)}`).join('  ')}</div>`:'';
+          h+=`<div class="sr-stu-row" style="flex-wrap:wrap;align-items:flex-start"><span class="sr-stu-num">${i+1}.</span><span class="sr-stu-code">${esc(s.student_code||'')}</span><span class="sr-stu-name">${esc(s.student_name)}</span><span class="badge-sm red" style="flex-shrink:0">ไม่ผ่าน</span>${violHtml?`<div style="width:100%;padding-left:28px">${violHtml}</div>`:''}</div>`;
         });
         h+=`</div>`;
       });
