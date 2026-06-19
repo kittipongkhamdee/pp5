@@ -1362,7 +1362,7 @@ async function renderCheckin(){
   // populate class dropdown
   const sel=$('ck-class-sel');
   if(sel){
-    sel.innerHTML=`<option value="">เลือกชั้นเรียน (${S.students.length} คน)</option>`+
+    sel.innerHTML=`<option value="">-- เลือกชั้นเรียน --</option>`+
       S.classes.map(c=>{const k=`${c.grade_level}_${c.room}`;const cnt=S.classStudentCounts[k]||0;return`<option value="${k}"${S.ckFilter===k?' selected':''}>${classLabel(c.grade_level,c.room)} (${cnt} คน)</option>`}).join('');
   }
   if(!S.ckActivityId){
@@ -1380,9 +1380,10 @@ async function renderCheckin(){
 function setCkFilterFromDrop(){S.ckFilter=$('ck-class-sel').value;renderCkList();updateCkStats()}
 
 function renderCkList(){
+  if(!S.ckFilter){$('ck-list').innerHTML=`<div class="empty-state">เลือกชั้นเรียนเพื่อแสดงรายชื่อ</div>`;return}
   const unifOn=_unifCheckActive();
   let stus=S.students;
-  if(S.ckFilter){const[gl,r]=S.ckFilter.split('_');stus=stus.filter(s=>String(s.grade_level)===gl&&String(s.room)===r)}
+  const[gl,r]=S.ckFilter.split('_');stus=stus.filter(s=>String(s.grade_level)===gl&&String(s.room)===r);
   if(!stus.length){$('ck-list').innerHTML=`<div class="empty-state">ไม่พบนักเรียน</div>`;return}
   $('ck-list').innerHTML=stus.map((s,i)=>_stuCardHtml(s,i+1,unifOn)).join('');
 }
@@ -1469,7 +1470,7 @@ function _filteredStudents(){
 }
 
 function updateCkStats(){
-  const stus=_filteredStudents();
+  const stus=S.ckFilter?_filteredStudents():[];
   const ids=new Set(stus.map(s=>String(s.id)));
   let present=0,late=0,absent=0,unifFail=0;
   for(const [id,a] of Object.entries(S.ckAttend)){
