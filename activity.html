@@ -1148,7 +1148,7 @@ async function renderHome(){
           if(!aMap[r.activity_id])aMap[r.activity_id]={};
           if(!aMap[r.activity_id][r.session])aMap[r.activity_id][r.session]={ok:0,n:0,cls:new Set()};
           const sess=aMap[r.activity_id][r.session];
-          if(r.status==='present'||r.status==='late')sess.ok++;
+          if(r.status==='present')sess.ok++;
           sess.n++;
           const ck=stuCls[r.student_id];if(ck)sess.cls.add(ck);
         });
@@ -1852,10 +1852,10 @@ function buildSchoolDoc(classData,act,sessLbl){
     if(rec===0){
       h+=`<tr><td class="left nowrap">${classLabel(c.gl,c.r)}</td><td>${c.stus.length}</td><td colspan="4" class="not-checked">ยังไม่เช็คชื่อ</td></tr>`;
     }else{
-      h+=`<tr><td class="left nowrap">${classLabel(c.gl,c.r)}</td><td>${c.stus.length}</td><td class="green">${c.present}</td><td class="orange">${c.late}</td><td class="red">${c.absent}</td><td>${pct(c.present+c.late,rec)}</td></tr>`;
+      h+=`<tr><td class="left nowrap">${classLabel(c.gl,c.r)}</td><td>${c.stus.length}</td><td class="green">${c.present}</td><td class="orange">${c.late}</td><td class="red">${c.absent}</td><td>${pct(c.present,rec)}</td></tr>`;
     }
   });
-  h+=`<tr class="total-row"><td class="left">รวม</td><td>${tot.total}</td><td class="green">${tot.present}</td><td class="orange">${tot.late}</td><td class="red">${tot.absent}</td><td>${pct(tot.present+tot.late,totRec||tot.total)}</td></tr>`;
+  h+=`<tr class="total-row"><td class="left">รวม</td><td>${tot.total}</td><td class="green">${tot.present}</td><td class="orange">${tot.late}</td><td class="red">${tot.absent}</td><td>${pct(tot.present,totRec||tot.total)}</td></tr>`;
   h+=`</tbody></table></div>
   </div>`;
 
@@ -1920,11 +1920,11 @@ async function renderRptPercent(){
     const below=targetStudents.filter(s=>{
       const d=stuMap[s.id];if(!d)return false;
       const total=d.present+d.late+d.absent;if(!total)return false;
-      return(d.present+d.late)/total*100<thr;
+      return d.present/total*100<thr;
     }).map(s=>{
       const d=stuMap[s.id];
       const total=d.present+d.late+d.absent;
-      return{...s,...d,total,pct:total>0?(d.present+d.late)/total*100:0};
+      return{...s,...d,total,pct:total>0?d.present/total*100:0};
     });
     if(!below.length){
       $('rpt-pct-body').innerHTML=`<div class="empty-state">✓ ไม่มีนักเรียนที่เข้าร่วมต่ำกว่า ${thr}%</div>`;return;
@@ -2099,11 +2099,11 @@ async function exportSchoolExcel(){
   let tot={total:0,present:0,late:0,absent:0};
   entries.forEach(c=>{
     const rec=c.present+c.late+c.absent;
-    a1.push([classLabel(c.gl,c.r),c.stus.length,c.present,c.late,c.absent,rec>0?+((c.present+c.late)/rec*100).toFixed(1):'']);
+    a1.push([classLabel(c.gl,c.r),c.stus.length,c.present,c.late,c.absent,rec>0?+(c.present/rec*100).toFixed(1):'']);
     tot.total+=c.stus.length;tot.present+=c.present;tot.late+=c.late;tot.absent+=c.absent;
   });
   const totR=tot.present+tot.late+tot.absent;
-  a1.push(['รวม',tot.total,tot.present,tot.late,tot.absent,totR>0?+((tot.present+tot.late)/totR*100).toFixed(1):'']);
+  a1.push(['รวม',tot.total,tot.present,tot.late,tot.absent,totR>0?+(tot.present/totR*100).toFixed(1):'']);
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(a1),'สรุปรายชั้น');
   // Sheet 2 absent
   const a2=[['ชั้น','ลำดับ','รหัสนักเรียน','ชื่อ-สกุล','สถานะ']];
