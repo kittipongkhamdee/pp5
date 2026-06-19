@@ -211,6 +211,7 @@ details[open] .unif-viol-chevron{transform:rotate(180deg)}
 
 /* ── Stats ── */
 .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:8px 20px;background:rgba(255,255,255,0.7);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.5)}
+.stats-grid.has-unif{grid-template-columns:repeat(5,1fr)}
 .stat-box{text-align:center;padding:6px 4px;border-radius:10px;border:1px solid transparent}
 .stat-box.s-all{background:#EFF6FF;border-color:#BFDBFE}
 .stat-box.s-present{background:#ECFDF5;border-color:#A7F3D0}
@@ -1460,7 +1461,14 @@ function updateCkStats(){
   $('ck-stat-late').textContent=late;
   $('ck-stat-absent').textContent=absent;
   const unifEl=$('ck-stat-unif-fail');
-  if(unifEl){unifEl.textContent=unifFail;unifEl.closest('.stat-box')?.style.setProperty('display',_unifCheckActive()?'':'none')}
+  const unifActive=_unifCheckActive();
+  if(unifEl){
+    unifEl.textContent=unifFail;
+    const box=unifEl.closest('.stat-box');
+    if(box)box.style.display=unifActive?'':'none';
+    const grid=box?.closest('.stats-grid');
+    if(grid)grid.classList.toggle('has-unif',unifActive);
+  }
 }
 
 async function setStatus(stuId,status){
