@@ -1361,23 +1361,18 @@ function renderCkList(){
 function _stuCardHtml(s,num,unifOn){
   const att=S.ckAttend[s.id];const st=att?.status||'';
   const uchk=S.ckUnifChecks[String(s.id)];
-  const unifDone=unifOn&&st==='present'&&uchk?.status;
-  const isDone=(st==='present'&&(!unifOn||unifDone))||(st==='late'||st==='absent');
-  const cardClass=isDone?(st==='present'?(uchk?.status==='fail'?'ck-fail':'ck-done'):'ck-other'):'';
-  const collapsed=isDone?' collapsed':'';
+  const hasUnif=unifOn&&st==='present';
+  const unifDone=hasUnif&&uchk?.status;
+  const cardClass=unifDone?(uchk.status==='fail'?'ck-fail':'ck-done'):(st==='late'||st==='absent'?'ck-other':'');
+  const collapsed=unifDone?' collapsed':'';
 
-  // header badges
-  let badges='';
-  if(st){
-    const lblMap={present:'มา',late:'ลา',absent:'ขาด'};
-    badges+=`<span class="stu-cbadge ${st}">${lblMap[st]}</span>`;
-  }
-  if(uchk?.status){
-    badges+=`<span class="stu-cbadge ${uchk.status==='pass'?'unif-pass':'unif-fail'}">${uchk.status==='pass'?'ผ่าน':'ไม่ผ่าน'}</span>`;
-  }
-  const chevron=isDone?`<span class="stu-chevron">▾</span>`:'';
+  // unif badge (shown when done, beside chevron)
+  const unifBadge=uchk?.status?`<span class="stu-cbadge ${uchk.status==='pass'?'unif-pass':'unif-fail'}" style="flex-shrink:0">${uchk.status==='pass'?'ผ่าน':'ไม่ผ่าน'}</span>`:'';
 
-  // attendance buttons
+  // chevron (only when has uniform section to expand/collapse)
+  const chevron=hasUnif?`<span class="stu-chevron" onclick="event.stopPropagation();toggleCkCard('stu-${s.id}')">▾</span>`:'';
+
+  // attendance buttons — always inline in header
   const ckBtns=`<div class="card-ck-btns">
     <button class="sb-btn present${st==='present'?' active':''}" onclick="setStatus('${s.id}','present')">มา</button>
     <button class="sb-btn late${st==='late'?' active':''}" onclick="setStatus('${s.id}','late')">ลา</button>
@@ -1386,7 +1381,7 @@ function _stuCardHtml(s,num,unifOn){
 
   // uniform section (only if มา + setting enabled)
   let unifSec='';
-  if(unifOn&&st==='present'){
+  if(hasUnif){
     const viols=S.unifViolations.filter(v=>v.is_active);
     const selViols=(uchk?.viols||[]).map(v=>v.id);
     const chips=viols.map(v=>`<div class="card-vchip${selViols.includes(v.id)?' on':''}" onclick="setCkUnifViol('${s.id}',${v.id},this)">${esc(v.name)}</div>`).join('');
@@ -1402,18 +1397,16 @@ function _stuCardHtml(s,num,unifOn){
     </div>`;
   }
 
-  const hdClick=isDone?`onclick="toggleCkCard('stu-${s.id}')"` :'';
   return`<div class="stu-card${cardClass?' '+cardClass:''}${collapsed}" id="stu-${s.id}">
-    <div class="stu-card-hd" ${hdClick}>
+    <div class="stu-card-hd">
       <span class="stu-card-num">${num}</span>
       <div class="stu-card-info">
         <div class="stu-card-name">${esc(s.student_name)}</div>
         <div class="stu-card-meta">${esc(s.student_code)} · ${classLabel(s.grade_level,s.room)}</div>
       </div>
-      <div class="stu-card-badges">${badges}</div>
-      ${chevron}
+      ${ckBtns}${unifBadge}${chevron}
     </div>
-    <div class="card-btns-wrap">${ckBtns}${unifSec}</div>
+    ${hasUnif?`<div class="card-btns-wrap">${unifSec}</div>`:''}
   </div>`;
 }
 
