@@ -767,6 +767,7 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
       <button class="rpt-tab" id="rpt-tab-student" onclick="switchRptTab('student')">รายนักเรียน</button>
       <button class="rpt-tab" id="rpt-tab-class" onclick="switchRptTab('class')">ทั้งห้อง</button>
       <button class="rpt-tab" id="rpt-tab-percent" onclick="switchRptTab('percent')">ร้อยละ</button>
+      <button class="rpt-tab" id="rpt-tab-late" onclick="switchRptTab('late')">สาย</button>
     </div>
     <div id="rpt-content"></div>
   </div>
@@ -945,6 +946,7 @@ const S={
   ckActivityId:null,ckDate:todayStr(),ckSession:'morning',ckAttend:{},ckFilter:'',
   rptTab:'activity',rptActivityId:null,rptDate:todayStr(),rptSession:'morning',rptStuId:null,rptStuClass:null,rptStuSearch:'',rptStuActivityId:null,rptSchoolData:null,rptActData:null,rptStuData:null,rptPctData:null,rptPctThreshold:80,rptPctActivityId:null,rptPctClass:null,
   rptClassActivityId:null,rptClassClass:null,rptClassDate:null,rptClassSession:'morning',rptClassData:null,
+  rptLateActivityId:null,rptLateDate:null,
   unifViolations:[],unifDate:todayStr(),unifClass:null,unifChecks:{},unifTab:'check',
   ckUnifChecks:{},unifCheckSessions:'',
   unifRptDate:todayStr(),unifRptClass:null,
@@ -1514,18 +1516,19 @@ async function onCkSessionChange(s){S.ckSession=s;await renderCheckin()}
 // ─── REPORT ────────────────────────────────────────────────────────────────
 function renderReport(){
   const tabs=$('rpt-tabs');if(tabs)tabs.style.display=S.rptTab==='school'?'none':'flex';
-  ['activity','student','class','percent'].forEach(t=>$('rpt-tab-'+t)?.classList.toggle('active',S.rptTab===t));
+  ['activity','student','class','percent','late'].forEach(t=>$('rpt-tab-'+t)?.classList.toggle('active',S.rptTab===t));
   if(S.rptTab==='activity')renderRptActivity();
   else if(S.rptTab==='student')renderRptStudent();
   else if(S.rptTab==='class')renderRptClass();
   else if(S.rptTab==='school')renderRptSchool();
+  else if(S.rptTab==='late')renderRptLate();
   else renderRptPercent();
 }
 function switchRptTab(tab){
   S.rptTab=tab;S.page=tab==='school'?'school':'report';
   document.querySelectorAll('.nav-item,.side-nav-item').forEach(n=>n.classList.remove('active'));
   document.querySelectorAll(`[data-nav="${S.page}"]`).forEach(el=>el.classList.add('active'));
-  const titles={school:'ทั้งโรงเรียน',activity:'รายงาน',student:'รายงาน',class:'รายงาน',percent:'รายงาน'};
+  const titles={school:'ทั้งโรงเรียน',activity:'รายงาน',student:'รายงาน',class:'รายงาน',percent:'รายงาน',late:'รายงาน'};
   $('topbar-title').textContent=titles[tab]||'รายงาน';
   renderReport();
 }
@@ -1761,6 +1764,80 @@ async function renderRptClass(){
     S.rptClassData.bodyHtml=$('rpt-class-body').innerHTML;S.rptClassCacheKey=_rptClsKey;
   }catch(e){$('rpt-class-body').innerHTML=`<div class="empty-state">เกิดข้อผิดพลาด: ${esc(e.message)}</div>`}
 }
+
+// ── Report: late arrivals (absent morning + present evening) ──
+async function renderRptLate(){
+  if(!S.rptLateDate)S.rptLateDate=todayStr();
+  const evActs=S.activities.filter(a=>a.has_evening);
+  const aOpts=evActs.map(a=>`<option value="${a.id}"${S.rptLateActivityId==a.id?' selected':''}>${esc(a.name)}</option>`).join('');
+  $('rpt-content').innerHTML=`
+    <div class="filter-row">
+      <select class="ios-select" onchange="S.rptLateActivityId=+this.value||null;renderRptLate()">${'<option value="">-- เลือกกิจกรรม --</option>'+aOpts}</select>
+    </div>
+    <div class="filter-row">
+      <input type="date" class="ios-input" value="${S.rptLateDate}" onchange="S.rptLateDate=this.value;renderRptLate()">
+    </div>
+    <div id="rpt-late-body">${!S.rptLateActivityId?'<div class="empty-state">เลือกกิจกรรมเพื่อดูรายงาน<small>เฉพาะกิจกรรมที่มีทั้งรอบเช้าและบ่าย</small></div>':'<div class="loading-text">กำลังโหลด...</div>'}</div>`;
+  if(!S.rptLateActivityId)return;
+  try{
+    const rows=await q(sb.from('activity_attend').select('student_id,session,status').eq('activity_id',S.rptLateActivityId).eq('date',S.rptLateDate));
+    const mMap={},eMap={};
+    rows.forEach(r=>{
+      if(r.session==='morning')mMap[r.student_id]=r.status;
+      else if(r.session==='evening')eMap[r.student_id]=r.status;
+    });
+    const lateIds=Object.keys(eMap).filter(id=>mMap[id]==='absent'&&eMap[id]==='present');
+    const lateStus=lateIds.map(id=>S.students.find(s=>String(s.id)===String(id))).filter(Boolean);
+    lateStus.sort((a,b)=>{
+      const ka=`${a.grade_level}_${String(a.room).padStart(3,'0')}_${a.student_name}`;
+      const kb=`${b.grade_level}_${String(b.room).padStart(3,'0')}_${b.student_name}`;
+      return ka.localeCompare(kb,'th');
+    });
+    const act=S.activities.find(a=>a.id==S.rptLateActivityId);
+    S.rptLateData={lateStus,act,date:S.rptLateDate};
+    const hdr=`<div style="text-align:center;border-bottom:2px solid #e5e7eb;padding-bottom:12px;margin-bottom:14px">
+      <div style="font-size:13px;font-weight:700;color:#1e40af">${esc(act?.name||'')}</div>
+      <div style="font-size:13px;font-weight:600;color:#374151;margin-top:4px">รายชื่อนักเรียนที่มาสาย</div>
+      <div style="font-size:12px;color:#6b7280;margin-top:3px">${thDate(S.rptLateDate)} · ขาดเช้า–มาบ่าย</div>
+      <div style="font-size:12px;color:#6b7280;margin-top:2px">พบ ${lateStus.length} คน</div>
+    </div>`;
+    let body='';
+    if(!lateStus.length){
+      body='<div class="empty-state">ไม่พบนักเรียนที่มาสายในวันนี้</div>';
+    }else{
+      let trs='';
+      lateStus.forEach((s,i)=>{trs+=`<tr><td>${i+1}</td><td class="screen-hide">${esc(s.student_code||'')}</td><td class="left" style="white-space:nowrap">${esc(s.student_name)}</td><td class="nowrap">${classLabel(s.grade_level,s.room)}</td></tr>`});
+      body=`<div class="table-wrap"><table class="rpt-table">
+        <thead><tr><th>#</th><th class="screen-hide">รหัส</th><th class="left">ชื่อ-สกุล</th><th>ชั้น</th></tr></thead>
+        <tbody>${trs}</tbody></table></div>
+        <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+          <button class="btn btn-export" onclick="exportLatePDF()">📄 PDF/พิมพ์</button>
+          <button class="btn btn-export" onclick="exportLateXLSX()">📊 Excel</button>
+          <button class="btn btn-export" onclick="exportLateImg()">🖼 รูปภาพ</button>
+        </div>`;
+    }
+    $('rpt-late-body').innerHTML=hdr+body;
+  }catch(e){$('rpt-late-body').innerHTML=`<div class="empty-state">เกิดข้อผิดพลาด: ${esc(e.message)}</div>`}
+}
+
+// ── Export: late arrivals ──
+function exportLatePDF(){
+  const d=S.rptLateData;if(!d)return;
+  let rows='';
+  d.lateStus.forEach((s,i)=>{rows+=`<tr><td>${i+1}</td><td>${esc(s.student_code||'')}</td><td class="left">${esc(s.student_name)}</td><td>${classLabel(s.grade_level,s.room)}</td></tr>`});
+  const body=`<div class="sr-header"><div class="sr-school">${esc(S.schoolName)}</div><div class="sr-title">รายชื่อนักเรียนที่มาสาย</div><div class="sr-date">${esc(d.act?.name||'')} · ${thDate(d.date)} · พบ ${d.lateStus.length} คน</div></div>
+    <table><thead><tr><th>#</th><th>รหัส</th><th>ชื่อ-สกุล</th><th>ชั้น</th></tr></thead><tbody>${rows}</tbody></table>`;
+  _openPrintWin('รายชื่อนักเรียนที่มาสาย',body);
+}
+function exportLateXLSX(){
+  const d=S.rptLateData;if(!d)return;
+  const a1=[[S.schoolName],[`รายชื่อนักเรียนที่มาสาย — ${d.act?.name||''}`],[thDate(d.date)],[],['#','รหัส','ชื่อ-สกุล','ชั้น']];
+  d.lateStus.forEach((s,i)=>a1.push([i+1,s.student_code||'',s.student_name,classLabel(s.grade_level,s.room)]));
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(a1),'นักเรียนสาย');
+  XLSX.writeFile(wb,`นักเรียนสาย_${d.date}.xlsx`);
+}
+function exportLateImg(){_captureImage('rpt-content',`นักเรียนสาย_${S.rptLateDate}.png`)}
 
 // ── Export: per class ──
 function exportClassPDF(){
