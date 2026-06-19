@@ -88,7 +88,11 @@ body{font-family:var(--font);background:#F3F4F6;color:var(--txt);font-size:14px;
 /* collapsed card (เช็คครบแล้ว) */
 .stu-card.collapsed .card-ck{display:none}
 .stu-card.collapsed .unif-section{display:none}
-.stu-card.collapsed .card-hd{padding-bottom:11px}
+.stu-card.collapsed .hint{display:none}
+.stu-card.collapsed .card-hd{padding-bottom:11px;cursor:pointer}
+.stu-card.collapsed .card-hd:active{background:var(--card2)}
+.card-chevron{margin-left:6px;color:var(--txt3);font-size:16px;transition:transform .2s;flex-shrink:0;line-height:1}
+.stu-card:not(.collapsed) .card-chevron{transform:rotate(180deg)}
 
 /* divider */
 .divider{height:1px;background:var(--sep);margin:2px 0}
@@ -147,7 +151,7 @@ body{font-family:var(--font);background:#F3F4F6;color:var(--txt);font-size:14px;
 
   <!-- 1. มา + แต่งกายผ่าน → collapsed -->
   <div class="stu-card done collapsed" id="c1">
-    <div class="card-hd">
+    <div class="card-hd" onclick="toggle('c1')">
       <span class="card-num">1</span>
       <div class="card-info">
         <div class="card-name">เด็กชายณัฐวุฒิ ฉัตรเงิน</div>
@@ -155,13 +159,28 @@ body{font-family:var(--font);background:#F3F4F6;color:var(--txt);font-size:14px;
       </div>
       <span class="card-status-badge badge-present">มา</span>
       <span class="card-status-badge badge-unif-pass" style="margin-left:4px">👕 ผ่าน</span>
-      <button onclick="expand('c1')" style="background:none;border:none;color:var(--txt3);cursor:pointer;padding:4px;margin-left:2px;font-size:18px">›</button>
+      <span class="card-chevron">▾</span>
+    </div>
+    <div class="card-ck">
+      <button class="cb present active">มา</button>
+      <button class="cb late">สาย</button>
+      <button class="cb absent">ขาด</button>
+    </div>
+    <div class="unif-section">
+      <div class="unif-hd">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="#475569"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H5v10a2 2 0 002 2h10a2 2 0 002-2V10h1.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>
+        <span class="unif-hd-lbl">การแต่งกาย</span>
+        <div class="unif-btns">
+          <button class="ub pass active">✓</button>
+          <button class="ub fail">✗</button>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- 2. มา + แต่งกายไม่ผ่าน → collapsed -->
   <div class="stu-card done-fail collapsed" id="c2">
-    <div class="card-hd">
+    <div class="card-hd" onclick="toggle('c2')">
       <span class="card-num">2</span>
       <div class="card-info">
         <div class="card-name">เด็กชายจิรายุ แรงจบ</div>
@@ -169,19 +188,40 @@ body{font-family:var(--font);background:#F3F4F6;color:var(--txt);font-size:14px;
       </div>
       <span class="card-status-badge badge-present">มา</span>
       <span class="card-status-badge badge-unif-fail" style="margin-left:4px">👕 ไม่ผ่าน</span>
-      <button onclick="expand('c2')" style="background:none;border:none;color:var(--txt3);cursor:pointer;padding:4px;margin-left:2px;font-size:18px">›</button>
+      <span class="card-chevron">▾</span>
+    </div>
+    <div class="card-ck">
+      <button class="cb present active">มา</button>
+      <button class="cb late">สาย</button>
+      <button class="cb absent">ขาด</button>
+    </div>
+    <div class="unif-section">
+      <div class="unif-hd">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="#475569"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H5v10a2 2 0 002 2h10a2 2 0 002-2V10h1.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>
+        <span class="unif-hd-lbl">การแต่งกาย</span>
+        <div class="unif-btns">
+          <button class="ub pass">✓</button>
+          <button class="ub fail active">✗</button>
+        </div>
+      </div>
+      <div class="viol-wrap">
+        <div class="vchip on">เสื้อผ้า</div>
+        <div class="vchip">ทรงผม</div>
+        <div class="vchip">เล็บ</div>
+      </div>
     </div>
   </div>
 
   <!-- 3. มา + ยังไม่เช็คแต่งกาย → expanded -->
   <div class="stu-card" id="c3">
-    <div class="card-hd">
+    <div class="card-hd" onclick="toggle('c3')">
       <span class="card-num">3</span>
       <div class="card-info">
         <div class="card-name">เด็กชายนราธิป สิทธิ์ประโคน</div>
         <div class="card-meta">02430 · ม.1/1</div>
       </div>
       <span class="card-status-badge badge-present">มา</span>
+      <span class="card-chevron">▾</span>
     </div>
     <div class="card-ck">
       <button class="cb present active">มา</button>
@@ -219,14 +259,19 @@ body{font-family:var(--font);background:#F3F4F6;color:var(--txt);font-size:14px;
 
   <!-- 5. ขาด → collapsed ไม่มีแถวแต่งกาย -->
   <div class="stu-card absent-card collapsed" id="c5">
-    <div class="card-hd">
+    <div class="card-hd" onclick="toggle('c5')">
       <span class="card-num">5</span>
       <div class="card-info">
         <div class="card-name">เด็กชายจิรพัฒน์ ลอยเลื่อน</div>
         <div class="card-meta">02445 · ม.1/1</div>
       </div>
       <span class="card-status-badge badge-absent">ขาด</span>
-      <button onclick="expand('c5')" style="background:none;border:none;color:var(--txt3);cursor:pointer;padding:4px;margin-left:2px;font-size:18px">›</button>
+      <span class="card-chevron">▾</span>
+    </div>
+    <div class="card-ck">
+      <button class="cb present" onclick="markPresent('c5')">มา</button>
+      <button class="cb late" onclick="markLate('c5')">สาย</button>
+      <button class="cb absent active">ขาด</button>
     </div>
   </div>
 
@@ -269,9 +314,9 @@ body{font-family:var(--font);background:#F3F4F6;color:var(--txt);font-size:14px;
 </nav>
 
 <script>
-function expand(id){
+function toggle(id){
   const c=document.getElementById(id);
-  c.classList.remove('collapsed');
+  c.classList.toggle('collapsed');
 }
 
 function setUnif(id,result){
