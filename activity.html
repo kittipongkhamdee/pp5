@@ -1180,8 +1180,8 @@ async function renderUnifRptSchool(){
         failStus.forEach((s,i)=>{
           const chk=chkMap[s.id];
           const violList=[...(chk?.viols||[]),chk?.note].filter(Boolean);
-          const violHtml=violList.length?`<div style="font-size:11px;color:#dc2626;margin-top:2px;padding-left:2px">${violList.map(v=>`· ${esc(v)}`).join('  ')}</div>`:'';
-          h+=`<div class="sr-stu-row" style="flex-wrap:wrap;align-items:flex-start"><span class="sr-stu-num">${i+1}.</span><span class="sr-stu-code">${esc(s.student_code||'')}</span><span class="sr-stu-name">${esc(s.student_name)}</span><span class="badge-sm red" style="flex-shrink:0">ไม่ผ่าน</span>${violHtml?`<div style="width:100%;padding-left:28px">${violHtml}</div>`:''}</div>`;
+          const violHtml=violList.length?`<span style="font-size:11px;color:#dc2626;flex-shrink:0;max-width:160px;text-align:left">${violList.map(v=>esc(v)).join(', ')}</span>`:'<span style="font-size:11px;color:var(--txt3)">—</span>';
+          h+=`<div class="sr-stu-row"><span class="sr-stu-num">${i+1}.</span><span class="sr-stu-code">${esc(s.student_code||'')}</span><span class="sr-stu-name">${esc(s.student_name)}</span><span class="badge-sm red" style="flex-shrink:0">ไม่ผ่าน</span>${violHtml}</div>`;
         });
         h+=`</div>`;
       });
