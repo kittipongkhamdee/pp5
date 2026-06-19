@@ -2088,9 +2088,9 @@ function buildSchoolDoc(classData,act,sessLbl,morningMap={}){
   h+=`</tbody></table></div>
   </div>`;
 
-  // Page 2: absent list
+  // Page 2: absent list (เช้าเท่านั้น)
   const abEntries=entries.filter(c=>c.stus.some(s=>s.status==='absent'||s.status==='late'));
-  if(abEntries.length){
+  if(abEntries.length&&sessLbl!=='รอบบ่าย'){
     h+=`<div class="sr-page2" id="school-report-absent">
       <div class="sr-p2-title">รายชื่อนักเรียนที่ขาด / ลา</div>
       <div class="sr-p2-sub">${esc(act?.name||'')} · ${thDate(S.rptDate)} · ${sessLbl}</div>`;
