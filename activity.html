@@ -1181,7 +1181,7 @@ async function renderUnifRptSchool(){
           const chk=chkMap[s.id];
           const violList=[...(chk?.viols||[]),chk?.note].filter(Boolean);
           const violHtml=violList.length?`<span style="font-size:11px;color:#dc2626;flex:1;min-width:0;text-align:left">${violList.map(v=>esc(v)).join(', ')}</span>`:'<span style="font-size:11px;color:var(--txt3);flex:1">—</span>';
-          h+=`<div class="sr-stu-row" style="align-items:flex-start"><span class="sr-stu-num" style="flex-shrink:0;padding-top:1px">${i+1}.</span><span class="sr-stu-code" style="flex-shrink:0;padding-top:1px">${esc(s.student_code||'')}</span><span class="sr-stu-name" style="flex:1.5;min-width:0">${esc(s.student_name)}</span><span class="badge-sm red" style="flex-shrink:0">ไม่ผ่าน</span>${violHtml}</div>`;
+          h+=`<div class="sr-stu-row" style="align-items:flex-start"><span class="sr-stu-num" style="flex-shrink:0;padding-top:1px">${i+1}.</span><span class="sr-stu-code screen-hide" style="flex-shrink:0;padding-top:1px">${esc(s.student_code||'')}</span><span class="sr-stu-name" style="flex:1.5;min-width:0">${esc(s.student_name)}</span><span class="badge-sm red" style="flex-shrink:0">ไม่ผ่าน</span>${violHtml}</div>`;
         });
         h+=`</div>`;
       });
@@ -2095,7 +2095,7 @@ function buildSchoolDoc(classData,act,sessLbl,morningMap={}){
         <div class="sr-class-hd">${classLabel(c.gl,c.r)} <span>(${notOk.length} คน)</span></div>`;
       notOk.forEach((s,i)=>{
         const b=s.status==='late'?'<span class="badge-sm orange">ลา</span>':'<span class="badge-sm red">ขาด</span>';
-        h+=`<div class="sr-stu-row"><span class="sr-stu-num">${i+1}.</span><span class="sr-stu-code">${esc(s.student_code)}</span><span class="sr-stu-name">${esc(s.student_name)}</span>${b}</div>`;
+        h+=`<div class="sr-stu-row"><span class="sr-stu-num">${i+1}.</span><span class="sr-stu-code screen-hide">${esc(s.student_code)}</span><span class="sr-stu-name">${esc(s.student_name)}</span>${b}</div>`;
       });
       h+=`</div>`;
     });
@@ -2122,7 +2122,7 @@ function buildSchoolDoc(classData,act,sessLbl,morningMap={}){
         h+=`<div class="sr-class-group">
           <div class="sr-class-hd">${classLabel(c.gl,c.r)} <span>(${c.stus.length} คน)</span></div>`;
         c.stus.forEach((s,i)=>{
-          h+=`<div class="sr-stu-row"><span class="sr-stu-num">${i+1}.</span><span class="sr-stu-code">${esc(s.student_code)}</span><span class="sr-stu-name">${esc(s.student_name)}</span><span class="badge-sm orange">สาย</span></div>`;
+          h+=`<div class="sr-stu-row"><span class="sr-stu-num">${i+1}.</span><span class="sr-stu-code screen-hide">${esc(s.student_code)}</span><span class="sr-stu-name">${esc(s.student_name)}</span><span class="badge-sm orange">สาย</span></div>`;
         });
         h+=`</div>`;
       });
@@ -2261,7 +2261,7 @@ async function _captureImage(elId,filename){
   clone.querySelectorAll('table').forEach(t=>{t.style.width='auto';t.style.tableLayout='auto';});
   /* scale:2 → 1px border = 2px physical → ลด border เป็น 0.5px สำหรับ export */
   const capStyle=document.createElement('style');
-  capStyle.textContent='table th,table td{border-width:0.5px !important;border-color:#666 !important}.screen-hide{display:table-cell !important}';
+  capStyle.textContent='table th,table td{border-width:0.5px !important;border-color:#666 !important}table .screen-hide{display:table-cell !important}.screen-hide{display:inline !important}';
   wrap.appendChild(capStyle);
   wrap.appendChild(clone);
   document.body.appendChild(wrap);
