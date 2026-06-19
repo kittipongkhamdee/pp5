@@ -821,11 +821,14 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
       </div>
       <div id="unif-check-section" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
         <div class="unif-controls">
-          <div style="display:flex;gap:8px">
+          <div style="display:flex;gap:8px;align-items:center">
             <input type="date" class="ios-select" style="flex:1" id="unif-date-inp" onchange="S.unifDate=this.value;onUnifClassChange()">
             <select class="ios-select" style="flex:1.4" id="unif-class-sel" onchange="S.unifClass=this.value||null;onUnifClassChange()">
               <option value="">-- เลือกชั้นเรียน --</option>
             </select>
+            <button class="exp-btn" style="background:var(--sep);color:var(--txt2)" title="ล้างค่า" onclick="resetUnifFilter()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            </button>
           </div>
         </div>
         <div class="unif-stats" id="unif-stats"></div>
@@ -2331,6 +2334,13 @@ async function renderUnifCheck(){
   try{S.unifChecks=await loadUniformChecks(S.unifDate,S.unifClass)}
   finally{loading(false)}
   renderUnifList();
+}
+
+function resetUnifFilter(){
+  S.unifDate=todayStr();S.unifClass=null;
+  $('unif-date-inp').value=S.unifDate;
+  $('unif-class-sel').value='';
+  renderUnifCheck();
 }
 
 async function onUnifClassChange(){
