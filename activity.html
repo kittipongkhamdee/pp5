@@ -1235,7 +1235,7 @@ async function renderUnifRptClass(){
         badge='<span class="badge red">ไม่ผ่าน</span>';
         note=esc([...(c.viols||[]),c.note].filter(Boolean).join(', '));
       }
-      h+=`<tr><td>${i+1}</td><td class="screen-hide">${esc(s.student_code||'')}</td><td class="left" style="white-space:nowrap">${esc(s.student_name)}</td><td>${badge}</td><td class="left" style="font-size:12px;color:var(--txt2)">${note}</td></tr>`;
+      h+=`<tr style="vertical-align:top"><td style="padding-top:9px">${i+1}</td><td class="screen-hide" style="padding-top:9px">${esc(s.student_code||'')}</td><td class="left" style="white-space:nowrap;padding-top:8px">${esc(s.student_name)}</td><td style="white-space:nowrap">${badge}</td><td class="left" style="font-size:12px;color:var(--txt2);max-width:160px;overflow-x:auto;white-space:nowrap">${note}</td></tr>`;
     });
     h+=`</tbody></table></div></div>`;
     $('unifrpt-class-body').innerHTML=h;
