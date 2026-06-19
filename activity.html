@@ -1625,14 +1625,16 @@ async function setCkUnifViol(stuId,violId,el){
 
 async function clearAllCk(){
   if(!S.ckActivityId){toast('เลือกกิจกรรมก่อน','er');return}
+  if(!S.ckFilter){toast('เลือกชั้นเรียนก่อน','er');return}
   const targets=_filteredStudents();
   if(!targets.length){toast('ไม่มีนักเรียนในห้องที่เลือก','er');return}
-  const label=S.ckFilter?`ห้อง ${classLabel(...S.ckFilter.split('_'))}`:'ทั้งหมด';
+  const label=`ห้อง ${classLabel(...S.ckFilter.split('_'))}`;
   loading(true);
   try{
     const ids=targets.map(s=>s.id);
     await q(sb.from('activity_attend').delete().eq('activity_id',S.ckActivityId).eq('date',S.ckDate).eq('session',S.ckSession).in('student_id',ids));
-    ids.forEach(id=>{delete S.ckAttend[id]});
+    await q(sb.from('uniform_checks').delete().eq('date',S.ckDate).in('student_id',ids));
+    ids.forEach(id=>{delete S.ckAttend[id];delete S.ckUnifChecks[String(id)]});
     const cacheKey=`${S.ckActivityId}_${S.ckDate}_${S.ckSession}`;
     delete S.attendCache[cacheKey];
     if(S.ckDate===todayStr())S.homeCache=null;
