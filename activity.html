@@ -2250,18 +2250,19 @@ function _openPrintWin(title,bodyHtml){
   w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><style>${_pdfCss()}</style><title>${title}</title></head><body>${bodyHtml}<script>setTimeout(()=>window.print(),800)<\/script></body></html>`);
   w.document.close();
 }
-async function _captureImage(elId,filename){
+async function _captureImage(elId,filename,opts={}){
   if(typeof html2canvas==='undefined'){toast('html2canvas ยังโหลดไม่เสร็จ','er');return}
   const el=$(elId);if(!el){toast('ไม่พบเอกสาร','er');return}
   loading(true);
   /* สร้าง off-screen wrapper ที่ไม่มีข้อจำกัดความกว้าง + บังคับ light-mode */
   const lightVars='--bg:#fff;--card:#fff;--card2:#F0F2F5;--txt:#111827;--txt2:#6B7280;--txt3:#9CA3AF;--sep:#E5E7EB;--primary:#2563EB;--primary-light:#EFF6FF;--nav:#fff;--green:#059669;--red:#DC2626;--orange:#D97706;--blue:#2563EB;--radius:12px;--radius-sm:8px;--shadow:0 1px 4px rgba(0,0,0,.07);';
+  const fixW=opts.width||0;
   const wrap=document.createElement('div');
-  wrap.style.cssText=`position:absolute;left:-10000px;top:0;background:#fff;padding:20px 40px 48px;width:auto;min-width:0;${lightVars}`;
+  wrap.style.cssText=`position:absolute;left:-10000px;top:0;background:#fff;padding:20px ${fixW?'12px':'40px'} 48px;${fixW?`width:${fixW}px`:'width:auto;min-width:0;'};${lightVars}`;
   const clone=el.cloneNode(true);
-  clone.style.cssText='background:#fff;overflow:visible;width:auto;';
-  clone.querySelectorAll('.table-wrap').forEach(e=>{e.style.cssText='overflow:visible;width:auto;max-width:none;'});
-  clone.querySelectorAll('table').forEach(t=>{t.style.width='auto';t.style.tableLayout='auto';});
+  clone.style.cssText=`background:#fff;overflow:visible;${fixW?'width:100%':'width:auto'};`;
+  clone.querySelectorAll('.table-wrap').forEach(e=>{e.style.cssText='overflow:visible;width:100%;max-width:none;'});
+  if(!fixW) clone.querySelectorAll('table').forEach(t=>{t.style.width='auto';t.style.tableLayout='auto';});
   /* scale:2 → 1px border = 2px physical → ลด border เป็น 0.5px สำหรับ export */
   const capStyle=document.createElement('style');
   capStyle.textContent='table th,table td{border-width:0.5px !important;border-color:#666 !important}table .screen-hide{display:table-cell !important}.screen-hide{display:inline !important}';
@@ -2523,7 +2524,7 @@ function exportUnifSchoolXLSX(){
 }
 function exportUnifSchoolImage(){
   if(!S.unifSchoolData){toast('กรุณาโหลดรายงานก่อน','er');return}
-  _captureImage('unifrpt-school-doc',`รายงานแต่งกาย_${S.unifSchoolData.date}.png`);
+  _captureImage('unifrpt-school-doc',`รายงานแต่งกาย_${S.unifSchoolData.date}.png`,{width:window.innerWidth});
 }
 
 // ── Export: uniform class ──
@@ -2563,7 +2564,7 @@ function exportUnifClassXLSX(){
 }
 function exportUnifClassImage(){
   if(!S.unifClassData){toast('กรุณาโหลดรายงานก่อน','er');return}
-  _captureImage('unifrpt-class-doc',`แต่งกาย_${classLabel(S.unifClassData.gl,S.unifClassData.room)}_${S.unifClassData.date}.png`);
+  _captureImage('unifrpt-class-doc',`แต่งกาย_${classLabel(S.unifClassData.gl,S.unifClassData.room)}_${S.unifClassData.date}.png`,{width:window.innerWidth});
 }
 
 // ─── ADMIN ─────────────────────────────────────────────────────────────────
