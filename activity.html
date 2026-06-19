@@ -2564,7 +2564,7 @@ function exportUnifClassXLSX(){
 }
 function exportUnifClassImage(){
   if(!S.unifClassData){toast('กรุณาโหลดรายงานก่อน','er');return}
-  _captureImage('unifrpt-class-doc',`แต่งกาย_${classLabel(S.unifClassData.gl,S.unifClassData.room)}_${S.unifClassData.date}.png`,{width:window.innerWidth});
+  _captureImage('unifrpt-class-doc',`แต่งกาย_${classLabel(S.unifClassData.gl,S.unifClassData.room)}_${S.unifClassData.date}.png`);
 }
 
 // ─── ADMIN ─────────────────────────────────────────────────────────────────
