@@ -826,10 +826,13 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
             <select class="ios-select" style="flex:1.4" id="unif-class-sel" onchange="S.unifClass=this.value||null;onUnifClassChange()">
               <option value="">-- เลือกชั้นเรียน --</option>
             </select>
-            <button class="exp-btn" style="background:var(--sep);color:var(--txt2)" title="ล้างค่า" onclick="resetUnifFilter()">
+            <button class="exp-btn" style="background:var(--sep);color:var(--txt2)" title="รีเซ็ตตัวกรอง" onclick="resetUnifFilter()">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
             </button>
           </div>
+          <button onclick="clearUnifClass()" style="margin-top:8px;width:100%;padding:8px;border:1px solid #fca5a5;border-radius:var(--radius-sm);background:rgba(239,68,68,.06);color:#dc2626;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">
+            ล้างค่าการตรวจทั้งห้อง
+          </button>
         </div>
         <div class="unif-stats" id="unif-stats"></div>
         <div class="unif-list" id="unif-list"></div>
@@ -2399,6 +2402,24 @@ function updateUnifStats(checks){
     <div class="unif-stat"><div class="unif-stat-val" style="color:var(--red)">${fail}</div><div class="unif-stat-lbl">ไม่ผ่าน</div></div>
     <div class="unif-stat"><div class="unif-stat-val" style="color:#6B7280">${absent}</div><div class="unif-stat-lbl">ขาด</div></div>
     <div class="unif-stat"><div class="unif-stat-val" style="color:var(--txt3)">${none}</div><div class="unif-stat-lbl">ยังไม่ตรวจ</div></div>`;
+}
+
+async function clearUnifClass(){
+  if(!S.unifClass){toast('กรุณาเลือกชั้นเรียนก่อน','er');return}
+  const checked=Object.keys(S.unifChecks).length;
+  if(!checked){toast('ไม่มีข้อมูลการตรวจ','');return}
+  const[gl,r]=S.unifClass.split('_');
+  const clsName=classLabel(gl,r);
+  if(!confirm(`ล้างผลการตรวจ ${clsName} วันที่ ${S.unifDate} ทั้งหมด ${checked} คน?\n\nไม่สามารถเรียกคืนได้`))return;
+  loading(true);
+  try{
+    const ids=Object.values(S.unifChecks).filter(c=>c.id).map(c=>c.id);
+    if(ids.length) await q(sb.from('uniform_checks').delete().in('id',ids));
+    S.unifChecks={};
+    renderUnifList();
+    toast('ล้างค่าเรียบร้อย');
+  }catch(e){toast('ลบไม่สำเร็จ: '+e.message,'er')}
+  finally{loading(false)}
 }
 
 async function clearUnifStatus(stuId){
