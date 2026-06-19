@@ -1187,7 +1187,8 @@ async function renderUnifRptSchool(){
       });
       h+=`</div>`;
     }
-    $('unifrpt-school-body').innerHTML=h;
+    S.unifSchoolData={date,entries,tot,chkMap};
+    $('unifrpt-school-body').innerHTML=_expBar('exportUnifSchoolPDF','exportUnifSchoolXLSX','exportUnifSchoolImage')+`<div id="unifrpt-school-doc" style="background:#fff;border-radius:10px;border:1px solid #e5e7eb;padding:20px">${h}</div>`;
   }catch(e){$('unifrpt-school-body').innerHTML=`<div class="empty-state">เกิดข้อผิดพลาด: ${esc(e.message)}</div>`}
 }
 
@@ -1239,7 +1240,8 @@ async function renderUnifRptClass(){
       h+=`<tr style="vertical-align:top"><td style="padding-top:9px">${i+1}</td><td class="screen-hide" style="padding-top:9px">${esc(s.student_code||'')}</td><td class="left" style="white-space:nowrap;padding-top:8px">${esc(s.student_name)}</td><td style="white-space:nowrap;padding-top:2px">${badge}</td><td class="left" style="${noteStyle}">${note}</td></tr>`;
     });
     h+=`</tbody></table></div></div>`;
-    $('unifrpt-class-body').innerHTML=h;
+    S.unifClassData={date:S.unifRptDate,gl,room,classStus,chkMap};
+    $('unifrpt-class-body').innerHTML=_expBar('exportUnifClassPDF','exportUnifClassXLSX','exportUnifClassImage')+`<div id="unifrpt-class-doc" style="background:#fff;border-radius:10px;border:1px solid #e5e7eb;padding:20px">${h}</div>`;
   }catch(e){$('unifrpt-class-body').innerHTML=`<div class="empty-state">เกิดข้อผิดพลาด: ${esc(e.message)}</div>`}
 }
 
@@ -2471,6 +2473,97 @@ function exportPctExcel(){
 function exportPctImage(){
   if(!S.rptPctData){toast('กรุณาดูรายงานก่อน','er');return}
   _captureImage('rpt-pct-doc',`รายงานร้อยละ_ต่ำกว่า${S.rptPctData.thr}%.png`);
+}
+
+// ── Export: uniform school ──
+function exportUnifSchoolPDF(){
+  if(!S.unifSchoolData){toast('กรุณาโหลดรายงานก่อน','er');return}
+  const{date,entries,tot,chkMap}=S.unifSchoolData;
+  const pct=(n,d)=>d>0?(n/d*100).toFixed(1)+'%':'-';
+  let rows='';
+  entries.forEach(c=>{
+    const rec=c.pass+c.fail;
+    if(rec===0){rows+=`<tr><td class="left">${classLabel(c.gl,c.r)}</td><td>${c.total}</td><td colspan="3" style="color:#aaa;font-style:italic">ยังไม่ตรวจ</td></tr>`;}
+    else{rows+=`<tr><td class="left">${classLabel(c.gl,c.r)}</td><td>${c.total}</td><td style="color:#1a7c35;font-weight:600">${c.pass}</td><td style="color:#c0000a;font-weight:600">${c.fail}</td><td>${pct(c.pass,rec)}</td></tr>`;}
+  });
+  const failEntries=entries.filter(c=>S.students.some(s=>String(s.grade_level)===String(c.gl)&&String(s.room)===String(c.r)&&chkMap[s.id]?.status==='fail'));
+  let failHtml='';
+  if(failEntries.length){
+    failHtml=`<div style="page-break-before:always"><div class="sr-p2-title">รายชื่อนักเรียนที่แต่งกายไม่เรียบร้อย</div><div class="sr-p2-sub">${thDate(date)}</div>`;
+    failEntries.forEach(c=>{
+      const fs=S.students.filter(s=>String(s.grade_level)===String(c.gl)&&String(s.room)===String(c.r)&&chkMap[s.id]?.status==='fail');
+      failHtml+=`<div class="sr-class-group"><div class="sr-class-hd">${classLabel(c.gl,c.r)} <span>(${fs.length} คน)</span></div>`;
+      fs.forEach((s,i)=>{const chk=chkMap[s.id];const vl=[...(chk?.viols||[]),chk?.note].filter(Boolean);failHtml+=`<div class="sr-stu-row"><span class="sr-stu-num">${i+1}.</span><span class="sr-stu-code">${esc(s.student_code||'')}</span><span class="sr-stu-name">${esc(s.student_name)}</span><span style="color:#c0000a;font-size:12px">${vl.map(v=>esc(v)).join(', ')}</span></div>`;});
+      failHtml+=`</div>`;
+    });
+    failHtml+=`</div>`;
+  }
+  const body=`<div class="sr-header"><div class="sr-school">${esc(S.schoolName)}</div><div class="sr-title">รายงานการตรวจเครื่องแต่งกาย</div><div class="sr-date">วันที่ ${thDate(date)}</div></div>
+    <table><thead><tr><th>ชั้น</th><th>ทั้งหมด</th><th>ผ่าน</th><th>ไม่ผ่าน</th><th>%ผ่าน</th></tr></thead><tbody>${rows}<tr class="total-row"><td class="left">รวม</td><td>${tot.total}</td><td>${tot.pass}</td><td>${tot.fail}</td><td>${pct(tot.pass,tot.pass+tot.fail)}</td></tr></tbody></table>${failHtml}`;
+  _openPrintWin(`รายงานแต่งกาย ${thDate(date)}`,body);
+}
+function exportUnifSchoolXLSX(){
+  if(!S.unifSchoolData){toast('กรุณาโหลดรายงานก่อน','er');return}
+  if(typeof XLSX==='undefined'){toast('XLSX ยังโหลดไม่เสร็จ','er');return}
+  const{date,entries,tot,chkMap}=S.unifSchoolData;
+  const pct=(n,d)=>d>0?+(n/d*100).toFixed(1):'';
+  const a1=[[S.schoolName],['รายงานการตรวจเครื่องแต่งกาย'],[`วันที่: ${thDate(date)}`],[],['ชั้น','ทั้งหมด','ผ่าน','ไม่ผ่าน','%ผ่าน']];
+  entries.forEach(c=>a1.push([classLabel(c.gl,c.r),c.total,c.pass,c.fail,pct(c.pass,c.pass+c.fail)]));
+  a1.push(['รวม',tot.total,tot.pass,tot.fail,pct(tot.pass,tot.pass+tot.fail)]);
+  const a2=[['ชั้น','ลำดับ','รหัส','ชื่อ-สกุล','ผล','รายการ']];
+  entries.forEach(c=>{
+    const fs=S.students.filter(s=>String(s.grade_level)===String(c.gl)&&String(s.room)===String(c.r)&&chkMap[s.id]?.status==='fail');
+    fs.forEach((s,i)=>{const chk=chkMap[s.id];const vl=[...(chk?.viols||[]),chk?.note].filter(Boolean);a2.push([classLabel(c.gl,c.r),i+1,s.student_code||'',s.student_name,'ไม่ผ่าน',vl.join(', ')]);});
+  });
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(a1),'สรุปรายชั้น');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(a2),'ไม่ผ่าน');
+  XLSX.writeFile(wb,`รายงานแต่งกาย_${date}.xlsx`);
+  toast('ดาวน์โหลด Excel แล้ว');
+}
+function exportUnifSchoolImage(){
+  if(!S.unifSchoolData){toast('กรุณาโหลดรายงานก่อน','er');return}
+  _captureImage('unifrpt-school-doc',`รายงานแต่งกาย_${S.unifSchoolData.date}.png`);
+}
+
+// ── Export: uniform class ──
+function exportUnifClassPDF(){
+  if(!S.unifClassData){toast('กรุณาโหลดรายงานก่อน','er');return}
+  const{date,gl,room,classStus,chkMap}=S.unifClassData;
+  const pr=classStus.filter(s=>chkMap[s.id]?.status==='pass').length;
+  const fa=classStus.filter(s=>chkMap[s.id]?.status==='fail').length;
+  const un=classStus.length-pr-fa;
+  let rows='';
+  classStus.forEach((s,i)=>{
+    const c=chkMap[s.id];
+    const result=c?.status==='pass'?'ผ่าน':c?.status==='fail'?'ไม่ผ่าน':'—';
+    const col=c?.status==='pass'?'color:#1a7c35':c?.status==='fail'?'color:#c0000a':'';
+    const note=c?.status==='fail'?esc([...(c.viols||[]),c.note].filter(Boolean).join(', ')):'';
+    rows+=`<tr><td>${i+1}</td><td>${esc(s.student_code||'')}</td><td class="left">${esc(s.student_name)}</td><td style="${col};font-weight:600">${result}</td><td class="left">${note}</td></tr>`;
+  });
+  const body=`<div class="sr-header"><div class="sr-school">${esc(S.schoolName)}</div><div class="sr-title">รายงานการตรวจเครื่องแต่งกาย รายห้อง</div><div class="sr-act">${classLabel(gl,room)}</div><div class="sr-date">วันที่ ${thDate(date)} · ผ่าน ${pr} · ไม่ผ่าน ${fa} · ยังไม่ตรวจ ${un} คน</div></div>
+    <table><thead><tr><th>#</th><th>รหัส</th><th class="left">ชื่อ-สกุล</th><th>ผล</th><th class="left">หมายเหตุ</th></tr></thead><tbody>${rows}</tbody></table>`;
+  _openPrintWin(`แต่งกาย ${classLabel(gl,room)} ${thDate(date)}`,body);
+}
+function exportUnifClassXLSX(){
+  if(!S.unifClassData){toast('กรุณาโหลดรายงานก่อน','er');return}
+  if(typeof XLSX==='undefined'){toast('XLSX ยังโหลดไม่เสร็จ','er');return}
+  const{date,gl,room,classStus,chkMap}=S.unifClassData;
+  const a1=[[S.schoolName],['รายงานการตรวจเครื่องแต่งกาย รายห้อง'],[`${classLabel(gl,room)} · วันที่: ${thDate(date)}`],[],['#','รหัส','ชื่อ-สกุล','ผล','หมายเหตุ']];
+  classStus.forEach((s,i)=>{
+    const c=chkMap[s.id];
+    const result=c?.status==='pass'?'ผ่าน':c?.status==='fail'?'ไม่ผ่าน':'ยังไม่ตรวจ';
+    const note=c?.status==='fail'?[...(c.viols||[]),c.note].filter(Boolean).join(', '):'';
+    a1.push([i+1,s.student_code||'',s.student_name,result,note]);
+  });
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(a1),classLabel(gl,room));
+  XLSX.writeFile(wb,`แต่งกาย_${classLabel(gl,room)}_${date}.xlsx`);
+  toast('ดาวน์โหลด Excel แล้ว');
+}
+function exportUnifClassImage(){
+  if(!S.unifClassData){toast('กรุณาโหลดรายงานก่อน','er');return}
+  _captureImage('unifrpt-class-doc',`แต่งกาย_${classLabel(S.unifClassData.gl,S.unifClassData.room)}_${S.unifClassData.date}.png`);
 }
 
 // ─── ADMIN ─────────────────────────────────────────────────────────────────
