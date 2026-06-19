@@ -270,20 +270,15 @@ details[open] .unif-viol-chevron{transform:rotate(180deg)}
 .stu-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .stu-meta{font-size:12px;color:var(--txt3);margin-top:1px}
 .stu-btns{display:flex;gap:5px;flex-shrink:0}
-.sb-btn{
-  padding:5px 11px;border-radius:6px;font-size:12px;font-weight:600;
-  border:1px solid rgba(255,255,255,0.5);
-  background:rgba(255,255,255,0.6);
-  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-  color:var(--txt2);font-family:var(--font);cursor:pointer;transition:all .18s;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,0.7),0 1px 3px rgba(0,0,0,0.06);
-}
-html[data-theme="dark"] .sb-btn{background:rgba(55,65,81,0.75);border-color:rgba(255,255,255,0.12);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),0 1px 3px rgba(0,0,0,0.3)}
-@media(prefers-color-scheme:dark){html:not([data-theme="light"]) .sb-btn{background:rgba(55,65,81,0.75);border-color:rgba(255,255,255,0.12);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),0 1px 3px rgba(0,0,0,0.3)}}
-.sb-btn:active{transform:scale(0.95)}
-.sb-btn.present.active{background:linear-gradient(170deg,rgba(16,185,129,0.92),rgba(5,150,105,0.97));border-color:rgba(255,255,255,0.25);color:#fff;box-shadow:0 3px 10px rgba(5,150,105,0.4),inset 0 1px 0 rgba(255,255,255,0.3)}
-.sb-btn.late.active{background:linear-gradient(170deg,rgba(251,191,36,0.92),rgba(217,119,6,0.97));border-color:rgba(255,255,255,0.25);color:#fff;box-shadow:0 3px 10px rgba(217,119,6,0.4),inset 0 1px 0 rgba(255,255,255,0.3)}
-.sb-btn.absent.active{background:linear-gradient(170deg,rgba(248,113,113,0.92),rgba(220,38,38,0.97));border-color:rgba(255,255,255,0.25);color:#fff;box-shadow:0 3px 10px rgba(220,38,38,0.4),inset 0 1px 0 rgba(255,255,255,0.3)}
+.sb-btn{padding:5px 12px;border:none;border-radius:18px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .12s;background:var(--card2);color:var(--txt2)}
+@media(max-width:639px){.sb-btn{border-radius:50%;width:36px;height:36px;padding:0;font-size:11px;display:inline-flex;align-items:center;justify-content:center}}
+.sb-btn:active{transform:scale(0.93)}
+.sb-btn.present{background:rgba(5,150,105,.1);color:var(--green)}
+.sb-btn.present.active{background:var(--green);color:#fff;box-shadow:0 3px 10px rgba(5,150,105,.35)}
+.sb-btn.late{background:rgba(217,119,6,.1);color:#b45309}
+.sb-btn.late.active{background:#d97706;color:#fff;box-shadow:0 3px 10px rgba(217,119,6,.35)}
+.sb-btn.absent{background:rgba(220,38,38,.08);color:var(--red)}
+.sb-btn.absent.active{background:var(--red);color:#fff;box-shadow:0 3px 10px rgba(220,38,38,.35)}
 
 /* ── Action buttons ── */
 .btn{
