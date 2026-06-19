@@ -142,7 +142,7 @@ body{font-family:var(--font);background:#F3F4F6;color:var(--txt);font-size:14px;
 <div class="stats">
   <div class="stat"><div class="stat-val">25</div><div class="stat-lbl">ทั้งหมด</div></div>
   <div class="stat"><div class="stat-val" style="color:var(--green)">3</div><div class="stat-lbl">มา</div></div>
-  <div class="stat"><div class="stat-val" style="color:var(--orange)">0</div><div class="stat-lbl">สาย</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--orange)">0</div><div class="stat-lbl">ลา</div></div>
   <div class="stat"><div class="stat-val" style="color:var(--red)">1</div><div class="stat-lbl">ขาด</div></div>
   <div class="stat"><div class="stat-val" style="color:#dc2626">2</div><div class="stat-lbl">ไม่ผ่านแต่งกาย</div></div>
 </div>
@@ -163,7 +163,7 @@ body{font-family:var(--font);background:#F3F4F6;color:var(--txt);font-size:14px;
     </div>
     <div class="card-ck">
       <button class="cb present active">มา</button>
-      <button class="cb late">สาย</button>
+      <button class="cb late">ลา</button>
       <button class="cb absent">ขาด</button>
     </div>
     <div class="unif-section">
@@ -192,7 +192,7 @@ body{font-family:var(--font);background:#F3F4F6;color:var(--txt);font-size:14px;
     </div>
     <div class="card-ck">
       <button class="cb present active">มา</button>
-      <button class="cb late">สาย</button>
+      <button class="cb late">ลา</button>
       <button class="cb absent">ขาด</button>
     </div>
     <div class="unif-section">
@@ -225,7 +225,7 @@ body{font-family:var(--font);background:#F3F4F6;color:var(--txt);font-size:14px;
     </div>
     <div class="card-ck">
       <button class="cb present active">มา</button>
-      <button class="cb late">สาย</button>
+      <button class="cb late">ลา</button>
       <button class="cb absent">ขาด</button>
     </div>
     <div class="unif-section">
@@ -252,7 +252,7 @@ body{font-family:var(--font);background:#F3F4F6;color:var(--txt);font-size:14px;
     </div>
     <div class="card-ck">
       <button class="cb present" onclick="markPresent('c4')">มา</button>
-      <button class="cb late" onclick="markLate('c4')">สาย</button>
+      <button class="cb late" onclick="markLate('c4')">ลา</button>
       <button class="cb absent" onclick="markAbsent('c4')">ขาด</button>
     </div>
   </div>
@@ -270,7 +270,7 @@ body{font-family:var(--font);background:#F3F4F6;color:var(--txt);font-size:14px;
     </div>
     <div class="card-ck">
       <button class="cb present" onclick="markPresent('c5')">มา</button>
-      <button class="cb late" onclick="markLate('c5')">สาย</button>
+      <button class="cb late" onclick="markLate('c5')">ลา</button>
       <button class="cb absent active">ขาด</button>
     </div>
   </div>
@@ -286,7 +286,7 @@ body{font-family:var(--font);background:#F3F4F6;color:var(--txt);font-size:14px;
     </div>
     <div class="card-ck">
       <button class="cb present">มา</button>
-      <button class="cb late">สาย</button>
+      <button class="cb late">ลา</button>
       <button class="cb absent">ขาด</button>
     </div>
   </div>
@@ -399,7 +399,7 @@ function markLate(id){
   c.querySelector('.hint')?.remove();
   let badge=c.querySelector('.card-status-badge');
   if(!badge){badge=document.createElement('span');badge.style.marginLeft='auto';c.querySelector('.card-hd').appendChild(badge)}
-  badge.className='card-status-badge badge-late';badge.textContent='สาย';
+  badge.className='card-status-badge badge-late';badge.textContent='ลา';
   setTimeout(()=>c.classList.add('absent-card','collapsed'),700);
 }
 
