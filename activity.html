@@ -784,6 +784,7 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
     <div id="unifrpt-tabs" style="display:flex;gap:0;padding:0 16px;border-bottom:1px solid var(--sep);background:var(--card);flex-shrink:0;overflow-x:auto;scrollbar-width:none">
       <button class="rpt-tab active" id="unifrpt-tab-school" onclick="switchUnifRptTab('school')">ทั้งโรงเรียน</button>
       <button class="rpt-tab" id="unifrpt-tab-class" onclick="switchUnifRptTab('class')">ทั้งห้อง</button>
+      <button class="rpt-tab" id="unifrpt-tab-top10" onclick="switchUnifRptTab('top10')">Top 10</button>
     </div>
     <div id="unifrpt-content" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 10px;padding-bottom:calc(80px + var(--safe-bottom))"></div>
   </div>
@@ -962,6 +963,7 @@ const S={
   ckUnifChecks:{},unifCheckSessions:'',
   unifRptDate:todayStr(),unifRptClass:null,
   unifRptTab:'school',unifRptClassKey:null,unifRptSchoolDate:todayStr(),
+  unifTop10From:todayStr().slice(0,7)+'-01',unifTop10To:todayStr(),
   page:'home',
 };
 
@@ -1107,13 +1109,14 @@ function nav(page){
 // ── Uniform Report Page ──
 function switchUnifRptTab(tab){
   S.unifRptTab=tab;
-  ['school','class'].forEach(t=>$('unifrpt-tab-'+t)?.classList.toggle('active',tab===t));
+  ['school','class','top10'].forEach(t=>$('unifrpt-tab-'+t)?.classList.toggle('active',tab===t));
   renderUnifReport();
 }
 
 async function renderUnifReport(){
   if(S.unifRptTab==='school') await renderUnifRptSchool();
-  else await renderUnifRptClass();
+  else if(S.unifRptTab==='class') await renderUnifRptClass();
+  else await renderUnifRptTop10();
 }
 
 async function renderUnifRptSchool(){
@@ -1243,6 +1246,63 @@ async function renderUnifRptClass(){
     S.unifClassData={date:S.unifRptDate,gl,room,classStus,chkMap};
     $('unifrpt-class-body').innerHTML=_expBar('exportUnifClassPDF','exportUnifClassXLSX','exportUnifClassImage')+`<div id="unifrpt-class-doc">${h}</div>`;
   }catch(e){$('unifrpt-class-body').innerHTML=`<div class="empty-state">เกิดข้อผิดพลาด: ${esc(e.message)}</div>`}
+}
+
+async function renderUnifRptTop10(){
+  $('unifrpt-content').innerHTML=`
+    <div class="filter-row" style="display:flex;align-items:center;gap:8px">
+      <input type="date" class="ios-input" style="flex:1" value="${S.unifTop10From}" onchange="S.unifTop10From=this.value;renderUnifRptTop10()">
+      <span style="color:var(--txt3);font-size:13px;flex-shrink:0">ถึง</span>
+      <input type="date" class="ios-input" style="flex:1" value="${S.unifTop10To}" onchange="S.unifTop10To=this.value;renderUnifRptTop10()">
+    </div>
+    <div id="unifrpt-top10-body"><div class="loading-text">กำลังโหลด...</div></div>`;
+  try{
+    const stuIds=S.students.map(s=>s.id);
+    if(!stuIds.length){$('unifrpt-top10-body').innerHTML='<div class="empty-state">ไม่พบข้อมูลนักเรียน</div>';return}
+    const checks=await q(sb.from('uniform_checks').select('student_id,date,uniform_check_violations(violation_id,uniform_violations(name))').eq('status','fail').gte('date',S.unifTop10From).lte('date',S.unifTop10To).in('student_id',stuIds));
+    if(!checks.length){$('unifrpt-top10-body').innerHTML='<div class="empty-state">ไม่มีข้อมูลในช่วงที่เลือก</div>';return}
+    const violCount={};const stuDaySet={};
+    checks.forEach(c=>{
+      const id=String(c.student_id);
+      if(!stuDaySet[id])stuDaySet[id]=new Set();
+      stuDaySet[id].add(c.date);
+      (c.uniform_check_violations||[]).forEach(cv=>{const n=cv.uniform_violations?.name;if(n)violCount[n]=(violCount[n]||0)+1;});
+    });
+    const top3Viols=Object.entries(violCount).sort((a,b)=>b[1]-a[1]).slice(0,3);
+    const top10Stus=Object.entries(stuDaySet).map(([id,set])=>({id,days:set.size,stu:S.students.find(s=>String(s.id)===id)})).filter(x=>x.stu).sort((a,b)=>b.days-a.days).slice(0,10);
+    const medalEmoji=['🥇','🥈','🥉'];
+    const medalBg=['#FEF9C3','#F3F4F6','#FEF3C7'];
+    const medalColor=['#D97706','#6B7280','#92400E'];
+    const rankBg=['#EF4444','#F97316','#F59E0B','#84CC16','#22C55E','#14B8A6','#3B82F6','#6366F1','#8B5CF6','#EC4899'];
+    const dateRange=`${thDate(S.unifTop10From)} – ${thDate(S.unifTop10To)}`;
+    let h=`<div class="school-report" style="margin-bottom:10px">
+      <div style="font-size:14px;font-weight:700;color:var(--txt);margin-bottom:4px">สาเหตุที่พบมากที่สุด 3 ลำดับ</div>
+      <div style="font-size:12px;color:var(--txt3);margin-bottom:12px">${dateRange}</div>`;
+    if(!top3Viols.length){h+=`<div style="text-align:center;color:var(--txt3);padding:12px">ไม่มีข้อมูล</div>`;}
+    else{top3Viols.forEach(([name,cnt],i)=>{h+=`<div style="display:flex;align-items:center;gap:12px;padding:10px 0;${i<top3Viols.length-1?'border-bottom:1px solid var(--sep)':''}">
+        <div style="width:38px;height:38px;border-radius:50%;background:${medalBg[i]};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${medalEmoji[i]}</div>
+        <div style="flex:1;font-size:14px;font-weight:600;color:var(--txt)">${esc(name)}</div>
+        <div style="font-size:20px;font-weight:800;color:${medalColor[i]}">${cnt}</div>
+        <div style="font-size:12px;color:var(--txt3)">ครั้ง</div>
+      </div>`;})}
+    h+=`</div><div class="school-report">
+      <div style="font-size:14px;font-weight:700;color:var(--txt);margin-bottom:4px">นักเรียนแต่งกายไม่เรียบร้อยมากที่สุด</div>
+      <div style="font-size:12px;color:var(--txt3);margin-bottom:12px">${dateRange}</div>`;
+    if(!top10Stus.length){h+=`<div style="text-align:center;color:var(--txt3);padding:12px">ไม่มีข้อมูล</div>`;}
+    else{top10Stus.forEach(({stu,days},i)=>{h+=`<div style="display:flex;align-items:center;gap:12px;padding:10px 0;${i<top10Stus.length-1?'border-bottom:1px solid var(--sep)':''}">
+        <div style="width:34px;height:34px;border-radius:50%;background:${rankBg[i]};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0;box-shadow:0 2px 6px ${rankBg[i]}66">${i+1}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(stu.student_name)}</div>
+          <div style="font-size:12px;color:var(--txt3);margin-top:1px">${classLabel(stu.grade_level,stu.room)}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:20px;font-weight:800;color:#EF4444;line-height:1">${days}</div>
+          <div style="font-size:11px;color:var(--txt3)">วัน</div>
+        </div>
+      </div>`;})}
+    h+=`</div>`;
+    $('unifrpt-top10-body').innerHTML=h;
+  }catch(e){$('unifrpt-top10-body').innerHTML=`<div class="empty-state">เกิดข้อผิดพลาด: ${esc(e.message)}</div>`}
 }
 
 // ─── HOME ──────────────────────────────────────────────────────────────────
