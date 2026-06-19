@@ -739,7 +739,7 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
       </div>
       <div id="ck-actions">
         <select class="ios-select" id="ck-class-sel" onchange="setCkFilterFromDrop()">
-          <option value="">ทุกชั้นเรียน</option>
+          <option value="">เลือกชั้นเรียน</option>
         </select>
         <div id="ck-btn-row">
           <div id="ck-btn-group">
@@ -1362,7 +1362,7 @@ async function renderCheckin(){
   // populate class dropdown
   const sel=$('ck-class-sel');
   if(sel){
-    sel.innerHTML=`<option value="">ทุกชั้นเรียน (${S.students.length} คน)</option>`+
+    sel.innerHTML=`<option value="">เลือกชั้นเรียน (${S.students.length} คน)</option>`+
       S.classes.map(c=>{const k=`${c.grade_level}_${c.room}`;const cnt=S.classStudentCounts[k]||0;return`<option value="${k}"${S.ckFilter===k?' selected':''}>${classLabel(c.grade_level,c.room)} (${cnt} คน)</option>`}).join('');
   }
   if(!S.ckActivityId){
