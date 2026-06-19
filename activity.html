@@ -496,6 +496,18 @@ html[data-theme="dark"] .sb-btn{background:rgba(55,65,81,0.75);border-color:rgba
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
 
+/* ── Confirm dialog ── */
+#confirm-dialog{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:32px 24px;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+#confirm-dialog.open{display:flex}
+.confirm-card{background:var(--card);border-radius:16px;width:100%;max-width:320px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.confirm-title{padding:22px 20px 6px;font-size:17px;font-weight:700;color:var(--txt)}
+.confirm-msg{padding:0 20px 22px;font-size:14px;color:var(--txt2);line-height:1.6}
+.confirm-actions{display:flex;border-top:1px solid var(--sep)}
+.confirm-actions button{flex:1;padding:15px;font-size:15px;font-weight:600;border:none;cursor:pointer;font-family:inherit;background:none;transition:background .12s}
+.confirm-actions button:active{background:var(--card2)}
+.confirm-actions .ca-cancel{color:var(--txt2);border-right:1px solid var(--sep)}
+.confirm-actions .ca-ok{color:#dc2626}
+
 /* ── Login overlay ── */
 #login-overlay{
   position:fixed;inset:0;z-index:300;background:#f0f4ff;
@@ -958,6 +970,18 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
     <button class="pin-submit" onclick="checkPin()">ยืนยัน</button>
     <div class="pin-err" id="pin-err"></div>
     <button class="pin-cancel" onclick="closePinModal()">ยกเลิก</button>
+  </div>
+</div>
+
+<!-- Confirm Dialog -->
+<div id="confirm-dialog">
+  <div class="confirm-card">
+    <div class="confirm-title" id="confirm-title"></div>
+    <div class="confirm-msg" id="confirm-msg"></div>
+    <div class="confirm-actions">
+      <button class="ca-cancel" onclick="_confirmCancel()">ยกเลิก</button>
+      <button class="ca-ok" onclick="_confirmOk()">ยืนยัน</button>
+    </div>
   </div>
 </div>
 
@@ -2403,22 +2427,35 @@ function updateUnifStats(checks){
     <div class="unif-stat"><div class="unif-stat-val" style="color:var(--txt3)">${none}</div><div class="unif-stat-lbl">ยังไม่ตรวจ</div></div>`;
 }
 
+let _confirmCb=null;
+function showConfirm(title,msg,onOk){
+  $('confirm-title').textContent=title;
+  $('confirm-msg').textContent=msg;
+  _confirmCb=onOk;
+  $('confirm-dialog').classList.add('open');
+}
+function _confirmOk(){$('confirm-dialog').classList.remove('open');const cb=_confirmCb;_confirmCb=null;if(cb)cb();}
+function _confirmCancel(){$('confirm-dialog').classList.remove('open');_confirmCb=null;}
+
 async function clearUnifClass(){
   if(!S.unifClass){toast('กรุณาเลือกชั้นเรียนก่อน','er');return}
   const checked=Object.keys(S.unifChecks).length;
   if(!checked){toast('ไม่มีข้อมูลการตรวจ','');return}
   const[gl,r]=S.unifClass.split('_');
   const clsName=classLabel(gl,r);
-  if(!confirm(`ล้างผลการตรวจ ${clsName} วันที่ ${S.unifDate} ทั้งหมด ${checked} คน?\n\nไม่สามารถเรียกคืนได้`))return;
-  loading(true);
-  try{
-    const ids=Object.values(S.unifChecks).filter(c=>c.id).map(c=>c.id);
-    if(ids.length) await q(sb.from('uniform_checks').delete().in('id',ids));
-    S.unifChecks={};
-    renderUnifList();
-    toast('ล้างค่าเรียบร้อย');
-  }catch(e){toast('ลบไม่สำเร็จ: '+e.message,'er')}
-  finally{loading(false)}
+  showConfirm(
+    'ล้างค่าการตรวจทั้งห้อง',
+    `ล้างผลการตรวจ ${clsName} วันที่ ${S.unifDate} ทั้งหมด ${checked} คน ไม่สามารถเรียกคืนได้`,
+    async()=>{
+      loading(true);
+      try{
+        const ids=Object.values(S.unifChecks).filter(c=>c.id).map(c=>c.id);
+        if(ids.length) await q(sb.from('uniform_checks').delete().in('id',ids));
+        S.unifChecks={};renderUnifList();toast('ล้างค่าเรียบร้อย');
+      }catch(e){toast('ลบไม่สำเร็จ: '+e.message,'er')}
+      finally{loading(false)}
+    }
+  );
 }
 
 async function setUnifStatus(stuId,status){
