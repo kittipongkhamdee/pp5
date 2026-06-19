@@ -767,7 +767,6 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
       <button class="rpt-tab" id="rpt-tab-student" onclick="switchRptTab('student')">รายนักเรียน</button>
       <button class="rpt-tab" id="rpt-tab-class" onclick="switchRptTab('class')">ทั้งห้อง</button>
       <button class="rpt-tab" id="rpt-tab-percent" onclick="switchRptTab('percent')">ร้อยละ</button>
-      <button class="rpt-tab" id="rpt-tab-late" onclick="switchRptTab('late')">สาย</button>
     </div>
     <div id="rpt-content"></div>
   </div>
@@ -1516,19 +1515,18 @@ async function onCkSessionChange(s){S.ckSession=s;await renderCheckin()}
 // ─── REPORT ────────────────────────────────────────────────────────────────
 function renderReport(){
   const tabs=$('rpt-tabs');if(tabs)tabs.style.display=S.rptTab==='school'?'none':'flex';
-  ['activity','student','class','percent','late'].forEach(t=>$('rpt-tab-'+t)?.classList.toggle('active',S.rptTab===t));
+  ['activity','student','class','percent'].forEach(t=>$('rpt-tab-'+t)?.classList.toggle('active',S.rptTab===t));
   if(S.rptTab==='activity')renderRptActivity();
   else if(S.rptTab==='student')renderRptStudent();
   else if(S.rptTab==='class')renderRptClass();
   else if(S.rptTab==='school')renderRptSchool();
-  else if(S.rptTab==='late')renderRptLate();
   else renderRptPercent();
 }
 function switchRptTab(tab){
   S.rptTab=tab;S.page=tab==='school'?'school':'report';
   document.querySelectorAll('.nav-item,.side-nav-item').forEach(n=>n.classList.remove('active'));
   document.querySelectorAll(`[data-nav="${S.page}"]`).forEach(el=>el.classList.add('active'));
-  const titles={school:'ทั้งโรงเรียน',activity:'รายงาน',student:'รายงาน',class:'รายงาน',percent:'รายงาน',late:'รายงาน'};
+  const titles={school:'ทั้งโรงเรียน',activity:'รายงาน',student:'รายงาน',class:'รายงาน',percent:'รายงาน'};
   $('topbar-title').textContent=titles[tab]||'รายงาน';
   renderReport();
 }
@@ -1890,6 +1888,11 @@ async function renderRptSchool(){
     const session=ev?S.rptSession:'morning';
     const rows=await q(sb.from('activity_attend').select('student_id,status').eq('activity_id',S.rptActivityId).eq('date',S.rptDate).eq('session',session));
     const aM={};rows.forEach(r=>aM[r.student_id]=r.status);
+    let morningMap={};
+    if(session==='evening'){
+      const mRows=await q(sb.from('activity_attend').select('student_id,status').eq('activity_id',S.rptActivityId).eq('date',S.rptDate).eq('session','morning'));
+      mRows.forEach(r=>morningMap[r.student_id]=r.status);
+    }
     const classData={};
     S.classes.forEach(c=>{classData[`${c.grade_level}_${c.room}`]={gl:c.grade_level,r:c.room,stus:[],present:0,late:0,absent:0}});
     S.students.forEach(s=>{
@@ -1900,14 +1903,14 @@ async function renderRptSchool(){
     });
     const act=S.activities.find(a=>a.id==S.rptActivityId);
     const sessLbl=session==='morning'?'รอบเช้า':'รอบบ่าย';
-    S.rptSchoolData={classData,act,sessLbl};
-    const docHTML=buildSchoolDoc(classData,act,sessLbl);
+    S.rptSchoolData={classData,act,sessLbl,morningMap};
+    const docHTML=buildSchoolDoc(classData,act,sessLbl,morningMap);
     $('rpt-school-body').innerHTML=_expBar('exportSchoolPDF','exportSchoolExcel','exportSchoolImage')+docHTML;
     S.rptSchoolData.bodyHtml=$('rpt-school-body').innerHTML;S.rptSchoolCacheKey=_rptSchKey;
   }catch(e){$('rpt-school-body').innerHTML=`<div class="empty-state">เกิดข้อผิดพลาด: ${esc(e.message)}</div>`}
 }
 
-function buildSchoolDoc(classData,act,sessLbl){
+function buildSchoolDoc(classData,act,sessLbl,morningMap={}){
   const entries=Object.values(classData).filter(c=>c.stus.length>0);
   let tot={total:0,present:0,late:0,absent:0};
   entries.forEach(c=>{tot.total+=c.stus.length;tot.present+=c.present;tot.late+=c.late;tot.absent+=c.absent});
@@ -1955,6 +1958,35 @@ function buildSchoolDoc(classData,act,sessLbl){
     });
     h+=`</div>`;
   }
+
+  // Section: สาย (absent morning → present evening)
+  const hasMorning=Object.keys(morningMap).length>0;
+  if(hasMorning){
+    const lateByClass={};
+    entries.forEach(c=>{
+      const late=c.stus.filter(s=>s.status==='present'&&morningMap[s.id]==='absent');
+      if(late.length)lateByClass[`${c.gl}_${c.r}`]={gl:c.gl,r:c.r,stus:late};
+    });
+    const lateEntries=Object.values(lateByClass);
+    const lateTotal=lateEntries.reduce((s,c)=>s+c.stus.length,0);
+    h+=`<div class="sr-page2" id="school-report-late">
+      <div class="sr-p2-title">รายชื่อนักเรียนที่สาย</div>
+      <div class="sr-p2-sub">${esc(act?.name||'')} · ${thDate(S.rptDate)} · ขาดเช้า–มาบ่าย · ${lateTotal} คน</div>`;
+    if(!lateEntries.length){
+      h+=`<div style="padding:16px;color:var(--txt3);font-size:13px;text-align:center">ไม่พบนักเรียนที่มาสาย</div>`;
+    }else{
+      lateEntries.forEach(c=>{
+        h+=`<div class="sr-class-group">
+          <div class="sr-class-hd">${classLabel(c.gl,c.r)} <span>(${c.stus.length} คน)</span></div>`;
+        c.stus.forEach((s,i)=>{
+          h+=`<div class="sr-stu-row"><span class="sr-stu-num">${i+1}.</span><span class="sr-stu-code">${esc(s.student_code)}</span><span class="sr-stu-name">${esc(s.student_name)}</span><span class="badge-sm orange">สาย</span></div>`;
+        });
+        h+=`</div>`;
+      });
+    }
+    h+=`</div>`;
+  }
+
   return h;
 }
 
