@@ -1860,7 +1860,7 @@ async function renderRptPercent(){
       cls.stus.sort((a,b)=>a.pct-b.pct).forEach((s,i)=>{
         const pc=s.pct.toFixed(1);
         const cl=s.pct<50?'red':s.pct<70?'orange':'';
-        h+=`<tr><td>${i+1}</td><td class="screen-hide">${esc(s.student_code||'')}</td><td class="left">${esc(s.student_name)}</td><td class="green">${s.present}</td><td class="orange">${s.late}</td><td class="red">${s.absent}</td><td class="${cl}" style="font-weight:600">${pc}%</td></tr>`;
+        h+=`<tr><td>${i+1}</td><td class="screen-hide">${esc(s.student_code||'')}</td><td class="left" style="white-space:nowrap">${esc(s.student_name)}</td><td class="green">${s.present}</td><td class="orange">${s.late}</td><td class="red">${s.absent}</td><td class="${cl}" style="font-weight:600">${pc}%</td></tr>`;
       });
       h+=`</tbody></table></div></div>`;
     });
