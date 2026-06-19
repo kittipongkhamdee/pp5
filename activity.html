@@ -1181,7 +1181,7 @@ async function renderUnifRptSchool(){
           const chk=chkMap[s.id];
           const violList=[...(chk?.viols||[]),chk?.note].filter(Boolean);
           const violHtml=violList.length?`<span style="font-size:11px;color:#dc2626;flex:1;min-width:0;text-align:left">${violList.map(v=>esc(v)).join(', ')}</span>`:'<span style="font-size:11px;color:var(--txt3);flex:1">—</span>';
-          h+=`<div class="sr-stu-row"><span class="sr-stu-num" style="flex-shrink:0">${i+1}.</span><span class="sr-stu-code" style="flex-shrink:0">${esc(s.student_code||'')}</span><span class="sr-stu-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1.5;min-width:0">${esc(s.student_name)}</span><span class="badge-sm red" style="flex-shrink:0">ไม่ผ่าน</span>${violHtml}</div>`;
+          h+=`<div class="sr-stu-row" style="align-items:flex-start"><span class="sr-stu-num" style="flex-shrink:0;padding-top:1px">${i+1}.</span><span class="sr-stu-code" style="flex-shrink:0;padding-top:1px">${esc(s.student_code||'')}</span><span class="sr-stu-name" style="flex:1.5;min-width:0">${esc(s.student_name)}</span><span class="badge-sm red" style="flex-shrink:0">ไม่ผ่าน</span>${violHtml}</div>`;
         });
         h+=`</div>`;
       });
