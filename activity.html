@@ -143,8 +143,8 @@ html[data-theme="dark"] .ios-select,html[data-theme="dark"] .ios-input{backgroun
 .unif-rpt-tab.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:700}
 /* ── Uniform report table ── */
 .unif-rpt-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
-.unif-rpt-table th{background:var(--card2);padding:8px 6px;text-align:center;font-weight:600;border:1px solid #666;font-size:12px}
-.unif-rpt-table td{padding:7px 6px;text-align:center;border:1px solid #666;vertical-align:top}
+.unif-rpt-table th{background:var(--card2);padding:8px 6px;text-align:center;font-weight:600;border:1px solid #e5e7eb;font-size:12px}
+.unif-rpt-table td{padding:7px 6px;text-align:center;border:1px solid #e5e7eb;vertical-align:top}
 .rpt-table td{vertical-align:top}
 .screen-hide{display:none}
 .unif-rpt-table tr.total-row td{font-weight:700;background:var(--card2)}
@@ -343,8 +343,8 @@ details[open] .unif-viol-chevron{transform:rotate(180deg)}
 
 /* ── Report tables ── */
 .rpt-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:12px}
-.rpt-table th{background:var(--card2);padding:8px 6px;text-align:center;font-weight:600;border:1px solid #666;font-size:12px}
-.rpt-table td{padding:8px 6px;text-align:center;border:1px solid #666}
+.rpt-table th{background:var(--card2);padding:8px 6px;text-align:center;font-weight:600;border:1px solid #e5e7eb;font-size:12px}
+.rpt-table td{padding:8px 6px;text-align:center;border:1px solid #e5e7eb}
 .rpt-table tr.total-row td{font-weight:700;background:var(--card2)}
 .rpt-table td.green{color:var(--green);font-weight:600}
 .rpt-table td.orange{color:var(--orange);font-weight:600}
@@ -1946,7 +1946,7 @@ async function _captureImage(elId,filename){
   clone.querySelectorAll('table').forEach(t=>{t.style.width='auto';t.style.tableLayout='auto';});
   /* scale:2 → 1px border = 2px physical → ลด border เป็น 0.5px สำหรับ export */
   const capStyle=document.createElement('style');
-  capStyle.textContent='table th,table td{border-width:0.5px !important}.screen-hide{display:table-cell !important}';
+  capStyle.textContent='table th,table td{border-width:0.5px !important;border-color:#666 !important}.screen-hide{display:table-cell !important}';
   wrap.appendChild(capStyle);
   wrap.appendChild(clone);
   document.body.appendChild(wrap);
