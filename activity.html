@@ -770,6 +770,7 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
       <button class="rpt-tab" id="rpt-tab-class" onclick="switchRptTab('class')">ทั้งห้อง</button>
       <button class="rpt-tab" id="rpt-tab-school" onclick="switchRptTab('school')">ทั้งโรงเรียน</button>
       <button class="rpt-tab" id="rpt-tab-percent" onclick="switchRptTab('percent')">ร้อยละ</button>
+      <button class="rpt-tab" id="rpt-tab-streak" onclick="switchRptTab('streak')">ขาดต่อเนื่อง</button>
     </div>
     <div id="rpt-content"></div>
   </div>
@@ -965,6 +966,7 @@ const S={
   rptTab:'activity',rptActivityId:null,rptDate:todayStr(),rptSession:'morning',rptStuId:null,rptStuClass:null,rptStuSearch:'',rptStuActivityId:null,rptSchoolData:null,rptActData:null,rptStuData:null,rptPctData:null,rptPctThreshold:80,rptPctActivityId:null,rptPctClass:null,
   rptClassActivityId:null,rptClassClass:null,rptClassDate:null,rptClassSession:'morning',rptClassData:null,
   rptLateActivityId:null,rptLateDate:null,
+  rptStreakActivityId:null,rptStreakMin:3,
   unifViolations:[],unifDate:todayStr(),unifClass:null,unifChecks:{},unifTab:'check',
   ckUnifChecks:{},unifCheckSessions:'',
   unifRptDate:todayStr(),unifRptClass:null,
@@ -1730,19 +1732,19 @@ async function onCkSessionChange(s){S.ckSession=s;await renderCheckin()}
 // ─── REPORT ────────────────────────────────────────────────────────────────
 function renderReport(){
   const tabs=$('rpt-tabs');if(tabs)tabs.style.display='flex';
-  ['activity','student','class','school','percent'].forEach(t=>$('rpt-tab-'+t)?.classList.toggle('active',S.rptTab===t));
+  ['activity','student','class','school','percent','streak'].forEach(t=>$('rpt-tab-'+t)?.classList.toggle('active',S.rptTab===t));
   if(S.rptTab==='activity')renderRptActivity();
   else if(S.rptTab==='student')renderRptStudent();
   else if(S.rptTab==='class')renderRptClass();
   else if(S.rptTab==='school')renderRptSchool();
+  else if(S.rptTab==='streak')renderRptStreak();
   else renderRptPercent();
 }
 function switchRptTab(tab){
   S.rptTab=tab;S.page='report';
   document.querySelectorAll('.nav-item,.side-nav-item').forEach(n=>n.classList.remove('active'));
   document.querySelectorAll('[data-nav="report"]').forEach(el=>el.classList.add('active'));
-  const titles={school:'รายงาน',activity:'รายงาน',student:'รายงาน',class:'รายงาน',percent:'รายงาน'};
-  $('topbar-title').textContent=titles[tab]||'รายงาน';
+  $('topbar-title').textContent='รายงาน';
   renderReport();
 }
 
@@ -2634,6 +2636,83 @@ function exportUnifClassXLSX(){
 function exportUnifClassImage(){
   if(!S.unifClassData){toast('กรุณาโหลดรายงานก่อน','er');return}
   _captureImage('unifrpt-class-doc',`แต่งกาย_${classLabel(S.unifClassData.gl,S.unifClassData.room)}_${S.unifClassData.date}.png`);
+}
+
+// ── Report: consecutive absence streak ──
+async function renderRptStreak(){
+  const aOpts=S.activities.map(a=>`<option value="${a.id}"${S.rptStreakActivityId==a.id?' selected':''}>${esc(a.name)}</option>`).join('');
+  $('rpt-content').innerHTML=`
+    <div class="filter-row">
+      <select class="ios-select" onchange="S.rptStreakActivityId=+this.value||null;renderRptStreak()">${'<option value="">-- เลือกกิจกรรม --</option>'+aOpts}</select>
+    </div>
+    <div class="filter-row" style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:14px;color:var(--txt2);white-space:nowrap">ขาดติดต่อกันตั้งแต่</span>
+      <input type="number" class="ios-input" style="width:70px;text-align:center" min="2" max="30" value="${S.rptStreakMin}" onchange="S.rptStreakMin=Math.max(2,+this.value||3);renderRptStreak()">
+      <span style="font-size:14px;color:var(--txt2);white-space:nowrap">วันขึ้นไป</span>
+    </div>
+    <div id="rpt-streak-body">${!S.rptStreakActivityId?'<div class="empty-state">เลือกกิจกรรมเพื่อดูรายงาน</div>':'<div class="loading-text">กำลังโหลด...</div>'}</div>`;
+  if(!S.rptStreakActivityId)return;
+  try{
+    const act=S.activities.find(a=>a.id==S.rptStreakActivityId);
+    const useSession=act?.has_evening?'evening':'morning';
+    // ดึงข้อมูล 60 วันย้อนหลัง
+    const since=new Date();since.setDate(since.getDate()-60);
+    const sinceStr=since.toISOString().split('T')[0];
+    const stuIds=S.students.map(s=>s.id);
+    if(!stuIds.length){$('rpt-streak-body').innerHTML='<div class="empty-state">ไม่พบข้อมูลนักเรียน</div>';return}
+    const rows=await q(sb.from('activity_attend').select('student_id,date,status').eq('activity_id',S.rptStreakActivityId).eq('session',useSession).gte('date',sinceStr).order('date',{ascending:true}));
+    if(!rows.length){$('rpt-streak-body').innerHTML='<div class="empty-state">ไม่มีข้อมูลการเช็คชื่อ</div>';return}
+    // หาวันที่มีการเช็คชื่อ (เรียงจากเก่า→ใหม่)
+    const checkedDates=[...new Set(rows.map(r=>r.date))].sort();
+    // สร้าง map: student_id → {date → status}
+    const stuMap={};
+    rows.forEach(r=>{
+      const id=String(r.student_id);
+      if(!stuMap[id])stuMap[id]={};
+      stuMap[id][r.date]=r.status;
+    });
+    // หา streak ปัจจุบันของแต่ละนักเรียน
+    const results=[];
+    S.students.forEach(s=>{
+      const id=String(s.id);
+      const rec=stuMap[id]||{};
+      // วนจากวันล่าสุดถอยหลัง หา streak ต่อเนื่องของ absent/late
+      let streak=0;let streakStart=null;
+      for(let i=checkedDates.length-1;i>=0;i--){
+        const d=checkedDates[i];
+        const st=rec[d];
+        if(st==='absent'||st==='late'){streak++;streakStart=d;}
+        else break; // หยุดทันทีที่เจอวันที่ไม่ได้ขาด
+      }
+      if(streak>=S.rptStreakMin){
+        results.push({s,streak,streakStart,streakEnd:checkedDates[checkedDates.length-1]});
+      }
+    });
+    results.sort((a,b)=>b.streak-a.streak);
+    if(!results.length){
+      $('rpt-streak-body').innerHTML=`<div class="empty-state">ไม่พบนักเรียนที่ขาด/ลาติดต่อกัน ${S.rptStreakMin} วันขึ้นไป</div>`;return;
+    }
+    const rankBg=['#EF4444','#F97316','#F59E0B','#84CC16','#22C55E','#14B8A6','#3B82F6','#6366F1','#8B5CF6','#EC4899'];
+    let h=`<div class="school-report">
+      <div style="font-size:13px;color:var(--txt3);margin-bottom:12px">พบ <strong style="color:var(--red)">${results.length}</strong> คน · กิจกรรม: ${esc(act?.name||'')} · ${useSession==='evening'?'รอบบ่าย':'รอบเช้า'}</div>`;
+    results.forEach(({s,streak,streakStart,streakEnd},i)=>{
+      const bg=i<rankBg.length?rankBg[i]:'#6B7280';
+      const dateRange=streakStart===streakEnd?thDate(streakStart):`${thDate(streakStart)} – ${thDate(streakEnd)}`;
+      h+=`<div style="display:flex;align-items:center;gap:12px;padding:11px 0;${i<results.length-1?'border-bottom:1px solid var(--sep)':''}">
+        <div style="width:34px;height:34px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0;box-shadow:0 2px 6px ${bg}55">${i+1}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(s.student_name)}</div>
+          <div style="font-size:12px;color:var(--txt3);margin-top:2px">${classLabel(s.grade_level,s.room)} · ${dateRange}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:22px;font-weight:800;color:#EF4444;line-height:1">${streak}</div>
+          <div style="font-size:11px;color:var(--txt3)">วัน</div>
+        </div>
+      </div>`;
+    });
+    h+=`</div>`;
+    $('rpt-streak-body').innerHTML=h;
+  }catch(e){$('rpt-streak-body').innerHTML=`<div class="empty-state">เกิดข้อผิดพลาด: ${esc(e.message)}</div>`}
 }
 
 // ─── ADMIN ─────────────────────────────────────────────────────────────────
