@@ -931,6 +931,10 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
       <input type="password" id="login-pass" name="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
     </div>
     <div class="login-err" id="login-err"></div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txt2);margin-bottom:4px;cursor:pointer;user-select:none">
+      <input type="checkbox" id="login-remember" style="width:16px;height:16px;accent-color:var(--primary);cursor:pointer">
+      จำเข้าสู่ระบบ
+    </label>
     <button type="submit" class="login-btn" id="login-btn">เข้าสู่ระบบ</button>
     </form>
     <div class="login-credit">
@@ -2794,12 +2798,24 @@ async function doLogin(){
   try{
     const{data,error}=await sb.auth.signInWithPassword({email,password:pass});
     if(error)throw error;
+    if($('login-remember')?.checked){
+      localStorage.setItem('_ac_saved',btoa(unescape(encodeURIComponent(JSON.stringify({e:email,p:pass})))));
+    }else{
+      localStorage.removeItem('_ac_saved');
+    }
     $('login-overlay').style.display='none';
     $('logout-btn').style.display='';
     await loadAppData();
   }catch(e){
     $('login-err').textContent=e.message==='Invalid login credentials'?'อีเมลหรือรหัสผ่านไม่ถูกต้อง':e.message;
   }finally{btn.disabled=false;btn.textContent='เข้าสู่ระบบ'}
+}
+function _loadSavedCred(){
+  try{
+    const raw=localStorage.getItem('_ac_saved');if(!raw)return;
+    const{e,p}=JSON.parse(decodeURIComponent(escape(atob(raw))));
+    if(e&&p){$('login-email').value=e;$('login-pass').value=p;const r=$('login-remember');if(r)r.checked=true;}
+  }catch(e){}
 }
 
 function doLogout(){
@@ -2812,9 +2828,11 @@ async function confirmLogout(){
   loading(true);
   try{
     await sb.auth.signOut();
+    localStorage.removeItem('_ac_saved');
     $('login-overlay').style.display='flex';
     $('logout-btn').style.display='none';
     $('login-pass').value='';
+    _loadSavedCred();
   }finally{loading(false)}
 }
 
@@ -2892,14 +2910,29 @@ function initTheme(){
 
 // ─── INIT ──────────────────────────────────────────────────────────────────
 async function init(){
-  // ตรวจสอบ session ที่มีอยู่แล้ว
   const{data:{session}}=await sb.auth.getSession();
   if(session){
     $('login-overlay').style.display='none';
     $('logout-btn').style.display='';
     await loadAppData();
+    return;
   }
-  // ไม่มี session → แสดง login overlay (default display:flex)
+  _loadSavedCred();
+  const raw=localStorage.getItem('_ac_saved');
+  if(raw){
+    try{
+      const{e,p}=JSON.parse(decodeURIComponent(escape(atob(raw))));
+      if(e&&p){
+        const{data,error}=await sb.auth.signInWithPassword({email:e,password:p});
+        if(!error&&data.session){
+          $('login-overlay').style.display='none';
+          $('logout-btn').style.display='';
+          await loadAppData();
+          return;
+        }
+      }
+    }catch(err){}
+  }
 }
 function startClock(){
   const D=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
