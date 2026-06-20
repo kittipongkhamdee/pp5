@@ -921,16 +921,18 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
       <div class="login-title">ระบบเช็คชื่อกิจกรรม</div>
       <div class="login-sub">เข้าสู่ระบบเพื่อดำเนินการต่อ</div>
     </div>
+    <form id="login-form" onsubmit="event.preventDefault();doLogin()" autocomplete="on">
     <div class="login-field">
       <label>อีเมล</label>
-      <input type="email" id="login-email" placeholder="email@school.ac.th" autocomplete="email" onkeydown="if(event.key==='Enter')$('login-pass').focus()">
+      <input type="email" id="login-email" name="email" placeholder="email@school.ac.th" autocomplete="email" onkeydown="if(event.key==='Enter')$('login-pass').focus()">
     </div>
     <div class="login-field">
       <label>รหัสผ่าน</label>
-      <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+      <input type="password" id="login-pass" name="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
     </div>
     <div class="login-err" id="login-err"></div>
-    <button class="login-btn" id="login-btn" onclick="doLogin()">เข้าสู่ระบบ</button>
+    <button type="submit" class="login-btn" id="login-btn">เข้าสู่ระบบ</button>
+    </form>
     <div class="login-credit">
       <div class="login-credit-lbl">ผู้พัฒนาระบบ</div>
       <div class="login-credit-name">นายกิตติพงษ์ คำดี</div>
