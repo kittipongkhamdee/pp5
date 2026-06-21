@@ -273,11 +273,6 @@ html[data-theme="dark"] .ios-select,html[data-theme="dark"] .ios-input{backgroun
   border:1px solid rgba(255,255,255,0.5);color:var(--txt);
   box-shadow:0 2px 8px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.7);
 }
-.btn-save{
-  background:linear-gradient(170deg,rgba(59,130,246,0.92),rgba(29,78,216,0.97));color:#fff;
-  border-color:rgba(255,255,255,0.28);
-  box-shadow:0 4px 14px rgba(29,78,216,0.38),inset 0 1px 0 rgba(255,255,255,0.3),inset 0 -1px 0 rgba(0,0,0,0.1);
-}
 .btn-gray{
   background:rgba(255,255,255,0.55);
   backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
@@ -755,9 +750,6 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>ล้างค่า
             </button>
           </div>
-          <button class="btn btn-save btn-sm" id="ck-save-btn" onclick="saveCk()" style="flex-shrink:0">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4"/><path d="M8 11l4 4 4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>บันทึก
-          </button>
         </div>
       </div>
     </div>
@@ -1733,17 +1725,6 @@ async function clearAllCk(){
   finally{loading(false)}
 }
 
-function saveCk(){
-  if(!S.ckActivityId){toast('เลือกกิจกรรมก่อน','er');return}
-  const stus=_filteredStudents();
-  const ids=new Set(stus.map(s=>s.id));
-  const v=Object.entries(S.ckAttend).filter(([id])=>ids.has(id)).map(([,a])=>a);
-  const pr=v.filter(a=>a.status==='present').length;
-  const la=v.filter(a=>a.status==='late').length;
-  const ab=v.filter(a=>a.status==='absent').length;
-  const label=S.ckFilter?`ห้อง ${classLabel(...S.ckFilter.split('_'))}`:'ทั้งหมด';
-  toast(`✓ บันทึกแล้ว ${label} — มา ${pr} · ลา ${la} · ขาด ${ab} คน`,'ok',3000);
-}
 
 async function onCkActChange(){S.ckActivityId=parseInt($('ck-act-sel').value)||null;S.ckSession='morning';await renderCheckin()}
 async function onCkDateChange(){S.ckDate=$('ck-date-inp').value;await renderCheckin()}
