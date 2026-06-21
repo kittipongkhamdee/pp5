@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ระบบบริหารงานวิชาการ — หน้าหลัก</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --blue:#1d4ed8;--blue2:#2563eb;--blue3:#3b82f6;
+  --blue-light:#dbeafe;--blue-pale:#eff6ff;
+  --dark:#0f172a;--dark2:#1e293b;--gray:#64748b;
+  --sep:#e2e8f0;--radius:16px;--font:'Sarabun',sans-serif;
+  --green:#059669;--green-light:#d1fae5;
+  --orange:#d97706;--orange-light:#fef3c7;
+}
+html,body{height:100%}
+body{
+  font-family:var(--font);color:var(--dark);
+  background:linear-gradient(160deg,#f0f4ff 0%,#e8f0fe 40%,#f8fafc 100%);
+  min-height:100vh;display:flex;flex-direction:column;
+}
+
+/* ── Header ── */
+header{
+  background:linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 55%,#2563eb 100%);
+  color:#fff;padding:0;position:relative;overflow:hidden;
+}
+header::before{
+  content:'';position:absolute;top:-80px;right:-80px;
+  width:320px;height:320px;border-radius:50%;
+  background:rgba(255,255,255,.06);
+}
+header::after{
+  content:'';position:absolute;bottom:-60px;left:10%;
+  width:200px;height:200px;border-radius:50%;
+  background:rgba(255,255,255,.04);
+}
+.header-inner{
+  max-width:860px;margin:0 auto;padding:36px 24px 40px;
+  position:relative;z-index:1;
+}
+.school-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);
+  border-radius:24px;padding:6px 16px;font-size:12px;font-weight:600;
+  letter-spacing:.4px;margin-bottom:20px;
+}
+.header-logo{
+  width:56px;height:56px;background:rgba(255,255,255,.18);
+  border-radius:16px;display:flex;align-items:center;justify-content:center;
+  font-size:28px;margin-bottom:14px;
+}
+h1{font-size:28px;font-weight:800;line-height:1.2;margin-bottom:6px}
+.header-sub{font-size:15px;opacity:.8;font-weight:400}
+.header-date{
+  display:inline-flex;align-items:center;gap:6px;margin-top:16px;
+  background:rgba(255,255,255,.12);border-radius:10px;
+  padding:7px 14px;font-size:12px;opacity:.9;
+}
+
+/* ── Main ── */
+main{
+  flex:1;max-width:860px;margin:0 auto;padding:36px 20px 48px;width:100%;
+}
+
+/* ── Section label ── */
+.section-lbl{
+  font-size:11px;font-weight:700;color:var(--blue);letter-spacing:.8px;
+  text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px;
+}
+.section-lbl::after{content:'';flex:1;height:1px;background:var(--blue-light)}
+
+/* ── System cards ── */
+.systems{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;margin-bottom:40px}
+.sys-card{
+  background:#fff;border-radius:var(--radius);border:1.5px solid var(--sep);
+  padding:24px;cursor:pointer;transition:all .18s;
+  display:flex;flex-direction:column;text-decoration:none;color:inherit;
+  position:relative;overflow:hidden;
+}
+.sys-card::before{
+  content:'';position:absolute;inset:0;border-radius:var(--radius);
+  background:linear-gradient(135deg,rgba(37,99,235,.04),rgba(37,99,235,0));
+  opacity:0;transition:opacity .18s;
+}
+.sys-card:hover{border-color:var(--blue3);box-shadow:0 4px 24px rgba(37,99,235,.14);transform:translateY(-2px)}
+.sys-card:hover::before{opacity:1}
+.sys-card:active{transform:translateY(0)}
+
+.sys-icon{
+  width:52px;height:52px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:26px;margin-bottom:16px;flex-shrink:0;
+}
+.sys-icon.blue{background:linear-gradient(135deg,#dbeafe,#bfdbfe)}
+.sys-icon.green{background:linear-gradient(135deg,#d1fae5,#a7f3d0)}
+
+.sys-title{font-size:17px;font-weight:800;color:var(--dark);margin-bottom:4px}
+.sys-sub{font-size:12px;font-weight:600;color:var(--blue);margin-bottom:10px}
+.sys-desc{font-size:13px;color:var(--gray);line-height:1.7;flex:1}
+
+.sys-features{display:flex;flex-wrap:wrap;gap:5px;margin-top:14px}
+.sys-feat{
+  display:inline-flex;align-items:center;gap:4px;
+  background:var(--blue-pale);border:1px solid var(--blue-light);
+  border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600;color:var(--blue);
+}
+.sys-feat.green{background:var(--green-light);border-color:#a7f3d0;color:var(--green)}
+
+.sys-arrow{
+  display:flex;align-items:center;gap:6px;margin-top:18px;
+  font-size:13px;font-weight:700;color:var(--blue);
+  border-top:1px solid var(--sep);padding-top:14px;
+}
+.sys-arrow svg{transition:transform .15s}
+.sys-card:hover .sys-arrow svg{transform:translateX(4px)}
+
+/* ── Quick links ── */
+.quick-links{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:40px}
+.quick-link{
+  background:#fff;border:1.5px solid var(--sep);border-radius:10px;
+  padding:14px;text-decoration:none;color:var(--dark2);
+  display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;
+  transition:all .15s;
+}
+.quick-link:hover{border-color:var(--blue3);color:var(--blue);background:var(--blue-pale)}
+.quick-link-icon{font-size:18px;flex-shrink:0}
+
+/* ── Info strip ── */
+.info-strip{
+  background:linear-gradient(135deg,#fffbeb,#fef3c7);
+  border:1px solid #fde68a;border-radius:12px;
+  padding:16px 20px;display:flex;align-items:flex-start;gap:12px;margin-bottom:40px;
+}
+.info-strip-icon{font-size:20px;flex-shrink:0;margin-top:1px}
+.info-strip-body{font-size:13px;color:#92400e;line-height:1.7}
+.info-strip-title{font-weight:700;margin-bottom:2px}
+
+/* ── Footer ── */
+footer{
+  background:var(--dark2);color:#94a3b8;
+  padding:20px 24px;text-align:center;font-size:12px;
+  display:flex;justify-content:space-between;align-items:center;
+  flex-wrap:wrap;gap:8px;
+}
+.footer-logo{color:#fff;font-weight:700;font-size:13px}
+
+/* ── Responsive ── */
+@media(max-width:500px){
+  h1{font-size:22px}
+  .systems{grid-template-columns:1fr}
+  .header-inner{padding:28px 16px 32px}
+  main{padding:24px 16px 40px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="school-badge">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg>
+      ระบบสารสนเทศโรงเรียน
+    </div>
+    <div class="header-logo">🏫</div>
+    <h1>ระบบบริหารงานวิชาการ</h1>
+    <div class="header-sub">เลือกระบบที่ต้องการใช้งาน</div>
+    <div class="header-date">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span id="date-label">กำลังโหลด...</span>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- ── ระบบหลัก ── -->
+  <div class="section-lbl">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    ระบบหลัก
+  </div>
+
+  <div class="systems">
+
+    <!-- ปพ.5 -->
+    <a class="sys-card" href="index-pp5.html">
+      <div class="sys-icon blue">📒</div>
+      <div class="sys-title">ระบบ ปพ.5</div>
+      <div class="sys-sub">บันทึกผลการเรียน</div>
+      <div class="sys-desc">บันทึกและดูผลการเรียนรายวิชา ออกเอกสาร ปพ.5 ตามมาตรฐานของกระทรวงศึกษาธิการ</div>
+      <div class="sys-features">
+        <span class="sys-feat">📝 บันทึกคะแนน</span>
+        <span class="sys-feat">📊 สรุปผล</span>
+        <span class="sys-feat">🖨 พิมพ์เอกสาร</span>
+      </div>
+      <div class="sys-arrow">
+        เข้าสู่ระบบ ปพ.5
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </a>
+
+    <!-- เช็คชื่อ -->
+    <a class="sys-card" href="activity.html">
+      <div class="sys-icon green">📋</div>
+      <div class="sys-title">ระบบเช็คชื่อ</div>
+      <div class="sys-sub">กิจกรรมและแต่งกาย</div>
+      <div class="sys-desc">เช็คชื่อการเข้าร่วมกิจกรรม ตรวจแต่งกาย ดูรายงาน และติดตามนักเรียนที่ขาดต่อเนื่อง</div>
+      <div class="sys-features">
+        <span class="sys-feat green">✓ เช็คชื่อ</span>
+        <span class="sys-feat green">👔 แต่งกาย</span>
+        <span class="sys-feat green">📈 รายงาน</span>
+        <span class="sys-feat green">🔔 ขาดต่อเนื่อง</span>
+      </div>
+      <div class="sys-arrow" style="color:var(--green)">
+        เข้าสู่ระบบเช็คชื่อ
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </a>
+
+  </div>
+
+  <!-- ── Quick links ── -->
+  <div class="section-lbl">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9l-7-7z"/><path d="M13 2v7h7"/></svg>
+    เอกสารและคู่มือ
+  </div>
+  <div class="quick-links">
+    <a class="quick-link" href="manual.html">
+      <span class="quick-link-icon">📖</span>
+      คู่มือการใช้งาน
+    </a>
+    <a class="quick-link" href="infographic.html">
+      <span class="quick-link-icon">🖼</span>
+      Infographic ระบบ
+    </a>
+  </div>
+
+  <!-- ── หมายเหตุ ── -->
+  <div class="info-strip">
+    <div class="info-strip-icon">💡</div>
+    <div class="info-strip-body">
+      <div class="info-strip-title">บุ๊กมาร์กหน้านี้ไว้</div>
+      กด <strong>เพิ่มไปยังหน้าจอหลัก</strong> ในเบราว์เซอร์มือถือ เพื่อเข้าถึงทุกระบบได้จากหน้าจอเดียว ไม่ต้องจำ URL หลายรายการ
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  <div class="footer-logo">🏫 ระบบบริหารงานวิชาการ</div>
+  <div>พัฒนาด้วย Supabase · Vercel</div>
+</footer>
+
+<script>
+const d=new Date();
+const M=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const days=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+document.getElementById('date-label').textContent=
+  `วัน${days[d.getDay()]}ที่ ${d.getDate()} ${M[d.getMonth()]} ${d.getFullYear()+543}`;
+</script>
+</body>
+</html>
