@@ -536,23 +536,31 @@ body{animation:pageFadeIn .25s ease}
       {headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}}
     );
     const rows=await res.json();
-    console.log('[logo] rows=',rows);
     const val=rows?.[0]?.value;
-    console.log('[logo] val length=',val?.length);
+    function _dbg(msg){
+      const d=document.createElement('div');
+      d.style.cssText='position:fixed;bottom:80px;left:16px;right:16px;background:#1d1d1f;color:#fff;font-size:12px;padding:10px 14px;border-radius:12px;z-index:99999;word-break:break-all;max-height:120px;overflow:auto';
+      d.textContent=msg;document.body.appendChild(d);
+      setTimeout(()=>d.remove(),10000);
+    }
     if(val){
+      _dbg('✓ พบโลโก้ ความยาว '+val.length+' ตัวอักษร เริ่มต้น: '+val.slice(0,40));
       const img=document.getElementById('school-logo');
       const svg=document.getElementById('hero-svg');
       const wrap=document.getElementById('hero-icon-wrap');
-      img.onerror=()=>{console.log('[logo] img error');img.style.display='none';svg.style.display='flex';wrap.classList.remove('has-logo')};
+      img.onerror=()=>{_dbg('✗ โหลดภาพไม่ได้')};
       img.src=val;
       img.style.display='block';
       svg.style.display='none';
       wrap.classList.add('has-logo');
-      console.log('[logo] applied');
     }else{
-      console.log('[logo] no val found');
+      _dbg('✗ ไม่พบ logo_url ใน config (rows='+JSON.stringify(rows).slice(0,80)+')');
     }
-  }catch(e){console.error('[logo] error',e);}
+  }catch(e){
+    const d=document.createElement('div');
+    d.style.cssText='position:fixed;bottom:80px;left:16px;right:16px;background:#dc2626;color:#fff;font-size:12px;padding:10px 14px;border-radius:12px;z-index:99999';
+    d.textContent='✗ Error: '+e.message;document.body.appendChild(d);
+  }
 })();
 </script>
 <script>
