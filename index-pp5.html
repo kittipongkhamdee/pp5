@@ -612,38 +612,44 @@ body.dark .subc{
 #login-page .lp-loc{font-size:11.5px;color:#8e8e93;margin-top:2px;}
 /* floating field */
 #login-page .lp-field{position:relative;margin-bottom:16px;}
+#login-page .lp-field-wrap{
+  border-radius:14px;background:rgba(229,229,234,1);padding:1.5px;
+  transition:background .2s,box-shadow .2s;position:relative;
+}
+#login-page .lp-field-wrap:focus-within{
+  background:linear-gradient(135deg,#3b82f6,#8b5cf6);
+  box-shadow:0 0 0 3.5px rgba(99,102,241,.12);
+}
+#login-page .lp-icon-left{
+  position:absolute;left:13px;top:50%;transform:translateY(-50%);
+  color:#aeaeb2;pointer-events:none;display:flex;z-index:2;
+  transition:color .18s;
+}
+#login-page .lp-field-wrap:focus-within .lp-icon-left{color:#6366f1;}
 #login-page .lp-field input{
-  width:100%;height:56px;padding:22px 44px 8px 16px;
-  border:1.5px solid #e5e5ea;border-radius:14px;
+  width:100%;height:56px;padding:22px 44px 8px 46px;
+  border:none;border-radius:13px;
   font-size:15px;font-family:'Sarabun',sans-serif;
   background:#fafafa;color:#1d1d1f;outline:none;
-  transition:border-color .18s,box-shadow .18s,background .18s;
+  transition:background .18s;position:relative;z-index:1;box-sizing:border-box;
 }
-#login-page .lp-field input:focus{
-  border-color:#007AFF;box-shadow:0 0 0 3.5px rgba(0,122,255,.12);background:#fff;
-}
+#login-page .lp-field input:focus{background:#fff;}
 #login-page .lp-field label{
-  position:absolute;left:16px;top:50%;transform:translateY(-50%);
+  position:absolute;left:46px;top:50%;transform:translateY(-50%);
   font-size:15px;color:#aeaeb2;pointer-events:none;
   transition:all .18s cubic-bezier(.4,0,.2,1);
-  font-family:'Sarabun',sans-serif;font-weight:400;
+  font-family:'Sarabun',sans-serif;font-weight:400;z-index:2;
 }
-#login-page .lp-field input:focus ~ label,
-#login-page .lp-field input.lp-filled ~ label{
-  top:10px;transform:translateY(0) scale(.75);
-  color:#007AFF;font-weight:700;
+#login-page .lp-field:focus-within label,
+#login-page .lp-field:has(input.lp-filled) label{
+  top:10px;transform:translateY(0) scale(.75);transform-origin:left center;
+  color:#6366f1;font-weight:700;
 }
-#login-page .lp-field .lp-fic{
-  position:absolute;right:14px;top:50%;transform:translateY(-50%);
-  color:#c7c7cc;display:flex;pointer-events:none;
-}
-#login-page .lp-field input:focus ~ .lp-fic,
-#login-page .lp-field input.lp-filled ~ .lp-fic{color:#007AFF;}
 #login-page .lp-pw-toggle{
   position:absolute;right:12px;top:50%;transform:translateY(-50%);
   background:none;border:none;cursor:pointer;color:#aeaeb2;
   display:flex;align-items:center;padding:4px;border-radius:6px;
-  transition:color .15s;pointer-events:all;
+  transition:color .15s;pointer-events:all;z-index:2;
 }
 #login-page .lp-pw-toggle:hover{color:#3a3a3c;}
 /* error */
@@ -713,24 +719,27 @@ body.dark .subc{
 
       <!-- Email field -->
       <div class="lp-field">
-        <input type="email" id="l-email" autocomplete="email"
-          oninput="this.classList.toggle('lp-filled',this.value.length>0)"
-          onkeydown="if(event.key==='Enter')$('l-pass').focus()">
-        <label for="l-email">อีเมล</label>
-        <div class="lp-fic">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        <div class="lp-field-wrap">
+          <svg class="lp-icon-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
+          <input type="email" id="l-email" autocomplete="email"
+            oninput="this.classList.toggle('lp-filled',this.value.length>0)"
+            onkeydown="if(event.key==='Enter')$('l-pass').focus()">
         </div>
+        <label for="l-email">อีเมล</label>
       </div>
 
       <!-- Password field -->
       <div class="lp-field" style="margin-bottom:8px;">
-        <input type="password" id="l-pass" autocomplete="current-password"
-          oninput="this.classList.toggle('lp-filled',this.value.length>0)"
-          onkeydown="if(event.key==='Enter')doLogin()">
+        <div class="lp-field-wrap">
+          <svg class="lp-icon-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <input type="password" id="l-pass" autocomplete="current-password"
+            oninput="this.classList.toggle('lp-filled',this.value.length>0)"
+            onkeydown="if(event.key==='Enter')doLogin()">
+          <button class="lp-pw-toggle" onclick="_lpTogglePw()" id="lp-pw-btn" type="button">
+            <svg id="lp-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
         <label for="l-pass">รหัสผ่าน</label>
-        <button class="lp-pw-toggle" onclick="_lpTogglePw()" id="lp-pw-btn" type="button">
-          <svg id="lp-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        </button>
       </div>
 
       <!-- Remember me + Forgot password -->
