@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>คู่มือการใช้งาน — ระบบเช็คชื่อกิจกรรม</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --blue:#1d4ed8;--blue2:#2563eb;--blue3:#3b82f6;--blue-light:#dbeafe;--blue-pale:#eff6ff;
+  --dark:#0f172a;--dark2:#1e293b;--gray:#64748b;--gray2:#94a3b8;--gray3:#cbd5e1;
+  --green:#059669;--green-light:#d1fae5;--orange:#d97706;--orange-light:#fef3c7;
+  --red:#dc2626;--red-light:#fee2e2;--purple:#7c3aed;--purple-light:#ede9fe;
+  --card:#fff;--bg:#f8fafc;--sep:#e2e8f0;--radius:12px;--font:'Sarabun',sans-serif;
+}
+body{font-family:var(--font);color:var(--dark);background:var(--bg);font-size:14px;line-height:1.7}
+
+/* ── Print ── */
+@media print{
+  @page{size:A4 portrait;margin:15mm 18mm}
+  body{background:#fff;font-size:13px}
+  .no-print{display:none!important}
+  .page-break{page-break-before:always}
+  .page-break-avoid{page-break-inside:avoid}
+  a{color:inherit;text-decoration:none}
+}
+@media screen{
+  body{max-width:900px;margin:0 auto;padding:0 20px 60px}
+}
+
+/* ── Cover ── */
+.cover{
+  background:linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 45%,#2563eb 70%,#3b82f6 100%);
+  color:#fff;border-radius:16px;padding:56px 48px 48px;margin:24px 0 0;position:relative;overflow:hidden;
+}
+.cover::before{
+  content:'';position:absolute;top:-60px;right:-60px;width:280px;height:280px;
+  border-radius:50%;background:rgba(255,255,255,.07);
+}
+.cover::after{
+  content:'';position:absolute;bottom:-40px;left:40px;width:180px;height:180px;
+  border-radius:50%;background:rgba(255,255,255,.05);
+}
+.cover-badge{
+  display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.15);
+  border:1px solid rgba(255,255,255,.25);border-radius:24px;padding:6px 16px;
+  font-size:12px;font-weight:600;letter-spacing:.5px;margin-bottom:28px;
+}
+.cover-logo{
+  width:64px;height:64px;background:rgba(255,255,255,.18);border-radius:18px;
+  display:flex;align-items:center;justify-content:center;margin-bottom:20px;
+  font-size:32px;
+}
+.cover h1{font-size:32px;font-weight:800;line-height:1.25;margin-bottom:10px}
+.cover h2{font-size:17px;font-weight:400;opacity:.82;margin-bottom:32px}
+.cover-meta{display:flex;gap:24px;flex-wrap:wrap}
+.cover-meta-item{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);border-radius:10px;padding:10px 16px;font-size:13px}
+.cover-meta-item svg{opacity:.8}
+
+/* ── TOC ── */
+.toc{background:var(--card);border:1px solid var(--sep);border-radius:var(--radius);padding:28px 32px;margin:24px 0}
+.toc-title{font-size:15px;font-weight:700;color:var(--blue);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.toc-list{list-style:none;columns:2;column-gap:32px}
+@media(max-width:600px){.toc-list{columns:1}}
+.toc-list li{padding:3px 0}
+.toc-list a{color:var(--dark2);text-decoration:none;font-size:13.5px;display:flex;align-items:center;gap:8px}
+.toc-list a:hover{color:var(--blue)}
+.toc-num{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;background:var(--blue-light);color:var(--blue);border-radius:50%;font-size:10px;font-weight:700;flex-shrink:0}
+
+/* ── Section ── */
+.section{margin:32px 0}
+.section-hd{
+  display:flex;align-items:center;gap:12px;margin-bottom:20px;
+  padding-bottom:12px;border-bottom:2px solid var(--blue-light);
+}
+.section-icon{
+  width:40px;height:40px;border-radius:12px;background:var(--blue);color:#fff;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.section-hd h2{font-size:18px;font-weight:700;color:var(--dark)}
+.section-hd .section-num{font-size:12px;color:var(--gray);font-weight:500}
+
+/* ── Steps ── */
+.steps{display:flex;flex-direction:column;gap:0}
+.step{display:flex;gap:16px;padding:14px 0;border-bottom:1px dashed var(--sep)}
+.step:last-child{border-bottom:none}
+.step-num{
+  width:32px;height:32px;border-radius:50%;background:var(--blue);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;
+  flex-shrink:0;margin-top:2px;
+}
+.step-body{flex:1}
+.step-title{font-size:14px;font-weight:700;color:var(--dark);margin-bottom:4px}
+.step-desc{font-size:13px;color:var(--gray);line-height:1.7}
+
+/* ── Cards ── */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin:16px 0}
+.card{background:var(--card);border:1px solid var(--sep);border-radius:var(--radius);padding:18px}
+.card-icon{font-size:24px;margin-bottom:8px}
+.card-title{font-size:13px;font-weight:700;color:var(--dark);margin-bottom:4px}
+.card-desc{font-size:12px;color:var(--gray);line-height:1.7}
+
+/* ── Feature box ── */
+.feature-box{background:var(--blue-pale);border:1px solid var(--blue-light);border-left:4px solid var(--blue);border-radius:var(--radius);padding:16px 20px;margin:14px 0}
+.feature-box.green{background:var(--green-light);border-color:#a7f3d0;border-left-color:var(--green)}
+.feature-box.orange{background:var(--orange-light);border-color:#fde68a;border-left-color:var(--orange)}
+.feature-box.red{background:var(--red-light);border-color:#fecaca;border-left-color:var(--red)}
+.feature-box.purple{background:var(--purple-light);border-color:#ddd6fe;border-left-color:var(--purple)}
+.feature-box-title{font-size:13px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:7px}
+.feature-box-body{font-size:13px;color:var(--dark2);line-height:1.75}
+.feature-box-body ul{margin:6px 0 0 18px}
+.feature-box-body li{margin-bottom:3px}
+
+/* ── Table ── */
+.tbl{width:100%;border-collapse:collapse;margin:16px 0;font-size:13px}
+.tbl th{background:var(--blue);color:#fff;padding:10px 14px;text-align:left;font-weight:600}
+.tbl th:first-child{border-radius:8px 0 0 0}
+.tbl th:last-child{border-radius:0 8px 0 0}
+.tbl td{padding:10px 14px;border-bottom:1px solid var(--sep);vertical-align:top}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:nth-child(even) td{background:#f8faff}
+
+/* ── Badge ── */
+.badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:14px;font-size:11px;font-weight:700}
+.badge.blue{background:var(--blue-light);color:var(--blue)}
+.badge.green{background:var(--green-light);color:var(--green)}
+.badge.red{background:var(--red-light);color:var(--red)}
+.badge.orange{background:var(--orange-light);color:var(--orange)}
+.badge.gray{background:#f1f5f9;color:var(--gray)}
+.badge.purple{background:var(--purple-light);color:var(--purple)}
+
+/* ── Button demo ── */
+.btn-row{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.btn-demo{
+  display:inline-flex;align-items:center;gap:6px;padding:7px 16px;
+  border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:default;
+}
+.btn-demo.blue{background:var(--blue);color:#fff}
+.btn-demo.outline{background:#fff;border:1.5px solid var(--sep);color:var(--dark2)}
+.btn-demo.green{background:var(--green);color:#fff}
+.btn-demo.red{background:var(--red);color:#fff}
+.btn-demo.gray{background:#e2e8f0;color:var(--dark2)}
+
+/* ── Nav demo ── */
+.nav-demo{
+  display:flex;gap:0;background:#fff;border:1px solid var(--sep);border-radius:var(--radius);overflow:hidden;margin:12px 0;
+}
+.nav-demo-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;
+  padding:12px 8px;font-size:11px;color:var(--gray);border-right:1px solid var(--sep);
+}
+.nav-demo-item:last-child{border-right:none}
+.nav-demo-item.active{color:var(--blue);background:var(--blue-pale)}
+.nav-demo-item svg{width:20px;height:20px}
+
+/* ── Status row ── */
+.status-row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.status-chip{
+  display:inline-flex;align-items:center;gap:6px;padding:6px 14px;
+  border-radius:22px;font-size:12px;font-weight:600;
+}
+.status-chip.present{background:#dcfce7;color:#166534}
+.status-chip.late{background:#fef9c3;color:#854d0e}
+.status-chip.absent{background:#fee2e2;color:#991b1b}
+.status-chip.pass{background:#dcfce7;color:#166534}
+.status-chip.fail{background:#fee2e2;color:#991b1b}
+
+/* ── Flow ── */
+.flow{display:flex;align-items:center;flex-wrap:wrap;gap:0;margin:16px 0}
+.flow-step{
+  display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid var(--sep);
+  border-radius:10px;padding:10px 14px;font-size:12px;font-weight:600;color:var(--dark2);
+}
+.flow-arrow{font-size:16px;color:var(--gray3);margin:0 4px;flex-shrink:0}
+.flow-step-num{width:22px;height:22px;background:var(--blue);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+
+/* ── Tips ── */
+.tips-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin:16px 0}
+.tip-card{background:var(--card);border:1px solid var(--sep);border-radius:10px;padding:14px}
+.tip-icon{font-size:20px;margin-bottom:6px}
+.tip-title{font-size:12px;font-weight:700;color:var(--blue);margin-bottom:4px}
+.tip-desc{font-size:12px;color:var(--gray);line-height:1.65}
+
+/* ── Divider ── */
+.divider{height:1px;background:var(--sep);margin:28px 0}
+
+/* ── Inline icon ── */
+.ico{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;vertical-align:middle;margin:0 2px;font-size:13px}
+
+/* ── Screen box ── */
+.screen-box{
+  background:#0f172a;border-radius:12px;padding:16px 18px;margin:14px 0;
+  font-size:12px;color:#94a3b8;font-family:monospace;line-height:1.8;
+}
+.screen-box .hi{color:#93c5fd}
+.screen-box .ok{color:#86efac}
+.screen-box .warn{color:#fde68a}
+
+/* ── Footer ── */
+.footer{
+  background:linear-gradient(135deg,#1e3a8a,#1d4ed8);color:#fff;
+  border-radius:var(--radius);padding:24px 32px;margin-top:40px;
+  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;
+}
+.footer-title{font-size:14px;font-weight:700}
+.footer-sub{font-size:12px;opacity:.7;margin-top:2px}
+.footer-right{font-size:12px;opacity:.7;text-align:right}
+
+/* ── Print button ── */
+.print-btn{
+  position:fixed;bottom:24px;right:24px;background:var(--blue);color:#fff;
+  border:none;border-radius:50px;padding:12px 22px;font-size:14px;font-weight:600;
+  font-family:inherit;cursor:pointer;box-shadow:0 4px 20px rgba(37,99,235,.4);
+  display:flex;align-items:center;gap:8px;z-index:100;
+}
+.print-btn:hover{background:var(--blue2)}
+@media print{.print-btn{display:none}}
+
+/* ── Sub-heading ── */
+h3.sub{font-size:15px;font-weight:700;color:var(--dark);margin:20px 0 10px;display:flex;align-items:center;gap:8px}
+h3.sub::before{content:'';display:block;width:4px;height:18px;background:var(--blue);border-radius:2px}
+</style>
+</head>
+<body>
+
+<button class="print-btn no-print" onclick="window.print()">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+  พิมพ์คู่มือ
+</button>
+
+<!-- ══════════════════════════════════════════════════
+     COVER
+══════════════════════════════════════════════════ -->
+<div class="cover">
+  <div class="cover-badge">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+    คู่มือการใช้งานฉบับเต็ม
+  </div>
+  <div class="cover-logo">📋</div>
+  <h1>ระบบเช็คชื่อกิจกรรม<br>และตรวจแต่งกาย</h1>
+  <h2>คู่มือสำหรับครูผู้ใช้งาน — ฉบับสมบูรณ์</h2>
+  <div class="cover-meta">
+    <div class="cover-meta-item">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      ปรับปรุง มิถุนายน 2568
+    </div>
+    <div class="cover-meta-item">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+      อ่านจบภายใน 10 นาที
+    </div>
+    <div class="cover-meta-item">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      ใช้งานบนมือถือและคอมพิวเตอร์
+    </div>
+  </div>
+</div>
+
+<!-- TOC -->
+<div class="toc">
+  <div class="toc-title">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+    สารบัญ
+  </div>
+  <ul class="toc-list">
+    <li><a href="#s1"><span class="toc-num">1</span> ภาพรวมระบบ</a></li>
+    <li><a href="#s2"><span class="toc-num">2</span> การเข้าสู่ระบบ</a></li>
+    <li><a href="#s3"><span class="toc-num">3</span> หน้าหลัก (Dashboard)</a></li>
+    <li><a href="#s4"><span class="toc-num">4</span> การเช็คชื่อกิจกรรม</a></li>
+    <li><a href="#s5"><span class="toc-num">5</span> การตรวจแต่งกาย</a></li>
+    <li><a href="#s6"><span class="toc-num">6</span> รายงานการเช็คชื่อ</a></li>
+    <li><a href="#s7"><span class="toc-num">7</span> รายงานการแต่งกาย</a></li>
+    <li><a href="#s8"><span class="toc-num">8</span> การส่งออกข้อมูล</a></li>
+    <li><a href="#s9"><span class="toc-num">9</span> การตั้งค่าระบบ</a></li>
+    <li><a href="#s10"><span class="toc-num">10</span> คำถามที่พบบ่อย</a></li>
+  </ul>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     1. ภาพรวมระบบ
+══════════════════════════════════════════════════ -->
+<div class="section" id="s1">
+  <div class="section-hd">
+    <div class="section-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    </div>
+    <div>
+      <div class="section-num">บทที่ 1</div>
+      <h2>ภาพรวมระบบ</h2>
+    </div>
+  </div>
+
+  <p style="color:var(--gray);margin-bottom:16px">ระบบนี้ออกแบบมาเพื่อช่วยให้ครูสามารถบันทึกการเข้าร่วมกิจกรรม ตรวจแต่งกาย และดูรายงานสรุปได้อย่างรวดเร็วผ่านโทรศัพท์มือถือหรือคอมพิวเตอร์</p>
+
+  <div class="cards">
+    <div class="card page-break-avoid">
+      <div class="card-icon">📋</div>
+      <div class="card-title">เช็คชื่อกิจกรรม</div>
+      <div class="card-desc">บันทึกการเข้าร่วมกิจกรรม ระบุสถานะมา / ลา / ขาด รองรับรอบเช้าและบ่าย</div>
+    </div>
+    <div class="card page-break-avoid">
+      <div class="card-icon">👔</div>
+      <div class="card-title">ตรวจแต่งกาย</div>
+      <div class="card-desc">ตรวจพร้อมกับการเช็คชื่อ บันทึกประเภทความผิดและหมายเหตุรายบุคคล</div>
+    </div>
+    <div class="card page-break-avoid">
+      <div class="card-icon">📊</div>
+      <div class="card-title">รายงานหลากหลาย</div>
+      <div class="card-desc">รายกิจกรรม รายนักเรียน ทั้งห้อง ทั้งโรงเรียน ร้อยละ และขาดต่อเนื่อง</div>
+    </div>
+    <div class="card page-break-avoid">
+      <div class="card-icon">📤</div>
+      <div class="card-title">ส่งออกข้อมูล</div>
+      <div class="card-desc">ดาวน์โหลดเป็นรูปภาพ PDF หรือ Excel ได้ทุกรายงาน</div>
+    </div>
+  </div>
+
+  <h3 class="sub">เมนูหลักของระบบ</h3>
+  <div class="nav-demo">
+    <div class="nav-demo-item active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1v-9.5z"/><path d="M9 21v-7h6v7"/></svg>
+      หน้าหลัก
+    </div>
+    <div class="nav-demo-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><path d="M9 12l2 2 4-4"/></svg>
+      เช็คชื่อ
+    </div>
+    <div class="nav-demo-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-5-5z"/><path d="M14 2v6h6"/><line x1="9" y1="13" x2="15" y2="13"/></svg>
+      รายงาน
+    </div>
+    <div class="nav-demo-item">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H5v10a2 2 0 002 2h10a2 2 0 002-2V10h1.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>
+      แต่งกาย
+    </div>
+  </div>
+
+  <div class="feature-box orange">
+    <div class="feature-box-title">⚠️ ก่อนเริ่มใช้งาน</div>
+    <div class="feature-box-body">ต้องให้ผู้ดูแลระบบ (Admin) ตั้งค่ากิจกรรม ข้อมูลนักเรียน และประเภทความผิดแต่งกายก่อน ครูจึงจะสามารถเช็คชื่อได้</div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════════════════
+     2. การเข้าสู่ระบบ
+══════════════════════════════════════════════════ -->
+<div class="section" id="s2">
+  <div class="section-hd">
+    <div class="section-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+    </div>
+    <div>
+      <div class="section-num">บทที่ 2</div>
+      <h2>การเข้าสู่ระบบ</h2>
+    </div>
+  </div>
+
+  <div class="steps">
+    <div class="step page-break-avoid">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <div class="step-title">เปิดเบราว์เซอร์และเข้าสู่ URL ของระบบ</div>
+        <div class="step-desc">แนะนำให้ใช้ Chrome หรือ Safari บนมือถือ / คอมพิวเตอร์</div>
+      </div>
+    </div>
+    <div class="step page-break-avoid">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <div class="step-title">กรอกอีเมลและรหัสผ่านที่ได้รับจากผู้ดูแลระบบ</div>
+        <div class="step-desc">อีเมลรูปแบบ <code>name@school.ac.th</code> หรือตามที่กำหนด</div>
+      </div>
+    </div>
+    <div class="step page-break-avoid">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <div class="step-title">ติ๊ก "จำเข้าสู่ระบบ" เพื่อให้ระบบจำข้อมูลล็อกอินไว้</div>
+        <div class="step-desc">ครั้งต่อไประบบจะล็อกอินให้อัตโนมัติ ไม่ต้องกรอกใหม่ทุกวัน</div>
+      </div>
+    </div>
+    <div class="step page-break-avoid">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <div class="step-title">กดปุ่ม "เข้าสู่ระบบ"</div>
+        <div class="step-desc">ระบบจะพาเข้าสู่หน้าหลักโดยอัตโนมัติ</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="feature-box green">
+    <div class="feature-box-title">💡 เคล็ดลับ: จำเข้าสู่ระบบ</div>
+    <div class="feature-box-body">เมื่อติ๊ก "จำเข้าสู่ระบบ" ข้อมูลจะถูกบันทึกไว้ในเบราว์เซอร์ ครั้งถัดไปที่เปิดระบบจะล็อกอินให้อัตโนมัติทันที หากต้องการออกจากระบบ สามารถเคลียร์ข้อมูลเบราว์เซอร์ได้</div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════════════════
+     3. หน้าหลัก
+══════════════════════════════════════════════════ -->
+<div class="section" id="s3">
+  <div class="section-hd">
+    <div class="section-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1v-9.5z"/></svg>
+    </div>
+    <div>
+      <div class="section-num">บทที่ 3</div>
+      <h2>หน้าหลัก (Dashboard)</h2>
+    </div>
+  </div>
+
+  <p style="color:var(--gray);margin-bottom:16px">หน้าหลักแสดงสรุปภาพรวมของวันนี้ ประกอบด้วยการ์ดแต่ละกิจกรรม พร้อมสถิติการเข้าร่วมแบบ real-time</p>
+
+  <h3 class="sub">ข้อมูลที่แสดงบนหน้าหลัก</h3>
+  <table class="tbl">
+    <thead><tr><th>ส่วน</th><th>รายละเอียด</th></tr></thead>
+    <tbody>
+      <tr><td><strong>การ์ดกิจกรรม</strong></td><td>แสดงชื่อกิจกรรม จำนวนนักเรียนมา / ลา / ขาด ของวันนี้</td></tr>
+      <tr><td><strong>รอบเช้า / บ่าย</strong></td><td>ถ้ากิจกรรมมีรอบบ่าย จะแสดง badge แยกชัดเจน</td></tr>
+      <tr><td><strong>ปุ่มเช็คชื่อ</strong></td><td>กดที่การ์ดหรือปุ่ม เพื่อไปยังหน้าเช็คชื่อได้ทันที</td></tr>
+      <tr><td><strong>วันที่และโรงเรียน</strong></td><td>แสดงชื่อโรงเรียนและวันที่ปัจจุบันในรูปแบบไทย</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════════════════
+     4. การเช็คชื่อกิจกรรม
+══════════════════════════════════════════════════ -->
+<div class="section page-break" id="s4">
+  <div class="section-hd">
+    <div class="section-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><path d="M9 12l2 2 4-4"/></svg>
+    </div>
+    <div>
+      <div class="section-num">บทที่ 4</div>
+      <h2>การเช็คชื่อกิจกรรม</h2>
+    </div>
+  </div>
+
+  <h3 class="sub">ขั้นตอนการเช็คชื่อ</h3>
+  <div class="steps">
+    <div class="step page-break-avoid">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <div class="step-title">เลือกกิจกรรมที่ต้องการเช็ค</div>
+        <div class="step-desc">กด dropdown "เลือกกิจกรรม" เพื่อเลือกกิจกรรม รายการจะแสดงเฉพาะกิจกรรมที่เปิดใช้งานอยู่</div>
+      </div>
+    </div>
+    <div class="step page-break-avoid">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <div class="step-title">เลือกวันที่และรอบ (เช้า/บ่าย)</div>
+        <div class="step-desc">ระบบจะตั้งค่าเริ่มต้นเป็นวันนี้รอบเช้า สามารถเปลี่ยนได้หากต้องการแก้ไขข้อมูลย้อนหลัง</div>
+      </div>
+    </div>
+    <div class="step page-break-avoid">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <div class="step-title">เลือกชั้นเรียนที่ต้องการ</div>
+        <div class="step-desc">กด dropdown "เลือกชั้นเรียน" รายชื่อนักเรียนจะปรากฏทันที (ต้องเลือกชั้นก่อนจึงจะเห็นรายชื่อ)</div>
+      </div>
+    </div>
+    <div class="step page-break-avoid">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <div class="step-title">กดปุ่มสถานะสำหรับนักเรียนแต่ละคน</div>
+        <div class="step-desc">
+          ระบบบันทึก <strong>ทันทีทุกครั้ง</strong> ที่กดปุ่ม ไม่ต้องกดบันทึกเพิ่มเติม<br>
+          <div class="status-row" style="margin-top:8px">
+            <span class="status-chip present">✓ มา</span>
+            <span class="status-chip late">~ ลา</span>
+            <span class="status-chip absent">✗ ขาด</span>
+          </div>
+          กดปุ่มเดิมซ้ำ = ยกเลิกสถานะนั้น
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3 class="sub">ปุ่มควบคุมพิเศษ</h3>
+  <div class="btn-row">
+    <span class="btn-demo blue">✓ มาทั้งหมด</span>
+    <span class="btn-demo outline">🗑️ ล้างค่า</span>
+    <span class="btn-demo outline">บันทึก</span>
+  </div>
+  <table class="tbl" style="margin-top:12px">
+    <thead><tr><th>ปุ่ม</th><th>การทำงาน</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="badge blue">มาทั้งหมด</span></td>
+        <td>ตั้งค่าสถานะ "มา" ให้นักเรียนทุกคนในห้องพร้อมกัน ประหยัดเวลากรณีนักเรียนมาครบ</td>
+      </tr>
+      <tr>
+        <td><span class="badge gray">ล้างค่า</span></td>
+        <td>ลบข้อมูลการเช็คชื่อ <strong>และ</strong> การตรวจแต่งกายของห้องนั้นทั้งหมดในวันที่เลือก</td>
+      </tr>
+      <tr>
+        <td><span class="badge gray">บันทึก</span></td>
+        <td>แสดงสรุปจำนวน มา / ลา / ขาด (ข้อมูลถูกบันทึกอัตโนมัติอยู่แล้ว ปุ่มนี้แค่แสดงสรุป)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="feature-box">
+    <div class="feature-box-title">📡 บันทึกอัตโนมัติ</div>
+    <div class="feature-box-body">ทุกครั้งที่กดปุ่มสถานะ ระบบจะบันทึกลง Cloud ทันที ไม่ต้องกลัวข้อมูลหาย แม้ปิดหน้าต่างกลางคัน</div>
+  </div>
+
+  <h3 class="sub">การตรวจแต่งกายพร้อมกับเช็คชื่อ</h3>
+  <p style="color:var(--gray);margin-bottom:12px">เมื่อผู้ดูแลระบบเปิดใช้ "เช็คการแต่งกายพร้อมกิจกรรม" และนักเรียนถูกระบุว่า <strong>มา</strong> จะปรากฏส่วนตรวจแต่งกายใต้ชื่อนักเรียน</p>
+
+  <div class="steps">
+    <div class="step page-break-avoid">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <div class="step-title">กด ✓ (ผ่าน) หรือ ✗ (ไม่ผ่าน) ในส่วนการแต่งกาย</div>
+        <div class="step-desc">
+          <div class="status-row">
+            <span class="status-chip pass">✓ ผ่าน</span>
+            <span class="status-chip fail">✗ ไม่ผ่าน</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="step page-break-avoid">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <div class="step-title">หากไม่ผ่าน — เลือกประเภทความผิด (chip)</div>
+        <div class="step-desc">กด chip สีแดงที่ตรงกับความผิด เช่น "ผมยาว" "ไม่สวมเนคไท" สามารถเลือกได้หลายรายการ</div>
+      </div>
+    </div>
+    <div class="step page-break-avoid">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <div class="step-title">พิมพ์หมายเหตุเพิ่มเติม (ไม่บังคับ)</div>
+        <div class="step-desc">ช่องหมายเหตุจะปรากฏเมื่อเลือก ✗ สามารถพิมพ์รายละเอียดเพิ่มเติม ระบบบันทึกอัตโนมัติหลังพิมพ์ครบ 0.6 วินาที</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="feature-box orange">
+    <div class="feature-box-title">⚠️ หมายเหตุ: การตรวจแต่งกาย</div>
+    <div class="feature-box-body">
+      <ul>
+        <li>ส่วนตรวจแต่งกายจะปรากฏ <strong>เฉพาะนักเรียนที่ระบุว่า "มา"</strong> เท่านั้น</li>
+        <li>ถ้าเปลี่ยนจาก "ไม่ผ่าน" กลับเป็น "ผ่าน" หมายเหตุที่กรอกไว้จะถูกลบ</li>
+        <li>ฟีเจอร์นี้ต้องเปิดใช้งานในหน้าตั้งค่าก่อน</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════════════════
+     5. การตรวจแต่งกาย (หน้าแยก)
+══════════════════════════════════════════════════ -->
+<div class="section page-break" id="s5">
+  <div class="section-hd">
+    <div class="section-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H5v10a2 2 0 002 2h10a2 2 0 002-2V10h1.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>
+    </div>
+    <div>
+      <div class="section-num">บทที่ 5</div>
+      <h2>การตรวจแต่งกาย (หน้าแยก)</h2>
+    </div>
+  </div>
+
+  <p style="color:var(--gray);margin-bottom:16px">นอกจากตรวจแต่งกายพร้อมเช็คชื่อแล้ว ยังมีหน้า <strong>"แต่งกาย"</strong> ที่แถบเมนูล่าง ซึ่งสามารถตรวจเฉพาะแต่งกายได้โดยตรง</p>
+
+  <h3 class="sub">ขั้นตอนการใช้งาน</h3>
+  <div class="steps">
+    <div class="step page-break-avoid">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <div class="step-title">กดไอคอน "แต่งกาย" ที่แถบล่าง</div>
+        <div class="step-desc">ระบบจะแสดงรายชื่อนักเรียนพร้อมช่องตรวจแต่งกาย</div>
+      </div>
+    </div>
+    <div class="step page-break-avoid">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <div class="step-title">เลือกวันที่และชั้นเรียน</div>
+        <div class="step-desc">ระบบจะดึงข้อมูลการตรวจแต่งกายของวันนั้นขึ้นมาแสดงอัตโนมัติ</div>
+      </div>
+    </div>
+    <div class="step page-break-avoid">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <div class="step-title">กด ✓ / ✗ และเลือก chip ความผิด</div>
+        <div class="step-desc">ทำงานเหมือนกับการตรวจในหน้าเช็คชื่อ บันทึกอัตโนมัติทันที</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════════════════
+     6. รายงานการเช็คชื่อ
+══════════════════════════════════════════════════ -->
+<div class="section page-break" id="s6">
+  <div class="section-hd">
+    <div class="section-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-5-5z"/><path d="M14 2v6h6"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="12" y2="17"/></svg>
+    </div>
+    <div>
+      <div class="section-num">บทที่ 6</div>
+      <h2>รายงานการเช็คชื่อ</h2>
+    </div>
+  </div>
+
+  <p style="color:var(--gray);margin-bottom:16px">กดเมนู <strong>"รายงาน"</strong> เพื่อดูรายงานหลากหลายรูปแบบ แบ่งเป็น 6 แท็บ</p>
+
+  <table class="tbl page-break-avoid">
+    <thead><tr><th>แท็บ</th><th>แสดงข้อมูล</th><th>ใช้เมื่อ</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="badge blue">รายกิจกรรม</span></td>
+        <td>สรุปจำนวนมา/ลา/ขาดของกิจกรรมและวันที่ที่เลือก แยกรายห้อง</td>
+        <td>ต้องการภาพรวมของวันนั้น</td>
+      </tr>
+      <tr>
+        <td><span class="badge blue">รายนักเรียน</span></td>
+        <td>ประวัติการเข้าร่วมทุกกิจกรรมของนักเรียน 1 คน</td>
+        <td>ต้องการดูข้อมูลเฉพาะบุคคล</td>
+      </tr>
+      <tr>
+        <td><span class="badge purple">ขาดต่อเนื่อง</span></td>
+        <td>รายชื่อนักเรียนที่ขาด/ลาติดต่อกัน ≥ 3 วัน (ปรับได้)</td>
+        <td>ต้องการติดตามนักเรียนเสี่ยง</td>
+      </tr>
+      <tr>
+        <td><span class="badge blue">ทั้งห้อง</span></td>
+        <td>ตารางสรุปการเข้าร่วมของนักเรียนทุกคนใน 1 ห้อง</td>
+        <td>ต้องการรายงานรายห้อง</td>
+      </tr>
+      <tr>
+        <td><span class="badge blue">ทั้งโรงเรียน</span></td>
+        <td>สรุปรายห้องของทุกห้องในโรงเรียน พร้อมรายชื่อผู้ขาด</td>
+        <td>รายงานระดับโรงเรียน</td>
+      </tr>
+      <tr>
+        <td><span class="badge green">ร้อยละ</span></td>
+        <td>เปอร์เซ็นต์การเข้าร่วมช่วงวันที่กำหนด แจ้งเตือนต่ำกว่าเกณฑ์</td>
+        <td>ติดตามความสม่ำเสมอระยะยาว</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 class="sub">รายงานขาดต่อเนื่อง (พิเศษ)</h3>
+  <div class="feature-box purple">
+    <div class="feature-box-title">🔔 ระบบแจ้งเตือนนักเรียนเสี่ยง</div>
+    <div class="feature-box-body">
+      แสดงรายชื่อนักเรียนที่ขาด/ลา <strong>ติดต่อกัน ≥ 3 วัน</strong> โดยอัตโนมัติ สามารถปรับจำนวนวันขั้นต่ำได้
+      <ul>
+        <li>เลือกกิจกรรมที่ต้องการตรวจสอบ</li>
+        <li>กำหนดจำนวนวันขั้นต่ำ (ค่าเริ่มต้น 3 วัน)</li>
+        <li>ระบบนับย้อนหลัง 60 วัน นับเฉพาะ "ขาด" และ "ลา"</li>
+        <li>ถ้ากิจกรรมมีรอบบ่าย จะใช้ข้อมูลรอบบ่าย</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 class="sub">รายงานร้อยละ</h3>
+  <div class="feature-box">
+    <div class="feature-box-title">📈 วิธีใช้งาน</div>
+    <div class="feature-box-body">
+      <ul>
+        <li>เลือกกิจกรรม ช่วงวันที่ และห้องที่ต้องการ</li>
+        <li>กำหนดเกณฑ์ร้อยละขั้นต่ำ (เช่น 80%)</li>
+        <li>นักเรียนที่ต่ำกว่าเกณฑ์จะถูกแสดงเป็นสีแดง</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════════════════
+     7. รายงานการแต่งกาย
+══════════════════════════════════════════════════ -->
+<div class="section page-break" id="s7">
+  <div class="section-hd">
+    <div class="section-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H5v10a2 2 0 002 2h10a2 2 0 002-2V10h1.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>
+    </div>
+    <div>
+      <div class="section-num">บทที่ 7</div>
+      <h2>รายงานการแต่งกาย</h2>
+    </div>
+  </div>
+
+  <p style="color:var(--gray);margin-bottom:16px">เมนู <strong>"แต่งกาย"</strong> มีแท็บรายงาน 3 แบบ</p>
+
+  <table class="tbl page-break-avoid">
+    <thead><tr><th>แท็บ</th><th>แสดงข้อมูล</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="badge blue">ทั้งโรงเรียน</span></td>
+        <td>สรุปการตรวจแต่งกายของทุกห้องในวันที่เลือก แสดงสถิติรวมและรายชื่อผู้ไม่ผ่านพร้อมประเภทความผิด</td>
+      </tr>
+      <tr>
+        <td><span class="badge blue">ทั้งห้อง</span></td>
+        <td>รายชื่อนักเรียนทุกคนในห้องที่เลือก พร้อมผลตรวจและหมายเหตุรายบุคคล</td>
+      </tr>
+      <tr>
+        <td><span class="badge orange">Top 10</span></td>
+        <td>ประเภทความผิดสูงสุด 3 ลำดับ + รายชื่อนักเรียนที่แต่งกายไม่เรียบร้อยมากที่สุด 10 ลำดับ ในช่วงวันที่กำหนด</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 class="sub">Top 10 ความผิดและนักเรียน</h3>
+  <div class="steps">
+    <div class="step page-break-avoid">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <div class="step-title">กดแท็บ "Top 10"</div>
+        <div class="step-desc">ระบบจะแสดงช่วงวันที่ (ค่าเริ่มต้น: ต้นเดือนปัจจุบัน — วันนี้)</div>
+      </div>
+    </div>
+    <div class="step page-break-avoid">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <div class="step-title">ปรับช่วงวันที่ตามต้องการ</div>
+        <div class="step-desc">เลือกวันเริ่มต้นและสิ้นสุด จากนั้นกด "ดูรายงาน"</div>
+      </div>
+    </div>
+    <div class="step page-break-avoid">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <div class="step-title">ระบบแสดงผล</div>
+        <div class="step-desc">🥇🥈🥉 ความผิด 3 ลำดับแรก และตารางนักเรียน 10 ลำดับ พร้อมจำนวนวันที่แต่งกายไม่เรียบร้อย</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════════════════
+     8. การส่งออกข้อมูล
+══════════════════════════════════════════════════ -->
+<div class="section" id="s8">
+  <div class="section-hd">
+    <div class="section-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    </div>
+    <div>
+      <div class="section-num">บทที่ 8</div>
+      <h2>การส่งออกข้อมูล</h2>
+    </div>
+  </div>
+
+  <p style="color:var(--gray);margin-bottom:16px">รายงานทุกแบบ (เช็คชื่อและแต่งกาย) สามารถส่งออกได้ 3 รูปแบบ</p>
+
+  <table class="tbl page-break-avoid">
+    <thead><tr><th>รูปแบบ</th><th>ลักษณะ</th><th>เหมาะสำหรับ</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="badge blue">🖼 รูปภาพ (PNG)</span></td>
+        <td>ภาพถ่ายหน้าจอความละเอียดสูง</td>
+        <td>ส่งใน LINE / แชร์ทางโซเชียล</td>
+      </tr>
+      <tr>
+        <td><span class="badge red">📄 PDF</span></td>
+        <td>ไฟล์ A4 พิมพ์ได้ทันที ไม่มี URL เบราว์เซอร์</td>
+        <td>พิมพ์เอกสารราชการ ส่งงาน</td>
+      </tr>
+      <tr>
+        <td><span class="badge green">📊 Excel</span></td>
+        <td>ไฟล์ .xlsx เปิดด้วย Microsoft Excel</td>
+        <td>วิเคราะห์ข้อมูลเพิ่มเติม สรุปต่อ</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="feature-box green">
+    <div class="feature-box-title">💡 วิธีส่งออก</div>
+    <div class="feature-box-body">
+      กดปุ่ม <strong>🖼 / 📄 / 📊</strong> ที่ปรากฏเหนือรายงาน ระบบจะดาวน์โหลดไฟล์ทันที ไม่ต้องติดตั้งโปรแกรมเพิ่มเติม
+    </div>
+  </div>
+
+  <div class="feature-box orange">
+    <div class="feature-box-title">⚠️ กรณีส่งออก PDF</div>
+    <div class="feature-box-body">เมื่อกดปุ่ม PDF เบราว์เซอร์จะเปิดหน้าต่างพิมพ์ กด "บันทึกเป็น PDF" ในตัวเลือกปลายทาง ไฟล์จะไม่มี URL หรือหัว-ท้ายของเบราว์เซอร์</div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════════════════
+     9. การตั้งค่าระบบ (Admin)
+══════════════════════════════════════════════════ -->
+<div class="section page-break" id="s9">
+  <div class="section-hd">
+    <div class="section-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    </div>
+    <div>
+      <div class="section-num">บทที่ 9</div>
+      <h2>การตั้งค่าระบบ (เฉพาะผู้ดูแล)</h2>
+    </div>
+  </div>
+
+  <div class="feature-box red">
+    <div class="feature-box-title">🔒 ต้องใส่รหัส Admin</div>
+    <div class="feature-box-body">หน้าตั้งค่าป้องกันด้วยรหัส PIN ของผู้ดูแลระบบ ครูทั่วไปไม่สามารถเข้าถึงได้</div>
+  </div>
+
+  <h3 class="sub">สิ่งที่ตั้งค่าได้</h3>
+  <table class="tbl page-break-avoid">
+    <thead><tr><th>รายการ</th><th>รายละเอียด</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>จัดการกิจกรรม</strong></td>
+        <td>เพิ่ม แก้ไข ปิด/เปิดกิจกรรม กำหนดว่ามีรอบบ่ายหรือไม่</td>
+      </tr>
+      <tr>
+        <td><strong>ประเภทความผิดแต่งกาย</strong></td>
+        <td>เพิ่ม แก้ไข ปิด/เปิด ประเภทความผิด เช่น "ผมยาว" "ไม่สวมเนคไท"</td>
+      </tr>
+      <tr>
+        <td><strong>เช็คการแต่งกายพร้อมกิจกรรม</strong></td>
+        <td>เลือกว่าให้ตรวจแต่งกายพร้อมเช็คชื่อในรอบไหน (ไม่ตรวจ / รอบเช้า / รอบบ่าย / ทั้งสองรอบ)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 class="sub">การจัดการกิจกรรม</h3>
+  <div class="steps">
+    <div class="step page-break-avoid">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <div class="step-title">กด "+" หรือ "เพิ่มกิจกรรม"</div>
+        <div class="step-desc">กรอกชื่อกิจกรรม คำอธิบาย (ไม่บังคับ) และเลือกว่ามีรอบบ่ายหรือไม่</div>
+      </div>
+    </div>
+    <div class="step page-break-avoid">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <div class="step-title">กด "บันทึก"</div>
+        <div class="step-desc">กิจกรรมจะปรากฏในหน้าหลักและ dropdown การเช็คชื่อทันที</div>
+      </div>
+    </div>
+    <div class="step page-break-avoid">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <div class="step-title">ปิดกิจกรรมที่ไม่ใช้แล้ว</div>
+        <div class="step-desc">สลับ toggle "เปิดใช้งาน" เพื่อซ่อนกิจกรรมออกจากรายการ (ข้อมูลไม่ถูกลบ)</td>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════════════════
+     10. คำถามที่พบบ่อย
+══════════════════════════════════════════════════ -->
+<div class="section" id="s10">
+  <div class="section-hd">
+    <div class="section-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </div>
+    <div>
+      <div class="section-num">บทที่ 10</div>
+      <h2>คำถามที่พบบ่อย (FAQ)</h2>
+    </div>
+  </div>
+
+  <div class="feature-box page-break-avoid">
+    <div class="feature-box-title">❓ เช็คชื่อแล้วข้อมูลหายไปหรือไม่ถ้าปิดหน้าต่าง?</div>
+    <div class="feature-box-body">ไม่หาย ระบบบันทึก Cloud ทันทีทุกครั้งที่กดปุ่ม ไม่ต้องกด "บันทึก" สามารถปิดและเปิดใหม่แล้วข้อมูลยังอยู่ครบ</div>
+  </div>
+
+  <div class="feature-box page-break-avoid" style="margin-top:12px">
+    <div class="feature-box-title">❓ ครูหลายคนเช็คพร้อมกันได้ไหม?</div>
+    <div class="feature-box-body">ได้ แต่ถ้าเช็คนักเรียนคนเดียวกันพร้อมกัน ข้อมูลของคนที่กดทีหลังจะเขียนทับ แนะนำให้แบ่งห้องรับผิดชอบชัดเจน</div>
+  </div>
+
+  <div class="feature-box page-break-avoid" style="margin-top:12px">
+    <div class="feature-box-title">❓ แก้ไขข้อมูลย้อนหลังได้ไหม?</div>
+    <div class="feature-box-body">ได้ เลือกวันที่ที่ต้องการในหน้าเช็คชื่อ แล้วแก้ไขได้ตามต้องการ ระบบจะอัปเดตข้อมูลทันที</div>
+  </div>
+
+  <div class="feature-box page-break-avoid" style="margin-top:12px">
+    <div class="feature-box-title">❓ ส่วนตรวจแต่งกายไม่ปรากฏให้กดเลย</div>
+    <div class="feature-box-body">ตรวจสอบ 2 เรื่อง: (1) ผู้ดูแลระบบเปิดใช้ "เช็คการแต่งกายพร้อมกิจกรรม" ในหน้าตั้งค่าแล้วหรือยัง และ (2) นักเรียนคนนั้นถูกระบุว่า "มา" แล้วหรือยัง</div>
+  </div>
+
+  <div class="feature-box page-break-avoid" style="margin-top:12px">
+    <div class="feature-box-title">❓ ลืมรหัสผ่านทำอย่างไร?</div>
+    <div class="feature-box-body">ติดต่อผู้ดูแลระบบเพื่อ reset รหัสผ่านผ่าน Supabase Dashboard ระบบนี้ไม่มีฟังก์ชัน "ลืมรหัสผ่าน" ในหน้า login</div>
+  </div>
+
+  <div class="feature-box page-break-avoid" style="margin-top:12px">
+    <div class="feature-box-title">❓ ลบข้อมูลทั้งหมดของห้องออกได้ไหม?</div>
+    <div class="feature-box-body">ได้ กดปุ่ม <strong>"ล้างค่า"</strong> ในหน้าเช็คชื่อ ระบบจะลบข้อมูลเช็คชื่อและแต่งกายของห้องนั้นในวันที่เลือกออกทั้งหมด ระวัง! การกระทำนี้ไม่สามารถย้อนกลับได้</div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════════════════
+     TIPS
+══════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-hd">
+    <div class="section-icon" style="background:var(--orange)">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+    </div>
+    <div>
+      <h2>เคล็ดลับการใช้งาน</h2>
+    </div>
+  </div>
+
+  <div class="tips-grid">
+    <div class="tip-card page-break-avoid">
+      <div class="tip-icon">⚡</div>
+      <div class="tip-title">กด "มาทั้งหมด" ก่อน</div>
+      <div class="tip-desc">กด "มาทั้งหมด" แล้วแก้เฉพาะคนที่ขาด/ลา เร็วกว่ากดทีละคนมาก</div>
+    </div>
+    <div class="tip-card page-break-avoid">
+      <div class="tip-icon">🔔</div>
+      <div class="tip-title">ดูขาดต่อเนื่องทุกสัปดาห์</div>
+      <div class="tip-desc">แนะนำให้เช็คแท็บ "ขาดต่อเนื่อง" สัปดาห์ละครั้งเพื่อติดตามนักเรียนกลุ่มเสี่ยง</div>
+    </div>
+    <div class="tip-card page-break-avoid">
+      <div class="tip-icon">📱</div>
+      <div class="tip-title">บุ๊กมาร์กบนมือถือ</div>
+      <div class="tip-desc">กด "เพิ่มไปยังหน้าจอหลัก" ในเบราว์เซอร์ เปิดได้เหมือน app ไม่ต้องพิมพ์ URL ทุกครั้ง</div>
+    </div>
+    <div class="tip-card page-break-avoid">
+      <div class="tip-icon">📤</div>
+      <div class="tip-title">ส่งรายงานทาง LINE</div>
+      <div class="tip-desc">กดส่งออก PNG แล้วแนบรูปใน LINE กลุ่มครูได้เลย ไม่ต้องพิมพ์เอกสาร</div>
+    </div>
+    <div class="tip-card page-break-avoid">
+      <div class="tip-icon">📝</div>
+      <div class="tip-title">ใส่หมายเหตุแต่งกาย</div>
+      <div class="tip-desc">พิมพ์หมายเหตุเพิ่มเติมในช่องหมายเหตุ จะแสดงในรายงานและ Excel โดยอัตโนมัติ</div>
+    </div>
+    <div class="tip-card page-break-avoid">
+      <div class="tip-icon">🏆</div>
+      <div class="tip-title">Top 10 ทุกเดือน</div>
+      <div class="tip-desc">ดู Top 10 ความผิดแต่งกายสิ้นเดือน เพื่อวางแผนแก้ไขปัญหาเชิงระบบ</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     FOOTER
+══════════════════════════════════════════════════ -->
+<div class="footer">
+  <div>
+    <div class="footer-title">ระบบเช็คชื่อกิจกรรมและตรวจแต่งกาย</div>
+    <div class="footer-sub">คู่มือการใช้งานฉบับสมบูรณ์ — ปรับปรุง มิถุนายน 2568</div>
+  </div>
+  <div class="footer-right">
+    หากพบปัญหาการใช้งาน<br>ติดต่อผู้ดูแลระบบ
+  </div>
+</div>
+
+</body>
+</html>
