@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>คู่มือการใช้งาน — ระบบ ปพ.5</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --blue:#1d4ed8;--blue2:#2563eb;--blue3:#3b82f6;--blue-light:#dbeafe;--blue-pale:#eff6ff;
+  --dark:#0f172a;--dark2:#1e293b;--gray:#64748b;--gray2:#94a3b8;--gray3:#cbd5e1;
+  --green:#059669;--green-light:#d1fae5;--orange:#d97706;--orange-light:#fef3c7;
+  --red:#dc2626;--red-light:#fee2e2;--purple:#7c3aed;--purple-light:#ede9fe;
+  --indigo:#4f46e5;--indigo-light:#e0e7ff;
+  --card:#fff;--bg:#f8fafc;--sep:#e2e8f0;--radius:12px;--font:'Sarabun',sans-serif;
+}
+body{font-family:var(--font);color:var(--dark);background:var(--bg);font-size:14px;line-height:1.7}
+@media print{
+  @page{size:A4 portrait;margin:15mm 18mm}
+  body{background:#fff;font-size:13px}
+  .no-print{display:none!important}
+  .page-break{page-break-before:always}
+  .page-break-avoid{page-break-inside:avoid}
+}
+@media screen{body{max-width:900px;margin:0 auto;padding:0 20px 60px}}
+
+/* Cover */
+.cover{background:linear-gradient(135deg,#1e1b4b 0%,#3730a3 45%,#4f46e5 70%,#6366f1 100%);color:#fff;border-radius:16px;padding:56px 48px 48px;margin:24px 0 0;position:relative;overflow:hidden}
+.cover::before{content:'';position:absolute;top:-60px;right:-60px;width:280px;height:280px;border-radius:50%;background:rgba(255,255,255,.07)}
+.cover::after{content:'';position:absolute;bottom:-40px;left:40px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.05)}
+.cover-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:24px;padding:6px 16px;font-size:12px;font-weight:600;letter-spacing:.5px;margin-bottom:28px}
+.cover-logo{width:64px;height:64px;background:rgba(255,255,255,.18);border-radius:18px;display:flex;align-items:center;justify-content:center;margin-bottom:20px}
+.cover h1{font-size:32px;font-weight:800;line-height:1.25;margin-bottom:10px}
+.cover h2{font-size:17px;font-weight:400;opacity:.82;margin-bottom:32px}
+.cover-meta{display:flex;gap:24px;flex-wrap:wrap}
+.cover-meta-item{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);border-radius:10px;padding:10px 16px;font-size:13px}
+
+/* TOC */
+.toc{background:var(--card);border:1px solid var(--sep);border-radius:var(--radius);padding:28px 32px;margin:24px 0}
+.toc-title{font-size:15px;font-weight:700;color:var(--indigo);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.toc-list{list-style:none;columns:2;column-gap:32px}
+@media(max-width:600px){.toc-list{columns:1}}
+.toc-list li{padding:3px 0}
+.toc-list a{color:var(--dark2);text-decoration:none;font-size:13.5px;display:flex;align-items:center;gap:8px}
+.toc-num{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;background:var(--indigo-light);color:var(--indigo);border-radius:50%;font-size:10px;font-weight:700;flex-shrink:0}
+
+/* Section */
+.section{margin:32px 0}
+.section-hd{display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid var(--indigo-light)}
+.section-icon{width:40px;height:40px;border-radius:12px;background:var(--indigo);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.section-hd h2{font-size:18px;font-weight:700;color:var(--dark)}
+.section-num{font-size:12px;color:var(--gray);font-weight:500}
+
+/* Steps */
+.steps{display:flex;flex-direction:column;gap:0}
+.step{display:flex;gap:16px;padding:14px 0;border-bottom:1px dashed var(--sep)}
+.step:last-child{border-bottom:none}
+.step-num{width:32px;height:32px;border-radius:50%;background:var(--indigo);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;margin-top:2px}
+.step-body{flex:1}
+.step-title{font-size:14px;font-weight:700;color:var(--dark);margin-bottom:4px}
+.step-desc{font-size:13px;color:var(--gray);line-height:1.7}
+
+/* Cards */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin:16px 0}
+.card{background:var(--card);border:1px solid var(--sep);border-radius:var(--radius);padding:18px}
+.card-icon{font-size:22px;margin-bottom:8px}
+.card-title{font-size:13px;font-weight:700;color:var(--dark);margin-bottom:4px}
+.card-desc{font-size:12px;color:var(--gray);line-height:1.65}
+
+/* Feature box */
+.feature-box{background:var(--blue-pale);border:1px solid var(--blue-light);border-left:4px solid var(--blue);border-radius:var(--radius);padding:16px 20px;margin:14px 0}
+.feature-box.indigo{background:var(--indigo-light);border-color:#c7d2fe;border-left-color:var(--indigo)}
+.feature-box.green{background:var(--green-light);border-color:#a7f3d0;border-left-color:var(--green)}
+.feature-box.orange{background:var(--orange-light);border-color:#fde68a;border-left-color:var(--orange)}
+.feature-box.red{background:var(--red-light);border-color:#fecaca;border-left-color:var(--red)}
+.feature-box.purple{background:var(--purple-light);border-color:#ddd6fe;border-left-color:var(--purple)}
+.feature-box-title{font-size:13px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:7px}
+.feature-box-body{font-size:13px;color:var(--dark2);line-height:1.75}
+.feature-box-body ul{margin:6px 0 0 18px}
+.feature-box-body li{margin-bottom:3px}
+
+/* Table */
+.tbl{width:100%;border-collapse:collapse;margin:16px 0;font-size:13px}
+.tbl th{background:var(--indigo);color:#fff;padding:10px 14px;text-align:left;font-weight:600}
+.tbl th:first-child{border-radius:8px 0 0 0}
+.tbl th:last-child{border-radius:0 8px 0 0}
+.tbl td{padding:10px 14px;border-bottom:1px solid var(--sep);vertical-align:top}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:nth-child(even) td{background:#f8faff}
+
+/* Badge */
+.badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:14px;font-size:11px;font-weight:700}
+.badge.blue{background:var(--blue-light);color:var(--blue)}
+.badge.indigo{background:var(--indigo-light);color:var(--indigo)}
+.badge.green{background:var(--green-light);color:var(--green)}
+.badge.red{background:var(--red-light);color:var(--red)}
+.badge.orange{background:var(--orange-light);color:var(--orange)}
+.badge.gray{background:#f1f5f9;color:var(--gray)}
+.badge.purple{background:var(--purple-light);color:var(--purple)}
+
+/* Divider */
+.divider{height:1px;background:var(--sep);margin:28px 0}
+
+/* Sub heading */
+h3.sub{font-size:15px;font-weight:700;color:var(--dark);margin:20px 0 10px;display:flex;align-items:center;gap:8px}
+h3.sub::before{content:'';display:block;width:4px;height:18px;background:var(--indigo);border-radius:2px}
+
+/* Nav demo */
+.nav-demo{display:flex;flex-direction:column;gap:3px;background:#1e1b4b;border-radius:10px;padding:10px 8px;width:140px;flex-shrink:0}
+.nav-section-lbl{font-size:9px;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:.6px;padding:4px 8px 2px;text-transform:uppercase}
+.nav-item-demo{display:flex;align-items:center;gap:7px;padding:7px 10px;border-radius:7px;font-size:11px;color:rgba(255,255,255,.6);cursor:default}
+.nav-item-demo.active{background:rgba(99,102,241,.35);color:#fff;font-weight:600}
+.nav-item-demo svg{width:14px;height:14px;flex-shrink:0}
+
+/* Mockup */
+.mockup-row{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin:18px 0}
+.mockup-col{display:flex;flex-direction:column;align-items:center;gap:8px}
+.mockup-caption{font-size:11px;font-weight:600;color:var(--gray);text-align:center}
+.mockup{background:#f1f5f9;border-radius:20px;overflow:hidden;flex-shrink:0;box-shadow:0 2px 4px rgba(0,0,0,.06),0 8px 32px rgba(0,0,0,.13),inset 0 0 0 1px rgba(0,0,0,.09);font-size:10px;font-family:'Sarabun',sans-serif;width:220px}
+.mockup.wide{width:340px}
+.mk-shell{display:flex;height:320px}
+.mk-sidebar{background:#1e1b4b;width:100px;flex-shrink:0;padding:8px 6px;display:flex;flex-direction:column;gap:1px}
+.mk-sb-lbl{font-size:7.5px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:.5px;padding:6px 6px 2px;text-transform:uppercase}
+.mk-sb-item{display:flex;align-items:center;gap:5px;padding:5px 6px;border-radius:5px;font-size:9px;color:rgba(255,255,255,.6)}
+.mk-sb-item.active{background:rgba(99,102,241,.4);color:#fff;font-weight:700}
+.mk-sb-item svg{width:11px;height:11px;flex-shrink:0}
+.mk-content{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.mk-topbar{background:#fff;border-bottom:1px solid #e2e8f0;padding:6px 10px;display:flex;align-items:center;justify-content:space-between}
+.mk-topbar-title{font-size:10px;font-weight:700;color:#0f172a}
+.mk-topbar-sub{font-size:8px;color:#94a3b8}
+.mk-body{background:#f8fafc;padding:8px;flex:1;overflow:hidden;display:flex;flex-direction:column;gap:6px}
+.mk-card{background:#fff;border-radius:8px;padding:8px 9px;border:1px solid #e2e8f0}
+.mk-card-title{font-size:9px;font-weight:700;color:#0f172a;margin-bottom:3px}
+.mk-card-sub{font-size:8px;color:#94a3b8}
+.mk-stat-row{display:flex;gap:4px}
+.mk-stat{flex:1;background:#f8fafc;border-radius:6px;padding:5px 4px;text-align:center;border:1px solid #e2e8f0}
+.mk-stat-num{font-size:13px;font-weight:800;line-height:1}
+.mk-stat-lbl{font-size:7.5px;color:#64748b;margin-top:1px}
+.mk-stat-num.indigo{color:#4f46e5}
+.mk-stat-num.green{color:#059669}
+.mk-stat-num.orange{color:#d97706}
+.mk-stat-num.red{color:#dc2626}
+.mk-tbl{width:100%;border-collapse:collapse;font-size:8px}
+.mk-tbl th{background:#4f46e5;color:#fff;padding:3px 5px;text-align:left;font-weight:700}
+.mk-tbl td{padding:3px 5px;border-bottom:1px solid #f1f5f9}
+.mk-tbl tr:nth-child(even) td{background:#f8faff}
+.mk-badge{display:inline-flex;padding:1px 5px;border-radius:6px;font-size:7.5px;font-weight:700}
+.mk-badge.green{background:#dcfce7;color:#166534}
+.mk-badge.red{background:#fee2e2;color:#991b1b}
+.mk-badge.indigo{background:#e0e7ff;color:#3730a3}
+.mk-badge.orange{background:#fef3c7;color:#92400e}
+.mk-input{background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:6px;padding:4px 7px;font-size:9px;color:#94a3b8;font-family:inherit;margin-bottom:3px;width:100%}
+.mk-input.focus{border-color:#4f46e5;color:#0f172a}
+.mk-btn{background:#4f46e5;color:#fff;border-radius:6px;padding:5px 10px;text-align:center;font-size:9px;font-weight:700;display:inline-block}
+.mk-btn.sm{padding:3px 7px;font-size:8px}
+.mk-btn.green{background:#059669}
+.mk-btn.gray{background:#e2e8f0;color:#475569}
+.mk-sel{background:#fff;border:1.5px solid #e2e8f0;border-radius:6px;padding:4px 7px;font-size:9px;color:#64748b;width:100%;display:flex;align-items:center;justify-content:space-between}
+.mk-row{display:flex;align-items:center;gap:5px}
+.mk-row.between{justify-content:space-between}
+.mk-label{font-size:8px;font-weight:600;color:#475569;margin-bottom:2px}
+.mk-score-cell{width:22px;height:18px;border:1px solid #e2e8f0;border-radius:3px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:600;color:#0f172a}
+.mk-score-cell.filled{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8}
+.mk-grid{display:flex;gap:2px;flex-wrap:wrap}
+.mk-att-cell{width:14px;height:14px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;flex-shrink:0}
+.mk-att-p{background:#dcfce7;color:#166534}
+.mk-att-a{background:#fee2e2;color:#991b1b}
+.mk-att-l{background:#fef9c3;color:#854d0e}
+.mk-att-v{background:#f3e8ff;color:#6b21a8}
+.mk-progress{height:5px;background:#e2e8f0;border-radius:3px;overflow:hidden;margin-top:3px}
+.mk-progress-bar{height:100%;border-radius:3px}
+.mk-eval-row{display:flex;align-items:center;gap:4px;padding:3px 0;border-bottom:1px solid #f1f5f9}
+.mk-eval-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.mk-chip-row{display:flex;gap:3px;flex-wrap:wrap;margin-top:4px}
+.mk-chip{padding:2px 6px;border-radius:8px;font-size:7.5px;font-weight:600}
+.mk-chip.indigo{background:#e0e7ff;color:#3730a3}
+.mk-chip.green{background:#dcfce7;color:#166534}
+.mk-chip.gray{background:#f1f5f9;color:#475569}
+@media print{.mockup{box-shadow:0 0 0 1px #e2e8f0;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+
+/* Print button */
+.print-btn{position:fixed;bottom:24px;right:24px;background:var(--indigo);color:#fff;border:none;border-radius:50px;padding:12px 22px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;box-shadow:0 4px 20px rgba(79,70,229,.4);display:flex;align-items:center;gap:8px;z-index:100}
+@media print{.print-btn{display:none}}
+
+/* Footer */
+.footer{background:linear-gradient(135deg,#1e1b4b,#3730a3);color:#fff;border-radius:var(--radius);padding:24px 32px;margin-top:40px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.footer-title{font-size:14px;font-weight:700}
+.footer-sub{font-size:12px;opacity:.7;margin-top:2px}
+.footer-right{font-size:12px;opacity:.7;text-align:right}
+</style>
+</head>
+<body>
+
+<button class="print-btn no-print" onclick="window.print()">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+  พิมพ์คู่มือ
+</button>
+
+<!-- Cover -->
+<div class="cover">
+  <div class="cover-badge">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-5-5z"/><path d="M14 2v6h6"/></svg>
+    คู่มือการใช้งานฉบับเต็ม
+  </div>
+  <div class="cover-logo">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.75" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+  </div>
+  <h1>ระบบบันทึกผลการเรียน<br>ปพ.5 ออนไลน์</h1>
+  <h2>คู่มือสำหรับครูผู้ใช้งาน — ฉบับสมบูรณ์</h2>
+  <div class="cover-meta">
+    <div class="cover-meta-item">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      ปรับปรุง มิถุนายน 2569
+    </div>
+    <div class="cover-meta-item">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+      อ่านจบภายใน 15 นาที
+    </div>
+    <div class="cover-meta-item">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      สำหรับครูผู้สอนทุกท่าน
+    </div>
+  </div>
+</div>
+
+<!-- TOC -->
+<div class="toc">
+  <div class="toc-title">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+    สารบัญ
+  </div>
+  <ul class="toc-list">
+    <li><a href="#s1"><span class="toc-num">1</span> ภาพรวมระบบ</a></li>
+    <li><a href="#s2"><span class="toc-num">2</span> การเข้าสู่ระบบ</a></li>
+    <li><a href="#s3"><span class="toc-num">3</span> แดชบอร์ด</a></li>
+    <li><a href="#s4"><span class="toc-num">4</span> จัดการรายวิชา</a></li>
+    <li><a href="#s5"><span class="toc-num">5</span> จัดการนักเรียน</a></li>
+    <li><a href="#s6"><span class="toc-num">6</span> บันทึกเวลาเรียน</a></li>
+    <li><a href="#s7"><span class="toc-num">7</span> บันทึกคะแนน</a></li>
+    <li><a href="#s8"><span class="toc-num">8</span> การประเมิน</a></li>
+    <li><a href="#s9"><span class="toc-num">9</span> รายงานผลและ ปพ.5</a></li>
+    <li><a href="#s10"><span class="toc-num">10</span> การส่งออกข้อมูล</a></li>
+    <li><a href="#s11"><span class="toc-num">11</span> การตั้งค่าระบบ</a></li>
+    <li><a href="#s12"><span class="toc-num">12</span> คำถามที่พบบ่อย</a></li>
+  </ul>
+</div>
+
+<!-- 1 -->
+<div class="section" id="s1">
+  <div class="section-hd">
+    <div class="section-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+    <div><div class="section-num">บทที่ 1</div><h2>ภาพรวมระบบ</h2></div>
+  </div>
+  <p style="color:var(--gray);margin-bottom:16px">ระบบ ปพ.5 ออนไลน์ช่วยให้ครูบันทึกผลการเรียน เวลาเรียน การประเมิน และออกเอกสาร ปพ.5 ได้ครบจบในที่เดียว รองรับหลายวิชาและหลายห้องเรียนพร้อมกัน</p>
+  <div class="cards">
+    <div class="card page-break-avoid"><div class="card-icon">📒</div><div class="card-title">บันทึกคะแนน</div><div class="card-desc">บันทึกคะแนนก่อน-หลังกลางภาค สอบกลางภาค-ปลายภาค คำนวณผลและเกรดอัตโนมัติ</div></div>
+    <div class="card page-break-avoid"><div class="card-icon">🕐</div><div class="card-title">เวลาเรียน</div><div class="card-desc">บันทึกการเข้าเรียนรายเดือน แจ้งเตือนนักเรียนที่มีเวลาเรียนไม่ถึง 80%</div></div>
+    <div class="card page-break-avoid"><div class="card-icon">✏️</div><div class="card-title">ประเมินคุณลักษณะ</div><div class="card-desc">ประเมินการอ่าน-คิด-วิเคราะห์-เขียน และคุณลักษณะอันพึงประสงค์ 8 ด้าน</div></div>
+    <div class="card page-break-avoid"><div class="card-icon">📄</div><div class="card-title">ออกเอกสาร ปพ.5</div><div class="card-desc">สร้างปกและรายงาน ปพ.5 ตามมาตรฐาน พร้อมพิมพ์และส่งออก PDF/Excel</div></div>
+  </div>
+  <h3 class="sub">เมนูหลักของระบบ</h3>
+  <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;margin:12px 0">
+    <div class="nav-demo">
+      <div class="nav-section-lbl">หลัก</div>
+      <div class="nav-item-demo active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>แดชบอร์ด</div>
+      <div class="nav-item-demo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>รายวิชา</div>
+      <div class="nav-item-demo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>นักเรียน</div>
+      <div class="nav-section-lbl">บันทึก</div>
+      <div class="nav-item-demo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>เวลาเรียน</div>
+      <div class="nav-item-demo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/></svg>คะแนน</div>
+      <div class="nav-item-demo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>ประเมิน</div>
+      <div class="nav-section-lbl">สรุปผล</div>
+      <div class="nav-item-demo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>รายงานผล</div>
+      <div class="nav-item-demo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16"/><polyline points="14 2 14 8 20 8"/></svg>ปก ปพ.5</div>
+    </div>
+    <div style="flex:1;min-width:240px">
+      <table class="tbl" style="margin:0">
+        <thead><tr><th>เมนู</th><th>ใช้ทำอะไร</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge indigo">แดชบอร์ด</span></td><td>ภาพรวมทุกวิชา สถิติ และงานที่ยังค้างอยู่</td></tr>
+          <tr><td><span class="badge indigo">รายวิชา</span></td><td>เพิ่ม/แก้ไขวิชา กำหนดโครงสร้างคะแนน</td></tr>
+          <tr><td><span class="badge indigo">นักเรียน</span></td><td>จัดการรายชื่อ นำเข้าจาก Excel</td></tr>
+          <tr><td><span class="badge blue">เวลาเรียน</span></td><td>บันทึกการเข้าเรียนรายเดือน</td></tr>
+          <tr><td><span class="badge blue">คะแนน</span></td><td>กรอกคะแนนหน่วยการเรียนรู้และสอบ</td></tr>
+          <tr><td><span class="badge blue">ประเมิน</span></td><td>ประเมินอ่าน-คิด-วิเคราะห์ และคุณลักษณะ</td></tr>
+          <tr><td><span class="badge green">รายงานผล</span></td><td>สรุปผลรายวิชาพร้อมออกเอกสาร</td></tr>
+          <tr><td><span class="badge green">ปก ปพ.5</span></td><td>ปกเอกสาร ปพ.5 มาตรฐานกระทรวง</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- 2 -->
+<div class="section" id="s2">
+  <div class="section-hd">
+    <div class="section-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg></div>
+    <div><div class="section-num">บทที่ 2</div><h2>การเข้าสู่ระบบ</h2></div>
+  </div>
+  <div class="steps">
+    <div class="step page-break-avoid"><div class="step-num">1</div><div class="step-body"><div class="step-title">เปิดเบราว์เซอร์และเข้าสู่ URL ของระบบ</div><div class="step-desc">แนะนำให้ใช้ Chrome หรือ Safari — รองรับทั้งมือถือและคอมพิวเตอร์</div></div></div>
+    <div class="step page-break-avoid"><div class="step-num">2</div><div class="step-body"><div class="step-title">กดปุ่ม "ระบบ ปพ.5" บนหน้าแรก</div><div class="step-desc">หรือเข้าตรงได้ที่ URL ที่ได้รับจากผู้ดูแลระบบ</div></div></div>
+    <div class="step page-break-avoid"><div class="step-num">3</div><div class="step-body"><div class="step-title">กรอกอีเมลและรหัสผ่าน</div><div class="step-desc">ใช้อีเมลที่ลงทะเบียนไว้กับผู้ดูแลระบบ ถ้ายังไม่มีบัญชีกด "สมัครสมาชิก"</div></div></div>
+    <div class="step page-break-avoid"><div class="step-num">4</div><div class="step-body"><div class="step-title">กด "เข้าสู่ระบบ"</div><div class="step-desc">ระบบจะพาเข้าสู่แดชบอร์ดโดยอัตโนมัติ</div></div></div>
+  </div>
+  <div class="mockup-row">
+    <div class="mockup-col">
+      <div class="mockup">
+        <div style="background:linear-gradient(135deg,#1e1b4b,#3730a3);padding:24px 16px 28px;text-align:center">
+          <div style="width:44px;height:44px;background:rgba(255,255,255,.18);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.75"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <div style="font-size:11px;font-weight:800;color:#fff">ระบบ ปพ.5</div>
+          <div style="font-size:9px;color:rgba(255,255,255,.6);margin-top:2px">บันทึกผลการเรียน</div>
+        </div>
+        <div class="mk-body" style="background:#f8fafc;padding:12px 14px">
+          <div class="mk-card">
+            <div class="mk-label">อีเมล</div>
+            <div class="mk-input focus" style="margin-bottom:6px">teacher@school.ac.th</div>
+            <div class="mk-label">รหัสผ่าน</div>
+            <div class="mk-input" style="margin-bottom:8px">••••••••</div>
+            <div class="mk-btn" style="width:100%;text-align:center;border-radius:7px;padding:7px">เข้าสู่ระบบ</div>
+            <div style="text-align:center;margin-top:7px;font-size:8.5px;color:#94a3b8">ยังไม่มีบัญชี? <span style="color:#4f46e5;font-weight:600">สมัครสมาชิก</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-caption">หน้าเข้าสู่ระบบ ปพ.5</div>
+    </div>
+  </div>
+  <div class="feature-box green"><div class="feature-box-title">💡 ลืมรหัสผ่าน</div><div class="feature-box-body">กดลิงก์ "ลืมรหัสผ่าน?" ในหน้า Login ระบบจะส่ง email รีเซ็ตรหัสผ่านให้ทันที</div></div>
+</div>
+
+<div class="divider"></div>
+
+<!-- 3 -->
+<div class="section" id="s3">
+  <div class="section-hd">
+    <div class="section-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div>
+    <div><div class="section-num">บทที่ 3</div><h2>แดชบอร์ด</h2></div>
+  </div>
+  <p style="color:var(--gray);margin-bottom:16px">หน้าแรกที่เห็นหลัง login แสดงภาพรวมของทุกวิชาในภาคเรียนปัจจุบัน</p>
+  <div class="mockup-row">
+    <div class="mockup-col">
+      <div class="mockup wide">
+        <div class="mk-shell">
+          <div class="mk-sidebar">
+            <div class="mk-sb-lbl">หลัก</div>
+            <div class="mk-sb-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>แดชบอร์ด</div>
+            <div class="mk-sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>รายวิชา</div>
+            <div class="mk-sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>นักเรียน</div>
+            <div class="mk-sb-lbl">บันทึก</div>
+            <div class="mk-sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>เวลาเรียน</div>
+            <div class="mk-sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/></svg>คะแนน</div>
+            <div class="mk-sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>ประเมิน</div>
+            <div class="mk-sb-lbl">สรุปผล</div>
+            <div class="mk-sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>รายงานผล</div>
+            <div class="mk-sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16"/><polyline points="14 2 14 8 20 8"/></svg>ปก ปพ.5</div>
+          </div>
+          <div class="mk-content">
+            <div class="mk-topbar"><div><div class="mk-topbar-title">แดชบอร์ด</div><div class="mk-topbar-sub">ภาคเรียนที่ 1 / 2568</div></div></div>
+            <div class="mk-body">
+              <div class="mk-stat-row">
+                <div class="mk-stat"><div class="mk-stat-num indigo">8</div><div class="mk-stat-lbl">รายวิชา</div></div>
+                <div class="mk-stat"><div class="mk-stat-num indigo">156</div><div class="mk-stat-lbl">นักเรียน</div></div>
+                <div class="mk-stat"><div class="mk-stat-num green">6</div><div class="mk-stat-lbl">มีคะแนนแล้ว</div></div>
+                <div class="mk-stat"><div class="mk-stat-num orange">3</div><div class="mk-stat-lbl">มส.</div></div>
+              </div>
+              <div class="mk-card">
+                <div class="mk-card-title">วิชาที่ยังต้องดำเนินการ</div>
+                <div style="margin-top:5px;display:flex;flex-direction:column;gap:4px">
+                  <div style="display:flex;align-items:center;gap:5px;font-size:8.5px"><span style="width:5px;height:5px;border-radius:50%;background:#d97706;flex-shrink:0"></span><span style="flex:1">ว21101 วิทยาศาสตร์ ม.1/1</span><span class="mk-badge orange">ยังไม่มีคะแนน</span></div>
+                  <div style="display:flex;align-items:center;gap:5px;font-size:8.5px"><span style="width:5px;height:5px;border-radius:50%;background:#dc2626;flex-shrink:0"></span><span style="flex:1">ค21101 คณิตศาสตร์ ม.1/2</span><span class="mk-badge red">ยังไม่ประเมิน</span></div>
+                </div>
+              </div>
+              <div class="mk-card">
+                <div class="mk-card-title">ภาพรวมผลการเรียน</div>
+                <div style="margin-top:4px">
+                  <div style="display:flex;justify-content:space-between;font-size:8px;color:#64748b;margin-bottom:2px"><span>ผ่านเกณฑ์เฉลี่ย</span><span style="font-weight:700;color:#059669">92.4%</span></div>
+                  <div class="mk-progress"><div class="mk-progress-bar" style="width:92%;background:#059669"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-caption">แดชบอร์ดภาพรวม</div>
+    </div>
+  </div>
+  <table class="tbl page-break-avoid">
+    <thead><tr><th>สิ่งที่แสดง</th><th>ความหมาย</th></tr></thead>
+    <tbody>
+      <tr><td>จำนวนรายวิชา</td><td>วิชาทั้งหมดที่ครูดูแลในภาคเรียนนี้</td></tr>
+      <tr><td>จำนวนนักเรียน</td><td>รวมทุกวิชา (อาจนับซ้ำถ้าสอนหลายห้อง)</td></tr>
+      <tr><td>มีคะแนนแล้ว</td><td>วิชาที่บันทึกคะแนนครบแล้ว</td></tr>
+      <tr><td>มส. (เสี่ยง)</td><td>จำนวนนักเรียนที่มีเวลาเรียนต่ำกว่า 80%</td></tr>
+      <tr><td>วิชาที่ค้างดำเนินการ</td><td>แจ้งเตือนวิชาที่ยังขาดคะแนน ประเมิน หรือเวลาเรียน</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="divider"></div>
+
+<!-- 4 -->
+<div class="section page-break" id="s4">
+  <div class="section-hd">
+    <div class="section-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+    <div><div class="section-num">บทที่ 4</div><h2>จัดการรายวิชา</h2></div>
+  </div>
+  <h3 class="sub">การเพิ่มรายวิชาใหม่</h3>
+  <div class="steps">
+    <div class="step page-break-avoid"><div class="step-num">1</div><div class="step-body"><div class="step-title">ไปที่เมนู "รายวิชา" แล้วกดปุ่ม "เพิ่มวิชา"</div><div class="step-desc"></div></div></div>
+    <div class="step page-break-avoid"><div class="step-num">2</div><div class="step-body"><div class="step-title">กรอกข้อมูลวิชา</div><div class="step-desc">รหัสวิชา · ชื่อวิชา · กลุ่มสาระ · ระดับชั้น/ห้อง · หน่วยกิต · จำนวนชั่วโมง/สัปดาห์ · ชั่วโมงรวมทั้งภาค</div></div></div>
+    <div class="step page-break-avoid"><div class="step-num">3</div><div class="step-body"><div class="step-title">กำหนดโครงสร้างคะแนน</div><div class="step-desc">ระบุสัดส่วนคะแนน: ก่อนกลางภาค | กลางภาค | หลังกลางภาค | ปลายภาค รวม 100 คะแนน</div></div></div>
+    <div class="step page-break-avoid"><div class="step-num">4</div><div class="step-body"><div class="step-title">กด "บันทึก"</div><div class="step-desc">วิชาจะปรากฏในรายการและพร้อมสำหรับบันทึกคะแนน</div></div></div>
+  </div>
+  <div class="feature-box orange"><div class="feature-box-title">⚠️ โครงสร้างคะแนนสำคัญมาก</div><div class="feature-box-body">ตั้งค่าโครงสร้างคะแนนให้ถูกต้องก่อนบันทึกคะแนน เพราะระบบใช้ค่านี้คำนวณเกรดอัตโนมัติ หากแก้ไขภายหลังอาจต้องกรอกคะแนนใหม่</div></div>
+</div>
+
+<div class="divider"></div>
+
+<!-- 5 -->
+<div class="section" id="s5">
+  <div class="section-hd">
+    <div class="section-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
+    <div><div class="section-num">บทที่ 5</div><h2>จัดการนักเรียน</h2></div>
+  </div>
+  <h3 class="sub">วิธีนำเข้ารายชื่อนักเรียน</h3>
+  <table class="tbl page-break-avoid">
+    <thead><tr><th>วิธี</th><th>ขั้นตอน</th><th>เหมาะสำหรับ</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge indigo">อัปโหลด Excel</span></td><td>เลือกไฟล์ .xlsx ที่มีคอลัมน์: รหัส, ชื่อ, นามสกุล, ชั้น, ห้อง</td><td>รายชื่อจำนวนมาก</td></tr>
+      <tr><td><span class="badge blue">วางข้อมูล</span></td><td>Copy จาก Excel วางในช่องข้อความ (Tab-separated)</td><td>รายชื่อชั้นเดียว</td></tr>
+      <tr><td><span class="badge gray">เพิ่มทีละคน</span></td><td>กรอกข้อมูลด้วยมือทีละคน</td><td>เพิ่มนักเรียนใหม่</td></tr>
+    </tbody>
+  </table>
+  <div class="feature-box indigo"><div class="feature-box-title">🎓 เลื่อนชั้นนักเรียน</div><div class="feature-box-body">เมื่อสิ้นปีการศึกษา สามารถเลื่อนนักเรียนทั้งห้องไปยังชั้นถัดไปได้พร้อมกัน โดยต้องใช้รหัส Admin เพื่อยืนยัน</div></div>
+</div>
+
+<div class="divider"></div>
+
+<!-- 6 -->
+<div class="section page-break" id="s6">
+  <div class="section-hd">
+    <div class="section-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>
+    <div><div class="section-num">บทที่ 6</div><h2>บันทึกเวลาเรียน</h2></div>
+  </div>
+  <p style="color:var(--gray);margin-bottom:16px">บันทึกการเข้าเรียนของนักเรียนแต่ละเดือน ระบบจะแจ้งเตือนอัตโนมัติเมื่อมีนักเรียนเวลาเรียนต่ำกว่า 80%</p>
+  <div class="steps">
+    <div class="step page-break-avoid"><div class="step-num">1</div><div class="step-body"><div class="step-title">เลือกวิชาและเดือนที่ต้องการบันทึก</div><div class="step-desc"></div></div></div>
+    <div class="step page-break-avoid"><div class="step-num">2</div><div class="step-body"><div class="step-title">กำหนดวันสอนในเดือนนั้น</div><div class="step-desc">ระบุวันที่และจำนวนคาบที่สอนในแต่ละวัน เพื่อคำนวณชั่วโมงรวม</div></div></div>
+    <div class="step page-break-avoid"><div class="step-num">3</div><div class="step-body"><div class="step-title">บันทึกสถานะนักเรียนแต่ละคนในแต่ละวัน</div><div class="step-desc">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+        <span style="background:#dcfce7;color:#166534;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:700">ม — มาเรียน</span>
+        <span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:700">ข — ขาดเรียน</span>
+        <span style="background:#fef9c3;color:#854d0e;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:700">ล — ลา</span>
+        <span style="background:#f3e8ff;color:#6b21a8;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:700">ส — อื่นๆ</span>
+      </div>
+    </div></div></div>
+    <div class="step page-break-avoid"><div class="step-num">4</div><div class="step-body"><div class="step-title">กด "บันทึก"</div><div class="step-desc">ระบบคำนวณ % เวลาเรียนและแสดงสีแดงสำหรับนักเรียนที่ต่ำกว่า 80% (มส.)</div></div></div>
+  </div>
+  <div class="mockup-row">
+    <div class="mockup-col">
+      <div class="mockup wide">
+        <div class="mk-shell">
+          <div class="mk-sidebar">
+            <div class="mk-sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>แดชบอร์ด</div>
+            <div class="mk-sb-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>เวลาเรียน</div>
+          </div>
+          <div class="mk-content">
+            <div class="mk-topbar"><div class="mk-topbar-title">เวลาเรียน — ว21101</div></div>
+            <div class="mk-body">
+              <div class="mk-card">
+                <div class="mk-row between" style="margin-bottom:5px">
+                  <div class="mk-topbar-title">มิถุนายน 2568</div>
+                  <div class="mk-btn sm">+ เพิ่มวันสอน</div>
+                </div>
+                <div style="overflow-x:auto">
+                  <table class="mk-tbl" style="min-width:200px">
+                    <thead><tr><th>#</th><th>ชื่อ</th><th>1</th><th>4</th><th>8</th><th>11</th><th>%</th></tr></thead>
+                    <tbody>
+                      <tr><td>1</td><td>สมชาย</td><td><span class="mk-att-cell mk-att-p">ม</span></td><td><span class="mk-att-cell mk-att-p">ม</span></td><td><span class="mk-att-cell mk-att-p">ม</span></td><td><span class="mk-att-cell mk-att-p">ม</span></td><td style="color:#059669;font-weight:700">100%</td></tr>
+                      <tr><td>2</td><td>สมหญิง</td><td><span class="mk-att-cell mk-att-p">ม</span></td><td><span class="mk-att-cell mk-att-a">ข</span></td><td><span class="mk-att-cell mk-att-l">ล</span></td><td><span class="mk-att-cell mk-att-p">ม</span></td><td style="color:#d97706;font-weight:700">75%</td></tr>
+                      <tr><td>3</td><td>พิชัย</td><td><span class="mk-att-cell mk-att-a">ข</span></td><td><span class="mk-att-cell mk-att-a">ข</span></td><td><span class="mk-att-cell mk-att-a">ข</span></td><td><span class="mk-att-cell mk-att-p">ม</span></td><td style="color:#dc2626;font-weight:700">50% ⚠</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-caption">บันทึกเวลาเรียนรายเดือน</div>
+    </div>
+  </div>
+  <div class="feature-box red"><div class="feature-box-title">⚠️ นักเรียน มส. (เสี่ยง)</div><div class="feature-box-body">นักเรียนที่มีเวลาเรียนต่ำกว่า 80% จะได้รับผล "มส." (ไม่มีสิทธิ์สอบ) ระบบจะแสดงสีแดงและนับรวมในสถิติแดชบอร์ด</div></div>
+</div>
+
+<div class="divider"></div>
+
+<!-- 7 -->
+<div class="section page-break" id="s7">
+  <div class="section-hd">
+    <div class="section-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>
+    <div><div class="section-num">บทที่ 7</div><h2>บันทึกคะแนน</h2></div>
+  </div>
+  <p style="color:var(--gray);margin-bottom:16px">เมนูคะแนนแบ่งออกเป็น 4 แท็บตามโครงสร้างคะแนนที่กำหนดไว้</p>
+  <table class="tbl page-break-avoid">
+    <thead><tr><th>แท็บ</th><th>บันทึกอะไร</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge indigo">ก่อนกลางภาค</span></td><td>คะแนนหน่วยการเรียนรู้ก่อนสอบกลางภาค สามารถเพิ่มหลายหน่วยได้</td></tr>
+      <tr><td><span class="badge indigo">หลังกลางภาค</span></td><td>คะแนนหน่วยการเรียนรู้หลังสอบกลางภาค</td></tr>
+      <tr><td><span class="badge blue">คะแนนสอบ</span></td><td>คะแนนสอบกลางภาคและปลายภาค</td></tr>
+      <tr><td><span class="badge green">สรุปผล</span></td><td>ระบบคำนวณคะแนนรวมและเกรดให้อัตโนมัติ</td></tr>
+    </tbody>
+  </table>
+  <h3 class="sub">การเพิ่มหน่วยการเรียนรู้</h3>
+  <div class="steps">
+    <div class="step page-break-avoid"><div class="step-num">1</div><div class="step-body"><div class="step-title">เลือกแท็บ "ก่อนกลางภาค" หรือ "หลังกลางภาค"</div><div class="step-desc"></div></div></div>
+    <div class="step page-break-avoid"><div class="step-num">2</div><div class="step-body"><div class="step-title">กด "เพิ่มหน่วย" แล้วกรอกชื่อหน่วยและคะแนนเต็ม</div><div class="step-desc">สามารถระบุ มาตรฐาน/ตัวชี้วัด ได้ด้วย (ไม่บังคับ)</div></div></div>
+    <div class="step page-break-avoid"><div class="step-num">3</div><div class="step-body"><div class="step-title">กรอกคะแนนของนักเรียนแต่ละคน</div><div class="step-desc">กดช่องแล้วพิมพ์คะแนน กด Tab เพื่อเลื่อนไปคนถัดไปได้</div></div></div>
+    <div class="step page-break-avoid"><div class="step-num">4</div><div class="step-body"><div class="step-title">กด "บันทึก"</div><div class="step-desc">ระบบอัปเดตสรุปผลให้อัตโนมัติ</div></div></div>
+  </div>
+  <div class="mockup-row">
+    <div class="mockup-col">
+      <div class="mockup wide">
+        <div class="mk-shell">
+          <div class="mk-sidebar">
+            <div class="mk-sb-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/></svg>คะแนน</div>
+          </div>
+          <div class="mk-content">
+            <div class="mk-topbar"><div class="mk-topbar-title">คะแนน — ว21101</div></div>
+            <div style="display:flex;background:#fff;border-bottom:1px solid #e2e8f0">
+              <div style="padding:6px 10px;font-size:9px;font-weight:700;color:#4f46e5;border-bottom:2px solid #4f46e5">ก่อนกลางภาค</div>
+              <div style="padding:6px 10px;font-size:9px;color:#94a3b8">หลังกลางภาค</div>
+              <div style="padding:6px 10px;font-size:9px;color:#94a3b8">คะแนนสอบ</div>
+              <div style="padding:6px 10px;font-size:9px;color:#94a3b8">สรุปผล</div>
+            </div>
+            <div class="mk-body">
+              <div class="mk-card">
+                <div class="mk-row between" style="margin-bottom:5px">
+                  <div style="font-size:9px;font-weight:700;color:#475569">หน่วยที่ 1: สิ่งมีชีวิต (25 คะแนน)</div>
+                  <div class="mk-btn sm">+ หน่วย</div>
+                </div>
+                <table class="mk-tbl">
+                  <thead><tr><th>#</th><th>ชื่อ</th><th>ชิ้นงาน 1<br><span style="font-weight:400;opacity:.8">/10</span></th><th>ทดสอบ<br><span style="font-weight:400;opacity:.8">/15</span></th><th>รวม<br><span style="font-weight:400;opacity:.8">/25</span></th></tr></thead>
+                  <tbody>
+                    <tr><td>1</td><td>สมชาย</td><td><div class="mk-score-cell filled">9</div></td><td><div class="mk-score-cell filled">14</div></td><td style="font-weight:700;color:#059669">23</td></tr>
+                    <tr><td>2</td><td>สมหญิง</td><td><div class="mk-score-cell filled">8</div></td><td><div class="mk-score-cell">_</div></td><td style="color:#94a3b8">—</td></tr>
+                    <tr><td>3</td><td>พิชัย</td><td><div class="mk-score-cell filled">7</div></td><td><div class="mk-score-cell filled">11</div></td><td style="font-weight:700;color:#d97706">18</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-caption">บันทึกคะแนนรายหน่วย</div>
+    </div>
+  </div>
+  <h3 class="sub">ตารางเกรด</h3>
+  <table class="tbl page-break-avoid">
+    <thead><tr><th>คะแนน (%)</th><th>เกรด</th><th>คะแนน (%)</th><th>เกรด</th></tr></thead>
+    <tbody>
+      <tr><td>80–100</td><td><strong>4.0</strong> (A)</td><td>55–59</td><td><strong>1.5</strong> (D+)</td></tr>
+      <tr><td>75–79</td><td><strong>3.5</strong> (B+)</td><td>50–54</td><td><strong>1.0</strong> (D)</td></tr>
+      <tr><td>70–74</td><td><strong>3.0</strong> (B)</td><td>น้อยกว่า 50</td><td><strong>0.0</strong> (F)</td></tr>
+      <tr><td>65–69</td><td><strong>2.5</strong> (C+)</td><td>ไม่มีสิทธิ์สอบ</td><td><strong>มส.</strong></td></tr>
+      <tr><td>60–64</td><td><strong>2.0</strong> (C)</td><td>ถอนวิชา</td><td><strong>ร</strong></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="divider"></div>
+
+<!-- 8 -->
+<div class="section" id="s8">
+  <div class="section-hd">
+    <div class="section-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
+    <div><div class="section-num">บทที่ 8</div><h2>การประเมิน</h2></div>
+  </div>
+  <p style="color:var(--gray);margin-bottom:16px">เมนูประเมินแบ่งออกเป็น 2 แท็บตามเกณฑ์ของกระทรวงศึกษาธิการ</p>
+  <table class="tbl page-break-avoid">
+    <thead><tr><th>แท็บ</th><th>รายละเอียด</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="badge purple">อ่าน คิด วิเคราะห์ เขียน</span></td>
+        <td>ประเมิน 5 ครั้งต่อภาคเรียน ระดับ: <strong>ดีเยี่ยม / ดี / ผ่าน / ไม่ผ่าน</strong> พร้อมสรุปผลรวม</td>
+      </tr>
+      <tr>
+        <td><span class="badge purple">คุณลักษณะอันพึงประสงค์</span></td>
+        <td>ประเมิน 8 ด้าน เช่น รักชาติ ซื่อสัตย์ มีวินัย ใฝ่เรียนรู้ ฯลฯ ระดับ: ดีเยี่ยม / ดี / ผ่าน / ไม่ผ่าน</td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 class="sub">ปุ่มกรอกเร็ว</h3>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0">
+    <span style="background:var(--indigo-light);color:var(--indigo);padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600">ดีเยี่ยมทั้งหมด</span>
+    <span style="background:var(--blue-light);color:var(--blue);padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600">ดีทั้งหมด</span>
+    <span style="background:#f1f5f9;color:var(--gray);padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600">ล้างทั้งหมด</span>
+  </div>
+  <div class="feature-box indigo"><div class="feature-box-title">💡 ใช้ปุ่มกรอกเร็ว</div><div class="feature-box-body">กด "ดีเยี่ยมทั้งหมด" แล้วแก้เฉพาะนักเรียนที่ได้ระดับต่ำกว่า ประหยัดเวลาได้มาก</div></div>
+</div>
+
+<div class="divider"></div>
+
+<!-- 9 -->
+<div class="section page-break" id="s9">
+  <div class="section-hd">
+    <div class="section-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg></div>
+    <div><div class="section-num">บทที่ 9</div><h2>รายงานผลและ ปพ.5</h2></div>
+  </div>
+  <h3 class="sub">รายงานผลรายวิชา</h3>
+  <p style="color:var(--gray);margin-bottom:12px">เมนู "รายงานผล" แสดงตารางสรุปนักเรียนทุกคน ประกอบด้วย คะแนนรวม เกรด % เวลาเรียน ผลประเมิน และผลพิเศษ (มส./ร)</p>
+  <div class="mockup-row">
+    <div class="mockup-col">
+      <div class="mockup wide">
+        <div class="mk-shell">
+          <div class="mk-sidebar">
+            <div class="mk-sb-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>รายงานผล</div>
+          </div>
+          <div class="mk-content">
+            <div class="mk-topbar"><div class="mk-topbar-title">รายงานผล — ว21101</div></div>
+            <div class="mk-body">
+              <div class="mk-card">
+                <table class="mk-tbl">
+                  <thead><tr><th>#</th><th>ชื่อ</th><th>รวม</th><th>เกรด</th><th>เวลา</th><th>ผล</th></tr></thead>
+                  <tbody>
+                    <tr><td>1</td><td>สมชาย</td><td>87</td><td style="color:#059669;font-weight:800">4.0</td><td>100%</td><td><span class="mk-badge green">ผ่าน</span></td></tr>
+                    <tr><td>2</td><td>สมหญิง</td><td>72</td><td style="color:#4f46e5;font-weight:800">3.0</td><td>75%</td><td><span class="mk-badge orange">มส.</span></td></tr>
+                    <tr><td>3</td><td>พิชัย</td><td>58</td><td style="color:#d97706;font-weight:800">1.5</td><td>50%</td><td><span class="mk-badge red">มส.</span></td></tr>
+                    <tr><td>4</td><td>นงนุช</td><td>91</td><td style="color:#059669;font-weight:800">4.0</td><td>100%</td><td><span class="mk-badge green">ผ่าน</span></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-caption">รายงานผลรายวิชา</div>
+    </div>
+  </div>
+  <h3 class="sub">ปก ปพ.5</h3>
+  <p style="color:var(--gray);margin-bottom:12px">เมนู "ปก ปพ.5" สร้างหน้าปกเอกสาร ปพ.5 อย่างเป็นทางการ แสดงการกระจายของเกรด สถิตินักเรียน มส./ร และสรุปการประเมิน</p>
+  <div class="feature-box green"><div class="feature-box-title">📄 พิมพ์ ปพ.5 ทั้งฉบับ</div><div class="feature-box-body">กดปุ่ม "ออก PDF ทั้งหมด" เพื่อสร้าง PDF ครบทุกวิชาในภาคเรียนเดียวกัน สะดวกสำหรับการส่งงานประจำภาคเรียน</div></div>
+</div>
+
+<div class="divider"></div>
+
+<!-- 10 -->
+<div class="section" id="s10">
+  <div class="section-hd">
+    <div class="section-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
+    <div><div class="section-num">บทที่ 10</div><h2>การส่งออกข้อมูล</h2></div>
+  </div>
+  <table class="tbl page-break-avoid">
+    <thead><tr><th>รูปแบบ</th><th>ส่งออกอะไรได้บ้าง</th><th>เหมาะสำหรับ</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge red">📄 PDF</span></td><td>รายงานผลรายวิชา, ปก ปพ.5, ปพ.5 ทั้งฉบับ</td><td>พิมพ์เอกสารราชการ</td></tr>
+      <tr><td><span class="badge green">📊 Excel</span></td><td>คะแนน, เวลาเรียน, การประเมิน, ผลการเรียน</td><td>วิเคราะห์ข้อมูลต่อ</td></tr>
+      <tr><td><span class="badge gray">🖨 พิมพ์</span></td><td>ทุกหน้าในระบบ</td><td>เอกสารทั่วไป</td></tr>
+    </tbody>
+  </table>
+  <div class="feature-box orange"><div class="feature-box-title">💾 สำรองข้อมูล</div><div class="feature-box-body">ผู้ดูแลระบบสามารถดาวน์โหลด Backup ข้อมูลทั้งหมดเป็นไฟล์ JSON ได้จากหน้าตั้งค่า แนะนำให้ทำทุกสิ้นภาคเรียน</div></div>
+</div>
+
+<div class="divider"></div>
+
+<!-- 11 -->
+<div class="section page-break" id="s11">
+  <div class="section-hd">
+    <div class="section-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div>
+    <div><div class="section-num">บทที่ 11</div><h2>การตั้งค่าระบบ (เฉพาะผู้ดูแล)</h2></div>
+  </div>
+  <div class="feature-box red"><div class="feature-box-title">🔒 ต้องใส่รหัส Admin</div><div class="feature-box-body">หน้าตั้งค่าบางส่วนป้องกันด้วยรหัส Admin เพื่อป้องกันการแก้ไขข้อมูลโดยไม่ตั้งใจ</div></div>
+  <table class="tbl page-break-avoid" style="margin-top:12px">
+    <thead><tr><th>รายการ</th><th>รายละเอียด</th></tr></thead>
+    <tbody>
+      <tr><td><strong>ข้อมูลโรงเรียน</strong></td><td>ชื่อโรงเรียน เขต จังหวัด ชื่อผู้อำนวยการ โลโก้</td></tr>
+      <tr><td><strong>ปีการศึกษา / ภาคเรียน</strong></td><td>กำหนดปีการศึกษา (พ.ศ.) และภาคเรียนที่ใช้งาน</td></tr>
+      <tr><td><strong>รายชื่อครู</strong></td><td>จัดการรายชื่อครูสำหรับ dropdown ในหน้ารายวิชา</td></tr>
+      <tr><td><strong>กลุ่มสาระการเรียนรู้</strong></td><td>เพิ่ม/เรียงลำดับกลุ่มสาระตามหลักสูตร</td></tr>
+      <tr><td><strong>สำรองข้อมูล</strong></td><td>ดาวน์โหลด Backup และกู้คืนข้อมูลจากไฟล์</td></tr>
+      <tr><td><strong>รายงานทั้งโรงเรียน</strong></td><td>ดูภาพรวมข้อมูลครูทุกคนและทุกวิชาในระบบ</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="divider"></div>
+
+<!-- 12 -->
+<div class="section" id="s12">
+  <div class="section-hd">
+    <div class="section-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+    <div><div class="section-num">บทที่ 12</div><h2>คำถามที่พบบ่อย (FAQ)</h2></div>
+  </div>
+  <div class="feature-box page-break-avoid"><div class="feature-box-title">❓ กรอกคะแนนเกินคะแนนเต็มได้ไหม?</div><div class="feature-box-body">ระบบจะแจ้งเตือนทันทีเมื่อกรอกคะแนนเกินที่กำหนด แต่ยังไม่บล็อกการบันทึก ควรตรวจสอบก่อนกด "บันทึก"</div></div>
+  <div class="feature-box page-break-avoid" style="margin-top:10px"><div class="feature-box-title">❓ แก้ไขคะแนนย้อนหลังได้ไหม?</div><div class="feature-box-body">ได้ เข้าไปที่เมนูคะแนน เลือกวิชาและแท็บที่ต้องการ แล้วแก้ไขได้ทุกเมื่อ ระบบจะคำนวณสรุปผลใหม่ให้อัตโนมัติ</div></div>
+  <div class="feature-box page-break-avoid" style="margin-top:10px"><div class="feature-box-title">❓ นักเรียนได้ มส. แต่อยากให้สอบได้ ทำอย่างไร?</div><div class="feature-box-body">ต้องแก้ไขข้อมูลเวลาเรียนในเดือนที่เกี่ยวข้องก่อน เมื่อ % เวลาเรียนถึง 80% ระบบจะยกเลิก มส. ให้อัตโนมัติ</div></div>
+  <div class="feature-box page-break-avoid" style="margin-top:10px"><div class="feature-box-title">❓ นำเข้านักเรียนจาก Excel ต้องใช้รูปแบบไหน?</div><div class="feature-box-body">คอลัมน์ที่จำเป็น: <strong>รหัสนักเรียน | ชื่อ | นามสกุล | ระดับชั้น | ห้อง</strong> บันทึกเป็นไฟล์ .xlsx แล้วอัปโหลดได้เลย</div></div>
+  <div class="feature-box page-break-avoid" style="margin-top:10px"><div class="feature-box-title">❓ ครูหลายคนใช้พร้อมกันได้ไหม?</div><div class="feature-box-body">ได้ แต่ละคนจัดการวิชาของตัวเองอิสระ ไม่กระทบกัน ระบบแสดงผู้ใช้ที่ออนไลน์อยู่มุมบนขวา</div></div>
+  <div class="feature-box page-break-avoid" style="margin-top:10px"><div class="feature-box-title">❓ ข้อมูลหายหลังปิดหน้าต่างไหม?</div><div class="feature-box-body">ไม่หาย ทุกครั้งที่กด "บันทึก" ข้อมูลถูกส่งขึ้น Cloud ทันที อย่างไรก็ตาม ถ้าไม่ได้กดบันทึกก่อนปิด ข้อมูลที่กรอกค้างไว้จะหาย</div></div>
+</div>
+
+<div class="footer">
+  <div>
+    <div class="footer-title">ระบบบันทึกผลการเรียน ปพ.5 ออนไลน์</div>
+    <div class="footer-sub">คู่มือการใช้งานฉบับสมบูรณ์ — ปรับปรุง มิถุนายน 2569</div>
+  </div>
+  <div class="footer-right">พัฒนาระบบ<br>นายกิตติพงษ์ คำดี</div>
+</div>
+
+</body>
+</html>
