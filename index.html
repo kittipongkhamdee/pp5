@@ -627,8 +627,10 @@ const io=new IntersectionObserver(entries=>{
 document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
 
 /* ── Ripple + zoom-out exit ── */
+const _cards=[];
 document.querySelectorAll('.sys-card').forEach(card=>{
-  let navigating=false;
+  const state={navigating:false};
+  _cards.push(state);
   card.addEventListener('pointerdown',function(e){
     const rect=this.getBoundingClientRect();
     const size=Math.max(rect.width,rect.height)*1.4;
@@ -639,7 +641,7 @@ document.querySelectorAll('.sys-card').forEach(card=>{
   });
   card.addEventListener('click',function(e){
     e.preventDefault();
-    if(navigating)return;navigating=true;
+    if(state.navigating)return;state.navigating=true;
     const href=this.getAttribute('href');
     setTimeout(()=>{
       document.body.classList.add('page-exiting');
@@ -647,8 +649,9 @@ document.querySelectorAll('.sys-card').forEach(card=>{
     },150);
   });
 });
-window.addEventListener('pageshow',function(e){
+window.addEventListener('pageshow',function(){
   document.body.classList.remove('page-exiting');
+  _cards.forEach(s=>s.navigating=false);
 });
 </script>
 </body>
