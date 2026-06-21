@@ -536,18 +536,23 @@ body{animation:pageFadeIn .25s ease}
       {headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}}
     );
     const rows=await res.json();
+    console.log('[logo] rows=',rows);
     const val=rows?.[0]?.value;
+    console.log('[logo] val length=',val?.length);
     if(val){
       const img=document.getElementById('school-logo');
       const svg=document.getElementById('hero-svg');
       const wrap=document.getElementById('hero-icon-wrap');
-      img.onerror=()=>{img.style.display='none';svg.style.display='flex';wrap.classList.remove('has-logo')};
+      img.onerror=()=>{console.log('[logo] img error');img.style.display='none';svg.style.display='flex';wrap.classList.remove('has-logo')};
       img.src=val;
       img.style.display='block';
       svg.style.display='none';
       wrap.classList.add('has-logo');
+      console.log('[logo] applied');
+    }else{
+      console.log('[logo] no val found');
     }
-  }catch(e){}
+  }catch(e){console.error('[logo] error',e);}
 })();
 </script>
 <script>
