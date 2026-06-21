@@ -610,10 +610,11 @@ body.dark .subc{
 #login-page .lp-sname{font-size:18px;font-weight:800;color:#1d1d1f;margin-bottom:3px;}
 #login-page .lp-sys{font-size:13px;font-weight:700;color:#007AFF;}
 #login-page .lp-loc{font-size:11.5px;color:#8e8e93;margin-top:2px;}
-/* floating field */
-#login-page .lp-field{position:relative;margin-bottom:16px;}
+/* input fields */
+#login-page .lp-field{margin-bottom:14px;}
+#login-page .lp-field label{display:block;font-size:12px;font-weight:700;color:#64748b;margin-bottom:6px;letter-spacing:.4px;font-family:'Sarabun',sans-serif;}
 #login-page .lp-field-wrap{
-  border-radius:14px;background:rgba(229,229,234,1);padding:1.5px;
+  border-radius:13px;background:rgba(229,229,234,1);padding:1.5px;
   transition:background .2s,box-shadow .2s;position:relative;
 }
 #login-page .lp-field-wrap:focus-within{
@@ -627,24 +628,14 @@ body.dark .subc{
 }
 #login-page .lp-field-wrap:focus-within .lp-icon-left{color:#6366f1;}
 #login-page .lp-field input{
-  width:100%;height:56px;padding:22px 44px 8px 46px;
-  border:none;border-radius:13px;
+  width:100%;padding:12px 44px 12px 42px;
+  border:none;border-radius:12px;
   font-size:15px;font-family:'Sarabun',sans-serif;
-  background:#fafafa;color:#1d1d1f;outline:none;
+  background:rgba(255,255,255,.9);color:#1e293b;outline:none;
   transition:background .18s;position:relative;z-index:1;box-sizing:border-box;
 }
+#login-page .lp-field input::placeholder{color:#cbd5e1;}
 #login-page .lp-field input:focus{background:#fff;}
-#login-page .lp-field label{
-  position:absolute;left:46px;top:50%;transform:translateY(-50%);
-  font-size:15px;color:#aeaeb2;pointer-events:none;
-  transition:all .18s cubic-bezier(.4,0,.2,1);
-  font-family:'Sarabun',sans-serif;font-weight:400;z-index:2;
-}
-#login-page .lp-field:focus-within label,
-#login-page .lp-field:has(input.lp-filled) label{
-  top:10px;transform:translateY(0) scale(.75);transform-origin:left center;
-  color:#6366f1;font-weight:700;
-}
 #login-page .lp-pw-toggle{
   position:absolute;right:12px;top:50%;transform:translateY(-50%);
   background:none;border:none;cursor:pointer;color:#aeaeb2;
@@ -719,27 +710,25 @@ body.dark .subc{
 
       <!-- Email field -->
       <div class="lp-field">
+        <label for="l-email">อีเมล</label>
         <div class="lp-field-wrap">
           <svg class="lp-icon-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
-          <input type="email" id="l-email" autocomplete="email"
-            oninput="this.classList.toggle('lp-filled',this.value.length>0)"
+          <input type="email" id="l-email" autocomplete="email" placeholder="email@school.ac.th"
             onkeydown="if(event.key==='Enter')$('l-pass').focus()">
         </div>
-        <label for="l-email">อีเมล</label>
       </div>
 
       <!-- Password field -->
       <div class="lp-field" style="margin-bottom:8px;">
+        <label for="l-pass">รหัสผ่าน</label>
         <div class="lp-field-wrap">
           <svg class="lp-icon-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          <input type="password" id="l-pass" autocomplete="current-password"
-            oninput="this.classList.toggle('lp-filled',this.value.length>0)"
+          <input type="password" id="l-pass" autocomplete="current-password" placeholder="••••••••"
             onkeydown="if(event.key==='Enter')doLogin()">
           <button class="lp-pw-toggle" onclick="_lpTogglePw()" id="lp-pw-btn" type="button">
             <svg id="lp-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
         </div>
-        <label for="l-pass">รหัสผ่าน</label>
       </div>
 
       <!-- Remember me + Forgot password -->
