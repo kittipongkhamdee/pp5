@@ -112,7 +112,8 @@ html[data-theme="dark"] .ios-select,html[data-theme="dark"] .ios-input{backgroun
 
 /* ── Cards / Lists ── */
 .section{padding:16px 20px 0}
-.section-title{font-size:12px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
+.section-title{display:flex;align-items:center;gap:6px;width:fit-content;font-size:11.5px;font-weight:700;color:#4f46e5;background:rgba(99,102,241,.09);border-radius:20px;padding:4px 12px;margin-bottom:10px;text-transform:none;letter-spacing:0}
+.section-title::before{content:'';width:6px;height:6px;border-radius:50%;background:#6366f1;flex-shrink:0}
 .card{
   background:rgba(255,255,255,0.72);
   backdrop-filter:blur(16px) saturate(1.5);-webkit-backdrop-filter:blur(16px) saturate(1.5);
@@ -126,7 +127,7 @@ html[data-theme="dark"] .ios-select,html[data-theme="dark"] .ios-input{backgroun
 }
 .card-row:last-child{border-bottom:none}
 .card-row:active{background:var(--card2)}
-.card-row-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.card-row-icon{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.1)}
 .card-row-info{flex:1;min-width:0}
 .card-row-name{font-size:15px;font-weight:600}
 .card-row-sub{font-size:13px;color:var(--txt2);margin-top:2px}
@@ -135,19 +136,24 @@ html[data-theme="dark"] .ios-select,html[data-theme="dark"] .ios-input{backgroun
 /* ── Stats ── */
 .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:8px 20px;background:rgba(255,255,255,0.7);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.5)}
 .stats-grid.has-unif{grid-template-columns:repeat(5,1fr)}
-.stat-box{text-align:center;padding:6px 4px;border-radius:10px;border:1px solid transparent}
+.stat-box{text-align:center;padding:8px 4px 7px;border-radius:12px;border:1.5px solid transparent}
 .stat-box.s-all{background:#EFF6FF;border-color:#BFDBFE}
 .stat-box.s-present{background:#ECFDF5;border-color:#A7F3D0}
 .stat-box.s-late{background:#FFFBEB;border-color:#FDE68A}
 .stat-box.s-absent{background:#FEF2F2;border-color:#FECACA}
 .stat-box.s-red{background:#FFF1F2;border-color:#FECDD3}
-.stat-num{font-size:19px;font-weight:800;line-height:1}
-.stat-lbl{font-size:11px;font-weight:600;margin-top:2px}
-.stat-box.s-all .stat-num{color:#1D4ED8}.stat-box.s-all .stat-lbl{color:#3B82F6}
-.stat-num.green{color:#059669}.stat-box.s-present .stat-lbl{color:#059669}
-.stat-num.orange{color:#D97706}.stat-box.s-late .stat-lbl{color:#D97706}
-.stat-num.red{color:#DC2626}.stat-box.s-absent .stat-lbl{color:#DC2626}
-.stat-box.s-red .stat-num{color:#E11D48}.stat-box.s-red .stat-lbl{color:#E11D48}
+.stat-num{font-size:22px;font-weight:800;line-height:1;-webkit-background-clip:text;background-clip:text}
+.stat-lbl{font-size:10.5px;font-weight:700;margin-top:3px;letter-spacing:.2px}
+.stat-box.s-all .stat-num{background:linear-gradient(135deg,#1d4ed8,#3b82f6);-webkit-text-fill-color:transparent}
+.stat-box.s-all .stat-lbl{color:#3B82F6}
+.stat-num.green{background:linear-gradient(135deg,#059669,#34d399);-webkit-text-fill-color:transparent}
+.stat-box.s-present .stat-lbl{color:#059669}
+.stat-num.orange{background:linear-gradient(135deg,#b45309,#f59e0b);-webkit-text-fill-color:transparent}
+.stat-box.s-late .stat-lbl{color:#D97706}
+.stat-num.red{background:linear-gradient(135deg,#b91c1c,#f87171);-webkit-text-fill-color:transparent}
+.stat-box.s-absent .stat-lbl{color:#DC2626}
+.stat-box.s-red .stat-num{background:linear-gradient(135deg,#9f1239,#fb7185);-webkit-text-fill-color:transparent}
+.stat-box.s-red .stat-lbl{color:#E11D48}
 
 /* ── Selectors / Inputs ── */
 .ios-select,.ios-input{
@@ -192,10 +198,10 @@ html[data-theme="dark"] .ios-select,html[data-theme="dark"] .ios-input{backgroun
 /* ── Check-in Card Style ── */
 #ck-list{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px 12px;padding-bottom:calc(80px + var(--safe-bottom))}
 #ck-list .stu-card+.stu-card{margin-top:8px}
-.stu-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--sep);overflow:hidden;transition:border-color .15s}
-.stu-card.ck-done{border-color:#d1fae5}
-.stu-card.ck-fail{border-color:#fecaca}
-.stu-card.ck-other{opacity:.75}
+.stu-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--sep);overflow:hidden;transition:border-color .15s,box-shadow .15s}
+.stu-card.ck-done{border-color:#a7f3d0;box-shadow:inset 3px 0 0 #10b981}
+.stu-card.ck-fail{border-color:#fecaca;box-shadow:inset 3px 0 0 #ef4444}
+.stu-card.ck-other{box-shadow:inset 3px 0 0 #f59e0b;opacity:.75}
 .stu-card.collapsed .card-btns-wrap{display:none}
 .stu-card.collapsed .stu-card-hd{cursor:pointer}
 .stu-card.collapsed .stu-card-hd:active{background:var(--card2)}
@@ -1450,7 +1456,7 @@ async function renderHome(){
         ?`<div style="display:flex;flex-direction:column;gap:6px;margin-top:6px">${_bar('เช้า',ad.morning)}${_bar('บ่าย',ad.evening)}</div>`
         :`<div style="margin-top:6px">${_bar('เช้า',ad.morning)}</div>`;
       html+=`<div class="card-row" onclick="quickCheckin(${a.id})">
-        <div class="card-row-icon" style="background:${actBg(a.id)}15;color:${actBg(a.id)}">${actEmoji(a.name)}</div>
+        <div class="card-row-icon" style="background:linear-gradient(135deg,${actBg(a.id)}55,${actBg(a.id)}18);color:${actBg(a.id)}">${actEmoji(a.name)}</div>
         <div class="card-row-info">
           <div class="card-row-name">${esc(a.name)}</div>
           ${bars}
@@ -2785,7 +2791,7 @@ function renderAdmin(){
     h+=`<div class="card">`;
     acts.forEach(a=>{
       h+=`<div class="card-row">
-        <div class="card-row-icon" style="background:${actBg(a.id)}22;color:${actBg(a.id)}">${actEmoji(a.name)}</div>
+        <div class="card-row-icon" style="background:linear-gradient(135deg,${actBg(a.id)}55,${actBg(a.id)}18);color:${actBg(a.id)}">${actEmoji(a.name)}</div>
         <div class="card-row-info">
           <div class="card-row-name">${esc(a.name)}</div>
           <div class="card-row-sub">${a.has_evening?'เช้า+บ่าย':'เช้า'} · ${a.is_active?'<span style="color:var(--green)">เปิดใช้งาน</span>':'<span style="color:var(--txt3)">ปิด</span>'}</div>
