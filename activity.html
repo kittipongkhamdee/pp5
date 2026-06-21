@@ -1441,16 +1441,9 @@ async function renderHome(){
         :clsN>0
           ?`<span style="font-size:9px;font-weight:700;color:#3B82F6;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:20px;padding:1px 8px;white-space:nowrap">${clsN}/${totalCls} ห้อง</span>`
           :`<span style="font-size:9px;font-weight:600;color:var(--txt3);background:var(--card2);border:1px solid var(--sep);border-radius:20px;padding:1px 8px;white-space:nowrap">ยังไม่เช็ค</span>`;
-      return `<div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
-          <div style="display:flex;align-items:center;gap:6px">
-            <span style="font-size:10px;font-weight:600;color:var(--txt3);min-width:22px">${label}</span>${badge}
-          </div>
-          <span style="font-size:10px;font-weight:800;color:${has?_pCol(p):'var(--txt3)'}">${has?p+'%':'—'}</span>
-        </div>
-        <div style="height:5px;border-radius:3px;background:var(--sep);overflow:hidden">
-          <div style="height:100%;width:${has?p:0}%;background:${has?_pGrd(p):'transparent'};border-radius:3px"></div>
-        </div>
+      return `<div style="display:flex;align-items:center;gap:6px;margin-top:3px">
+        <span style="font-size:10px;font-weight:600;color:var(--txt3);min-width:22px">${label}</span>${badge}
+        <span style="font-size:10px;font-weight:800;color:${has?_pCol(p):'var(--txt3)'}; margin-left:auto">${has?p+'%':'—'}</span>
       </div>`;
     }
     html+=`<div class="section-title">กิจกรรมทั้งหมด</div><div class="card" id="home-acts-wrap">`;
