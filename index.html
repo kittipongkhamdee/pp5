@@ -500,8 +500,25 @@ footer{
   const el=document.getElementById('greeting-toast');
   document.getElementById('greeting-msg').textContent=pick.msg;
   document.getElementById('greeting-sub').textContent=pick.sub;
+  function playChime(){
+    try{
+      const ctx=new(window.AudioContext||window.webkitAudioContext)();
+      [[0,.0,523],[.18,.0,659],[.36,.0,784],[.54,.0,1047]].forEach(([t,,freq])=>{
+        const osc=ctx.createOscillator();
+        const gain=ctx.createGain();
+        osc.connect(gain);gain.connect(ctx.destination);
+        osc.type='sine';osc.frequency.value=freq;
+        const s=ctx.currentTime+t;
+        gain.gain.setValueAtTime(0,s);
+        gain.gain.linearRampToValueAtTime(.13,s+.03);
+        gain.gain.exponentialRampToValueAtTime(.001,s+.65);
+        osc.start(s);osc.stop(s+.7);
+      });
+    }catch(e){}
+  }
   setTimeout(()=>{
     el.style.display='block';
+    playChime();
     el.addEventListener('animationend',()=>el.remove(),{once:true});
   },600);
 })();
