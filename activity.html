@@ -110,6 +110,15 @@ html[data-theme="dark"] .ios-select,html[data-theme="dark"] .ios-input{backgroun
 .ub.absent.active{background:#6B7280;color:#fff}
 .screen-hide{display:none}
 
+/* ── Home activity card glass highlight ── */
+#home-acts-wrap{position:relative;}
+#home-acts-wrap::before{
+  content:'';position:absolute;top:3px;left:8%;right:8%;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.95) 30%,rgba(255,255,255,.95) 70%,transparent);
+  pointer-events:none;z-index:1;border-radius:1px;
+}
+@media(min-width:768px){#home-acts-wrap::before{display:none}}
+
 /* ── Cards / Lists ── */
 .section{padding:16px 20px 0}
 .section-title{display:flex;align-items:center;gap:6px;width:fit-content;font-size:11.5px;font-weight:700;color:#4f46e5;background:rgba(99,102,241,.09);border-radius:20px;padding:4px 12px;margin-bottom:10px;text-transform:none;letter-spacing:0}
