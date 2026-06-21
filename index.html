@@ -525,26 +525,29 @@ body{animation:pageFadeIn .25s ease}
   </div>
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4"></script>
 <script>
-/* ── School logo from Supabase ── */
+/* ── School logo from Supabase REST ── */
 (async()=>{
   try{
     const SB_URL='https://zwtulepvmlngcrbcrrki.supabase.co';
     const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp3dHVsZXB2bWxuZ2NyYmNycmtpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNTc2NDcsImV4cCI6MjA5NTYzMzY0N30.9nhe0_NF3Fa-4FtmbE2AvQCtJdHS05RbkiyC8WvtvvA';
-    const client=supabase.createClient(SB_URL,SB_KEY);
-    const {data}=await client.from('config').select('value').eq('key','logo_url').maybeSingle();
-    if(data?.value){
+    const res=await fetch(
+      `${SB_URL}/rest/v1/config?key=eq.logo_url&select=value&limit=1`,
+      {headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}}
+    );
+    const rows=await res.json();
+    const val=rows?.[0]?.value;
+    if(val){
       const img=document.getElementById('school-logo');
       const svg=document.getElementById('hero-svg');
       const wrap=document.getElementById('hero-icon-wrap');
       img.onload=()=>{
-        svg.style.display='none';
         img.style.display='block';
+        svg.style.display='none';
         wrap.classList.add('has-logo');
       };
       img.onerror=()=>{};
-      img.src=data.value;
+      img.src=val;
     }
   }catch(e){}
 })();
