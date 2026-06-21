@@ -647,6 +647,9 @@ document.querySelectorAll('.sys-card').forEach(card=>{
     },150);
   });
 });
+window.addEventListener('pageshow',function(e){
+  document.body.classList.remove('page-exiting');
+});
 </script>
 </body>
 </html>
