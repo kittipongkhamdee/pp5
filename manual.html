@@ -222,6 +222,96 @@ body{font-family:var(--font);color:var(--dark);background:var(--bg);font-size:14
 /* ── Sub-heading ── */
 h3.sub{font-size:15px;font-weight:700;color:var(--dark);margin:20px 0 10px;display:flex;align-items:center;gap:8px}
 h3.sub::before{content:'';display:block;width:4px;height:18px;background:var(--blue);border-radius:2px}
+
+/* ── Mockup ── */
+.mockup-row{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin:18px 0}
+.mockup-col{display:flex;flex-direction:column;align-items:center;gap:8px}
+.mockup-caption{font-size:11px;font-weight:600;color:var(--gray);text-align:center}
+.mockup{
+  width:220px;border-radius:26px;overflow:hidden;flex-shrink:0;
+  box-shadow:0 2px 4px rgba(0,0,0,.06),0 8px 32px rgba(0,0,0,.13),inset 0 0 0 1px rgba(0,0,0,.09);
+  background:#f1f5f9;font-size:10px;font-family:'Sarabun',sans-serif;
+}
+.mockup.wide{width:320px}
+.mk-topbar{
+  background:linear-gradient(135deg,#1e3a8a 0%,#2563eb 100%);
+  color:#fff;padding:6px 12px 7px;display:flex;align-items:center;justify-content:space-between;
+}
+.mk-topbar-title{font-size:11px;font-weight:700}
+.mk-topbar-sub{font-size:9px;opacity:.8}
+.mk-topbar-time{font-size:9px;font-weight:600}
+.mk-body{background:#f8fafc;padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+.mk-card{background:#fff;border-radius:10px;padding:9px 11px;border:1px solid #e2e8f0}
+.mk-card-title{font-size:11px;font-weight:700;color:#0f172a;margin-bottom:4px}
+.mk-card-sub{font-size:9px;color:#64748b}
+.mk-input{background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:8px;padding:6px 9px;font-size:10px;color:#94a3b8;font-family:inherit;margin-bottom:3px}
+.mk-input.focus{border-color:#2563eb;color:#0f172a}
+.mk-label{font-size:9px;font-weight:600;color:#475569;margin-bottom:2px}
+.mk-btn{background:#1d4ed8;color:#fff;border-radius:9px;padding:8px;text-align:center;font-size:11px;font-weight:700;margin-top:4px}
+.mk-btn.gray{background:#e2e8f0;color:#475569}
+.mk-btn.green{background:#059669;color:#fff}
+.mk-btn.small{padding:4px 8px;font-size:9px;border-radius:6px;display:inline-block}
+.mk-row{display:flex;align-items:center;gap:5px}
+.mk-row.between{justify-content:space-between}
+.mk-stat-row{display:flex;gap:5px;margin-top:5px}
+.mk-stat{flex:1;background:#f8fafc;border-radius:7px;padding:5px;text-align:center;border:1px solid #e2e8f0}
+.mk-stat-num{font-size:14px;font-weight:800;line-height:1}
+.mk-stat-lbl{font-size:8px;color:#64748b;margin-top:1px}
+.mk-stat-num.green{color:#059669}
+.mk-stat-num.yellow{color:#d97706}
+.mk-stat-num.red{color:#dc2626}
+.mk-divider{height:1px;background:#e2e8f0;margin:3px 0}
+.mk-stu-row{display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid #f1f5f9}
+.mk-stu-row:last-child{border-bottom:none}
+.mk-stu-num{width:16px;height:16px;border-radius:50%;background:#dbeafe;color:#1d4ed8;font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mk-stu-name{font-size:9px;font-weight:600;color:#0f172a;flex:1}
+.mk-stu-meta{font-size:8px;color:#94a3b8}
+.mk-ck-btns{display:flex;gap:3px;flex-shrink:0}
+.mk-ck-btn{padding:3px 6px;border-radius:5px;font-size:8px;font-weight:700}
+.mk-ck-btn.present{background:#dcfce7;color:#166534}
+.mk-ck-btn.late{background:#fef9c3;color:#854d0e}
+.mk-ck-btn.absent{background:#f1f5f9;color:#94a3b8}
+.mk-ck-btn.absent.active{background:#e2e8f0;color:#475569}
+.mk-ck-btn.present.active{background:#059669;color:#fff}
+.mk-ck-btn.late.active{background:#d97706;color:#fff}
+.mk-unif-sec{background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;padding:6px 8px;margin-top:4px}
+.mk-unif-hd{display:flex;align-items:center;justify-content:space-between}
+.mk-unif-lbl{font-size:8px;font-weight:700;color:#475569}
+.mk-unif-btns{display:flex;gap:3px}
+.mk-ub{padding:3px 7px;border-radius:10px;font-size:8px;font-weight:700}
+.mk-ub.pass{background:rgba(5,150,105,.12);color:#059669}
+.mk-ub.pass.active{background:#059669;color:#fff}
+.mk-ub.fail{background:rgba(220,38,38,.1);color:#dc2626}
+.mk-ub.fail.active{background:#dc2626;color:#fff}
+.mk-chips{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px}
+.mk-chip{background:#fef2f2;border:1px solid #fca5a5;color:#dc2626;border-radius:10px;padding:2px 7px;font-size:8px;font-weight:600}
+.mk-chip.off{background:#fff;border-color:#e2e8f0;color:#94a3b8}
+.mk-note-input{background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:4px 7px;font-size:9px;color:#94a3b8;margin-top:4px;width:100%}
+.mk-tab-bar{display:flex;background:#fff;border-bottom:1px solid #e2e8f0;overflow:hidden}
+.mk-tab{flex:1;padding:7px 4px;text-align:center;font-size:8.5px;font-weight:600;color:#64748b;white-space:nowrap}
+.mk-tab.active{color:#1d4ed8;border-bottom:2px solid #1d4ed8}
+.mk-badge{display:inline-flex;padding:2px 6px;border-radius:8px;font-size:8px;font-weight:700}
+.mk-badge.green{background:#dcfce7;color:#166534}
+.mk-badge.red{background:#fee2e2;color:#991b1b}
+.mk-badge.blue{background:#dbeafe;color:#1d4ed8}
+.mk-tbl{width:100%;border-collapse:collapse;font-size:8.5px;margin-top:4px}
+.mk-tbl th{background:#1d4ed8;color:#fff;padding:4px 6px;text-align:left;font-weight:700}
+.mk-tbl td{padding:4px 6px;border-bottom:1px solid #f1f5f9}
+.mk-tbl tr:nth-child(even) td{background:#f8faff}
+.mk-medal{font-size:14px;margin-right:4px}
+.mk-rank{width:18px;height:18px;border-radius:50%;color:#fff;font-size:8px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mk-sel{background:#fff;border:1.5px solid #e2e8f0;border-radius:8px;padding:5px 9px;font-size:9.5px;color:#64748b;width:100%;display:flex;align-items:center;justify-content:space-between}
+.mk-sel .arrow{color:#94a3b8;font-size:8px}
+.mk-bottom-nav{display:flex;background:#fff;border-top:1px solid #e2e8f0;padding:5px 0 3px}
+.mk-nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:8px;color:#94a3b8}
+.mk-nav-item.active{color:#1d4ed8}
+.mk-nav-dot{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.mk-checkbox-row{display:flex;align-items:center;gap:5px;font-size:9px;color:#64748b;margin:4px 0}
+.mk-checkbox{width:12px;height:12px;border-radius:3px;background:#dbeafe;border:1.5px solid #2563eb;display:flex;align-items:center;justify-content:center;font-size:7px;color:#1d4ed8;flex-shrink:0}
+.mk-streak-row{display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid #f1f5f9}
+.mk-streak-rank{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff;flex-shrink:0}
+.mk-err{font-size:9px;color:#dc2626;margin:3px 0}
+@media print{.mockup{box-shadow:0 0 0 1px #e2e8f0;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 </style>
 </head>
 <body>
@@ -389,6 +479,56 @@ h3.sub::before{content:'';display:block;width:4px;height:18px;background:var(--b
     </div>
   </div>
 
+  <!-- mockup: login -->
+  <div class="mockup-row">
+    <div class="mockup-col">
+      <div class="mockup">
+        <div class="mk-topbar" style="justify-content:center;padding:10px 12px 20px">
+          <div style="text-align:center">
+            <div style="font-size:22px;margin-bottom:4px">📋</div>
+            <div class="mk-topbar-title" style="font-size:13px">ระบบเช็คชื่อกิจกรรม</div>
+          </div>
+        </div>
+        <div class="mk-body" style="background:#eff6ff;padding:12px 14px">
+          <div class="mk-card">
+            <div class="mk-label">อีเมล</div>
+            <div class="mk-input focus">teacher@school.ac.th</div>
+            <div class="mk-label" style="margin-top:5px">รหัสผ่าน</div>
+            <div class="mk-input">••••••••</div>
+            <div class="mk-checkbox-row">
+              <div class="mk-checkbox">✓</div>
+              จำเข้าสู่ระบบ
+            </div>
+            <div class="mk-btn">เข้าสู่ระบบ</div>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-caption">หน้าเข้าสู่ระบบ</div>
+    </div>
+    <div class="mockup-col">
+      <div class="mockup">
+        <div class="mk-topbar" style="justify-content:center;padding:10px 12px 20px">
+          <div style="text-align:center">
+            <div style="font-size:22px;margin-bottom:4px">📋</div>
+            <div class="mk-topbar-title" style="font-size:13px">ระบบเช็คชื่อกิจกรรม</div>
+          </div>
+        </div>
+        <div class="mk-body" style="background:#eff6ff;padding:12px 14px">
+          <div class="mk-card">
+            <div class="mk-label">อีเมล</div>
+            <div class="mk-input focus">teacher@school.ac.th</div>
+            <div class="mk-label" style="margin-top:5px">รหัสผ่าน</div>
+            <div class="mk-input focus">••••••••</div>
+            <div class="mk-err">⚠ อีเมลหรือรหัสผ่านไม่ถูกต้อง</div>
+            <div class="mk-checkbox-row"><div class="mk-checkbox" style="background:#f1f5f9;border-color:#e2e8f0;color:#94a3b8"></div>จำเข้าสู่ระบบ</div>
+            <div class="mk-btn">เข้าสู่ระบบ</div>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-caption">กรณีรหัสผ่านผิด</div>
+    </div>
+  </div>
+
   <div class="feature-box green">
     <div class="feature-box-title">💡 เคล็ดลับ: จำเข้าสู่ระบบ</div>
     <div class="feature-box-body">เมื่อติ๊ก "จำเข้าสู่ระบบ" ข้อมูลจะถูกบันทึกไว้ในเบราว์เซอร์ ครั้งถัดไปที่เปิดระบบจะล็อกอินให้อัตโนมัติทันที หากต้องการออกจากระบบ สามารถเคลียร์ข้อมูลเบราว์เซอร์ได้</div>
@@ -423,6 +563,60 @@ h3.sub::before{content:'';display:block;width:4px;height:18px;background:var(--b
       <tr><td><strong>วันที่และโรงเรียน</strong></td><td>แสดงชื่อโรงเรียนและวันที่ปัจจุบันในรูปแบบไทย</td></tr>
     </tbody>
   </table>
+
+  <!-- mockup: home -->
+  <div class="mockup-row">
+    <div class="mockup-col">
+      <div class="mockup">
+        <div class="mk-topbar">
+          <div>
+            <div class="mk-topbar-title">หน้าหลัก</div>
+            <div class="mk-topbar-sub">โรงเรียนสาธิต 21 มิ.ย. 2568</div>
+          </div>
+          <div class="mk-topbar-time">09:15</div>
+        </div>
+        <div class="mk-body">
+          <div class="mk-card">
+            <div class="mk-row between">
+              <div>
+                <div class="mk-card-title">🚩 เข้าแถวหน้าเสาธง</div>
+                <div class="mk-card-sub">รอบเช้า</div>
+              </div>
+              <div class="mk-btn small" style="background:#1d4ed8;color:#fff">เช็คชื่อ</div>
+            </div>
+            <div class="mk-stat-row">
+              <div class="mk-stat"><div class="mk-stat-num green">142</div><div class="mk-stat-lbl">มา</div></div>
+              <div class="mk-stat"><div class="mk-stat-num yellow">5</div><div class="mk-stat-lbl">ลา</div></div>
+              <div class="mk-stat"><div class="mk-stat-num red">8</div><div class="mk-stat-lbl">ขาด</div></div>
+              <div class="mk-stat"><div class="mk-stat-num" style="color:#94a3b8">45</div><div class="mk-stat-lbl">ยังไม่เช็ค</div></div>
+            </div>
+          </div>
+          <div class="mk-card">
+            <div class="mk-row between">
+              <div>
+                <div class="mk-card-title">🎵 ชุมนุมดนตรี</div>
+                <div class="mk-card-sub">รอบเช้า</div>
+              </div>
+              <div class="mk-btn small" style="background:#7c3aed;color:#fff">เช็คชื่อ</div>
+            </div>
+            <div class="mk-stat-row">
+              <div class="mk-stat"><div class="mk-stat-num green">28</div><div class="mk-stat-lbl">มา</div></div>
+              <div class="mk-stat"><div class="mk-stat-num yellow">2</div><div class="mk-stat-lbl">ลา</div></div>
+              <div class="mk-stat"><div class="mk-stat-num red">0</div><div class="mk-stat-lbl">ขาด</div></div>
+              <div class="mk-stat"><div class="mk-stat-num" style="color:#94a3b8">0</div><div class="mk-stat-lbl">ยังไม่เช็ค</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="mk-bottom-nav">
+          <div class="mk-nav-item active">🏠<span>หน้าหลัก</span></div>
+          <div class="mk-nav-item">📋<span>เช็คชื่อ</span></div>
+          <div class="mk-nav-item">📄<span>รายงาน</span></div>
+          <div class="mk-nav-item">👔<span>แต่งกาย</span></div>
+        </div>
+      </div>
+      <div class="mockup-caption">หน้าหลัก — สรุปวันนี้</div>
+    </div>
+  </div>
 </div>
 
 <div class="divider"></div>
@@ -505,6 +699,71 @@ h3.sub::before{content:'';display:block;width:4px;height:18px;background:var(--b
     </tbody>
   </table>
 
+  <!-- mockup: check-in -->
+  <div class="mockup-row">
+    <div class="mockup-col">
+      <div class="mockup">
+        <div class="mk-topbar">
+          <div class="mk-topbar-title">เช็คชื่อ</div>
+        </div>
+        <div class="mk-body">
+          <div class="mk-card">
+            <div class="mk-label">กิจกรรม</div>
+            <div class="mk-sel">🚩 เข้าแถวหน้าเสาธง <span class="arrow">▾</span></div>
+            <div class="mk-row" style="gap:6px;margin-top:5px">
+              <div style="flex:1">
+                <div class="mk-label">วันที่</div>
+                <div class="mk-sel">21 มิ.ย. 2568 <span class="arrow">▾</span></div>
+              </div>
+              <div style="flex:1">
+                <div class="mk-label">รอบ</div>
+                <div class="mk-sel">เช้า <span class="arrow">▾</span></div>
+              </div>
+            </div>
+            <div style="margin-top:5px">
+              <div class="mk-label">ชั้นเรียน</div>
+              <div class="mk-sel">ม.3/1 <span class="arrow">▾</span></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:5px">
+            <div class="mk-btn" style="flex:2;font-size:9px;padding:5px">✓ มาทั้งหมด</div>
+            <div class="mk-btn gray" style="flex:1;font-size:9px;padding:5px">ล้างค่า</div>
+          </div>
+          <div class="mk-card" style="padding:6px 9px">
+            <div class="mk-stu-row">
+              <div class="mk-stu-num">1</div>
+              <div style="flex:1"><div class="mk-stu-name">เด็กชายสมชาย ดีมาก</div><div class="mk-stu-meta">12345 · ม.3/1</div></div>
+              <div class="mk-ck-btns">
+                <div class="mk-ck-btn present active">มา</div>
+                <div class="mk-ck-btn late">ลา</div>
+                <div class="mk-ck-btn absent">ขาด</div>
+              </div>
+            </div>
+            <div class="mk-stu-row">
+              <div class="mk-stu-num">2</div>
+              <div style="flex:1"><div class="mk-stu-name">เด็กหญิงสมหญิง ใจดี</div><div class="mk-stu-meta">12346 · ม.3/1</div></div>
+              <div class="mk-ck-btns">
+                <div class="mk-ck-btn present">มา</div>
+                <div class="mk-ck-btn late active">ลา</div>
+                <div class="mk-ck-btn absent">ขาด</div>
+              </div>
+            </div>
+            <div class="mk-stu-row">
+              <div class="mk-stu-num">3</div>
+              <div style="flex:1"><div class="mk-stu-name">เด็กชายพิชัย รักเรียน</div><div class="mk-stu-meta">12347 · ม.3/1</div></div>
+              <div class="mk-ck-btns">
+                <div class="mk-ck-btn present">มา</div>
+                <div class="mk-ck-btn late">ลา</div>
+                <div class="mk-ck-btn absent active">ขาด</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-caption">หน้าเช็คชื่อ</div>
+    </div>
+  </div>
+
   <div class="feature-box">
     <div class="feature-box-title">📡 บันทึกอัตโนมัติ</div>
     <div class="feature-box-body">ทุกครั้งที่กดปุ่มสถานะ ระบบจะบันทึกลง Cloud ทันที ไม่ต้องกลัวข้อมูลหาย แม้ปิดหน้าต่างกลางคัน</div>
@@ -539,6 +798,64 @@ h3.sub::before{content:'';display:block;width:4px;height:18px;background:var(--b
         <div class="step-title">พิมพ์หมายเหตุเพิ่มเติม (ไม่บังคับ)</div>
         <div class="step-desc">ช่องหมายเหตุจะปรากฏเมื่อเลือก ✗ สามารถพิมพ์รายละเอียดเพิ่มเติม ระบบบันทึกอัตโนมัติหลังพิมพ์ครบ 0.6 วินาที</div>
       </div>
+    </div>
+  </div>
+
+  <!-- mockup: uniform check -->
+  <div class="mockup-row">
+    <div class="mockup-col">
+      <div class="mockup">
+        <div class="mk-topbar"><div class="mk-topbar-title">เช็คชื่อ — ม.3/1</div></div>
+        <div class="mk-body">
+          <div class="mk-card" style="padding:7px 9px">
+            <div class="mk-stu-row" style="padding-bottom:7px">
+              <div class="mk-stu-num">1</div>
+              <div style="flex:1"><div class="mk-stu-name">เด็กชายสมชาย ดีมาก</div><div class="mk-stu-meta">12345</div></div>
+              <div class="mk-ck-btns">
+                <div class="mk-ck-btn present active">มา</div>
+                <div class="mk-ck-btn late">ลา</div>
+                <div class="mk-ck-btn absent">ขาด</div>
+              </div>
+            </div>
+            <div class="mk-unif-sec">
+              <div class="mk-unif-hd">
+                <div class="mk-unif-lbl">การแต่งกาย</div>
+                <div class="mk-unif-btns">
+                  <div class="mk-ub pass">✓ ผ่าน</div>
+                  <div class="mk-ub fail active">✗ ไม่ผ่าน</div>
+                </div>
+              </div>
+              <div class="mk-chips">
+                <div class="mk-chip">ผมยาว</div>
+                <div class="mk-chip off">ไม่สวมเนคไท</div>
+                <div class="mk-chip off">รองเท้าผิดระเบียบ</div>
+              </div>
+              <div class="mk-note-input">หมายเหตุเพิ่มเติม (ไม่บังคับ)</div>
+            </div>
+          </div>
+          <div class="mk-card" style="padding:7px 9px">
+            <div class="mk-stu-row" style="border:none;padding:0">
+              <div class="mk-stu-num">2</div>
+              <div style="flex:1"><div class="mk-stu-name">เด็กหญิงสมหญิง ใจดี</div><div class="mk-stu-meta">12346</div></div>
+              <div class="mk-ck-btns">
+                <div class="mk-ck-btn present active">มา</div>
+                <div class="mk-ck-btn late">ลา</div>
+                <div class="mk-ck-btn absent">ขาด</div>
+              </div>
+            </div>
+            <div class="mk-unif-sec" style="margin-top:5px">
+              <div class="mk-unif-hd">
+                <div class="mk-unif-lbl">การแต่งกาย</div>
+                <div class="mk-unif-btns">
+                  <div class="mk-ub pass active">✓ ผ่าน</div>
+                  <div class="mk-ub fail">✗ ไม่ผ่าน</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-caption">ตรวจแต่งกายพร้อมเช็คชื่อ</div>
     </div>
   </div>
 
@@ -608,6 +925,76 @@ h3.sub::before{content:'';display:block;width:4px;height:18px;background:var(--b
     </tbody>
   </table>
 
+  <!-- mockup: report tabs -->
+  <div class="mockup-row">
+    <div class="mockup-col">
+      <div class="mockup wide">
+        <div class="mk-topbar"><div class="mk-topbar-title">รายงาน</div></div>
+        <div style="background:#fff;overflow-x:auto">
+          <div class="mk-tab-bar" style="min-width:500px">
+            <div class="mk-tab active">รายกิจกรรม</div>
+            <div class="mk-tab">รายนักเรียน</div>
+            <div class="mk-tab">ขาดต่อเนื่อง</div>
+            <div class="mk-tab">ทั้งห้อง</div>
+            <div class="mk-tab">ทั้งโรงเรียน</div>
+            <div class="mk-tab">ร้อยละ</div>
+          </div>
+        </div>
+        <div class="mk-body">
+          <div class="mk-card">
+            <div class="mk-row" style="gap:6px;margin-bottom:6px">
+              <div style="flex:1"><div class="mk-label">กิจกรรม</div><div class="mk-sel">เข้าแถว... <span class="arrow">▾</span></div></div>
+              <div style="flex:1"><div class="mk-label">วันที่</div><div class="mk-sel">21 มิ.ย. <span class="arrow">▾</span></div></div>
+              <div style="flex:1"><div class="mk-label">รอบ</div><div class="mk-sel">เช้า <span class="arrow">▾</span></div></div>
+            </div>
+            <table class="mk-tbl">
+              <thead><tr><th>ห้อง</th><th>มา</th><th>ลา</th><th>ขาด</th><th>รวม</th></tr></thead>
+              <tbody>
+                <tr><td>ม.3/1</td><td style="color:#059669;font-weight:700">38</td><td style="color:#d97706">2</td><td style="color:#dc2626">1</td><td>41</td></tr>
+                <tr><td>ม.3/2</td><td style="color:#059669;font-weight:700">40</td><td style="color:#d97706">0</td><td style="color:#dc2626">2</td><td>42</td></tr>
+                <tr><td>ม.4/1</td><td style="color:#059669;font-weight:700">35</td><td style="color:#d97706">3</td><td style="color:#dc2626">0</td><td>38</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-caption">รายงาน — แท็บรายกิจกรรม</div>
+    </div>
+    <div class="mockup-col">
+      <div class="mockup">
+        <div class="mk-topbar"><div class="mk-topbar-title">รายงาน — ขาดต่อเนื่อง</div></div>
+        <div class="mk-tab-bar">
+          <div class="mk-tab">รายกิจกรรม</div>
+          <div class="mk-tab">รายนักเรียน</div>
+          <div class="mk-tab active" style="color:#7c3aed;border-color:#7c3aed">ขาดต่อเนื่อง</div>
+          <div class="mk-tab">ทั้งห้อง</div>
+        </div>
+        <div class="mk-body">
+          <div class="mk-card">
+            <div class="mk-label">กิจกรรม</div>
+            <div class="mk-sel" style="margin-bottom:5px">เข้าแถวหน้าเสาธง <span class="arrow">▾</span></div>
+            <div class="mk-label">ขาดติดต่อกันอย่างน้อย</div>
+            <div class="mk-sel">3 วัน <span class="arrow">▾</span></div>
+          </div>
+          <div class="mk-card" style="padding:7px 9px">
+            <div style="font-size:9px;font-weight:700;color:#7c3aed;margin-bottom:5px">พบ 3 คน ที่ขาดติดต่อกัน ≥ 3 วัน</div>
+            <div class="mk-streak-row">
+              <div class="mk-streak-rank" style="background:#dc2626">1</div>
+              <div style="flex:1"><div class="mk-stu-name">เด็กชายพิชัย รักเรียน</div><div class="mk-stu-meta">ม.3/1 · 15–19 มิ.ย.</div></div>
+              <div style="font-size:9px;font-weight:800;color:#dc2626">5 วัน</div>
+            </div>
+            <div class="mk-streak-row">
+              <div class="mk-streak-rank" style="background:#f59e0b">2</div>
+              <div style="flex:1"><div class="mk-stu-name">เด็กหญิงนวล ใสสะอาด</div><div class="mk-stu-meta">ม.4/2 · 17–19 มิ.ย.</div></div>
+              <div style="font-size:9px;font-weight:800;color:#f59e0b">3 วัน</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-caption">รายงานขาดต่อเนื่อง</div>
+    </div>
+  </div>
+
   <h3 class="sub">รายงานขาดต่อเนื่อง (พิเศษ)</h3>
   <div class="feature-box purple">
     <div class="feature-box-title">🔔 ระบบแจ้งเตือนนักเรียนเสี่ยง</div>
@@ -670,6 +1057,71 @@ h3.sub::before{content:'';display:block;width:4px;height:18px;background:var(--b
       </tr>
     </tbody>
   </table>
+
+  <!-- mockup: unif report -->
+  <div class="mockup-row">
+    <div class="mockup-col">
+      <div class="mockup">
+        <div class="mk-topbar"><div class="mk-topbar-title">แต่งกาย — ทั้งห้อง</div></div>
+        <div class="mk-tab-bar">
+          <div class="mk-tab">ทั้งโรงเรียน</div>
+          <div class="mk-tab active">ทั้งห้อง</div>
+          <div class="mk-tab">Top 10</div>
+        </div>
+        <div class="mk-body">
+          <div class="mk-card">
+            <div class="mk-row" style="gap:5px;margin-bottom:5px">
+              <div style="flex:1"><div class="mk-label">วันที่</div><div class="mk-sel">21 มิ.ย. <span class="arrow">▾</span></div></div>
+              <div style="flex:1"><div class="mk-label">ห้อง</div><div class="mk-sel">ม.3/1 <span class="arrow">▾</span></div></div>
+            </div>
+            <table class="mk-tbl">
+              <thead><tr><th>#</th><th>ชื่อ-สกุล</th><th>ผล</th><th>หมายเหตุ</th></tr></thead>
+              <tbody>
+                <tr><td>1</td><td>สมชาย ดีมาก</td><td><span class="mk-badge green">ผ่าน</span></td><td></td></tr>
+                <tr><td>2</td><td>สมหญิง ใจดี</td><td><span class="mk-badge red">ไม่ผ่าน</span></td><td style="font-size:8px;color:#64748b">ผมยาว</td></tr>
+                <tr><td>3</td><td>พิชัย รักเรียน</td><td><span class="mk-badge green">ผ่าน</span></td><td></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-caption">รายงานแต่งกาย — ทั้งห้อง</div>
+    </div>
+    <div class="mockup-col">
+      <div class="mockup">
+        <div class="mk-topbar"><div class="mk-topbar-title">แต่งกาย — Top 10</div></div>
+        <div class="mk-tab-bar">
+          <div class="mk-tab">ทั้งโรงเรียน</div>
+          <div class="mk-tab">ทั้งห้อง</div>
+          <div class="mk-tab active" style="color:#d97706;border-color:#d97706">Top 10</div>
+        </div>
+        <div class="mk-body">
+          <div class="mk-card">
+            <div style="font-size:9px;font-weight:700;color:#475569;margin-bottom:5px">ความผิดที่พบมากที่สุด</div>
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <div class="mk-row" style="gap:5px"><span style="font-size:14px">🥇</span><div style="flex:1;font-size:9px;font-weight:700">ผมยาว</div><div style="font-size:9px;color:#dc2626;font-weight:700">48 ครั้ง</div></div>
+              <div class="mk-row" style="gap:5px"><span style="font-size:14px">🥈</span><div style="flex:1;font-size:9px;font-weight:700">ไม่สวมเนคไท</div><div style="font-size:9px;color:#d97706;font-weight:700">32 ครั้ง</div></div>
+              <div class="mk-row" style="gap:5px"><span style="font-size:14px">🥉</span><div style="flex:1;font-size:9px;font-weight:700">รองเท้าผิดระเบียบ</div><div style="font-size:9px;color:#92400e;font-weight:700">18 ครั้ง</div></div>
+            </div>
+          </div>
+          <div class="mk-card" style="padding:7px 9px">
+            <div style="font-size:9px;font-weight:700;color:#475569;margin-bottom:4px">Top 10 นักเรียน</div>
+            <div class="mk-streak-row">
+              <div class="mk-streak-rank" style="background:#dc2626">1</div>
+              <div style="flex:1"><div class="mk-stu-name">พิชัย รักเรียน</div><div class="mk-stu-meta">ม.3/1</div></div>
+              <div style="font-size:9px;font-weight:800;color:#dc2626">9 วัน</div>
+            </div>
+            <div class="mk-streak-row">
+              <div class="mk-streak-rank" style="background:#f59e0b">2</div>
+              <div style="flex:1"><div class="mk-stu-name">สมชาย ดีน้อย</div><div class="mk-stu-meta">ม.4/2</div></div>
+              <div style="font-size:9px;font-weight:800;color:#f59e0b">7 วัน</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-caption">Top 10 ความผิดแต่งกาย</div>
+    </div>
+  </div>
 
   <h3 class="sub">Top 10 ความผิดและนักเรียน</h3>
   <div class="steps">
