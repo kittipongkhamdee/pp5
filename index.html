@@ -541,13 +541,11 @@ body{animation:pageFadeIn .25s ease}
       const img=document.getElementById('school-logo');
       const svg=document.getElementById('hero-svg');
       const wrap=document.getElementById('hero-icon-wrap');
-      img.onload=()=>{
-        img.style.display='block';
-        svg.style.display='none';
-        wrap.classList.add('has-logo');
-      };
-      img.onerror=()=>{};
+      img.onerror=()=>{img.style.display='none';svg.style.display='flex';wrap.classList.remove('has-logo')};
       img.src=val;
+      img.style.display='block';
+      svg.style.display='none';
+      wrap.classList.add('has-logo');
     }
   }catch(e){}
 })();
