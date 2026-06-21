@@ -106,8 +106,15 @@ main{flex:1;max-width:860px;margin:0 auto;padding:48px 20px 56px;width:100%}
 
 /* ── Label ── */
 .lbl{
-  font-size:11px;font-weight:700;color:var(--gray);letter-spacing:.8px;
-  text-transform:uppercase;margin-bottom:16px;
+  font-size:16px;font-weight:800;color:var(--dark);
+  margin-bottom:16px;
+  display:flex;align-items:center;gap:10px;
+}
+.lbl::before{
+  content:'';display:block;width:4px;height:18px;
+  border-radius:3px;
+  background:linear-gradient(180deg,#0071e3,#34a8f5);
+  flex-shrink:0;
 }
 
 /* ── System cards ── */
