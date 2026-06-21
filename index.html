@@ -212,6 +212,34 @@ footer{
 .footer-dev-label{font-size:11px;color:#6e6e73}
 .footer-dev-name{font-size:13px;font-weight:600;color:#a1a1aa;margin-top:1px}
 
+/* ── Greeting toast ── */
+@keyframes greetAnim{
+  0%  {opacity:0;transform:translate(-50%,-46%) scale(.88)}
+  14% {opacity:1;transform:translate(-50%,-50%) scale(1)}
+  72% {opacity:1;transform:translate(-50%,-50%) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-53%) scale(.95)}
+}
+.greeting-toast{
+  position:fixed;top:50%;left:50%;
+  z-index:9999;pointer-events:none;
+  background:rgba(255,255,255,.78);
+  backdrop-filter:blur(32px) saturate(200%);
+  -webkit-backdrop-filter:blur(32px) saturate(200%);
+  border:1px solid rgba(255,255,255,.7);
+  border-radius:24px;
+  padding:22px 34px 20px;
+  box-shadow:0 12px 48px rgba(0,0,0,.16),0 0 0 .5px rgba(0,0,0,.06);
+  text-align:center;min-width:240px;max-width:88vw;
+  animation:greetAnim 4s cubic-bezier(.22,1,.36,1) forwards;
+}
+.greeting-icon{
+  width:40px;height:40px;border-radius:12px;margin:0 auto 12px;
+  background:linear-gradient(145deg,#dbeafe,#bfdbfe);
+  display:flex;align-items:center;justify-content:center;
+}
+.greeting-msg{font-size:17px;font-weight:700;color:#1d1d1f;line-height:1.4}
+.greeting-sub{font-size:13px;color:#6e6e73;margin-top:5px;font-weight:400}
+
 /* ── Entrance animations ── */
 @keyframes fadeUp{
   from{opacity:0;transform:translateY(40px) scale(.96)}
@@ -231,6 +259,16 @@ footer{
 </style>
 </head>
 <body>
+
+<div class="greeting-toast" id="greeting-toast" style="display:none">
+  <div class="greeting-icon">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/><path d="M12 8v4l3 3"/>
+    </svg>
+  </div>
+  <div class="greeting-msg" id="greeting-msg">สวัสดีครับ!</div>
+  <div class="greeting-sub" id="greeting-sub"></div>
+</div>
 
 <!-- ── Hero ── -->
 <header class="hero">
@@ -430,6 +468,36 @@ footer{
 </footer>
 
 <script>
+/* ── Greeting ── */
+(function(){
+  const h=new Date().getHours();
+  const byTime=
+    h<5  ?{msg:'ดึกมากแล้วนะ',sub:'อย่าลืมพักด้วยล่ะ ทำงานหนักเกินไปแล้ว'} :
+    h<12 ?{msg:'อรุณสวัสดิ์ครับ',sub:'เริ่มวันใหม่กันเลย พร้อมหรือยัง?'} :
+    h<13 ?{msg:'ช่วงพักเที่ยงแล้ว',sub:'แวะมาดูระบบก่อนทานข้าวเลย'} :
+    h<17 ?{msg:'สวัสดีตอนบ่าย',sub:'บ่ายแล้ว ยังพลังงานเต็มอยู่ไหม?'} :
+    h<20 ?{msg:'ตกเย็นแล้วนะ',sub:'ขยันมาก ยังแวะมาใช้ระบบอยู่เลย'} :
+          {msg:'สวัสดีตอนค่ำ',sub:'ค่ำแล้ว แต่ยังทำงานอยู่เลย เก่งมาก!'};
+  const pool=[
+    byTime,
+    {msg:'ยินดีต้อนรับกลับมาครับ',sub:'ระบบพร้อมใช้งาน ครบทุกอย่างเลย'},
+    {msg:'มาแล้วๆ รอคุณอยู่เลย!',sub:'วันนี้จะเริ่มจากระบบไหนดี?'},
+    {msg:'พร้อมทำงานแล้วหรือยัง?',sub:'ระบบพร้อม · ข้อมูลครบ · เริ่มเลย!'},
+    {msg:'ขยันมากเลยนะ',sub:'แวะมาทุกวัน ระบบก็ดีใจด้วย'},
+    {msg:'สวัสดีครับ!',sub:'วันนี้เป็นวันที่ดี ลุยเลย!'},
+    {msg:'เข้ามาแล้ว ไปกันต่อเลย!',sub:'เลือกระบบที่ต้องการได้เลยครับ'},
+    {msg:'ระบบออนไลน์อยู่นะครับ',sub:'ข้อมูลอัพเดตล่าสุด พร้อมใช้งาน'},
+  ];
+  const pick=pool[Math.floor(Math.random()*pool.length)];
+  const el=document.getElementById('greeting-toast');
+  document.getElementById('greeting-msg').textContent=pick.msg;
+  document.getElementById('greeting-sub').textContent=pick.sub;
+  setTimeout(()=>{
+    el.style.display='block';
+    el.addEventListener('animationend',()=>el.remove(),{once:true});
+  },600);
+})();
+
 /* ── Date label ── */
 const M=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 const days=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
