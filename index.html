@@ -67,13 +67,19 @@ body{
   background:linear-gradient(145deg,#1a6fd4,#0d4fa8);
   box-shadow:0 0 0 1px rgba(255,255,255,.12),0 8px 40px rgba(0,113,227,.5),0 2px 8px rgba(0,0,0,.4);
   display:flex;align-items:center;justify-content:center;
-  position:relative;
+  position:relative;overflow:hidden;transition:background .3s;
+}
+.hero-icon-wrap.has-logo{
+  background:rgba(255,255,255,.92);
+  box-shadow:0 0 0 1px rgba(255,255,255,.3),0 8px 40px rgba(0,0,0,.3),0 2px 8px rgba(0,0,0,.3);
 }
 .hero-icon-wrap::after{
   content:'';position:absolute;inset:1px;border-radius:23px;
   background:linear-gradient(160deg,rgba(255,255,255,.18) 0%,transparent 60%);
   pointer-events:none;
 }
+#school-logo{width:70px;height:70px;object-fit:contain;display:none;position:relative;z-index:1}
+#hero-svg{transition:opacity .2s}
 
 
 h1{
@@ -312,8 +318,9 @@ body{animation:pageFadeIn .25s ease}
   <div class="hero-glow-c"></div>
   <div class="hero-inner">
 
-    <div class="hero-icon-wrap">
-      <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <div class="hero-icon-wrap" id="hero-icon-wrap">
+      <img id="school-logo" alt="โลโก้โรงเรียน">
+      <svg id="hero-svg" width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
         <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
         <polyline points="9 22 9 12 15 12 15 22"/>
       </svg>
@@ -518,6 +525,30 @@ body{animation:pageFadeIn .25s ease}
   </div>
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4"></script>
+<script>
+/* ── School logo from Supabase ── */
+(async()=>{
+  try{
+    const SB_URL='https://zwtulepvmlngcrbcrrki.supabase.co';
+    const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp3dHVsZXB2bWxuZ2NyYmNycmtpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNTc2NDcsImV4cCI6MjA5NTYzMzY0N30.9nhe0_NF3Fa-4FtmbE2AvQCtJdHS05RbkiyC8WvtvvA';
+    const client=supabase.createClient(SB_URL,SB_KEY);
+    const {data}=await client.from('config').select('value').eq('key','logo_url').maybeSingle();
+    if(data?.value){
+      const img=document.getElementById('school-logo');
+      const svg=document.getElementById('hero-svg');
+      const wrap=document.getElementById('hero-icon-wrap');
+      img.onload=()=>{
+        svg.style.display='none';
+        img.style.display='block';
+        wrap.classList.add('has-logo');
+      };
+      img.onerror=()=>{};
+      img.src=data.value;
+    }
+  }catch(e){}
+})();
+</script>
 <script>
 /* ── Greeting ── */
 (function(){
