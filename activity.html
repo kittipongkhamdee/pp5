@@ -222,6 +222,8 @@ html[data-theme="dark"] .ios-select,html[data-theme="dark"] .ios-input{backgroun
 .card-viol-wrap{margin-top:6px;display:flex;flex-wrap:wrap;gap:5px}
 .card-vchip{display:inline-flex;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--sep);background:#fff;color:var(--txt2);transition:all .12s;user-select:none}
 .card-vchip.on{background:#fef2f2;border-color:#fca5a5;color:var(--red)}
+.card-note-input{width:100%;margin-top:6px;padding:6px 9px;font-size:12px;font-family:inherit;border:1px solid var(--sep);border-radius:var(--radius-sm);background:#fff;color:var(--txt);resize:none;box-sizing:border-box;line-height:1.5;min-height:32px;overflow:hidden}
+.card-note-input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
 .stu-row{
   display:flex;align-items:center;gap:10px;padding:11px 20px;
   background:var(--card);border-bottom:1px solid var(--sep);transition:background .1s;
@@ -1484,6 +1486,8 @@ function _stuCardHtml(s,num,unifOn){
     const selViols=(uchk?.viols||[]).map(v=>v.id);
     const chips=viols.map(v=>`<div class="card-vchip${selViols.includes(v.id)?' on':''}" onclick="setCkUnifViol('${s.id}',${v.id},this)">${esc(v.name)}</div>`).join('');
     const violWrap=uchk?.status==='fail'?`<div class="card-viol-wrap">${chips}</div>`:'';
+    const curNote=uchk?.note||'';
+    const noteInput=uchk?.status==='fail'?`<textarea class="card-note-input" rows="1" placeholder="หมายเหตุเพิ่มเติม (ไม่บังคับ)" oninput="setCkUnifNote('${s.id}',this)">${esc(curNote)}</textarea>`:'';
     unifSec=`<div class="card-unif-sec">
       <div class="card-unif-hd">
         <span class="card-unif-lbl">การแต่งกาย</span>
@@ -1491,7 +1495,7 @@ function _stuCardHtml(s,num,unifOn){
           <button class="ub pass${uchk?.status==='pass'?' active':''}" onclick="setCkUnifStatus('${s.id}','pass')">✓</button>
           <button class="ub fail${uchk?.status==='fail'?' active':''}" onclick="setCkUnifStatus('${s.id}','fail')">✗</button>
         </div>
-      </div>${violWrap}
+      </div>${violWrap}${noteInput}
     </div>`;
   }
 
@@ -1661,7 +1665,7 @@ async function setCkUnifStatus(stuId,status){
   try{
     if(prev.id){
       await q(sb.from('uniform_checks').update({status,note:null,updated_at:ts}).eq('id',prev.id));
-      S.ckUnifChecks[key]={...prev,status,viols:status==='pass'?[]:(prev.viols||[])};
+      S.ckUnifChecks[key]={...prev,status,note:'',viols:status==='pass'?[]:(prev.viols||[])};
     }else{
       const rows=await q(sb.from('uniform_checks').insert({student_id:stuId,date:S.ckDate,status,updated_at:ts}).select('id'));
       S.ckUnifChecks[key]={id:rows[0].id,status,viols:[],note:''};
@@ -1689,6 +1693,22 @@ async function setCkUnifViol(stuId,violId,el){
     el.classList.remove('on');
     chk.viols=(chk.viols||[]).filter(v=>v.id!==vid);
   }
+}
+
+const _noteTimers={};
+async function setCkUnifNote(stuId,el){
+  const key=String(stuId);
+  const chk=S.ckUnifChecks[key];
+  if(!chk||chk.status!=='fail'||!chk.id)return;
+  const note=el.value;
+  // auto-resize
+  el.style.height='auto';el.style.height=el.scrollHeight+'px';
+  chk.note=note;
+  clearTimeout(_noteTimers[key]);
+  _noteTimers[key]=setTimeout(async()=>{
+    try{await q(sb.from('uniform_checks').update({note:note||null,updated_at:new Date().toISOString()}).eq('id',chk.id));}
+    catch(e){toast('บันทึกหมายเหตุไม่สำเร็จ','er');}
+  },600);
 }
 
 async function clearAllCk(){
