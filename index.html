@@ -240,6 +240,27 @@ footer{
 .greeting-msg{font-size:17px;font-weight:700;color:#1d1d1f;line-height:1.4}
 .greeting-sub{font-size:13px;color:#6e6e73;margin-top:5px;font-weight:400}
 
+/* ── Ripple ── */
+@keyframes rippleAnim{to{transform:scale(5);opacity:0}}
+.ripple-el{
+  position:absolute;border-radius:50%;
+  background:rgba(0,0,0,.09);
+  transform:scale(0);pointer-events:none;
+  animation:rippleAnim .55s ease-out forwards;
+}
+.sys-card.card-blue .ripple-el{background:rgba(0,113,227,.12)}
+.sys-card.card-green .ripple-el{background:rgba(26,158,55,.12)}
+
+/* ── Page exit ── */
+@keyframes pageExit{to{opacity:0;transform:scale(.93)}}
+body.page-exiting{
+  animation:pageExit .32s cubic-bezier(.4,0,1,1) forwards;
+  pointer-events:none;transform-origin:center center;
+}
+/* fade in on load */
+@keyframes pageFadeIn{from{opacity:0}to{opacity:1}}
+body{animation:pageFadeIn .25s ease}
+
 /* ── Entrance animations ── */
 @keyframes fadeUp{
   from{opacity:0;transform:translateY(40px) scale(.96)}
@@ -542,6 +563,26 @@ const io=new IntersectionObserver(entries=>{
   });
 },{threshold:0.08});
 document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+/* ── Ripple + zoom-out exit ── */
+document.querySelectorAll('.sys-card').forEach(card=>{
+  card.addEventListener('click',function(e){
+    e.preventDefault();
+    const href=this.getAttribute('href');
+    // ripple
+    const rect=this.getBoundingClientRect();
+    const size=Math.max(rect.width,rect.height);
+    const r=document.createElement('span');
+    r.className='ripple-el';
+    r.style.cssText=`width:${size}px;height:${size}px;left:${e.clientX-rect.left-size/2}px;top:${e.clientY-rect.top-size/2}px`;
+    this.appendChild(r);
+    // page zoom-out then navigate
+    setTimeout(()=>{
+      document.body.classList.add('page-exiting');
+      setTimeout(()=>{window.location.href=href},320);
+    },120);
+  });
+});
 </script>
 </body>
 </html>
