@@ -536,6 +536,9 @@ body{animation:pageFadeIn .25s ease}
       {headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}}
     );
     const rows=await res.json();
+    /* debug: ดู keys ทั้งหมด */
+    const allRes=await fetch(`${SB_URL}/rest/v1/config?select=key`,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
+    const allRows=await allRes.json();
     const val=rows?.[0]?.value;
     function _dbg(msg){
       const d=document.createElement('div');
@@ -554,7 +557,7 @@ body{animation:pageFadeIn .25s ease}
       svg.style.display='none';
       wrap.classList.add('has-logo');
     }else{
-      _dbg('✗ ไม่พบ logo_url ใน config (rows='+JSON.stringify(rows).slice(0,80)+')');
+      _dbg('keys ใน config: '+JSON.stringify(allRows.map(r=>r.key)));
     }
   }catch(e){
     const d=document.createElement('div');
