@@ -526,44 +526,21 @@ body{animation:pageFadeIn .25s ease}
 </footer>
 
 <script>
-/* ── School logo from Supabase REST ── */
-(async()=>{
+/* ── School logo from localStorage (saved by ปพ.5 after login) ── */
+(()=>{
   try{
-    const SB_URL='https://zwtulepvmlngcrbcrrki.supabase.co';
-    const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp3dHVsZXB2bWxuZ2NyYmNycmtpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNTc2NDcsImV4cCI6MjA5NTYzMzY0N30.9nhe0_NF3Fa-4FtmbE2AvQCtJdHS05RbkiyC8WvtvvA';
-    const res=await fetch(
-      `${SB_URL}/rest/v1/config?key=eq.logo_url&select=value&limit=1`,
-      {headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}}
-    );
-    const rows=await res.json();
-    /* debug: ดู keys ทั้งหมด */
-    const allRes=await fetch(`${SB_URL}/rest/v1/config?select=key`,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
-    const allRows=await allRes.json();
-    const val=rows?.[0]?.value;
-    function _dbg(msg){
-      const d=document.createElement('div');
-      d.style.cssText='position:fixed;bottom:80px;left:16px;right:16px;background:#1d1d1f;color:#fff;font-size:12px;padding:10px 14px;border-radius:12px;z-index:99999;word-break:break-all;max-height:120px;overflow:auto';
-      d.textContent=msg;document.body.appendChild(d);
-      setTimeout(()=>d.remove(),10000);
-    }
+    const val=localStorage.getItem('school_logo_url');
     if(val){
-      _dbg('✓ พบโลโก้ ความยาว '+val.length+' ตัวอักษร เริ่มต้น: '+val.slice(0,40));
       const img=document.getElementById('school-logo');
       const svg=document.getElementById('hero-svg');
       const wrap=document.getElementById('hero-icon-wrap');
-      img.onerror=()=>{_dbg('✗ โหลดภาพไม่ได้')};
+      img.onerror=()=>{img.style.display='none';svg.style.display='flex';wrap.classList.remove('has-logo');localStorage.removeItem('school_logo_url')};
       img.src=val;
       img.style.display='block';
       svg.style.display='none';
       wrap.classList.add('has-logo');
-    }else{
-      _dbg('keys ใน config: '+JSON.stringify(allRows.map(r=>r.key)));
     }
-  }catch(e){
-    const d=document.createElement('div');
-    d.style.cssText='position:fixed;bottom:80px;left:16px;right:16px;background:#dc2626;color:#fff;font-size:12px;padding:10px 14px;border-radius:12px;z-index:99999';
-    d.textContent='✗ Error: '+e.message;document.body.appendChild(d);
-  }
+  }catch(e){}
 })();
 </script>
 <script>

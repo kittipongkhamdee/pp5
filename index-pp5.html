@@ -6245,6 +6245,10 @@ function updateLogoDisplay(url){
   }
   const prev = document.getElementById('logo-preview');
   if(prev){ prev.src = src; prev.style.opacity = '1'; }
+  try{
+    if(url) localStorage.setItem('school_logo_url', url);
+    else localStorage.removeItem('school_logo_url');
+  }catch(e){}
 }
 
 async function uploadLogo(input){
