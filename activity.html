@@ -136,24 +136,19 @@ html[data-theme="dark"] .ios-select,html[data-theme="dark"] .ios-input{backgroun
 /* ── Stats ── */
 .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:8px 20px;background:rgba(255,255,255,0.7);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.5)}
 .stats-grid.has-unif{grid-template-columns:repeat(5,1fr)}
-.stat-box{text-align:center;padding:8px 4px 7px;border-radius:12px;border:1.5px solid transparent}
+.stat-box{text-align:center;padding:6px 4px;border-radius:10px;border:1px solid transparent}
 .stat-box.s-all{background:#EFF6FF;border-color:#BFDBFE}
 .stat-box.s-present{background:#ECFDF5;border-color:#A7F3D0}
 .stat-box.s-late{background:#FFFBEB;border-color:#FDE68A}
 .stat-box.s-absent{background:#FEF2F2;border-color:#FECACA}
 .stat-box.s-red{background:#FFF1F2;border-color:#FECDD3}
-.stat-num{font-size:22px;font-weight:800;line-height:1;-webkit-background-clip:text;background-clip:text}
-.stat-lbl{font-size:10.5px;font-weight:700;margin-top:3px;letter-spacing:.2px}
-.stat-box.s-all .stat-num{background:linear-gradient(135deg,#1d4ed8,#3b82f6);-webkit-text-fill-color:transparent}
-.stat-box.s-all .stat-lbl{color:#3B82F6}
-.stat-num.green{background:linear-gradient(135deg,#059669,#34d399);-webkit-text-fill-color:transparent}
-.stat-box.s-present .stat-lbl{color:#059669}
-.stat-num.orange{background:linear-gradient(135deg,#b45309,#f59e0b);-webkit-text-fill-color:transparent}
-.stat-box.s-late .stat-lbl{color:#D97706}
-.stat-num.red{background:linear-gradient(135deg,#b91c1c,#f87171);-webkit-text-fill-color:transparent}
-.stat-box.s-absent .stat-lbl{color:#DC2626}
-.stat-box.s-red .stat-num{background:linear-gradient(135deg,#9f1239,#fb7185);-webkit-text-fill-color:transparent}
-.stat-box.s-red .stat-lbl{color:#E11D48}
+.stat-num{font-size:19px;font-weight:800;line-height:1}
+.stat-lbl{font-size:11px;font-weight:600;margin-top:2px}
+.stat-box.s-all .stat-num{color:#1D4ED8}.stat-box.s-all .stat-lbl{color:#3B82F6}
+.stat-num.green{color:#059669}.stat-box.s-present .stat-lbl{color:#059669}
+.stat-num.orange{color:#D97706}.stat-box.s-late .stat-lbl{color:#D97706}
+.stat-num.red{color:#DC2626}.stat-box.s-absent .stat-lbl{color:#DC2626}
+.stat-box.s-red .stat-num{color:#E11D48}.stat-box.s-red .stat-lbl{color:#E11D48}
 
 /* ── Selectors / Inputs ── */
 .ios-select,.ios-input{
