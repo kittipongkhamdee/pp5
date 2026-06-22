@@ -1689,13 +1689,6 @@ async function checkAll(status){
     if(S.ckDate===todayStr())S.homeCache=null;
     S.rptActCacheKey=null;S.rptSchoolCacheKey=null;S.rptClassCacheKey=null;
 
-    if(status==='present'&&_unifCheckActive()){
-      const ts=new Date().toISOString();
-      const unifRows=targets.map(s=>({student_id:s.id,date:S.ckDate,status:'pass',updated_at:ts}));
-      const unifResult=await q(sb.from('uniform_checks').upsert(unifRows,{onConflict:'student_id,date'}).select('id,student_id'));
-      unifResult.forEach(r=>{S.ckUnifChecks[String(r.student_id)]={id:r.id,status:'pass',viols:[],note:''}});
-    }
-
     renderCkList();updateCkStats();
     toast(`✓ เช็ค${status==='present'?'มา':'ขาด'} ${label} ${targets.length} คน`);
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er')}
