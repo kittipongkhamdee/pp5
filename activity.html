@@ -463,6 +463,18 @@ html[data-theme="dark"] .ios-select,html[data-theme="dark"] .ios-input{backgroun
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 #toast.er{background:rgba(220,38,38,0.85);border-color:rgba(255,120,120,0.2)}
 
+/* ── iOS Confirm Sheet ── */
+#confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;opacity:0;transition:opacity .25s;pointer-events:none}
+#confirm-overlay.show{opacity:1;pointer-events:auto}
+#confirm-sheet{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-radius:20px 20px 0 0;z-index:9001;padding:0 16px calc(env(safe-area-inset-bottom,0px) + 12px);transform:translateY(110%);transition:transform .32s cubic-bezier(.32,1,.23,1);max-width:480px;margin:0 auto}
+#confirm-sheet.show{transform:translateY(0)}
+.confirm-handle{width:36px;height:4px;background:var(--sep);border-radius:2px;margin:12px auto 20px}
+.confirm-title{font-size:17px;font-weight:700;text-align:center;margin-bottom:6px;color:var(--txt1)}
+.confirm-sub{font-size:14px;color:var(--txt2);text-align:center;margin-bottom:22px}
+.confirm-btn{display:block;width:100%;padding:15px;border:none;border-radius:14px;font-size:16px;font-weight:600;font-family:'Sarabun',sans-serif;cursor:pointer;margin-bottom:10px;transition:opacity .12s;letter-spacing:.2px}
+.confirm-btn:active{opacity:.7}
+.confirm-btn.cancel{background:var(--card2);color:var(--txt1);margin-bottom:4px}
+
 /* ── Loader ── */
 #loader{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:200;display:none;align-items:center;justify-content:center}
 .spinner{width:44px;height:44px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
@@ -780,9 +792,9 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
       <div id="ck-actions">
         <div id="ck-btn-row">
           <div id="ck-btn-group">
-            <button class="btn btn-green btn-sm" onclick="checkAll('present')">มาทั้งหมด</button>
-            <button class="btn btn-red btn-sm" onclick="checkAll('absent')">ขาดทั้งหมด</button>
-            <button class="btn btn-teal btn-sm" id="btn-unif-pass-all" style="display:none" onclick="unifPassAll()">ผ่านทั้งหมด</button>
+            <button class="btn btn-green btn-sm" onclick="_confirmCheckAll('present')">มาทั้งหมด</button>
+            <button class="btn btn-red btn-sm" onclick="_confirmCheckAll('absent')">ขาดทั้งหมด</button>
+            <button class="btn btn-teal btn-sm" id="btn-unif-pass-all" style="display:none" onclick="_confirmUnifPassAll()">ผ่านทั้งหมด</button>
             <button class="btn btn-gray btn-sm" onclick="clearAllCk()">ล้างค่า</button>
           </div>
         </div>
@@ -990,6 +1002,14 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
   </div>
 </div>
 
+<div id="confirm-overlay" onclick="_hideConfirm()"></div>
+<div id="confirm-sheet">
+  <div class="confirm-handle"></div>
+  <div class="confirm-title" id="confirm-title"></div>
+  <div class="confirm-sub" id="confirm-sub"></div>
+  <button class="confirm-btn" id="confirm-ok" onclick="_doConfirm()"></button>
+  <button class="confirm-btn cancel" onclick="_hideConfirm()">ยกเลิก</button>
+</div>
 <div id="toast" class="toast"></div>
 <div id="loader" style="position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:200;display:none;align-items:center;justify-content:center">
   <div class="spinner"></div>
@@ -1675,6 +1695,51 @@ function _updateStuRow(stuId,status){
   if(status==='present'&&unifOn){
     const el=$('stu-'+stuId);if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'});
   }
+}
+
+// ── iOS-style confirm sheet ──
+let _confirmFn=null;
+function _showConfirm(title,sub,btnLabel,btnColor,fn){
+  $('confirm-title').textContent=title;
+  $('confirm-sub').textContent=sub;
+  const ok=$('confirm-ok');
+  ok.textContent=btnLabel;ok.style.background=btnColor;ok.style.color='#fff';
+  _confirmFn=fn;
+  $('confirm-overlay').classList.add('show');
+  $('confirm-sheet').classList.add('show');
+}
+function _hideConfirm(){
+  $('confirm-overlay').classList.remove('show');
+  $('confirm-sheet').classList.remove('show');
+  _confirmFn=null;
+}
+function _doConfirm(){_hideConfirm();if(_confirmFn)_confirmFn()}
+function _confirmCheckAll(status){
+  if(!S.ckActivityId){toast('เลือกกิจกรรมก่อน','er');return}
+  const targets=_filteredStudents();
+  if(!targets.length){toast('ไม่มีนักเรียนในห้องที่เลือก','er');return}
+  const label=S.ckFilter?`ห้อง ${classLabel(...S.ckFilter.split('_'))}`:'ทุกห้อง';
+  const isCome=status==='present';
+  _showConfirm(
+    isCome?'เช็คมาทั้งหมด?':'เช็คขาดทั้งหมด?',
+    `${label} · ${targets.length} คน`,
+    isCome?'มาทั้งหมด':'ขาดทั้งหมด',
+    isCome?'#10b981':'#ef4444',
+    ()=>checkAll(status)
+  );
+}
+function _confirmUnifPassAll(){
+  if(!_unifCheckActive()){toast('ไม่ได้เปิดตรวจการแต่งกาย','er');return}
+  const targets=_filteredStudents();
+  if(!targets.length){toast('ไม่มีนักเรียนในห้องที่เลือก','er');return}
+  const label=S.ckFilter?`ห้อง ${classLabel(...S.ckFilter.split('_'))}`:'ทุกห้อง';
+  _showConfirm(
+    'แต่งกายผ่านทั้งหมด?',
+    `${label} · ${targets.length} คน`,
+    'ผ่านทั้งหมด',
+    '#0d9488',
+    ()=>unifPassAll()
+  );
 }
 
 async function checkAll(status){
