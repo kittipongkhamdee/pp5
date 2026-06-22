@@ -463,6 +463,24 @@ html[data-theme="dark"] .ios-select,html[data-theme="dark"] .ios-input{backgroun
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 #toast.er{background:rgba(220,38,38,0.85);border-color:rgba(255,120,120,0.2)}
 
+/* ── Already-checked Warning Box ── */
+#warn-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:9100;opacity:0;transition:opacity .22s;pointer-events:none}
+#warn-overlay.show{opacity:1;pointer-events:auto}
+#warn-box{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.86);z-index:9101;
+  background:rgba(255,255,255,.85);-webkit-backdrop-filter:blur(32px) saturate(200%);backdrop-filter:blur(32px) saturate(200%);
+  border:1px solid rgba(255,255,255,.7);border-radius:24px;padding:28px 32px 24px;
+  box-shadow:0 12px 48px rgba(0,0,0,.18),0 0 0 .5px rgba(0,0,0,.06);
+  text-align:center;min-width:260px;max-width:88vw;width:320px;
+  opacity:0;transition:opacity .25s,transform .3s cubic-bezier(.22,1,.36,1);pointer-events:none}
+#warn-box.show{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto}
+html[data-theme="dark"] #warn-box{background:rgba(28,35,50,.88)}
+@media(prefers-color-scheme:dark){html:not([data-theme="light"]) #warn-box{background:rgba(28,35,50,.88)}}
+.warn-icon{width:48px;height:48px;border-radius:14px;margin:0 auto 14px;background:linear-gradient(145deg,#fef3c7,#fde68a);display:flex;align-items:center;justify-content:center}
+.warn-title{font-size:17px;font-weight:700;color:var(--txt);margin-bottom:7px;line-height:1.3}
+.warn-sub{font-size:13px;color:var(--txt2);margin-bottom:22px;line-height:1.6;white-space:pre-line}
+.warn-dismiss{display:block;width:100%;padding:13px;border:none;border-radius:14px;font-size:15px;font-weight:600;font-family:var(--font);cursor:pointer;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;transition:opacity .12s}
+.warn-dismiss:active{opacity:.75}
+
 /* ── iOS Confirm Sheet ── */
 #confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:9000;opacity:0;transition:opacity .25s;pointer-events:none}
 #confirm-overlay.show{opacity:1;pointer-events:auto}
@@ -1004,6 +1022,18 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
   </div>
 </div>
 
+<div id="warn-overlay" onclick="_hideWarn()"></div>
+<div id="warn-box">
+  <div class="warn-icon">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+      <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+    </svg>
+  </div>
+  <div class="warn-title" id="warn-title"></div>
+  <div class="warn-sub" id="warn-sub"></div>
+  <button class="warn-dismiss" onclick="_hideWarn()">รับทราบ</button>
+</div>
 <div id="confirm-overlay" onclick="_hideConfirm()"></div>
 <div id="confirm-sheet">
   <div class="confirm-handle"></div>
@@ -1523,7 +1553,23 @@ async function renderCheckin(){
   renderCkList();updateCkStats();
 }
 
-function setCkFilterFromDrop(){S.ckFilter=$('ck-class-sel').value;renderCkList();updateCkStats()}
+function setCkFilterFromDrop(){
+  S.ckFilter=$('ck-class-sel').value;
+  renderCkList();updateCkStats();
+  if(S.ckFilter&&S.ckActivityId){
+    const[gl,r]=S.ckFilter.split('_');
+    const classStus=S.students.filter(s=>String(s.grade_level)===gl&&String(s.room)===r);
+    const checkedCount=classStus.filter(s=>S.ckAttend[s.id]).length;
+    if(checkedCount>0){
+      const act=S.activities.find(a=>a.id==S.ckActivityId);
+      const sessLbl=S.ckSession==='morning'?'รอบเช้า':'รอบบ่าย';
+      _showWarn(
+        `เช็คชื่อแล้ว ${checkedCount} คน`,
+        `${classLabel(gl,r)}\n${esc(act?.name||'')} · ${sessLbl}\nวันที่ ${thDate(S.ckDate)}`
+      );
+    }
+  }
+}
 
 function renderCkList(){
   const unifOn=_unifCheckActive();
@@ -1697,6 +1743,18 @@ function _updateStuRow(stuId,status){
   if(status==='present'&&unifOn){
     const el=$('stu-'+stuId);if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'});
   }
+}
+
+// ── Already-checked warning box ──
+function _showWarn(title,sub){
+  $('warn-title').textContent=title;
+  $('warn-sub').textContent=sub;
+  $('warn-overlay').classList.add('show');
+  $('warn-box').classList.add('show');
+}
+function _hideWarn(){
+  $('warn-overlay').classList.remove('show');
+  $('warn-box').classList.remove('show');
 }
 
 // ── iOS-style confirm sheet ──
