@@ -1223,7 +1223,11 @@ function nav(page){
   $(`${page}-page`).classList.add('active');
   document.querySelectorAll(`[data-nav="${page}"]`).forEach(el=>el.classList.add('active'));
   if(page==='home')renderHome();
-  else if(page==='checkin')renderCheckin();
+  else if(page==='checkin'){
+    const _act=S.activities.find(a=>a.id==S.ckActivityId);
+    if(_act?.has_evening&&S.ckDate===todayStr())S.ckSession=_autoSession();
+    renderCheckin();
+  }
   else if(page==='report')renderReport();
   else if(page==='admin')renderAdmin();
   else if(page==='unifrpt')renderUnifReport();
