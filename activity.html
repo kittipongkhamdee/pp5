@@ -815,7 +815,7 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
             <button class="btn btn-green btn-sm" onclick="_confirmCheckAll('present')">มาทั้งหมด</button>
             <button class="btn btn-red btn-sm" onclick="_confirmCheckAll('absent')">ขาดทั้งหมด</button>
             <button class="btn btn-teal btn-sm" id="btn-unif-pass-all" style="display:none" onclick="_confirmUnifPassAll()">ผ่านทั้งหมด</button>
-            <button class="btn btn-gray btn-sm" onclick="clearAllCk()">ล้างค่า</button>
+            <button class="btn btn-gray btn-sm" onclick="_confirmClearAll()">ล้างค่า</button>
           </div>
         </div>
       </div>
@@ -1786,6 +1786,20 @@ function _confirmCheckAll(status){
     isCome?'มาทั้งหมด':'ขาดทั้งหมด',
     isCome?'#10b981':'#ef4444',
     ()=>checkAll(status)
+  );
+}
+function _confirmClearAll(){
+  if(!S.ckActivityId){toast('เลือกกิจกรรมก่อน','er');return}
+  if(!S.ckFilter){toast('เลือกชั้นเรียนก่อน','er');return}
+  const targets=_filteredStudents();
+  if(!targets.length){toast('ไม่มีนักเรียนในห้องที่เลือก','er');return}
+  const label=S.ckFilter?`ห้อง ${classLabel(...S.ckFilter.split('_'))}`:'ทุกห้อง';
+  _showConfirm(
+    'ล้างข้อมูลการเช็คชื่อ?',
+    `${label} · ${targets.length} คน`,
+    'ล้างค่า',
+    '#6b7280',
+    ()=>clearAllCk()
   );
 }
 function _confirmUnifPassAll(){
