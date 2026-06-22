@@ -209,11 +209,13 @@ html[data-theme="dark"] .ios-select,html[data-theme="dark"] .ios-input{backgroun
 .stu-card.collapsed .card-btns-wrap{display:none}
 .stu-card.collapsed .stu-card-hd{cursor:pointer}
 .stu-card.collapsed .stu-card-hd:active{background:var(--card2)}
-.stu-card-hd{display:flex;align-items:center;gap:10px;padding:11px 14px}
-.stu-card-num{font-size:12px;color:var(--txt3);width:20px;text-align:right;flex-shrink:0;font-weight:600}
+.stu-card-hd{display:flex;flex-direction:column;gap:6px;padding:10px 14px}
+.stu-card-top{display:flex;align-items:flex-start;gap:8px}
+.stu-card-num{font-size:12px;color:var(--txt3);width:16px;text-align:left;flex-shrink:0;font-weight:600;padding-top:2px}
 .stu-card-info{flex:1;min-width:0}
-.stu-card-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stu-card-name{font-size:14px;font-weight:600;word-break:break-word;white-space:normal}
 .stu-card-meta{font-size:11px;color:var(--txt3);margin-top:1px}
+.stu-card-bot{display:flex;align-items:center;gap:4px;padding-left:24px}
 .stu-card-badges{display:flex;gap:4px;align-items:center;flex-shrink:0}
 .stu-cbadge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;flex-shrink:0}
 .stu-cbadge.present{background:#d1fae5;color:#065f46}
@@ -221,9 +223,9 @@ html[data-theme="dark"] .ios-select,html[data-theme="dark"] .ios-input{backgroun
 .stu-cbadge.absent{background:#fee2e2;color:#991b1b}
 .stu-cbadge.unif-pass{background:#d1fae5;color:#065f46}
 .stu-cbadge.unif-fail{background:#fee2e2;color:#991b1b}
-.stu-chevron{color:var(--txt3);font-size:16px;transition:transform .2s;flex-shrink:0;line-height:1;margin-left:4px}
+.stu-chevron{color:var(--txt3);font-size:16px;transition:transform .2s;flex-shrink:0;line-height:1;margin-left:auto}
 .stu-card:not(.collapsed) .stu-chevron{transform:rotate(180deg)}
-.card-btns-wrap{padding:0 14px 12px;padding-left:44px;display:flex;flex-direction:column;gap:8px}
+.card-btns-wrap{padding:0 14px 12px;padding-left:38px;display:flex;flex-direction:column;gap:8px}
 .card-ck-btns{display:flex;gap:6px}
 .card-unif-sec{padding:8px 10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:var(--radius-sm)}
 .card-unif-hd{display:flex;align-items:center;gap:6px}
@@ -1551,12 +1553,15 @@ function _stuCardHtml(s,num,unifOn){
 
   return`<div class="stu-card${cardClass?' '+cardClass:''}${collapsed}" id="stu-${s.id}">
     <div class="stu-card-hd">
-      <span class="stu-card-num">${num}</span>
-      <div class="stu-card-info">
-        <div class="stu-card-name">${esc(s.student_name)}</div>
-        <div class="stu-card-meta">${esc(s.student_code)} · ${classLabel(s.grade_level,s.room)}</div>
+      <div class="stu-card-top">
+        <span class="stu-card-num">${num}</span>
+        <div class="stu-card-info">
+          <div class="stu-card-name">${esc(s.student_name)}</div>
+          <div class="stu-card-meta">${esc(s.student_code)} · ${classLabel(s.grade_level,s.room)}</div>
+        </div>
+        ${chevron}
       </div>
-      ${ckBtns}${unifBadge}${chevron}
+      <div class="stu-card-bot">${ckBtns}${unifBadge}</div>
     </div>
     ${hasUnif?`<div class="card-btns-wrap">${unifSec}</div>`:''}
   </div>`;
