@@ -1715,7 +1715,7 @@ function _hideConfirm(){
   $('confirm-sheet').classList.remove('show');
   _confirmFn=null;
 }
-function _doConfirm(){_hideConfirm();if(_confirmFn)_confirmFn()}
+function _doConfirm(){const fn=_confirmFn;_hideConfirm();if(fn)fn()}
 function _confirmCheckAll(status){
   if(!S.ckActivityId){toast('เลือกกิจกรรมก่อน','er');return}
   const targets=_filteredStudents();
