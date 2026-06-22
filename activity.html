@@ -2650,7 +2650,7 @@ function exportUnifSchoolPDF(){
   const failEntries=entries.filter(c=>S.students.some(s=>String(s.grade_level)===String(c.gl)&&String(s.room)===String(c.r)&&chkMap[s.id]?.status==='fail'));
   let failHtml='';
   if(failEntries.length){
-    failHtml=`<div style="page-break-before:always"><div class="sr-p2-title">รายชื่อนักเรียนที่แต่งกายไม่เรียบร้อย</div><div class="sr-p2-sub">${thDate(date)}</div>`;
+    failHtml=`<div style="margin-top:28px"><div class="sr-p2-title">รายชื่อนักเรียนที่แต่งกายไม่เรียบร้อย</div><div class="sr-p2-sub">${thDate(date)}</div>`;
     failEntries.forEach(c=>{
       const fs=S.students.filter(s=>String(s.grade_level)===String(c.gl)&&String(s.room)===String(c.r)&&chkMap[s.id]?.status==='fail');
       failHtml+=`<div class="sr-class-group"><div class="sr-class-hd">${classLabel(c.gl,c.r)} <span>(${fs.length} คน)</span></div>`;
