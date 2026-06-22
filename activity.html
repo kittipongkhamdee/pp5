@@ -1493,7 +1493,7 @@ async function renderHome(){
   $('home-content').innerHTML=html;
 }
 
-function quickCheckin(actId){S.ckActivityId=actId;S.ckDate=todayStr();S.ckSession='morning';nav('checkin')}
+function quickCheckin(actId){S.ckActivityId=actId;S.ckDate=todayStr();S.ckSession=_autoSession();nav('checkin')}
 
 // ─── CHECK-IN ──────────────────────────────────────────────────────────────
 async function renderCheckin(){
@@ -1873,8 +1873,19 @@ async function clearAllCk(){
 }
 
 
-async function onCkActChange(){S.ckActivityId=parseInt($('ck-act-sel').value)||null;S.ckSession='morning';await renderCheckin()}
-async function onCkDateChange(){S.ckDate=$('ck-date-inp').value;await renderCheckin()}
+function _autoSession(){return new Date().getHours()<12?'morning':'evening'}
+async function onCkActChange(){
+  S.ckActivityId=parseInt($('ck-act-sel').value)||null;
+  const act=S.activities.find(a=>a.id==S.ckActivityId);
+  S.ckSession=(act?.has_evening&&S.ckDate===todayStr())?_autoSession():'morning';
+  await renderCheckin();
+}
+async function onCkDateChange(){
+  S.ckDate=$('ck-date-inp').value;
+  const act=S.activities.find(a=>a.id==S.ckActivityId);
+  if(act?.has_evening&&S.ckDate===todayStr())S.ckSession=_autoSession();
+  await renderCheckin();
+}
 async function onCkSessionChange(s){S.ckSession=s;await renderCheckin()}
 
 // ─── REPORT ────────────────────────────────────────────────────────────────
