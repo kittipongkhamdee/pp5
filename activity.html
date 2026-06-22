@@ -765,6 +765,9 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
         <select class="ios-select" id="ck-act-sel" onchange="onCkActChange()">
           <option value="">-- เลือกกิจกรรม --</option>
         </select>
+        <select class="ios-select" id="ck-class-sel" onchange="setCkFilterFromDrop()">
+          <option value="">เลือกชั้นเรียน</option>
+        </select>
       </div>
       <div class="stats-grid">
         <div class="stat-box s-all"><div class="stat-num" id="ck-stat-total">0</div><div class="stat-lbl">ทั้งหมด</div></div>
@@ -774,9 +777,6 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
         <div class="stat-box s-red" id="ck-stat-unif-box" style="display:none"><div class="stat-num" id="ck-stat-unif-fail">0</div><div class="stat-lbl">ไม่ผ่าน</div></div>
       </div>
       <div id="ck-actions">
-        <select class="ios-select" id="ck-class-sel" onchange="setCkFilterFromDrop()">
-          <option value="">เลือกชั้นเรียน</option>
-        </select>
         <div id="ck-btn-row">
           <div id="ck-btn-group">
             <button class="btn btn-green btn-sm" onclick="checkAll('present')">
