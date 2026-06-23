@@ -1987,7 +1987,18 @@ async function doRegister(){
   try{
     const {error}=await sb.auth.signUp({email,password:pass,options:{data:{full_name:name}}});
     loadingOff();
-    if(error){toast(error.message,'er');return;}
+    if(error){
+      const m=error.message||'';
+      const thMsg=
+        m.includes('already registered')||m.includes('already been registered')
+          ?'อีเมลนี้มีบัญชีในระบบแล้ว กรุณาเข้าสู่ระบบแทน':
+        m.includes('invalid email')||m.includes('Invalid email')
+          ?'รูปแบบอีเมลไม่ถูกต้อง':
+        m.includes('Password should be at least')
+          ?'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร':
+        m;
+      toast(thMsg,'er');return;
+    }
     $('reg-modal').style.display='none';
     $('l-email').value=email;
     toast('สมัครเรียบร้อย! เข้าสู่ระบบได้เลย','ok');
