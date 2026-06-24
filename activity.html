@@ -1111,6 +1111,12 @@ function thDate(d){
   const M=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
   return`${+day} ${M[+m-1]} ${+y+543}`;
 }
+function thDateFull(d){
+  if(!d)return'';
+  const[y,m,day]=d.split('-');
+  const M=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  return`${+day} ${M[+m-1]} ${+y+543}`;
+}
 function classLabel(gl,r){
   return S.classLabelMap[`${gl}_${r}`]||`มัธยมศึกษาปีที่ ${gl}/${r}`;
 }
@@ -2868,7 +2874,7 @@ async function renderRptService(){
       <div style="text-align:center;border-bottom:2px solid #e5e7eb;padding-bottom:12px;margin-bottom:14px">
         <div style="font-size:17px;font-weight:700;color:#111827">${esc(S.schoolName)}</div>
         <div style="font-size:14px;font-weight:700;margin-top:4px;color:#374151">รายชื่อนักเรียนบำเพ็ญประโยชน์</div>
-        <div style="font-size:13px;color:#6b7280;margin-top:3px">วันที่ ${thDate(S.rptServiceDate)}</div>
+        <div style="font-size:13px;color:#6b7280;margin-top:3px">วันที่ ${thDateFull(S.rptServiceDate)}</div>
       </div>
       <div class="table-wrap"><table class="rpt-table">
         <thead><tr><th style="width:36px">ลำดับ</th><th class="left">ชื่อ-สกุล</th><th class="left" style="white-space:nowrap">ชั้น</th><th class="left">สาเหตุ / หมายเหตุ</th></tr></thead>
@@ -2899,16 +2905,16 @@ function exportServicePDF(){
     <div style="font-size:11px;color:#000;text-align:center">ครูเวรประจำวัน</div>
   </div>`).join('');
   const body=`
-    <div class="sr-header"><div class="sr-school">${esc(S.schoolName)}</div><div class="sr-title">รายชื่อนักเรียนบำเพ็ญประโยชน์</div><div class="sr-date">วันที่ ${thDate(date)}</div></div>
+    <div class="sr-header"><div class="sr-school">${esc(S.schoolName)}</div><div class="sr-title">รายชื่อนักเรียนบำเพ็ญประโยชน์</div><div class="sr-date">วันที่ ${thDateFull(date)}</div></div>
     <table><thead><tr><th style="width:30px">ลำดับ</th><th class="left">ชื่อ-สกุล</th><th class="left" style="white-space:nowrap">ชั้น</th><th class="left">สาเหตุ / หมายเหตุ</th></tr></thead><tbody>${trs}</tbody></table>
     <div style="display:flex;gap:0;margin-top:40px;border-top:2px solid #000;padding-top:20px">${sigHtml}</div>`;
-  _openPrintWin(`บำเพ็ญประโยชน์ ${thDate(date)}`,body);
+  _openPrintWin(`บำเพ็ญประโยชน์ ${thDateFull(date)}`,body);
 }
 function exportServiceExcel(){
   if(!S.rptServiceData){toast('กรุณาดูรายงานก่อน','er');return}
   if(typeof XLSX==='undefined'){toast('XLSX ยังโหลดไม่เสร็จ','er');return}
   const{entries,date,teachers}=S.rptServiceData;
-  const a1=[[S.schoolName],[`รายชื่อนักเรียนบำเพ็ญประโยชน์`],[`วันที่: ${thDate(date)}`],[],['#','ชื่อ-สกุล','ชั้น','สาเหตุ / หมายเหตุ']];
+  const a1=[[S.schoolName],[`รายชื่อนักเรียนบำเพ็ญประโยชน์`],[`วันที่: ${thDateFull(date)}`],[],['#','ชื่อ-สกุล','ชั้น','สาเหตุ / หมายเหตุ']];
   entries.forEach((s,i)=>{
     const reasons=[];
     if(s.tardy)reasons.push('สาย'+(s.tardyActs.length?` (${s.tardyActs.join(', ')})`:''));
