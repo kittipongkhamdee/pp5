@@ -2856,12 +2856,12 @@ async function renderRptService(){
         const d=[...s.unifViols.map(esc),s.unifNote?esc(s.unifNote):''].filter(Boolean).join(', ');
         reasons.push('แต่งกายไม่เรียบร้อย'+(d?` (${d})`:''));
       }
-      trs+=`<tr><td>${i+1}</td><td class="left">${esc(s.student_name)}</td><td class="nowrap">${classLabel(s.grade_level,s.room)}</td><td class="left">${reasons.join('<br>')}</td></tr>`;
+      trs+=`<tr><td>${i+1}</td><td class="left">${esc(s.student_name)}</td><td style="white-space:nowrap">${classLabel(s.grade_level,s.room)}</td><td class="left">${reasons.join('<br>')}</td></tr>`;
     });
     const teacherSig=[0,1,2].map(i=>`
       <div style="flex:1;text-align:center;padding:8px 12px">
-        <div style="font-size:13px;margin-bottom:2px">ลงชื่อ................................</div>
-        <div style="font-size:13px">(................................)</div>
+        <div style="font-size:13px;margin-bottom:2px">ลงชื่อ........................................</div>
+        <div style="font-size:13px">(........................................)</div>
       </div>`).join('');
     const h=`<div id="rpt-service-doc" style="background:#fff;border-radius:10px;border:1px solid #e5e7eb;padding:20px">
       <div style="text-align:center;border-bottom:2px solid #e5e7eb;padding-bottom:12px;margin-bottom:14px">
@@ -2893,12 +2893,12 @@ function exportServicePDF(){
     trs+=`<tr><td>${i+1}</td><td class="left">${esc(s.student_name)}</td><td>${classLabel(s.grade_level,s.room)}</td><td class="left">${reasons.join('<br>')}</td></tr>`;
   });
   const sigHtml=[0,1,2].map(i=>`<div style="flex:1;text-align:center;padding:0 10px">
-    <div style="font-size:13px;margin-bottom:3px">ลงชื่อ................................</div>
-    <div style="font-size:13px">(................................)</div>
+    <div style="font-size:13px;margin-bottom:3px">ลงชื่อ........................................</div>
+    <div style="font-size:13px">(........................................)</div>
   </div>`).join('');
   const body=`
     <div class="sr-header"><div class="sr-school">${esc(S.schoolName)}</div><div class="sr-title">รายชื่อนักเรียนบำเพ็ญประโยชน์</div><div class="sr-date">วันที่ ${thDate(date)}</div></div>
-    <table><thead><tr><th style="width:30px">ลำดับ</th><th style="width:200px" class="left">ชื่อ-สกุล</th><th style="width:60px;white-space:nowrap">ชั้น</th><th class="left">สาเหตุ / หมายเหตุ</th></tr></thead><tbody>${trs}</tbody></table>
+    <table><thead><tr><th style="width:30px">ลำดับ</th><th class="left">ชื่อ-สกุล</th><th style="white-space:nowrap">ชั้น</th><th class="left">สาเหตุ / หมายเหตุ</th></tr></thead><tbody>${trs}</tbody></table>
     <div style="display:flex;gap:0;margin-top:40px;border-top:2px solid #000;padding-top:20px">${sigHtml}</div>`;
   _openPrintWin(`บำเพ็ญประโยชน์ ${thDate(date)}`,body);
 }
