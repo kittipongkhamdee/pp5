@@ -1661,7 +1661,12 @@ function _stuCardHtml(s,num,unifOn){
 }
 
 function saveCkAndGoHome(){
-  const checked=Object.keys(S.ckAttend).length;
+  let checked=0;
+  if(S.ckFilter){
+    const[gl,r]=S.ckFilter.split('_');
+    const classStus=S.students.filter(s=>String(s.grade_level)===gl&&String(s.room)===r);
+    checked=classStus.filter(s=>S.ckAttend[s.id]).length;
+  }
   toast(`✓ บันทึกเรียบร้อย${checked>0?' ('+checked+' คน)':''}`);
   setTimeout(()=>nav('home'),420);
 }
