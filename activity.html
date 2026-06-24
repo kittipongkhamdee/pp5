@@ -2904,7 +2904,7 @@ function exportServicePDF(){
     <div style="font-size:11px;color:#000;text-align:center">ครูเวรประจำวัน</div>
   </div>`).join('');
   const body=`
-    <div class="sr-header"><div class="sr-school">${esc(S.schoolName)}</div><div class="sr-title">รายชื่อนักเรียนบำเพ็ญประโยชน์</div><div class="sr-date">วันที่ ${thDateFull(date)}</div></div>
+    <div class="sr-header"><div class="sr-school">${esc(S.schoolName)}</div><div class="sr-title">รายชื่อนักเรียนบำเพ็ญประโยชน์</div><div class="sr-date" style="color:#000">วันที่ ${thDateFull(date)}</div></div>
     <table><thead><tr><th style="width:30px">ลำดับ</th><th class="left">ชื่อ-สกุล</th><th class="left" style="white-space:nowrap">ชั้น</th><th class="left">สาเหตุ / หมายเหตุ</th><th style="width:60px">ปฏิบัติ</th></tr></thead><tbody>${trs}</tbody></table>
     <div style="margin-top:20px;font-size:13px">
       <div style="font-weight:700;margin-bottom:10px">เพิ่มเติม</div>
