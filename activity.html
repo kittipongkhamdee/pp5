@@ -2568,7 +2568,7 @@ function _pdfCss(){
     @page{size:A4 portrait;margin:0}
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:'Sarabun',sans-serif;color:#000;background:#fff;font-size:14px;padding:18mm 20mm}
-    .sr-header{text-align:center;border-bottom:2px solid #000;padding-bottom:12px;margin-bottom:16px}
+    .sr-header{text-align:center;border-bottom:1px solid #000;padding-bottom:12px;margin-bottom:16px}
     .sr-school{font-size:17px;font-weight:700}.sr-title{font-size:14px;font-weight:600;margin-top:3px}
     .sr-act{font-size:13px;color:#444;margin-top:2px}.sr-date{font-size:12px;color:#666;margin-top:2px}
     table{width:100%;border-collapse:collapse;margin-top:12px}
@@ -2650,7 +2650,7 @@ async function exportSchoolPDF(){
     body{font-family:'Sarabun',sans-serif;color:#000;background:#fff;font-size:14px;padding:18mm 20mm}
     .school-report{margin-bottom:30px}
     .sr-page2{page-break-before:always;padding-top:18mm}
-    .sr-header{text-align:center;border-bottom:2px solid #000;padding-bottom:12px;margin-bottom:16px}
+    .sr-header{text-align:center;border-bottom:1px solid #000;padding-bottom:12px;margin-bottom:16px}
     .sr-school{font-size:17px;font-weight:700}
     .sr-title{font-size:14px;font-weight:600;margin-top:3px}
     .sr-act{font-size:13px;color:#444;margin-top:2px}
@@ -2876,7 +2876,7 @@ async function renderRptService(){
         <thead><tr><th style="width:36px">ลำดับ</th><th class="left">ชื่อ-สกุล</th><th class="left" style="white-space:nowrap">ชั้น</th><th class="left">สาเหตุ / หมายเหตุ</th><th style="width:80px">ปฏิบัติ</th></tr></thead>
         <tbody>${trs}</tbody>
       </table></div>
-      <div style="display:flex;gap:0;margin-top:32px;border-top:1px solid #e5e7eb;padding-top:16px">${teacherSig}</div>
+      <div style="display:flex;gap:0;margin-top:32px">${teacherSig}</div>
     </div>`;
     $('rpt-service-body').innerHTML=_expBar('exportServicePDF','exportServiceExcel','exportServiceImage')+h;
   }catch(e){$('rpt-service-body').innerHTML=`<div class="empty-state">เกิดข้อผิดพลาด: ${esc(e.message)}</div>`}
@@ -2903,7 +2903,7 @@ function exportServicePDF(){
   const body=`
     <div class="sr-header"><div class="sr-school">${esc(S.schoolName)}</div><div class="sr-title">รายชื่อนักเรียนบำเพ็ญประโยชน์</div><div class="sr-date">วันที่ ${thDateFull(date)}</div></div>
     <table><thead><tr><th style="width:30px">ลำดับ</th><th class="left">ชื่อ-สกุล</th><th class="left" style="white-space:nowrap">ชั้น</th><th class="left">สาเหตุ / หมายเหตุ</th><th style="width:60px">ปฏิบัติ</th></tr></thead><tbody>${trs}</tbody></table>
-    <div style="display:flex;gap:0;margin-top:40px;border-top:1px solid #000;padding-top:20px">${sigHtml}</div>`;
+    <div style="display:flex;gap:0;margin-top:40px;padding-top:0">${sigHtml}</div>`;
   _openPrintWin(`บำเพ็ญประโยชน์ ${thDateFull(date)}`,body);
 }
 function exportServiceExcel(){
