@@ -330,7 +330,7 @@ html[data-theme="dark"] .ios-select,html[data-theme="dark"] .ios-input{backgroun
 /* ── Report tables ── */
 .rpt-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:12px}
 .rpt-table th{background:var(--card2);padding:8px 6px;text-align:center;font-weight:600;border:1px solid #e5e7eb;font-size:12px}
-.rpt-table td{padding:8px 6px;text-align:center;border:1px solid #e5e7eb}
+.rpt-table td{padding:8px 6px;text-align:center;border:1px solid #e5e7eb;vertical-align:top}
 .rpt-table tr.total-row td{font-weight:700;background:var(--card2)}
 .rpt-table td.green{color:var(--green);font-weight:600}
 .rpt-table td.orange{color:var(--orange);font-weight:600}
@@ -2572,7 +2572,7 @@ function _pdfCss(){
     .sr-school{font-size:17px;font-weight:700}.sr-title{font-size:14px;font-weight:600;margin-top:3px}
     .sr-act{font-size:13px;color:#444;margin-top:2px}.sr-date{font-size:12px;color:#666;margin-top:2px}
     table{width:100%;border-collapse:collapse;margin-top:12px}
-    th,td{border:1px solid #000;padding:7px 8px;text-align:center;font-size:13px}
+    th,td{border:1px solid #000;padding:7px 8px;text-align:center;font-size:13px;vertical-align:top}
     th{background:#f0f0f0;font-weight:700}
     tr.total-row td{font-weight:700;background:#f0f0f0}
     td.left{text-align:left;padding-left:10px}
@@ -2655,7 +2655,7 @@ async function exportSchoolPDF(){
     .sr-act{font-size:13px;color:#444;margin-top:2px}
     .sr-date{font-size:12px;color:#666;margin-top:2px}
     table{width:100%;border-collapse:collapse;margin-top:12px}
-    th,td{border:1px solid #000;padding:7px 8px;text-align:center;font-size:13px}
+    th,td{border:1px solid #000;padding:7px 8px;text-align:center;font-size:13px;vertical-align:top}
     th{background:#f0f0f0;font-weight:700}
     tr.total-row td{font-weight:700;background:#f0f0f0}
     td.left{text-align:left;padding-left:10px}
@@ -2857,7 +2857,7 @@ async function renderRptService(){
         const d=[...s.unifViols.map(esc),s.unifNote?esc(s.unifNote):''].filter(Boolean).join(', ');
         reasons.push('แต่งกายไม่เรียบร้อย'+(d?` (${d})`:''));
       }
-      trs+=`<tr><td>${i+1}</td><td class="left">${esc(s.student_name)}</td><td style="text-align:left;white-space:nowrap;padding-left:10px">${classLabel(s.grade_level,s.room)}</td><td class="left">${reasons.join('<br>')}</td><td></td></tr>`;
+      trs+=`<tr><td>${i+1}</td><td class="left" style="white-space:nowrap;vertical-align:top">${esc(s.student_name)}</td><td style="text-align:left;white-space:nowrap;padding-left:10px;vertical-align:top">${classLabel(s.grade_level,s.room)}</td><td class="left">${reasons.join('<br>')}</td><td></td></tr>`;
     });
     const teacherSig=[0,1,2].map(i=>`
       <div style="flex:1;padding:8px 12px">
@@ -2892,7 +2892,7 @@ function exportServicePDF(){
       const d=[...s.unifViols,s.unifNote].filter(Boolean).join(', ');
       reasons.push('แต่งกายไม่เรียบร้อย'+(d?` (${d})`:''));
     }
-    trs+=`<tr><td>${i+1}</td><td class="left">${esc(s.student_name)}</td><td style="text-align:left;white-space:nowrap;padding-left:10px">${classLabel(s.grade_level,s.room)}</td><td class="left">${reasons.join('<br>')}</td><td></td></tr>`;
+    trs+=`<tr><td>${i+1}</td><td class="left" style="white-space:nowrap;vertical-align:top">${esc(s.student_name)}</td><td style="text-align:left;white-space:nowrap;padding-left:10px;vertical-align:top">${classLabel(s.grade_level,s.room)}</td><td class="left">${reasons.join('<br>')}</td><td></td></tr>`;
   });
   const sigHtml=[0,1,2].map(i=>`<div style="flex:1;padding:0 10px">
     <div style="font-size:13px;margin-bottom:10px">ลงชื่อ........................................</div>
