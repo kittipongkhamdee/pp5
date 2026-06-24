@@ -2857,7 +2857,7 @@ async function renderRptService(){
         const d=[...s.unifViols.map(esc),s.unifNote?esc(s.unifNote):''].filter(Boolean).join(', ');
         reasons.push('แต่งกายไม่เรียบร้อย'+(d?` (${d})`:''));
       }
-      trs+=`<tr><td>${i+1}</td><td class="left">${esc(s.student_name)}</td><td style="text-align:left;white-space:nowrap;padding-left:10px">${classLabel(s.grade_level,s.room)}</td><td class="left">${reasons.join('<br>')}</td></tr>`;
+      trs+=`<tr><td>${i+1}</td><td class="left">${esc(s.student_name)}</td><td style="text-align:left;white-space:nowrap;padding-left:10px">${classLabel(s.grade_level,s.room)}</td><td class="left">${reasons.join('<br>')}</td><td></td></tr>`;
     });
     const teacherSig=[0,1,2].map(i=>`
       <div style="flex:1;padding:8px 12px">
@@ -2872,7 +2872,7 @@ async function renderRptService(){
         <div style="font-size:13px;color:#6b7280;margin-top:3px">วันที่ ${thDateFull(S.rptServiceDate)}</div>
       </div>
       <div class="table-wrap"><table class="rpt-table">
-        <thead><tr><th style="width:36px">ลำดับ</th><th class="left">ชื่อ-สกุล</th><th class="left" style="white-space:nowrap">ชั้น</th><th class="left">สาเหตุ / หมายเหตุ</th></tr></thead>
+        <thead><tr><th style="width:36px">ลำดับ</th><th class="left">ชื่อ-สกุล</th><th class="left" style="white-space:nowrap">ชั้น</th><th class="left">สาเหตุ / หมายเหตุ</th><th style="width:80px">ปฏิบัติ</th></tr></thead>
         <tbody>${trs}</tbody>
       </table></div>
       <div style="display:flex;gap:0;margin-top:32px;border-top:1px solid #e5e7eb;padding-top:16px">${teacherSig}</div>
@@ -2901,7 +2901,7 @@ function exportServicePDF(){
   </div>`).join('');
   const body=`
     <div class="sr-header"><div class="sr-school">${esc(S.schoolName)}</div><div class="sr-title">รายชื่อนักเรียนบำเพ็ญประโยชน์</div><div class="sr-date">วันที่ ${thDateFull(date)}</div></div>
-    <table><thead><tr><th style="width:30px">ลำดับ</th><th class="left">ชื่อ-สกุล</th><th class="left" style="white-space:nowrap">ชั้น</th><th class="left">สาเหตุ / หมายเหตุ</th></tr></thead><tbody>${trs}</tbody></table>
+    <table><thead><tr><th style="width:30px">ลำดับ</th><th class="left">ชื่อ-สกุล</th><th class="left" style="white-space:nowrap">ชั้น</th><th class="left">สาเหตุ / หมายเหตุ</th><th style="width:60px">ปฏิบัติ</th></tr></thead><tbody>${trs}</tbody></table>
     <div style="display:flex;gap:0;margin-top:40px;border-top:2px solid #000;padding-top:20px">${sigHtml}</div>`;
   _openPrintWin(`บำเพ็ญประโยชน์ ${thDateFull(date)}`,body);
 }
@@ -2909,7 +2909,7 @@ function exportServiceExcel(){
   if(!S.rptServiceData){toast('กรุณาดูรายงานก่อน','er');return}
   if(typeof XLSX==='undefined'){toast('XLSX ยังโหลดไม่เสร็จ','er');return}
   const{entries,date,teachers}=S.rptServiceData;
-  const a1=[[S.schoolName],[`รายชื่อนักเรียนบำเพ็ญประโยชน์`],[`วันที่: ${thDateFull(date)}`],[],['#','ชื่อ-สกุล','ชั้น','สาเหตุ / หมายเหตุ']];
+  const a1=[[S.schoolName],[`รายชื่อนักเรียนบำเพ็ญประโยชน์`],[`วันที่: ${thDateFull(date)}`],[],['#','ชื่อ-สกุล','ชั้น','สาเหตุ / หมายเหตุ','ปฏิบัติ']];
   entries.forEach((s,i)=>{
     const reasons=[];
     if(s.tardy)reasons.push('สาย'+(s.tardyActs.length?` (${s.tardyActs.join(', ')})`:''));
