@@ -2815,10 +2815,6 @@ async function renderRptService(){
     <div class="filter-row">
       <input type="date" class="ios-input" value="${S.rptServiceDate}" onchange="S.rptServiceDate=this.value;renderRptService()">
     </div>
-    <div class="filter-row" style="flex-direction:column;gap:6px">
-      <div style="font-size:13px;font-weight:600;color:var(--txt2)">ครูเวรประจำวัน</div>
-      ${[0,1,2].map(i=>`<input class="ios-input" placeholder="ชื่อครูเวรคนที่ ${i+1}" value="${esc(S.rptServiceTeachers[i]||'')}" oninput="S.rptServiceTeachers[${i}]=this.value">`).join('')}
-    </div>
     <div id="rpt-service-body"><div class="loading-text">กำลังโหลด...</div></div>`;
   const stuIds=S.students.map(s=>s.id);
   if(!stuIds.length){$('rpt-service-body').innerHTML='<div class="empty-state">ไม่พบข้อมูลนักเรียน</div>';return}
@@ -2861,10 +2857,10 @@ async function renderRptService(){
       }
       trs+=`<tr><td>${i+1}</td><td class="left">${esc(s.student_name)}</td><td>${classLabel(s.grade_level,s.room)}</td><td class="left">${reasons.join('<br>')}</td></tr>`;
     });
-    const teacherSig=S.rptServiceTeachers.map((t,i)=>`
+    const teacherSig=[0,1,2].map(i=>`
       <div style="flex:1;text-align:center;padding:8px 12px">
         <div style="font-size:13px;margin-bottom:2px">ลงชื่อ.....................................................</div>
-        <div style="font-size:13px">(${t?esc(t):'...................................................'})</div>
+        <div style="font-size:13px">(...................................................)</div>
         <div style="font-size:12px;color:#555;margin-top:4px">ครูเวรประจำวันคนที่ ${i+1}</div>
       </div>`).join('');
     const h=`<div id="rpt-service-doc" style="background:#fff;border-radius:10px;border:1px solid #e5e7eb;padding:20px">
@@ -2896,9 +2892,9 @@ function exportServicePDF(){
     }
     trs+=`<tr><td>${i+1}</td><td class="left">${esc(s.student_name)}</td><td>${classLabel(s.grade_level,s.room)}</td><td class="left">${reasons.join('<br>')}</td></tr>`;
   });
-  const sigHtml=teachers.map((t,i)=>`<div style="flex:1;text-align:center;padding:0 10px">
+  const sigHtml=[0,1,2].map(i=>`<div style="flex:1;text-align:center;padding:0 10px">
     <div style="font-size:13px;margin-bottom:3px">ลงชื่อ.....................................................</div>
-    <div style="font-size:13px">(${t?esc(t):'...................................................'})</div>
+    <div style="font-size:13px">(...................................................)</div>
     <div style="font-size:11px;color:#555;margin-top:5px">ครูเวรประจำวันคนที่ ${i+1}</div>
   </div>`).join('');
   const body=`
