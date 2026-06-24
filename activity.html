@@ -2892,7 +2892,7 @@ function exportServicePDF(){
       const d=[...s.unifViols,s.unifNote].filter(Boolean).join(', ');
       reasons.push('แต่งกายไม่เรียบร้อย'+(d?` (${d})`:''));
     }
-    trs+=`<tr><td>${i+1}</td><td class="left">${esc(s.student_name)}</td><td style="text-align:left;white-space:nowrap;padding-left:10px">${classLabel(s.grade_level,s.room)}</td><td class="left">${reasons.join('<br>')}</td></tr>`;
+    trs+=`<tr><td>${i+1}</td><td class="left">${esc(s.student_name)}</td><td style="text-align:left;white-space:nowrap;padding-left:10px">${classLabel(s.grade_level,s.room)}</td><td class="left">${reasons.join('<br>')}</td><td></td></tr>`;
   });
   const sigHtml=[0,1,2].map(i=>`<div style="flex:1;padding:0 10px">
     <div style="font-size:13px;margin-bottom:10px">ลงชื่อ........................................</div>
