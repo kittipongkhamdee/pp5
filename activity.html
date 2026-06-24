@@ -2856,10 +2856,10 @@ async function renderRptService(){
         const d=[...s.unifViols.map(esc),s.unifNote?esc(s.unifNote):''].filter(Boolean).join(', ');
         reasons.push('แต่งกายไม่เรียบร้อย'+(d?` (${d})`:''));
       }
-      trs+=`<tr><td>${i+1}</td><td class="left">${esc(s.student_name)}</td><td class="left" style="white-space:nowrap">${classLabel(s.grade_level,s.room)}</td><td class="left">${reasons.join('<br>')}</td></tr>`;
+      trs+=`<tr><td>${i+1}</td><td class="left">${esc(s.student_name)}</td><td style="text-align:left;white-space:nowrap;padding-left:10px">${classLabel(s.grade_level,s.room)}</td><td class="left">${reasons.join('<br>')}</td></tr>`;
     });
     const teacherSig=[0,1,2].map(i=>`
-      <div style="flex:1;text-align:center;padding:8px 12px">
+      <div style="flex:1;padding:8px 12px">
         <div style="font-size:13px;margin-bottom:2px">ลงชื่อ........................................</div>
         <div style="font-size:13px">(...........................................................)</div>
       </div>`).join('');
@@ -2890,9 +2890,9 @@ function exportServicePDF(){
       const d=[...s.unifViols,s.unifNote].filter(Boolean).join(', ');
       reasons.push('แต่งกายไม่เรียบร้อย'+(d?` (${d})`:''));
     }
-    trs+=`<tr><td>${i+1}</td><td class="left">${esc(s.student_name)}</td><td>${classLabel(s.grade_level,s.room)}</td><td class="left">${reasons.join('<br>')}</td></tr>`;
+    trs+=`<tr><td>${i+1}</td><td class="left">${esc(s.student_name)}</td><td style="text-align:left;white-space:nowrap;padding-left:10px">${classLabel(s.grade_level,s.room)}</td><td class="left">${reasons.join('<br>')}</td></tr>`;
   });
-  const sigHtml=[0,1,2].map(i=>`<div style="flex:1;text-align:center;padding:0 10px">
+  const sigHtml=[0,1,2].map(i=>`<div style="flex:1;padding:0 10px">
     <div style="font-size:13px;margin-bottom:3px">ลงชื่อ........................................</div>
     <div style="font-size:13px">(...........................................................)</div>
   </div>`).join('');
