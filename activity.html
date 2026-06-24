@@ -843,6 +843,7 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
       <button class="rpt-tab" id="rpt-tab-class" onclick="switchRptTab('class')">ทั้งห้อง</button>
       <button class="rpt-tab" id="rpt-tab-school" onclick="switchRptTab('school')">ทั้งโรงเรียน</button>
       <button class="rpt-tab" id="rpt-tab-percent" onclick="switchRptTab('percent')">ร้อยละ</button>
+      <button class="rpt-tab" id="rpt-tab-service" onclick="switchRptTab('service')">บำเพ็ญประโยชน์</button>
     </div>
     <div id="rpt-content"></div>
   </div>
@@ -1090,6 +1091,7 @@ const S={
   schoolName:'',
   ckActivityId:null,ckDate:todayStr(),ckSession:'morning',ckAttend:{},ckFilter:'',
   rptTab:'activity',rptActivityId:null,rptDate:todayStr(),rptSession:'morning',rptStuId:null,rptStuClass:null,rptStuSearch:'',rptStuActivityId:null,rptSchoolData:null,rptActData:null,rptStuData:null,rptPctData:null,rptPctThreshold:80,rptPctActivityId:null,rptPctClass:null,
+  rptServiceDate:todayStr(),rptServiceTeachers:['','',''],
   rptClassActivityId:null,rptClassClass:null,rptClassDate:null,rptClassSession:'morning',rptClassData:null,
   rptLateActivityId:null,rptLateDate:null,
   rptStreakActivityId:null,rptStreakMin:3,
@@ -1998,12 +2000,13 @@ async function onCkSessionChange(s){S.ckSession=s;await renderCheckin()}
 // ─── REPORT ────────────────────────────────────────────────────────────────
 function renderReport(){
   const tabs=$('rpt-tabs');if(tabs)tabs.style.display='flex';
-  ['activity','student','class','school','percent','streak'].forEach(t=>$('rpt-tab-'+t)?.classList.toggle('active',S.rptTab===t));
+  ['activity','student','class','school','percent','streak','service'].forEach(t=>$('rpt-tab-'+t)?.classList.toggle('active',S.rptTab===t));
   if(S.rptTab==='activity')renderRptActivity();
   else if(S.rptTab==='student')renderRptStudent();
   else if(S.rptTab==='class')renderRptClass();
   else if(S.rptTab==='school')renderRptSchool();
   else if(S.rptTab==='streak')renderRptStreak();
+  else if(S.rptTab==='service')renderRptService();
   else renderRptPercent();
 }
 function switchRptTab(tab){
@@ -2804,6 +2807,127 @@ function exportPctExcel(){
 function exportPctImage(){
   if(!S.rptPctData){toast('กรุณาดูรายงานก่อน','er');return}
   _captureImage('rpt-pct-doc',`รายงานร้อยละ_ต่ำกว่า${S.rptPctData.thr}%.png`);
+}
+
+// ── Report: บำเพ็ญประโยชน์ ──────────────────────────────────────────────────
+async function renderRptService(){
+  $('rpt-content').innerHTML=`
+    <div class="filter-row">
+      <input type="date" class="ios-input" value="${S.rptServiceDate}" onchange="S.rptServiceDate=this.value;renderRptService()">
+    </div>
+    <div class="filter-row" style="flex-direction:column;gap:6px">
+      <div style="font-size:13px;font-weight:600;color:var(--txt2)">ครูเวรประจำวัน</div>
+      ${[0,1,2].map(i=>`<input class="ios-input" placeholder="ชื่อครูเวรคนที่ ${i+1}" value="${esc(S.rptServiceTeachers[i]||'')}" oninput="S.rptServiceTeachers[${i}]=this.value">`).join('')}
+    </div>
+    <div id="rpt-service-body"><div class="loading-text">กำลังโหลด...</div></div>`;
+  const stuIds=S.students.map(s=>s.id);
+  if(!stuIds.length){$('rpt-service-body').innerHTML='<div class="empty-state">ไม่พบข้อมูลนักเรียน</div>';return}
+  try{
+    const[tardyRows,unifRows]=await Promise.all([
+      q(sb.from('activity_attend').select('student_id,activity_id').eq('date',S.rptServiceDate).eq('status','tardy').in('student_id',stuIds)),
+      q(sb.from('uniform_checks').select('student_id,note,uniform_check_violations(uniform_violations(name))').eq('date',S.rptServiceDate).eq('status','fail').in('student_id',stuIds)),
+    ]);
+    // Build per-student service record
+    const rec={};
+    tardyRows.forEach(r=>{
+      const act=S.activities.find(a=>a.id===r.activity_id);
+      if(!rec[r.student_id])rec[r.student_id]={tardy:false,tardyActs:[],unifViols:[],unifNote:''};
+      rec[r.student_id].tardy=true;
+      if(act)rec[r.student_id].tardyActs.push(act.name);
+    });
+    unifRows.forEach(r=>{
+      if(!rec[r.student_id])rec[r.student_id]={tardy:false,tardyActs:[],unifViols:[],unifNote:''};
+      const viols=(r.uniform_check_violations||[]).map(cv=>cv.uniform_violations?.name||'').filter(Boolean);
+      rec[r.student_id].unifViols=viols;
+      rec[r.student_id].unifNote=r.note||'';
+    });
+    const entries=S.students
+      .filter(s=>rec[s.id])
+      .sort((a,b)=>{
+        const kA=`${String(a.grade_level).padStart(3,'0')}_${String(a.room).padStart(3,'0')}_${a.student_name}`;
+        const kB=`${String(b.grade_level).padStart(3,'0')}_${String(b.room).padStart(3,'0')}_${b.student_name}`;
+        return kA.localeCompare(kB,'th');
+      })
+      .map(s=>({...s,...rec[s.id]}));
+    S.rptServiceData={entries,date:S.rptServiceDate,teachers:[...S.rptServiceTeachers]};
+    if(!entries.length){$('rpt-service-body').innerHTML='<div class="empty-state">✓ ไม่พบนักเรียนที่ต้องบำเพ็ญประโยชน์</div>';return}
+    let trs='';
+    entries.forEach((s,i)=>{
+      const reasons=[];
+      if(s.tardy)reasons.push('สาย'+(s.tardyActs.length?` (${s.tardyActs.map(esc).join(', ')})`:''));
+      if(s.unifViols.length||s.unifNote){
+        const d=[...s.unifViols.map(esc),s.unifNote?esc(s.unifNote):''].filter(Boolean).join(', ');
+        reasons.push('แต่งกายไม่เรียบร้อย'+(d?` (${d})`:''));
+      }
+      trs+=`<tr><td>${i+1}</td><td class="left">${esc(s.student_name)}</td><td>${classLabel(s.grade_level,s.room)}</td><td class="left">${reasons.join('<br>')}</td></tr>`;
+    });
+    const teacherSig=S.rptServiceTeachers.map((t,i)=>`
+      <div style="flex:1;text-align:center;padding:8px">
+        <div style="border-bottom:1px solid #000;margin-bottom:4px;min-height:28px;padding-top:4px">${t?esc(t):''}</div>
+        <div style="font-size:12px;color:#555">ครูเวรคนที่ ${i+1}</div>
+      </div>`).join('');
+    const h=`<div id="rpt-service-doc" style="background:#fff;border-radius:10px;border:1px solid #e5e7eb;padding:20px">
+      <div style="text-align:center;border-bottom:2px solid #e5e7eb;padding-bottom:12px;margin-bottom:14px">
+        <div style="font-size:17px;font-weight:700;color:#111827">${esc(S.schoolName)}</div>
+        <div style="font-size:14px;font-weight:700;margin-top:4px;color:#374151">รายชื่อนักเรียนบำเพ็ญประโยชน์</div>
+        <div style="font-size:13px;color:#6b7280;margin-top:3px">วันที่ ${thDate(S.rptServiceDate)} · พบ ${entries.length} คน</div>
+      </div>
+      <div class="table-wrap"><table class="rpt-table">
+        <thead><tr><th style="width:36px">#</th><th class="left">ชื่อ-สกุล</th><th style="width:72px">ชั้น</th><th class="left">สาเหตุ / หมายเหตุ</th></tr></thead>
+        <tbody>${trs}</tbody>
+      </table></div>
+      <div style="display:flex;gap:0;margin-top:32px;border-top:1px solid #e5e7eb;padding-top:16px">${teacherSig}</div>
+    </div>`;
+    $('rpt-service-body').innerHTML=_expBar('exportServicePDF','exportServiceExcel','exportServiceImage')+h;
+  }catch(e){$('rpt-service-body').innerHTML=`<div class="empty-state">เกิดข้อผิดพลาด: ${esc(e.message)}</div>`}
+}
+
+function exportServicePDF(){
+  if(!S.rptServiceData){toast('กรุณาดูรายงานก่อน','er');return}
+  const{entries,date,teachers}=S.rptServiceData;
+  let trs='';
+  entries.forEach((s,i)=>{
+    const reasons=[];
+    if(s.tardy)reasons.push('สาย'+(s.tardyActs.length?` (${s.tardyActs.join(', ')})`:''));
+    if(s.unifViols.length||s.unifNote){
+      const d=[...s.unifViols,s.unifNote].filter(Boolean).join(', ');
+      reasons.push('แต่งกายไม่เรียบร้อย'+(d?` (${d})`:''));
+    }
+    trs+=`<tr><td>${i+1}</td><td class="left">${esc(s.student_name)}</td><td>${classLabel(s.grade_level,s.room)}</td><td class="left">${reasons.join('<br>')}</td></tr>`;
+  });
+  const sigHtml=teachers.map((t,i)=>`<div style="flex:1;text-align:center;padding:0 8px">
+    <div style="border-bottom:1px solid #000;min-height:36px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px;font-size:13px">${t?esc(t):'&nbsp;'}</div>
+    <div style="font-size:11px;color:#555;margin-top:4px">ลงชื่อ ครูเวรคนที่ ${i+1}</div>
+  </div>`).join('');
+  const body=`
+    <div class="sr-header"><div class="sr-school">${esc(S.schoolName)}</div><div class="sr-title">รายชื่อนักเรียนบำเพ็ญประโยชน์</div><div class="sr-date">วันที่ ${thDate(date)} · พบ ${entries.length} คน</div></div>
+    <table><thead><tr><th style="width:30px">#</th><th style="width:200px" class="left">ชื่อ-สกุล</th><th style="width:60px">ชั้น</th><th class="left">สาเหตุ / หมายเหตุ</th></tr></thead><tbody>${trs}</tbody></table>
+    <div style="display:flex;gap:0;margin-top:40px;border-top:2px solid #000;padding-top:20px">${sigHtml}</div>`;
+  _openPrintWin(`บำเพ็ญประโยชน์ ${thDate(date)}`,body);
+}
+function exportServiceExcel(){
+  if(!S.rptServiceData){toast('กรุณาดูรายงานก่อน','er');return}
+  if(typeof XLSX==='undefined'){toast('XLSX ยังโหลดไม่เสร็จ','er');return}
+  const{entries,date,teachers}=S.rptServiceData;
+  const a1=[[S.schoolName],[`รายชื่อนักเรียนบำเพ็ญประโยชน์`],[`วันที่: ${thDate(date)}`],[],['#','ชื่อ-สกุล','ชั้น','สาเหตุ / หมายเหตุ']];
+  entries.forEach((s,i)=>{
+    const reasons=[];
+    if(s.tardy)reasons.push('สาย'+(s.tardyActs.length?` (${s.tardyActs.join(', ')})`:''));
+    if(s.unifViols.length||s.unifNote){
+      const d=[...s.unifViols,s.unifNote].filter(Boolean).join(', ');
+      reasons.push('แต่งกายไม่เรียบร้อย'+(d?` (${d})`:''));
+    }
+    a1.push([i+1,s.student_name,classLabel(s.grade_level,s.room),reasons.join(' / ')]);
+  });
+  a1.push([],[`ครูเวร: ${teachers.filter(Boolean).join(', ')}`]);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(a1),'บำเพ็ญประโยชน์');
+  XLSX.writeFile(wb,`บำเพ็ญประโยชน์_${date}.xlsx`);
+  toast('ดาวน์โหลด Excel แล้ว');
+}
+function exportServiceImage(){
+  if(!S.rptServiceData){toast('กรุณาดูรายงานก่อน','er');return}
+  _captureImage('rpt-service-doc',`บำเพ็ญประโยชน์_${S.rptServiceData.date}.png`);
 }
 
 // ── Export: uniform school ──
