@@ -2862,7 +2862,7 @@ async function renderRptService(){
       <div style="flex:1;padding:8px 12px">
         <div style="font-size:13px;margin-bottom:2px">ลงชื่อ........................................</div>
         <div style="font-size:13px;margin-bottom:2px">(...........................................................)</div>
-        <div style="font-size:12px;color:#555">ครูเวรประจำวัน</div>
+        <div style="font-size:12px;color:#000;text-align:center">ครูเวรประจำวัน</div>
       </div>`).join('');
     const h=`<div id="rpt-service-doc" style="background:#fff;border-radius:10px;border:1px solid #e5e7eb;padding:20px">
       <div style="text-align:center;border-bottom:2px solid #e5e7eb;padding-bottom:12px;margin-bottom:14px">
@@ -2896,7 +2896,7 @@ function exportServicePDF(){
   const sigHtml=[0,1,2].map(i=>`<div style="flex:1;padding:0 10px">
     <div style="font-size:13px;margin-bottom:3px">ลงชื่อ........................................</div>
     <div style="font-size:13px;margin-bottom:3px">(...........................................................)</div>
-    <div style="font-size:11px;color:#555">ครูเวรประจำวัน</div>
+    <div style="font-size:11px;color:#000;text-align:center">ครูเวรประจำวัน</div>
   </div>`).join('');
   const body=`
     <div class="sr-header"><div class="sr-school">${esc(S.schoolName)}</div><div class="sr-title">รายชื่อนักเรียนบำเพ็ญประโยชน์</div><div class="sr-date">วันที่ ${thDate(date)}</div></div>
