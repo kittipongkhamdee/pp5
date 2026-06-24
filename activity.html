@@ -1108,15 +1108,10 @@ function todayStr(){const d=new Date();return`${d.getFullYear()}-${String(d.getM
 function thDate(d){
   if(!d)return'';
   const[y,m,day]=d.split('-');
-  const M=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-  return`${+day} ${M[+m-1]} ${+y+543}`;
-}
-function thDateFull(d){
-  if(!d)return'';
-  const[y,m,day]=d.split('-');
   const M=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
   return`${+day} ${M[+m-1]} ${+y+543}`;
 }
+function thDateFull(d){return thDate(d)}
 function classLabel(gl,r){
   return S.classLabelMap[`${gl}_${r}`]||`มัธยมศึกษาปีที่ ${gl}/${r}`;
 }
