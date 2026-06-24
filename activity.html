@@ -1808,12 +1808,12 @@ function _confirmClearAll(){
 }
 function _confirmUnifPassAll(){
   if(!_unifCheckActive()){toast('ไม่ได้เปิดตรวจการแต่งกาย','er');return}
-  const targets=_filteredStudents();
-  if(!targets.length){toast('ไม่มีนักเรียนในห้องที่เลือก','er');return}
+  const targets=_filteredStudents().filter(s=>S.ckAttend[s.id]?.status==='present');
+  if(!targets.length){toast('ไม่มีนักเรียนที่เช็คว่ามาในห้องที่เลือก','er');return}
   const label=S.ckFilter?`ห้อง ${classLabel(...S.ckFilter.split('_'))}`:'ทุกห้อง';
   _showConfirm(
     'แต่งกายผ่านทั้งหมด?',
-    `${label} · ${targets.length} คน`,
+    `${label} · ${targets.length} คน (เฉพาะที่มา)`,
     'ผ่านทั้งหมด',
     '#0d9488',
     ()=>unifPassAll()
@@ -1843,8 +1843,8 @@ async function checkAll(status){
 
 async function unifPassAll(){
   if(!_unifCheckActive()){toast('ไม่ได้เปิดตรวจการแต่งกาย','er');return}
-  const targets=_filteredStudents();
-  if(!targets.length){toast('ไม่มีนักเรียนในห้องที่เลือก','er');return}
+  const targets=_filteredStudents().filter(s=>S.ckAttend[s.id]?.status==='present');
+  if(!targets.length){toast('ไม่มีนักเรียนที่เช็คว่ามาในห้องที่เลือก','er');return}
   loading(true);
   try{
     const ts=new Date().toISOString();
@@ -1856,7 +1856,7 @@ async function unifPassAll(){
     });
     renderCkList();updateCkStats();
     const label=S.ckFilter?`ห้อง ${classLabel(...S.ckFilter.split('_'))}`:'ทั้งหมด';
-    toast(`✓ แต่งกายผ่าน ${label} ${targets.length} คน`,'ok');
+    toast(`✓ แต่งกายผ่าน ${label} ${targets.length} คน (เฉพาะที่มา)`,'ok');
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er')}
   finally{loading(false)}
 }
