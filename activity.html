@@ -203,6 +203,10 @@ html[data-theme="dark"] .ios-select,html[data-theme="dark"] .ios-input{backgroun
 /* ── Student rows ── */
 /* ── Check-in Card Style ── */
 #ck-list{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px 12px;padding-bottom:calc(80px + var(--safe-bottom))}
+.ck-save-wrap{padding:16px 12px 8px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.ck-save-btn{width:100%;max-width:380px;padding:14px 0;border:none;border-radius:14px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 4px 18px rgba(16,185,129,.35);transition:transform .12s,box-shadow .12s;letter-spacing:.5px}
+.ck-save-btn:active{transform:scale(0.97);box-shadow:0 2px 8px rgba(16,185,129,.3)}
+.ck-save-hint{font-size:12px;color:var(--txt3);text-align:center}
 #ck-list .stu-card+.stu-card{margin-top:8px}
 .stu-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--sep);overflow:hidden;transition:border-color .15s,box-shadow .15s}
 .stu-card.ck-done{border-color:#a7f3d0;box-shadow:inset 3px 0 0 #10b981}
@@ -1590,7 +1594,12 @@ function renderCkList(){
   let stus=S.students;
   const[gl,r]=S.ckFilter.split('_');stus=stus.filter(s=>String(s.grade_level)===gl&&String(s.room)===r);
   if(!stus.length){$('ck-list').innerHTML=`<div class="empty-state">ไม่พบนักเรียน</div>`;return}
-  $('ck-list').innerHTML=stus.map((s,i)=>_stuCardHtml(s,i+1,unifOn)).join('');
+  const cards=stus.map((s,i)=>_stuCardHtml(s,i+1,unifOn)).join('');
+  const saveBtn=`<div class="ck-save-wrap">
+    <button class="ck-save-btn" onclick="saveCkAndGoHome()">✓ บันทึก</button>
+    <div class="ck-save-hint">ข้อมูลบันทึกอัตโนมัติทุกครั้งที่กด · กดเพื่อกลับหน้าหลัก</div>
+  </div>`;
+  $('ck-list').innerHTML=cards+saveBtn;
 }
 
 function _stuCardHtml(s,num,unifOn){
@@ -1649,6 +1658,12 @@ function _stuCardHtml(s,num,unifOn){
     </div>
     ${hasUnif?`<div class="card-btns-wrap">${unifSec}</div>`:''}
   </div>`;
+}
+
+function saveCkAndGoHome(){
+  const checked=Object.keys(S.ckAttend).length;
+  toast(`✓ บันทึกเรียบร้อย${checked>0?' ('+checked+' คน)':''}`);
+  setTimeout(()=>nav('home'),420);
 }
 
 function _unifCheckActive(){
