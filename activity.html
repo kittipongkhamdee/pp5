@@ -2860,8 +2860,8 @@ async function renderRptService(){
     });
     const teacherSig=[0,1,2].map(i=>`
       <div style="flex:1;padding:8px 12px">
-        <div style="font-size:13px;margin-bottom:2px">ลงชื่อ........................................</div>
-        <div style="font-size:13px;margin-bottom:2px">(...........................................................)</div>
+        <div style="font-size:13px;margin-bottom:10px">ลงชื่อ........................................</div>
+        <div style="font-size:13px;margin-bottom:10px">(...........................................................)</div>
         <div style="font-size:12px;color:#000;text-align:center">ครูเวรประจำวัน</div>
       </div>`).join('');
     const h=`<div id="rpt-service-doc" style="background:#fff;border-radius:10px;border:1px solid #e5e7eb;padding:20px">
@@ -2894,8 +2894,8 @@ function exportServicePDF(){
     trs+=`<tr><td>${i+1}</td><td class="left">${esc(s.student_name)}</td><td style="text-align:left;white-space:nowrap;padding-left:10px">${classLabel(s.grade_level,s.room)}</td><td class="left">${reasons.join('<br>')}</td></tr>`;
   });
   const sigHtml=[0,1,2].map(i=>`<div style="flex:1;padding:0 10px">
-    <div style="font-size:13px;margin-bottom:3px">ลงชื่อ........................................</div>
-    <div style="font-size:13px;margin-bottom:3px">(...........................................................)</div>
+    <div style="font-size:13px;margin-bottom:10px">ลงชื่อ........................................</div>
+    <div style="font-size:13px;margin-bottom:10px">(...........................................................)</div>
     <div style="font-size:11px;color:#000;text-align:center">ครูเวรประจำวัน</div>
   </div>`).join('');
   const body=`
