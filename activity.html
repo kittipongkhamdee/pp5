@@ -173,19 +173,18 @@ html[data-theme="dark"] .ios-select,html[data-theme="dark"] .ios-input{backgroun
 /* ── Segment Control ── */
 .seg-ctrl{
   display:flex;
-  background:rgba(255,255,255,0.35);
-  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-  border:1px solid rgba(255,255,255,0.4);
-  border-radius:var(--radius-sm);padding:2px;gap:2px;
+  background:var(--card2);
+  border:1.5px solid var(--sep);
+  border-radius:10px;padding:3px;gap:3px;
 }
 .seg-ctrl button{
-  flex:1;padding:5px 8px;border:none;background:transparent;border-radius:6px;
-  font-family:var(--font);font-size:14px;font-weight:500;color:var(--txt2);cursor:pointer;transition:all .18s;
+  flex:1;padding:8px 18px;border:none;background:transparent;border-radius:8px;
+  font-family:var(--font);font-size:14px;font-weight:600;color:var(--txt2);cursor:pointer;transition:all .18s;white-space:nowrap;
 }
 .seg-ctrl button.active{
-  background:rgba(255,255,255,0.85);color:var(--txt);
-  box-shadow:0 2px 8px rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,0.9);
-  font-weight:600;
+  background:var(--primary);color:#fff;
+  box-shadow:0 3px 10px rgba(14,165,233,.35);
+  font-weight:700;
 }
 #ck-sess-m.active{background:linear-gradient(135deg,#fef3c7,#fde68a);color:#92400e;box-shadow:0 2px 8px rgba(217,119,6,.25),inset 0 1px 0 rgba(255,255,255,0.7)}
 #ck-sess-e.active{background:linear-gradient(135deg,#dbeafe,#bfdbfe);color:#1e40af;box-shadow:0 2px 8px rgba(59,130,246,.25),inset 0 1px 0 rgba(255,255,255,0.7)}
