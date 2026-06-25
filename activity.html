@@ -2821,23 +2821,34 @@ async function renderRptService(){
   const stuIds=S.students.map(s=>s.id);
   if(!stuIds.length){$('rpt-service-body').innerHTML='<div class="empty-state">ไม่พบข้อมูลนักเรียน</div>';return}
   try{
-    const[tardyRows,unifRows]=await Promise.all([
+    const[tardyRows,unifRows,mAbsentRows,eAttendRows]=await Promise.all([
       q(sb.from('activity_attend').select('student_id,activity_id').eq('date',S.rptServiceDate).eq('status','tardy').in('student_id',stuIds)),
       q(sb.from('uniform_checks').select('student_id,note,uniform_check_violations(uniform_violations(name))').eq('date',S.rptServiceDate).eq('status','fail').in('student_id',stuIds)),
+      q(sb.from('activity_attend').select('student_id,activity_id').eq('date',S.rptServiceDate).eq('session','morning').eq('status','absent').in('student_id',stuIds)),
+      q(sb.from('activity_attend').select('student_id,activity_id,status').eq('date',S.rptServiceDate).eq('session','evening').in('student_id',stuIds)),
     ]);
     // Build per-student service record
+    const _emptyRec=()=>({tardy:false,tardyActs:[],unifViols:[],unifNote:'',absentMorning:false,absentMorningActs:[]});
     const rec={};
     tardyRows.forEach(r=>{
       const act=S.activities.find(a=>a.id===r.activity_id);
-      if(!rec[r.student_id])rec[r.student_id]={tardy:false,tardyActs:[],unifViols:[],unifNote:''};
+      if(!rec[r.student_id])rec[r.student_id]=_emptyRec();
       rec[r.student_id].tardy=true;
       if(act)rec[r.student_id].tardyActs.push(act.name);
     });
     unifRows.forEach(r=>{
-      if(!rec[r.student_id])rec[r.student_id]={tardy:false,tardyActs:[],unifViols:[],unifNote:''};
+      if(!rec[r.student_id])rec[r.student_id]=_emptyRec();
       const viols=(r.uniform_check_violations||[]).map(cv=>cv.uniform_violations?.name||'').filter(Boolean);
       rec[r.student_id].unifViols=viols;
       rec[r.student_id].unifNote=r.note||'';
+    });
+    // ขาดเช้า + มาบ่าย: same activity_id, morning=absent, evening=present/tardy
+    const mAbsentSet=new Set(mAbsentRows.map(r=>`${r.activity_id}_${r.student_id}`));
+    eAttendRows.filter(r=>['present','tardy'].includes(r.status)&&mAbsentSet.has(`${r.activity_id}_${r.student_id}`)).forEach(r=>{
+      const act=S.activities.find(a=>a.id===r.activity_id);
+      if(!rec[r.student_id])rec[r.student_id]=_emptyRec();
+      rec[r.student_id].absentMorning=true;
+      if(act)rec[r.student_id].absentMorningActs.push(act.name);
     });
     const entries=S.students
       .filter(s=>rec[s.id])
@@ -2853,6 +2864,7 @@ async function renderRptService(){
     entries.forEach((s,i)=>{
       const reasons=[];
       if(s.tardy)reasons.push('สาย'+(s.tardyActs.length?` (${s.tardyActs.map(esc).join(', ')})`:''));
+      if(s.absentMorning)reasons.push('ขาดเช้า'+(s.absentMorningActs.length?` (${s.absentMorningActs.map(esc).join(', ')})`:''));
       if(s.unifViols.length||s.unifNote){
         const d=[...s.unifViols.map(esc),s.unifNote?esc(s.unifNote):''].filter(Boolean).join(', ');
         reasons.push('แต่งกายไม่เรียบร้อย'+(d?` (${d})`:''));
@@ -2892,6 +2904,7 @@ function exportServicePDF(){
   entries.forEach((s,i)=>{
     const reasons=[];
     if(s.tardy)reasons.push('สาย'+(s.tardyActs.length?` (${s.tardyActs.join(', ')})`:''));
+    if(s.absentMorning)reasons.push('ขาดเช้า'+(s.absentMorningActs.length?` (${s.absentMorningActs.join(', ')})`:''));
     if(s.unifViols.length||s.unifNote){
       const d=[...s.unifViols,s.unifNote].filter(Boolean).join(', ');
       reasons.push('แต่งกายไม่เรียบร้อย'+(d?` (${d})`:''));
@@ -2921,6 +2934,7 @@ function exportServiceExcel(){
   entries.forEach((s,i)=>{
     const reasons=[];
     if(s.tardy)reasons.push('สาย'+(s.tardyActs.length?` (${s.tardyActs.join(', ')})`:''));
+    if(s.absentMorning)reasons.push('ขาดเช้า'+(s.absentMorningActs.length?` (${s.absentMorningActs.join(', ')})`:''));
     if(s.unifViols.length||s.unifNote){
       const d=[...s.unifViols,s.unifNote].filter(Boolean).join(', ');
       reasons.push('แต่งกายไม่เรียบร้อย'+(d?` (${d})`:''));
