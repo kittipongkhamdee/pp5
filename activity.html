@@ -2643,11 +2643,11 @@ async function exportSchoolPDF(){
   const{classData,act,sessLbl}=S.rptSchoolData;
   const css=`
     @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
-    @page{size:A4 portrait;margin:0}
+    @page{size:A4 portrait;margin:18mm 20mm}
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'Sarabun',sans-serif;color:#000;background:#fff;font-size:14px;padding:18mm 20mm}
+    body{font-family:'Sarabun',sans-serif;color:#000;background:#fff;font-size:14px}
     .school-report{margin-bottom:30px}
-    .sr-page2{page-break-before:always;padding-top:18mm}
+    .sr-page2{page-break-before:always}
     .sr-header{text-align:center;border-bottom:1px solid #000;padding-bottom:12px;margin-bottom:16px}
     .sr-school{font-size:17px;font-weight:700}
     .sr-title{font-size:14px;font-weight:600;margin-top:3px}
@@ -2662,7 +2662,7 @@ async function exportSchoolPDF(){
     td.not-checked{color:#aaa;font-style:italic;font-size:12px}
     .sr-p2-title{font-size:15px;font-weight:700;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:4px}
     .sr-p2-sub{font-size:12px;color:#555;margin-bottom:16px}
-    .sr-class-group{margin-bottom:16px}
+    .sr-class-group{margin-bottom:16px;page-break-inside:avoid}
     .sr-class-hd{font-size:13px;font-weight:700;background:#f0f0f0;padding:4px 8px;border-radius:4px;margin-bottom:4px}
     .sr-class-hd span{font-weight:400;color:#666}
     .sr-stu-row{display:flex;gap:8px;padding:3px 8px;font-size:13px;border-bottom:1px solid #eee;align-items:center}
