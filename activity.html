@@ -1812,6 +1812,7 @@ function _hideConfirm(){
 function _doConfirm(){const fn=_confirmFn;_hideConfirm();if(fn)fn()}
 function _confirmCheckAll(status){
   if(!S.ckActivityId){toast('เลือกกิจกรรมก่อน','er');return}
+  if(!S.ckFilter){toast('เลือกชั้นเรียนก่อน','er');return}
   const targets=_filteredStudents();
   if(!targets.length){toast('ไม่มีนักเรียนในห้องที่เลือก','er');return}
   const label=S.ckFilter?`ห้อง ${classLabel(...S.ckFilter.split('_'))}`:'ทุกห้อง';
