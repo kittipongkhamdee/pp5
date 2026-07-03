@@ -213,12 +213,13 @@ html[data-theme="dark"] .ios-select,html[data-theme="dark"] .ios-input{backgroun
 .stu-card.collapsed .stu-card-hd{cursor:pointer}
 .stu-card.collapsed .stu-card-hd:active{background:var(--card2)}
 .stu-card-hd{display:flex;flex-direction:column;gap:6px;padding:10px 14px}
-.stu-card-top{display:flex;align-items:flex-start;gap:8px}
-.stu-card-num{font-size:12px;color:var(--txt3);width:16px;text-align:left;flex-shrink:0;font-weight:600;padding-top:2px}
+.stu-card-top{display:flex;align-items:center;gap:8px}
+.stu-card-num{font-size:12px;color:var(--txt3);width:16px;text-align:left;flex-shrink:0;font-weight:600}
 .stu-card-info{flex:1;min-width:0}
-.stu-card-name{font-size:14px;font-weight:600;word-break:break-word;white-space:normal}
-.stu-card-meta{font-size:11px;color:var(--txt3);margin-top:1px}
-.stu-card-bot{display:flex;align-items:center;gap:4px;padding-left:24px}
+.stu-card-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stu-card-meta{font-size:11px;color:var(--txt3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stu-card-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.stu-card-bot{display:flex;align-items:center;justify-content:flex-end;gap:4px}
 .stu-card-badges{display:flex;gap:4px;align-items:center;flex-shrink:0}
 .stu-cbadge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;flex-shrink:0}
 .stu-cbadge.present{background:#d1fae5;color:#065f46}
@@ -1648,9 +1649,9 @@ function _stuCardHtml(s,num,unifOn){
           <div class="stu-card-name">${esc(s.student_name)}</div>
           <div class="stu-card-meta">${esc(s.student_code)} · ${classLabel(s.grade_level,s.room)}</div>
         </div>
-        ${chevron}
+        <div class="stu-card-actions">${ckBtns}${chevron}</div>
       </div>
-      <div class="stu-card-bot">${ckBtns}${unifBadge}</div>
+      ${unifBadge?`<div class="stu-card-bot">${unifBadge}</div>`:''}
     </div>
     ${hasUnif?`<div class="card-btns-wrap">${unifSec}</div>`:''}
   </div>`;
