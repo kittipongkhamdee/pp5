@@ -2441,7 +2441,7 @@ function openSubModal(id){
           <div><label class="fl">ชั้น ม.</label>
             <select class="fs" id="f-gr">${[1,2,3,4,5,6].map(g=>`<option ${s?.grade_level==g?'selected':''}>${g}</option>`).join('')}</select></div>
           <div><label class="fl">ห้อง</label><input class="fi" id="f-rm" value="${esc(s?.room||'')}"></div>
-          <div><label class="fl">หน่วยกิต</label><input type="number" class="fi" id="f-cr" value="${s?.credits||1.5}" step="0.5" min="0.5"></div>
+          <div><label class="fl">หน่วยกิต</label><input type="number" class="fi" id="f-cr" value="${s?.credits||1.5}" step="0.5" min="0.5" oninput="updHours()"></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
           <div><label class="fl">ชั่วโมง/สัปดาห์</label><input type="number" class="fi" id="f-hw" value="${s?.hours_per_week||3}" min="1"></div>
@@ -2478,6 +2478,11 @@ function openSubModal(id){
     </div>
   </div></div>`);
   _loadSubCat();
+}
+function updHours(){
+  const cr=+$('f-cr').value||0;
+  $('f-th').value=Math.round(cr*40);
+  $('f-hw').value=Math.round(cr*2);
 }
 function updTot(){
   const t=['f-sbm','f-sm','f-sam','f-sf'].reduce((a,i)=>a+(+$(i)?.value||0),0);
