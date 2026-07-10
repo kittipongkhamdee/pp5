@@ -3218,14 +3218,47 @@ function _refreshGridOnly(){
 function _renderGridAndSave(){
   if(!attDays.length)
     return`<div class="empty" style="padding:30px"><svg class="ei" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><div>ยังไม่มีวันสอนในเดือนนี้<br>เพิ่มวันที่สอนด้านบนก่อน</div></div>`;
+  const syncOn=S.config.checkin_sync_enabled==='1'&&S.config.checkin_sync_activity_id;
   return renderMonthGrid()+(attStus.length>0?`
     <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
       <div style="font-size:12px;color:var(--muted)">รวม ${attDays.reduce((a,d)=>a+d.periods,0)} คาบในเดือนนี้</div>
       <div style="display:flex;gap:8px">
+        ${syncOn?`<button class="btn bs btn-sm" onclick="pullFromCheckin()" style="color:#0071e3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>ดึงข้อมูลจากระบบเช็คชื่อ</button>`:''}
         <button class="btn bs btn-sm" onclick="fillMonth('present')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg>มาทั้งหมด</button>
         <button class="btn bp" onclick="saveMonth()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>บันทึกทั้งเดือน</button>
       </div>
     </div>`:'');
+}
+
+// ── ดึงข้อมูลจากระบบเช็คชื่อ (activity_attend) มาเติมเฉพาะวันที่ยังไม่ได้บันทึก ──
+async function pullFromCheckin(){
+  const actId=S.config.checkin_sync_activity_id;
+  const session=S.config.checkin_sync_session||'morning';
+  if(!S.config.checkin_sync_enabled||!actId){toast('แอดมินยังไม่ได้เปิดใช้งานการดึงข้อมูลจากระบบเช็คชื่อ','er');return;}
+  if(!attDays.length){toast('ยังไม่มีวันสอนในเดือนนี้','er');return;}
+  const ym=curYM();
+  const dates=attDays.map(d=>`${ym}-${String(d.day).padStart(2,'0')}`);
+  const STAT_MAP={present:'present',late:'leave',absent:'absent'};
+  loading(true);
+  try{
+    const rows=await q(sb.from('activity_attend').select('student_id,date,status')
+      .eq('activity_id',actId).eq('session',session).in('date',dates)
+      .in('student_id',attStus.map(s=>s.id)));
+    let filled=0;
+    rows.forEach(r=>{
+      const day=parseInt(r.date.split('-')[2]);
+      const already=attData.some(a=>String(a.student_id)===String(r.student_id)
+        &&String(a.year_month)===String(ym)&&parseInt(a.date_day)===day);
+      if(already)return;
+      const el=document.querySelector(`.ac[data-sid="${r.student_id}"][data-day="${day}"]`);
+      if(!el)return;
+      const st=STAT_MAP[r.status]||'present';
+      el.className=ATT_K[st]; el.textContent=ATT_I[st];
+      filled++;
+    });
+    toast(filled?`ดึงข้อมูลสำเร็จ ${filled} ช่อง — ตรวจสอบก่อนกด "บันทึกทั้งเดือน"`:'ไม่พบข้อมูลใหม่จากระบบเช็คชื่อสำหรับเดือนนี้');
+  }catch(e){toast('ดึงข้อมูลผิดพลาด: '+e.message,'er');}
+  finally{loading(false);}
 }
 
 async function changeAttMonth(idx){
@@ -5545,9 +5578,12 @@ async function saveSgList(){
   finally{ loading(false); }
 }
 
-function pgSettings(){
+let _syncActivities=[];
+async function pgSettings(){
   const cfg=S.config;
   _sgList=[...SUBJECT_GROUPS];
+  try{ _syncActivities=await q(sb.from('activities').select('id,name').eq('is_active',true).order('id')); }
+  catch(e){ _syncActivities=[]; }
   $('pg').innerHTML=`
   <div class="ph">
     <div class="ptitle">
@@ -5733,6 +5769,48 @@ function pgSettings(){
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
         บันทึกกลุ่มสาระ
       </button>
+    </div>
+  </div>
+
+  <!-- ── เชื่อมโยงกับระบบเช็คชื่อ ── -->
+  <div class="card">
+    <div class="ch">
+      <div class="ct" style="display:flex;align-items:center;gap:7px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--ac)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        เชื่อมโยงกับระบบเช็คชื่อ
+      </div>
+    </div>
+    <div class="cb">
+      <div style="font-size:12px;color:#6e6e73;margin-bottom:14px;line-height:1.6">
+        เมื่อเปิดใช้งาน หน้า "บันทึกเวลาเรียน" จะมีปุ่มดึงข้อมูลสถานะ มา/ลา/ขาด จากระบบเช็คชื่อ มาเติมให้อัตโนมัติเฉพาะวันที่ยังไม่ได้กรอก (ครูยังแก้ไขเองได้ตามปกติ)
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:14px;cursor:pointer">
+        <input type="checkbox" id="c-cksync-on" ${S.config.checkin_sync_enabled==='1'?'checked':''} style="width:18px;height:18px;accent-color:var(--ac)">
+        <span style="font-size:14px;font-weight:600">เปิดใช้งานการดึงข้อมูล</span>
+      </label>
+      <div class="fg">
+        <div>
+          <label class="fl">กิจกรรมที่ใช้อ้างอิง</label>
+          <select class="fs" id="c-cksync-act">
+            <option value="">— เลือกกิจกรรม —</option>
+            ${_syncActivities.map(a=>`<option value="${a.id}" ${String(S.config.checkin_sync_activity_id)===String(a.id)?'selected':''}>${esc(a.name)}</option>`).join('')}
+          </select>
+          ${!_syncActivities.length?`<div style="font-size:11.5px;color:#dc2626;margin-top:6px">ไม่พบกิจกรรมจากระบบเช็คชื่อที่เปิดใช้งานอยู่</div>`:''}
+        </div>
+        <div>
+          <label class="fl">รอบ</label>
+          <select class="fs" id="c-cksync-sess">
+            <option value="morning" ${S.config.checkin_sync_session!=='evening'?'selected':''}>เช้า</option>
+            <option value="evening" ${S.config.checkin_sync_session==='evening'?'selected':''}>บ่าย</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--bdr);">
+        <button class="btn bp" onclick="saveCheckinSync()" style="width:100%;justify-content:center">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          บันทึกการตั้งค่า
+        </button>
+      </div>
     </div>
   </div>
 
@@ -6232,6 +6310,20 @@ async function saveSettings(){
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
 }
 
+
+async function saveCheckinSync(){
+  const updates=[
+    {key:'checkin_sync_enabled',    value:$('c-cksync-on').checked?'1':''},
+    {key:'checkin_sync_activity_id',value:$('c-cksync-act').value},
+    {key:'checkin_sync_session',    value:$('c-cksync-sess').value},
+  ];
+  loading(true);
+  try{
+    await q(sb.from('config').upsert(updates,{onConflict:'key'}));
+    await loadConfig();
+    toast('บันทึกการตั้งค่าเรียบร้อย');
+  }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
+}
 
 // ════ LOGO UPLOAD ════════════════════════════════════════════════
 const _DEFAULT_LOGO = 'https://lh5.googleusercontent.com/d/1IjjamxeQ9VaeAao8PtmR7RCwioE4hndi';
