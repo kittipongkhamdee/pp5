@@ -3247,11 +3247,13 @@ async function pullFromCheckin(){
     let filled=0;
     rows.forEach(r=>{
       const day=parseInt(r.date.split('-')[2]);
-      const already=attData.some(a=>String(a.student_id)===String(r.student_id)
+      const alreadySaved=attData.some(a=>String(a.student_id)===String(r.student_id)
         &&String(a.year_month)===String(ym)&&parseInt(a.date_day)===day);
-      if(already)return;
+      if(alreadySaved)return;
       const el=document.querySelector(`.ac[data-sid="${r.student_id}"][data-day="${day}"]`);
       if(!el)return;
+      // ข้ามถ้าครูคลิกเปลี่ยนจากค่าเริ่มต้น "มา" ไปแล้วในรอบนี้ (ยังไม่บันทึก แต่เป็นการกรอกด้วยมือ)
+      if(el.className!==ATT_K.present)return;
       const st=STAT_MAP[r.status]||'present';
       el.className=ATT_K[st]; el.textContent=ATT_I[st];
       filled++;
