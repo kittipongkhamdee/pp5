@@ -2405,6 +2405,35 @@ function _subSearch(val){
   dd.style.display='block';
 }
 
+const CD_DOW=[{v:1,l:'จันทร์'},{v:2,l:'อังคาร'},{v:3,l:'พุธ'},{v:4,l:'พฤหัสบดี'},{v:5,l:'ศุกร์'}];
+function _classDaysFor(s){
+  if(!s)return[];
+  try{ return JSON.parse(S.config['class_days_'+s.id]||'[]'); }catch(e){ return []; }
+}
+function _cdRowHtml(day,periods){
+  return`<div class="cd-row" style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+    <select class="fs cd-day" style="flex:1.3">
+      ${CD_DOW.map(d=>`<option value="${d.v}" ${+day===d.v?'selected':''}>${d.l}</option>`).join('')}
+    </select>
+    <input type="number" class="fi cd-periods" value="${periods||1}" min="1" max="8" placeholder="คาบ" style="width:90px">
+    <button type="button" class="btn bs" style="padding:6px 9px;color:var(--err);flex-shrink:0" onclick="this.closest('.cd-row').remove()" title="ลบ">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+    </button>
+  </div>`;
+}
+function _cdAddRow(){
+  const c=$('cd-list'); if(!c)return;
+  c.insertAdjacentHTML('beforeend',_cdRowHtml(1,1));
+}
+function _collectClassDays(){
+  const map={};
+  document.querySelectorAll('#cd-list .cd-row').forEach(r=>{
+    const day=+r.querySelector('.cd-day').value;
+    const periods=+r.querySelector('.cd-periods').value||1;
+    map[day]=periods; // วันซ้ำ ใช้ค่าล่าสุด
+  });
+  return Object.keys(map).map(k=>({weekday:+k,periods:map[k]})).sort((a,b)=>a.weekday-b.weekday);
+}
 function openSubModal(id){
   const s=id?S.subjects.find(x=>x.id===id):null;
   document.body.insertAdjacentHTML('beforeend',`
@@ -2446,6 +2475,14 @@ function openSubModal(id){
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
           <div><label class="fl">ชั่วโมง/สัปดาห์</label><input type="number" class="fi" id="f-hw" value="${s?.hours_per_week||3}" min="1"></div>
           <div><label class="fl">ชั่วโมง/ภาค</label><input type="number" class="fi" id="f-th" value="${s?.total_hours||60}" min="1"></div>
+        </div>
+        <div style="margin-top:14px">
+          <label class="fl">วันสอนประจำสัปดาห์ <span style="font-weight:400;color:var(--muted)">(ใช้กับปุ่ม "สร้างวันอัตโนมัติ" ในหน้าบันทึกเวลาเรียน)</span></label>
+          <div id="cd-list">${_classDaysFor(s).map(d=>_cdRowHtml(d.weekday,d.periods)).join('')}</div>
+          <button type="button" class="btn bs" onclick="_cdAddRow()" style="margin-top:6px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            เพิ่มวัน
+          </button>
         </div>
         <div style="margin-top:14px">
           <label class="fl">ครูผู้สอน</label>
@@ -2502,10 +2539,16 @@ async function saveSubForm(id){
     academic_year:S.config.academic_year||'2568',semester:parseInt(S.config.semester||1),
     user_id:S.user.id
   };
+  const classDays=_collectClassDays();
   loading(true);
   try{
+    let subjectId=id;
     if(id){ await q(sb.from('subjects').update(payload).eq('id',id).eq('user_id',S.user.id)); }
-    else   { await q(sb.from('subjects').insert(payload)); }
+    else   { const inserted=await q(sb.from('subjects').insert(payload).select('id')); subjectId=inserted[0].id; }
+    const cdKey='class_days_'+subjectId;
+    if(classDays.length){ await q(sb.from('config').upsert([{key:cdKey,value:JSON.stringify(classDays)}],{onConflict:'key'})); }
+    else{ await q(sb.from('config').delete().eq('key',cdKey)); }
+    await loadConfig();
     _subCat=null;
     invalidateSubjects(); await loadSubjects();
     rmModal('subMod');toast(id?'แก้ไขเรียบร้อย':'เพิ่มรายวิชาเรียบร้อย');pgSubjects();
@@ -2514,7 +2557,12 @@ async function saveSubForm(id){
 async function delSub(id,name){
   confirm2({title:'ลบรายวิชา',msg:'ต้องการลบวิชา "<strong>'+name+'</strong>"?',type:'danger',confirmText:'ลบเลย',cancelText:'ยกเลิก',onConfirm:async()=>{
   loading(true);
-  try{await q(sb.from('subjects').delete().eq('id',id).eq('user_id',S.user.id));invalidateSubjects(); await loadSubjects();toast('ลบเรียบร้อย');pgSubjects();}
+  try{
+    await q(sb.from('subjects').delete().eq('id',id).eq('user_id',S.user.id));
+    await q(sb.from('config').delete().eq('key','class_days_'+id));
+    await loadConfig();
+    invalidateSubjects(); await loadSubjects();toast('ลบเรียบร้อย');pgSubjects();
+  }
   catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
 }});
 }
@@ -3123,6 +3171,7 @@ function renderAttPage(){
         <div><label class="fl">จำนวนคาบ</label>
           <input type="number" class="fi" id="add-periods" min="1" max="8" value="1" style="width:70px"></div>
         <button class="btn bp btn-sm" style="height:38px" onclick="addAttDay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>เพิ่มวันสอน</button>
+        <button class="btn bs btn-sm" style="height:38px;color:#0071e3" onclick="autoGenDays()" title="สร้างวันสอนจากวันสอนประจำสัปดาห์ที่ตั้งไว้ในหน้ารายวิชา"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14l2 2 4-4"/></svg>สร้างวันอัตโนมัติ</button>
         <div style="font-size:11.5px;color:var(--muted);align-self:center">คลิกหัวคอลัมน์เพื่อลบ &nbsp;•&nbsp; คลิกช่องเพื่อเปลี่ยน &nbsp;<span style="display:inline-flex;align-items:center;gap:3px;vertical-align:middle"><span style="background:#f0fdf4;color:#16803d;border:1.5px solid #86efac;border-radius:6px;padding:1px 7px;font-size:13px;font-weight:700">✓</span><span style="font-size:12px;color:#555">มา</span></span> &nbsp;<span style="display:inline-flex;align-items:center;gap:3px;vertical-align:middle"><span style="background:#fff1f2;color:#e11d48;border:1.5px solid #fda4af;border-radius:6px;padding:1px 7px;font-size:13px;font-weight:700">✕</span><span style="font-size:12px;color:#555">ขาด</span></span> &nbsp;<span style="display:inline-flex;align-items:center;gap:3px;vertical-align:middle"><span style="background:#eff6ff;color:#2563eb;border:1.5px solid #93c5fd;border-radius:6px;padding:1px 7px;font-size:13px;font-weight:700">○</span><span style="font-size:12px;color:#555">ลา</span></span></div>
       </div>
     </div></div>
@@ -3200,6 +3249,29 @@ function addAttDay(){
   if(dayEl) dayEl.value='';
   // อัปตารางด้านล่างด้วย
   _refreshGridOnly();
+}
+// ── สร้างวันสอนอัตโนมัติจากวันสอนประจำสัปดาห์ที่ตั้งไว้ในหน้ารายวิชา ──
+function autoGenDays(){
+  if(attMonthIdx===null){toast('กรุณาเลือกเดือนก่อน','er');return;}
+  const sid=attSub?.id;
+  let classDays=[];
+  try{ classDays=JSON.parse(S.config['class_days_'+sid]||'[]'); }catch(e){ classDays=[]; }
+  if(!classDays.length){toast('รายวิชานี้ยังไม่ได้กำหนดวันสอนประจำสัปดาห์ (ตั้งค่าได้ที่หน้าแก้ไขรายวิชา)','er');return;}
+  const dowMap={}; classDays.forEach(d=>{ dowMap[d.weekday]=d.periods; });
+  const daysInMonth=new Date(attYear,attMonthIdx+1,0).getDate();
+  let added=0;
+  for(let day=1;day<=daysInMonth;day++){
+    const dow=new Date(attYear,attMonthIdx,day).getDay(); // 0=อา..6=ส
+    if(!(dow in dowMap))continue;
+    if(attDays.find(d=>d.day===day))continue;
+    attDays.push({day,periods:dowMap[dow]});
+    added++;
+  }
+  attDays.sort((a,b)=>a.day-b.day);
+  const picker=$('day-picker');
+  if(picker){ picker.innerHTML=renderDayPicker(); }
+  _refreshGridOnly();
+  toast(added?`สร้างวันสอนอัตโนมัติ ${added} วัน — ตรวจสอบและลบวันหยุดที่ไม่ต้องการได้`:'ไม่มีวันใหม่ให้เพิ่ม (มีอยู่แล้วทั้งหมด หรือเดือนนี้ไม่มีวันตรงกับที่ตั้งไว้)');
 }
 function removeAttDay(day){
   confirm2({title:'ลบวันสอน',msg:'ต้องการลบวันที่ <strong>'+day+'</strong> ออกจากตาราง?',type:'warn',confirmText:'ลบวัน',cancelText:'ยกเลิก',onConfirm:()=>{
