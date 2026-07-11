@@ -3244,6 +3244,7 @@ async function pullFromCheckin(){
     const rows=await q(sb.from('activity_attend').select('student_id,date,status')
       .eq('activity_id',actId).eq('session',session).in('date',dates)
       .in('student_id',attStus.map(s=>s.id)));
+    const foundSet=new Set(rows.map(r=>`${parseInt(r.date.split('-')[2])}_${r.student_id}`));
     let filled=0;
     rows.forEach(r=>{
       const day=parseInt(r.date.split('-')[2]);
@@ -3258,7 +3259,26 @@ async function pullFromCheckin(){
       el.className=ATT_K[st]; el.textContent=ATT_I[st];
       filled++;
     });
-    toast(filled?`ดึงข้อมูลสำเร็จ ${filled} ช่อง — ตรวจสอบก่อนกด "บันทึกทั้งเดือน"`:'ไม่พบข้อมูลใหม่จากระบบเช็คชื่อสำหรับเดือนนี้');
+    // สรุปวันที่ไม่พบข้อมูล — เฉพาะช่องที่ยังไม่มีค่าจริง (ไม่ใช่บันทึกแล้ว/ไม่ใช่กรอกมือ) และไม่มีข้อมูลจากระบบเช็คชื่อ
+    const missingByDay={};
+    attDays.forEach(d=>{
+      attStus.forEach(s=>{
+        if(foundSet.has(`${d.day}_${s.id}`))return;
+        const alreadySaved=attData.some(a=>String(a.student_id)===String(s.id)
+          &&String(a.year_month)===String(ym)&&parseInt(a.date_day)===d.day);
+        if(alreadySaved)return;
+        const el=document.querySelector(`.ac[data-sid="${s.id}"][data-day="${d.day}"]`);
+        if(el&&el.className!==ATT_K.present)return;
+        missingByDay[d.day]=(missingByDay[d.day]||0)+1;
+      });
+    });
+    const missingDays=Object.keys(missingByDay).map(Number).sort((a,b)=>a-b);
+    let msg=filled?`เติมข้อมูลให้ <strong>${filled}</strong> ช่องเรียบร้อย — ตรวจสอบก่อนกด "บันทึกทั้งเดือน"`:'ไม่พบข้อมูลใหม่จากระบบเช็คชื่อสำหรับเดือนนี้';
+    if(missingDays.length){
+      msg+=`<br><br><strong style="color:#FF9500">วันที่ไม่พบข้อมูลในระบบเช็คชื่อ (ยังเป็นค่าเริ่มต้น "มา" — โปรดตรวจสอบด้วยมือ):</strong><br>`
+        +missingDays.map(d=>`วันที่ ${d} — ขาด ${missingByDay[d]} คน`).join('<br>');
+    }
+    alert2({title:'ผลการดึงข้อมูลจากระบบเช็คชื่อ',msg,type:missingDays.length?'warn':'ok',okText:'รับทราบ'});
   }catch(e){toast('ดึงข้อมูลผิดพลาด: '+e.message,'er');}
   finally{loading(false);}
 }
