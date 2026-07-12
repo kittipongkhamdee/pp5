@@ -2546,8 +2546,7 @@ async function saveSubForm(id){
     if(id){ await q(sb.from('subjects').update(payload).eq('id',id).eq('user_id',S.user.id)); }
     else   { const inserted=await q(sb.from('subjects').insert(payload).select('id')); subjectId=inserted[0].id; }
     const cdKey='class_days_'+subjectId;
-    if(classDays.length){ await q(sb.from('config').upsert([{key:cdKey,value:JSON.stringify(classDays)}],{onConflict:'key'})); }
-    else{ await q(sb.from('config').delete().eq('key',cdKey)); }
+    await q(sb.from('config').upsert([{key:cdKey,value:JSON.stringify(classDays)}],{onConflict:'key'}));
     await loadConfig();
     _subCat=null;
     invalidateSubjects(); await loadSubjects();
@@ -2559,7 +2558,7 @@ async function delSub(id,name){
   loading(true);
   try{
     await q(sb.from('subjects').delete().eq('id',id).eq('user_id',S.user.id));
-    await q(sb.from('config').delete().eq('key','class_days_'+id));
+    try{ await q(sb.from('config').upsert([{key:'class_days_'+id,value:'[]'}],{onConflict:'key'})); }catch(e){}
     await loadConfig();
     invalidateSubjects(); await loadSubjects();toast('ลบเรียบร้อย');pgSubjects();
   }
