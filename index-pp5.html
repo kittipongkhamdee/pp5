@@ -1024,7 +1024,11 @@ const SUPABASE_URL = 'https://zwtulepvmlngcrbcrrki.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp3dHVsZXB2bWxuZ2NyYmNycmtpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNTc2NDcsImV4cCI6MjA5NTYzMzY0N30.9nhe0_NF3Fa-4FtmbE2AvQCtJdHS05RbkiyC8WvtvvA';
 // ════════════════════════════════════════════════════════════════
 
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// ใช้ sessionStorage แทน localStorage เพื่อให้ session อยู่รอดตอนรีเฟรชหน้า
+// แต่หายไปเองเมื่อปิดแท็บ/เบราว์เซอร์จริง ๆ (ปลอดภัยสำหรับคอมพิวเตอร์ที่ใช้ร่วมกัน)
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { storage: window.sessionStorage, persistSession: true, autoRefreshToken: true }
+});
 
 // ── STATE ────────────────────────────────────────────────────────
 const S = { user:null, profile:null, config:{}, subjects:[], selSub:null };
@@ -8233,16 +8237,10 @@ function clearAIChat(){
 
   window._initIdleTimeout=_initIdleTimeout;
   window._destroyIdleTimeout=_destroyIdleTimeout;
-
-  // Clear auth tokens when tab is closed / navigated away
-  window.addEventListener('pagehide',()=>{
-    if(!S||!S.user) return;
-    try{
-      Object.keys(localStorage)
-        .filter(k=>k.startsWith('sb-'))
-        .forEach(k=>localStorage.removeItem(k));
-    }catch(_){}
-  });
+  // หมายเหตุ: เดิมมี pagehide listener ที่ลบ auth token ทิ้งเพื่อบังคับ logout ตอนปิดแท็บ
+  // แต่ pagehide จะ fire ตอนรีเฟรชหน้าด้วย ทำให้ต้อง login ใหม่ทุกครั้งที่กด refresh
+  // ย้ายไปใช้ sessionStorage สำหรับเก็บ session แทน (ดู createClient ด้านบน) ซึ่งแก้ปัญหานี้
+  // ได้ตรงจุดกว่า: อยู่รอดตอนรีเฟรช แต่หายไปเองเมื่อปิดแท็บ/เบราว์เซอร์จริง ๆ
 })();
 </script>
 
