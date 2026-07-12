@@ -1068,6 +1068,8 @@ async function qcRevalidate(key, fn, onUpdate){
 // ── UTIL ─────────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
 const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+// ตัดคำว่า "โรงเรียน" ที่ขึ้นต้นชื่อโรงเรียนออก กันข้อความซ้ำเวลาต่อท้ายป้าย "ผู้อำนวยการโรงเรียน..."
+const schoolNameOnly = s => String(s||'').replace(/^โรงเรียน/,'');
 const escJs = s => String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const grm = (g,r) => +r===0 ? 'ม.'+g : 'ม.'+g+'/'+r;
 let _loadTimer=null;
@@ -5012,8 +5014,8 @@ ${cvTh('รายการประเมิน','text-align:left;padding-left:6
 <div style="flex:1;text-align:center"><div style="margin-bottom:2px">ลงชื่อ …………………………………………</div><div style="margin-bottom:2px">(${esc(cfg.head_academic||'........................................')})</div><div style="font-size:12px">หัวหน้างานวิชาการ</div></div>
 </div>
 <div style="display:flex;justify-content:space-around;font-size:13px;margin-top:16px">
-<div style="flex:1;text-align:center"><div style="margin-bottom:48px;text-align:left;padding-left:32px">เรียน เสนอมาเพื่อโปรดพิจารณา</div><div style="margin-bottom:2px">ลงชื่อ …………………………………………</div><div style="margin-bottom:2px">(${esc(cfg.vice_director||'……………………………………………')})</div><div style="font-size:12px">รองผู้อำนวยการโรงเรียน${esc(cfg.school_name||'')}</div></div>
-<div style="flex:1;text-align:center"><div style="margin-bottom:48px"><span style="font-size:18px">☐</span> อนุมัติ &nbsp;&nbsp; <span style="font-size:18px">☐</span> ไม่อนุมัติ</div><div style="margin-bottom:2px">ลงชื่อ …………………………………………</div><div style="margin-bottom:2px">(${esc(cfg.director_name||'……………………………………………')})</div><div style="font-size:12px">ผู้อำนวยการโรงเรียน${esc(cfg.school_name||'')}</div><div style="font-size:11.5px;margin-top:4px">วันที่ ……… เดือน …………………………………… พ.ศ. ………</div></div>
+<div style="flex:1;text-align:center"><div style="margin-bottom:48px;text-align:left;padding-left:32px">เรียน เสนอมาเพื่อโปรดพิจารณา</div><div style="margin-bottom:2px">ลงชื่อ …………………………………………</div><div style="margin-bottom:2px">(${esc(cfg.vice_director||'……………………………………………')})</div><div style="font-size:12px">รองผู้อำนวยการโรงเรียน${esc(schoolNameOnly(cfg.school_name))}</div></div>
+<div style="flex:1;text-align:center"><div style="margin-bottom:48px"><span style="font-size:18px">☐</span> อนุมัติ &nbsp;&nbsp; <span style="font-size:18px">☐</span> ไม่อนุมัติ</div><div style="margin-bottom:2px">ลงชื่อ …………………………………………</div><div style="margin-bottom:2px">(${esc(cfg.director_name||'……………………………………………')})</div><div style="font-size:12px">ผู้อำนวยการโรงเรียน${esc(schoolNameOnly(cfg.school_name))}</div><div style="font-size:11.5px;margin-top:4px">วันที่ ……… เดือน …………………………………… พ.ศ. ………</div></div>
 </div>
 </div></div>`;
 
@@ -5406,13 +5408,13 @@ async function pgCover(){
         <div style="margin-bottom:48px;text-align:left;padding-left:32px">เรียน เสนอมาเพื่อโปรดพิจารณา</div>
         <div style="margin-bottom:2px">ลงชื่อ …………………………………………</div>
         <div style="margin-bottom:2px">(${esc(cfg.vice_director||'……………………………………………')})</div>
-        <div style="font-size:12px">รองผู้อำนวยการโรงเรียน${esc(cfg.school_name||'')}</div>
+        <div style="font-size:12px">รองผู้อำนวยการโรงเรียน${esc(schoolNameOnly(cfg.school_name))}</div>
       </div>
       <div style="flex:1;text-align:center">
         <div style="margin-bottom:48px"><span style="font-size:18px">☐</span> อนุมัติ &nbsp;&nbsp; <span style="font-size:18px">☐</span> ไม่อนุมัติ</div>
         <div style="margin-bottom:2px">ลงชื่อ …………………………………………</div>
         <div style="margin-bottom:2px">(${esc(cfg.director_name||'……………………………………………')})</div>
-        <div style="font-size:12px">ผู้อำนวยการโรงเรียน${esc(cfg.school_name||'')}</div>
+        <div style="font-size:12px">ผู้อำนวยการโรงเรียน${esc(schoolNameOnly(cfg.school_name))}</div>
         <div style="font-size:11.5px;margin-top:4px">วันที่ ……… เดือน …………………………………… พ.ศ. ………</div>
       </div>
     </div>
