@@ -137,6 +137,7 @@ main{flex:1;max-width:860px;margin:0 auto;padding:48px 20px 56px;width:100%}
 .sys-card:hover{transform:translateY(-4px) scale(1.01);box-shadow:var(--shadow-hover)}
 .sys-card.card-blue:hover{box-shadow:var(--shadow-hover),0 0 36px rgba(0,113,227,.2)}
 .sys-card.card-green:hover{box-shadow:var(--shadow-hover),0 0 36px rgba(48,209,88,.2)}
+.sys-card.card-purple:hover{box-shadow:var(--shadow-hover),0 0 36px rgba(175,82,222,.2)}
 .sys-card:active{transform:translateY(0) scale(.99)}
 
 .sys-card::before{
@@ -152,6 +153,7 @@ main{flex:1;max-width:860px;margin:0 auto;padding:48px 20px 56px;width:100%}
 }
 .accent-blue{background:linear-gradient(90deg,#0071e3,#34a8f5)}
 .accent-green{background:linear-gradient(90deg,#30d158,#34c759)}
+.accent-purple{background:linear-gradient(90deg,#af52de,#c86edc)}
 
 .sys-header{display:flex;align-items:center;gap:14px;margin-bottom:14px}
 .sys-icon-wrap{
@@ -161,6 +163,7 @@ main{flex:1;max-width:860px;margin:0 auto;padding:48px 20px 56px;width:100%}
 }
 .icon-blue{background:linear-gradient(145deg,#e8f3ff,#cce3ff)}
 .icon-green{background:linear-gradient(145deg,#e3f9e8,#c6f4ce)}
+.icon-purple{background:linear-gradient(145deg,#f5e9fc,#ecd4f9)}
 
 .sys-title{font-size:18px;font-weight:800;color:var(--dark);letter-spacing:-.3px;margin-bottom:2px}
 .sys-caption{font-size:11px;font-weight:600;color:var(--gray2);letter-spacing:.2px}
@@ -173,6 +176,7 @@ main{flex:1;max-width:860px;margin:0 auto;padding:48px 20px 56px;width:100%}
 }
 .tag-blue{background:#e8f3ff;color:#0071e3}
 .tag-green{background:#e3f9e8;color:#1a9e37}
+.tag-purple{background:#f5e9fc;color:#af52de}
 
 .sys-footer{
   display:flex;align-items:center;justify-content:space-between;
@@ -181,12 +185,14 @@ main{flex:1;max-width:860px;margin:0 auto;padding:48px 20px 56px;width:100%}
 .sys-cta{font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px}
 .cta-blue{color:var(--blue)}
 .cta-green{color:#30d158}
+.cta-purple{color:#af52de}
 .sys-cta svg{transition:transform .15s}
 .sys-card:hover .sys-cta svg{transform:translateX(4px)}
 
 .sys-badge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px}
 .badge-blue{background:#e8f3ff;color:#0071e3}
 .badge-green{background:#e3f9e8;color:#1a9e37}
+.badge-purple{background:#f5e9fc;color:#af52de}
 
 /* ── Quick links ── */
 .quick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:48px}
@@ -266,6 +272,7 @@ footer{
   animation:rippleAnim .6s ease-out forwards;
 }
 .sys-card.card-green .ripple-el{background:rgba(26,158,55,.3)}
+.sys-card.card-purple .ripple-el{background:rgba(175,82,222,.3)}
 
 /* ── Page exit ── */
 @keyframes pageExit{to{opacity:0;transform:scale(.93)}}
@@ -331,7 +338,7 @@ body{animation:pageFadeIn .25s ease}
 
     <div class="hero-stats">
       <div class="hstat">
-        <div class="hstat-num" id="stat-sys">2</div>
+        <div class="hstat-num" id="stat-sys">3</div>
         <div class="hstat-lbl">ระบบ</div>
       </div>
       <div class="hstat-sep"></div>
@@ -437,6 +444,45 @@ body{animation:pageFadeIn .25s ease}
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
         </div>
         <span class="sys-badge badge-green">Activity</span>
+      </div>
+    </a>
+
+    <!-- จัดสอบ -->
+    <a class="sys-card card-purple reveal" data-delay="440" href="https://kittipongkhamdee.github.io/test/#/">
+      <div class="sys-card-accent accent-purple"></div>
+      <div class="sys-header">
+        <div class="sys-icon-wrap icon-purple">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#af52de" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 11l3 3L22 4"/>
+            <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+          </svg>
+        </div>
+        <div>
+          <div class="sys-title">ระบบการจัดสอบ</div>
+          <div class="sys-caption">จัดตารางและคุมสอบ</div>
+        </div>
+      </div>
+      <div class="sys-desc">จัดตารางสอบ จัดห้องสอบ และบันทึกผลการสอบของนักเรียน</div>
+      <div class="sys-tags">
+        <span class="tag tag-purple">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          ตารางสอบ
+        </span>
+        <span class="tag tag-purple">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/></svg>
+          ห้องสอบ
+        </span>
+        <span class="tag tag-purple">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+          ผลสอบ
+        </span>
+      </div>
+      <div class="sys-footer">
+        <div class="sys-cta cta-purple">
+          เข้าสู่ระบบการจัดสอบ
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </div>
+        <span class="sys-badge badge-purple">Exam</span>
       </div>
     </a>
 
