@@ -1276,6 +1276,18 @@ async function q(fn){
   if(error) throw new Error(error.message);
   return data;
 }
+// ดึงทุกแถวแบบแบ่งหน้า (Supabase ตัดผลลัพธ์ที่ 1000 แถวโดยไม่แจ้ง)
+// mk ต้องเป็นฟังก์ชันที่คืน query builder ใหม่ทุกครั้ง
+async function qAll(mk,size=1000){
+  let all=[],from=0;
+  for(;;){
+    const rows=await q(mk().range(from,from+size-1));
+    all=all.concat(rows);
+    if(rows.length<size)break;
+    from+=size;
+  }
+  return all;
+}
 function swTab(group,id){
   document.querySelectorAll(`[data-tg="${group}"]`).forEach(b=>b.classList.toggle('active',b.dataset.ti===id));
   document.querySelectorAll(`[data-tp="${group}"]`).forEach(p=>p.classList.toggle('active',p.id===id));
@@ -1506,7 +1518,7 @@ async function updateMsBadge(){
 
     // ดึง attendance ด้วย .eq() ต่อ subject (หลีกเลี่ยง RLS ปัญหากับ .in())
     const attArrays = await Promise.all(
-      subjIds.map(id=>q(sb.from('attendance').select('subject_id,student_id,status,periods').eq('subject_id',id)))
+      subjIds.map(id=>qAll(()=>sb.from('attendance').select('subject_id,student_id,status,periods').eq('subject_id',id)))
     );
     const attRows = attArrays.flat();
 
@@ -1974,7 +1986,7 @@ async function doResetPassword(){
     if(error){ toast(error.message,'er'); return; }
     $('reset-modal').style.display='none';
     toast('ตั้งรหัสผ่านใหม่เรียบร้อย — กรุณาเข้าสู่ระบบ','ok');
-    await sb.auth.signOut();
+    await sb.auth.signOut({scope:'local'});
     showLogin();
   }catch(e){ loadingOff(); toast('เกิดข้อผิดพลาด: '+(e.message||e),'er'); }
 }
@@ -2015,7 +2027,7 @@ async function doLogout(){
   if(window._destroyIdleTimeout) _destroyIdleTimeout();
   cleanupPresence();
   loading(true);
-  try{ await sb.auth.signOut(); }catch(e){}
+  try{ await sb.auth.signOut({scope:'local'}); }catch(e){}
   S.user=null; S.profile=null;
   loadingOff();
   showLogin();
@@ -2053,8 +2065,11 @@ function nav(page,subId){
   $('tbt').textContent=TITLES[page]||page;
   // settings: admin เข้าได้เลย, ครูคนอื่นต้องใส่รหัส
   if(page==='settings'){
+    const _openSettings=()=>Promise.resolve(pgSettings()).catch(e=>{
+      toast('โหลดหน้าตั้งค่าไม่สำเร็จ: '+(e.message||e),'er');
+    }).finally(loadingOff);
     if(S.profile?.is_admin){
-      pgSettings();
+      _openSettings();
     } else {
       adminAuth({
         title:'เข้าสู่หน้าตั้งค่า',
@@ -2063,7 +2078,7 @@ function nav(page,subId){
         onSuccess:()=>{
           document.querySelectorAll('.ni').forEach(e=>e.classList.remove('active'));
           const el=$('nav-settings');if(el)el.classList.add('active');
-          pgSettings();
+          _openSettings();
         }
       });
     }
@@ -2100,7 +2115,7 @@ async function getStudentsBySubject(subjectId){
   const key=`students_${sub.grade_level}_${sub.room}`;
   S._stuCache=S._stuCache||{};
   return await qc(key, ()=>
-    q(sb.from('students').select('*').eq('grade_level',sub.grade_level).eq('room',sub.room).order('student_code'))
+    qAll(()=>sb.from('students').select('*').eq('grade_level',sub.grade_level).eq('room',sub.room).order('student_code'))
   );
 }
 function clearStuCache(){ cacheInvPrefix('students_'); S._stuCache={}; }
@@ -2121,9 +2136,9 @@ async function pgDash(){
       subjIds.length ?
         Promise.all(subjIds.map(id=>q(sb.from('score_summary').select('subject_id,student_id,grade,total_score').eq('subject_id',id))))
         : Promise.resolve([[]]),
-      q(sb.from('students').select('id,grade_level,room')),
+      qAll(()=>sb.from('students').select('id,grade_level,room')),
       subjIds.length ?
-        Promise.all(subjIds.map(id=>q(sb.from('attendance').select('subject_id,student_id,status,periods').eq('subject_id',id))))
+        Promise.all(subjIds.map(id=>qAll(()=>sb.from('attendance').select('subject_id,student_id,status,periods').eq('subject_id',id))))
         : Promise.resolve([[]])
     ]);
     const allSum = allSumArrays.flat();
@@ -2479,8 +2494,8 @@ function openSubModal(id){
           <div><label class="fl">หน่วยกิต</label><input type="number" class="fi" id="f-cr" value="${s?.credits||1.5}" step="0.5" min="0.5" oninput="updHours()"></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
-          <div><label class="fl">ชั่วโมง/สัปดาห์</label><input type="number" class="fi" id="f-hw" value="${s?.hours_per_week||3}" min="1"></div>
-          <div><label class="fl">ชั่วโมง/ภาค</label><input type="number" class="fi" id="f-th" value="${s?.total_hours||60}" min="1"></div>
+          <div><label class="fl">ชั่วโมง/สัปดาห์</label><input type="number" class="fi" id="f-hw" value="${s?.hours_per_week||3}" min="1" oninput="this.dataset.man='1'"></div>
+          <div><label class="fl">ชั่วโมง/ภาค</label><input type="number" class="fi" id="f-th" value="${s?.total_hours||60}" min="1" oninput="this.dataset.man='1'"></div>
         </div>
         <div style="margin-top:14px">
           <label class="fl">วันสอนประจำสัปดาห์ <span style="font-weight:400;color:var(--muted)">(ใช้กับปุ่ม "สร้างวันอัตโนมัติ" ในหน้าบันทึกเวลาเรียน)</span></label>
@@ -2523,9 +2538,11 @@ function openSubModal(id){
   _loadSubCat();
 }
 function updHours(){
+  // คำนวณอัตโนมัติเฉพาะช่องที่ผู้ใช้ยังไม่ได้พิมพ์เองในฟอร์มนี้ (dataset.man ตั้งจาก oninput)
   const cr=+$('f-cr').value||0;
-  $('f-th').value=Math.round(cr*40);
-  $('f-hw').value=Math.round(cr*2);
+  const th=$('f-th'),hw=$('f-hw');
+  if(th&&!th.dataset.man)th.value=Math.round(cr*40);
+  if(hw&&!hw.dataset.man)hw.value=Math.round(cr*2);
 }
 function updTot(){
   const t=['f-sbm','f-sm','f-sam','f-sf'].reduce((a,i)=>a+(+$(i)?.value||0),0);
@@ -2551,8 +2568,11 @@ async function saveSubForm(id){
     let subjectId=id;
     if(id){ await q(sb.from('subjects').update(payload).eq('id',id).eq('user_id',S.user.id)); }
     else   { const inserted=await q(sb.from('subjects').insert(payload).select('id')); subjectId=inserted[0].id; }
+    // บันทึกวันสอนแยกจากตัววิชา — ถ้าพลาดตรงนี้ วิชายังถูกบันทึกแล้ว ห้ามให้ผู้ใช้กดซ้ำจนวิชาซ้ำ
     const cdKey='class_days_'+subjectId;
-    await q(sb.from('config').upsert([{key:cdKey,value:JSON.stringify(classDays)}],{onConflict:'key'}));
+    try{
+      await q(sb.from('config').upsert([{key:cdKey,value:JSON.stringify(classDays)}],{onConflict:'key'}));
+    }catch(e){toast('บันทึกวิชาสำเร็จ แต่บันทึกวันสอนไม่สำเร็จ: '+e.message,'er');}
     await loadConfig();
     _subCat=null;
     invalidateSubjects(); await loadSubjects();
@@ -2566,6 +2586,7 @@ async function delSub(id,name){
     await q(sb.from('subjects').delete().eq('id',id).eq('user_id',S.user.id));
     try{ await q(sb.from('config').upsert([{key:'class_days_'+id,value:'[]'}],{onConflict:'key'})); }catch(e){}
     await loadConfig();
+    _subCat=null;
     invalidateSubjects(); await loadSubjects();toast('ลบเรียบร้อย');pgSubjects();
   }
   catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
@@ -2762,7 +2783,7 @@ async function _doPromote(students, toGrade, toRoom, fromG, fromR){
 
 async function pgStudents(){
   loading(true);
-  allStu=await q(sb.from('students').select('*').order('grade_level').order('room').order('student_code'));
+  allStu=await qAll(()=>sb.from('students').select('*').order('grade_level').order('room').order('student_code'));
   loading(false);
   const grs=[...new Set(allStu.map(s=>`${grm(s.grade_level,s.room)}`))].sort();
   $('pg').innerHTML=`
@@ -2854,7 +2875,7 @@ async function saveStu(id){
     if(id){ await q(sb.from('students').update(payload).eq('id',id)); }
     else   { await q(sb.from('students').insert(payload)); }
     clearStuCache();
-    allStu=await q(sb.from('students').select('*').order('grade_level').order('room').order('student_code'));
+    allStu=await qAll(()=>sb.from('students').select('*').order('grade_level').order('room').order('student_code'));
     rmModal('stuMod');toast(id?'แก้ไขเรียบร้อย':'เพิ่มนักเรียนเรียบร้อย');
     filterStu();$('stu-cnt').textContent='รวม '+allStu.length+' คน';
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
@@ -2870,7 +2891,7 @@ async function delStu(id,name){
         try{
           await q(sb.from('students').delete().eq('id',id));
           clearStuCache();
-          allStu=await q(sb.from('students').select('*').order('grade_level').order('room').order('student_code'));
+          allStu=await qAll(()=>sb.from('students').select('*').order('grade_level').order('room').order('student_code'));
           toast('ลบเรียบร้อย');filterStu();
         }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
       }});
@@ -3048,7 +3069,7 @@ async function doImport(){
         total+=batch.length;
       }
       clearStuCache();
-      allStu=await q(sb.from('students').select('*').order('grade_level').order('room').order('student_code'));
+      allStu=await qAll(()=>sb.from('students').select('*').order('grade_level').order('room').order('student_code'));
       _excelData=[];
       rmModal('impMod');
       toast('นำเข้า '+total+' คนเรียบร้อย');
@@ -3075,7 +3096,7 @@ async function doImport(){
     try{
       await q(sb.from('students').upsert(arr,{onConflict:'student_code,grade_level,room',ignoreDuplicates:false}));
       clearStuCache();
-      allStu=await q(sb.from('students').select('*').order('grade_level').order('room').order('student_code'));
+      allStu=await qAll(()=>sb.from('students').select('*').order('grade_level').order('room').order('student_code'));
       rmModal('impMod');toast('นำเข้า '+arr.length+' คนเรียบร้อย');
       filterStu();$('stu-cnt').textContent='รวม '+allStu.length+' คน';
     }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
@@ -3106,8 +3127,8 @@ async function loadAttData(){
   const stuKey=`students_${attSub?.grade_level}_${attSub?.room}`;
   // โหลดพร้อมกัน ใช้ cache ถ้ามี
   [attStus,attData]=await Promise.all([
-    qc(stuKey, ()=>q(sb.from('students').select('*').eq('grade_level',attSub.grade_level).eq('room',attSub.room).order('student_code'))),
-    qc(attKey, ()=>q(sb.from('attendance').select('*').eq('subject_id',S.selSub)))
+    qc(stuKey, ()=>qAll(()=>sb.from('students').select('*').eq('grade_level',attSub.grade_level).eq('room',attSub.room).order('student_code'))),
+    qc(attKey, ()=>qAll(()=>sb.from('attendance').select('*').eq('subject_id',S.selSub)))
   ]);
   loading(false);
 }
@@ -3431,23 +3452,22 @@ async function saveMonth(){
   toast('บันทึกเวลาเรียน '+mn+' '+by+' เรียบร้อย');
   // อัปแท็บสรุปทันที (real-time) เพราะ attData ถูก update แล้ว
   _refreshSummaryTab();
-  // บันทึก API เบื้องหลัง
+  // บันทึก API เบื้องหลัง — refetch หลัง upsert สำเร็จเท่านั้น (ไม่ใช้ timer กันแข่งกันเขียนทับ optimistic update)
   invalidateAtt(); cacheInv('att_sum_'+S.selSub);
-  let _syncTimer=setTimeout(async()=>{
-    try{
-      invalidateAtt();
-      attData=await q(sb.from('attendance').select('*').eq('subject_id',S.selSub));
-      _refreshSummaryTab();
-    }catch(e){}
-  }, 1500);
   q(sb.from('attendance').upsert(rows,{onConflict:'subject_id,student_id,year_month,date_day'}))
-    .then(()=>{ cacheInv('ms_att_'+S.user.id); updateMsBadge(); })
+    .then(async()=>{
+      cacheInv('ms_att_'+S.user.id); updateMsBadge();
+      try{
+        invalidateAtt();
+        attData=await qAll(()=>sb.from('attendance').select('*').eq('subject_id',S.selSub));
+        _refreshSummaryTab();
+      }catch(e){}
+    })
     .catch(e=>{
-      clearTimeout(_syncTimer);
       toast('บันทึกผิดพลาด: '+e.message,'er');
       // rollback optimistic update ทันที
       invalidateAtt();
-      q(sb.from('attendance').select('*').eq('subject_id',S.selSub))
+      qAll(()=>sb.from('attendance').select('*').eq('subject_id',S.selSub))
         .then(d=>{ attData=d; _refreshSummaryTab(); }).catch(()=>{});
     });
 }
@@ -3783,7 +3803,7 @@ async function loadScData(){
   scSub=getSubject(S.selSub);
   [scStus,scUnits,scSum]=await Promise.all([
     getStudentsBySubject(S.selSub),
-    qc('sc_units_'+S.selSub, ()=>q(sb.from('score_units').select('*').eq('subject_id',S.selSub))),
+    qc('sc_units_'+S.selSub, ()=>qAll(()=>sb.from('score_units').select('*').eq('subject_id',S.selSub))),
     qc('sc_sum_'+S.selSub,   ()=>q(sb.from('score_summary').select('*').eq('subject_id',S.selSub)))
   ]);
   rebuildUnits();
@@ -4004,7 +4024,7 @@ async function addUnitOnly(period){
     if(rows.length){
       await q(sb.from('score_units').upsert(rows,{onConflict:'subject_id,student_id,period,unit_number'}));
     }
-    scUnits=await q(sb.from('score_units').select('*').eq('subject_id',S.selSub));
+    scUnits=await qAll(()=>sb.from('score_units').select('*').eq('subject_id',S.selSub));
     rebuildUnits();
     toast('เพิ่มหน่วย '+un+' เรียบร้อย — กดแก้ไขเพื่อกรอกคะแนน');
     const tabId='sc-'+(period==='before'?'bf':'af');
@@ -4065,7 +4085,7 @@ async function deleteUnit(period,unitNum,unitName){
       await q(sb.from('score_units').delete().in('id',idsToDelete));
     }
     invalidateSc();
-    scUnits=await q(sb.from('score_units').select('*').eq('subject_id',S.selSub));
+    scUnits=await qAll(()=>sb.from('score_units').select('*').eq('subject_id',S.selSub));
     rebuildUnits();
     toast('ลบหน่วย '+unitNum+' เรียบร้อย');
     const tabId='sc-'+(period==='before'?'bf':'af');
@@ -4108,7 +4128,7 @@ async function saveUnitSc(){
   try{
     invalidateSc();
     await q(sb.from('score_units').upsert(rows,{onConflict:'subject_id,student_id,period,unit_number'}));
-    scUnits=await q(sb.from('score_units').select('*').eq('subject_id',S.selSub));
+    scUnits=await qAll(()=>sb.from('score_units').select('*').eq('subject_id',S.selSub));
     rebuildUnits();
     rmModal('unMod');
     toast('บันทึกคะแนนหน่วย '+un+' เรียบร้อย');
@@ -4155,7 +4175,7 @@ async function saveExam(){
   loading(true);
   try{
     // ดึง score_units สดๆ ก่อนคำนวณ เพื่อป้องกัน stale data จากเซสชันอื่น
-    const freshUnits=await q(sb.from('score_units').select('*').eq('subject_id',S.selSub));
+    const freshUnits=await qAll(()=>sb.from('score_units').select('*').eq('subject_id',S.selSub));
     scUnits=freshUnits;
     const rows=scStus.map(s=>{
       const sm=gsum(s.id);
@@ -4766,7 +4786,7 @@ async function pgReport(){
     qc('sc_sum_'+S.selSub,  ()=>q(sb.from('score_summary').select('*').eq('subject_id',S.selSub))),
     qc('ev_read_'+S.selSub, ()=>q(sb.from('eval_read').select('*').eq('subject_id',S.selSub))),
     qc('ev_char_'+S.selSub, ()=>q(sb.from('eval_char').select('*').eq('subject_id',S.selSub))),
-    qc('att_sum_'+S.selSub, ()=>q(sb.from('attendance').select('student_id,status,periods').eq('subject_id',S.selSub)))
+    qc('att_sum_'+S.selSub, ()=>qAll(()=>sb.from('attendance').select('student_id,status,periods').eq('subject_id',S.selSub)))
   ]);
   loading(false);
   const sumMap=Object.fromEntries(sumRows.map(s=>[s.student_id,s]));
@@ -5133,8 +5153,8 @@ async function printAllPP5(){
       qc('sc_sum_'+subId,   ()=>q(sb.from('score_summary').select('*').eq('subject_id',subId))),
       qc('ev_read_'+subId,  ()=>q(sb.from('eval_read').select('*').eq('subject_id',subId))),
       qc('ev_char_'+subId,  ()=>q(sb.from('eval_char').select('*').eq('subject_id',subId))),
-      qc('sc_units_'+subId, ()=>q(sb.from('score_units').select('*').eq('subject_id',subId))),
-      qc('att_'+subId,      ()=>q(sb.from('attendance').select('*').eq('subject_id',subId)))
+      qc('sc_units_'+subId, ()=>qAll(()=>sb.from('score_units').select('*').eq('subject_id',subId))),
+      qc('att_'+subId,      ()=>qAll(()=>sb.from('attendance').select('*').eq('subject_id',subId)))
     ]);
     loading(false);
     const sumMap=Object.fromEntries(sumRows.map(s=>[s.student_id,s]));
@@ -5189,8 +5209,8 @@ async function exportAllPP5(){
       qc('sc_sum_'+subId,   ()=>q(sb.from('score_summary').select('*').eq('subject_id',subId))),
       qc('ev_read_'+subId,  ()=>q(sb.from('eval_read').select('*').eq('subject_id',subId))),
       qc('ev_char_'+subId,  ()=>q(sb.from('eval_char').select('*').eq('subject_id',subId))),
-      qc('sc_units_'+subId, ()=>q(sb.from('score_units').select('*').eq('subject_id',subId))),
-      qc('att_'+subId,      ()=>q(sb.from('attendance').select('*').eq('subject_id',subId)))
+      qc('sc_units_'+subId, ()=>qAll(()=>sb.from('score_units').select('*').eq('subject_id',subId))),
+      qc('att_'+subId,      ()=>qAll(()=>sb.from('attendance').select('*').eq('subject_id',subId)))
     ]);
     loading(false);
     const sumMap=Object.fromEntries(sumRows.map(s=>[s.student_id,s]));
@@ -5689,8 +5709,10 @@ let _syncActivities=[];
 async function pgSettings(){
   const cfg=S.config;
   _sgList=[...SUBJECT_GROUPS];
+  loading(true);
   try{ _syncActivities=await q(sb.from('activities').select('id,name').eq('is_active',true).order('id')); }
   catch(e){ _syncActivities=[]; }
+  finally{ loading(false); }
   $('pg').innerHTML=`
   <div class="ph">
     <div class="ptitle">
@@ -6884,9 +6906,9 @@ async function backupAllData(){
       allEvalRead, allEvalChar, allConfig, allProfiles
     ] = await Promise.all([
       q(sb.from('subjects').select('*').order('grade_level').order('room').order('subject_name')),
-      q(sb.from('students').select('*').order('grade_level').order('room').order('student_code')),
-      q(sb.from('attendance').select('*').order('subject_id').order('student_id').order('year_month').order('date_day')),
-      q(sb.from('score_units').select('*').order('subject_id').order('student_id').order('period').order('unit_number')),
+      qAll(()=>sb.from('students').select('*').order('grade_level').order('room').order('student_code')),
+      qAll(()=>sb.from('attendance').select('*').order('subject_id').order('student_id').order('year_month').order('date_day')),
+      qAll(()=>sb.from('score_units').select('*').order('subject_id').order('student_id').order('period').order('unit_number')),
       q(sb.from('score_summary').select('*').order('subject_id').order('student_id')),
       q(sb.from('eval_read').select('*').order('subject_id').order('student_id')),
       q(sb.from('eval_char').select('*').order('subject_id').order('student_id')),
@@ -7038,7 +7060,7 @@ async function pgSchoolReport(){
     const [allSubjects, allSumRows, allAttRows, allProfiles] = await Promise.all([
       q(sb.from('subjects').select('*').order('grade_level').order('room').order('subject_name')),
       q(sb.from('score_summary').select('subject_id,student_id,grade,total_score,special_result')),
-      q(sb.from('attendance').select('subject_id,student_id,status,periods')),
+      qAll(()=>sb.from('attendance').select('subject_id,student_id,status,periods')),
       q(sb.from('profiles').select('id,full_name')),
     ]);
     loading(false);
@@ -7052,7 +7074,7 @@ async function pgSchoolReport(){
 
     // นับนักเรียนต่อ ชั้น/ห้อง
     const stuCountMap = {};
-    const allStus = await q(sb.from('students').select('id,grade_level,room,student_name,student_code').order('grade_level').order('room').order('student_code'));
+    const allStus = await qAll(()=>sb.from('students').select('id,grade_level,room,student_name,student_code').order('grade_level').order('room').order('student_code'));
     allStus.forEach(s=>{ const k=s.grade_level+'_'+s.room; stuCountMap[k]=(stuCountMap[k]||[]).concat(s.id); });
     S._schoolStudents = allStus;
 
@@ -7475,9 +7497,9 @@ async function buildAIContext(){
   let ctx=`ครู:${S.profile?.full_name||''} โรงเรียน:${cfg.school_name||''} ปีการศึกษา:${cfg.academic_year||''}/ภาค${cfg.semester||''}\n`;
   if(!subjIds.length){ ctx+='ยังไม่มีรายวิชา'; return ctx; }
   const [allStudents,allSum,allAtt]=await Promise.all([
-    q(sb.from('students').select('id,student_code,student_name,grade_level,room').order('grade_level').order('room').order('student_code')),
+    qAll(()=>sb.from('students').select('id,student_code,student_name,grade_level,room').order('grade_level').order('room').order('student_code')),
     q(sb.from('score_summary').select('subject_id,student_id,grade,total_score,special_result').in('subject_id',subjIds)),
-    q(sb.from('attendance').select('subject_id,student_id,status,periods').in('subject_id',subjIds)),
+    qAll(()=>sb.from('attendance').select('subject_id,student_id,status,periods').in('subject_id',subjIds)),
   ]);
   const sumBySubj={}, attBySubj={};
   allSum.forEach(r=>{ (sumBySubj[r.subject_id]||(sumBySubj[r.subject_id]=[])).push(r); });
@@ -8026,7 +8048,8 @@ function clearAIChat(){
         const cur=parseInt(fab.style.right)||20;
         const mid=vw/2;
         const fromLeft=vw-cur-SIZE; // current left position
-        const snapped=fromLeft<mid ? EDGE : vw-SIZE-EDGE;
+        // ค่านี้คือ style.right: อยู่ครึ่งซ้าย → ชิดซ้าย (right ใหญ่), ครึ่งขวา → ชิดขวา (right=EDGE)
+        const snapped=fromLeft<mid ? vw-SIZE-EDGE : EDGE;
         fab.style.transition='right .2s cubic-bezier(.34,1.56,.64,1),bottom .2s,transform .2s,opacity .2s';
         fab.style.right=snapped+'px';
         try{
@@ -8157,7 +8180,7 @@ function clearAIChat(){
   _lovWelcomeShow();
 })();
 
-// ── AUTO-LOGOUT (idle timeout + tab-close) ───────────────────────────────
+// ── AUTO-LOGOUT (idle timeout) ───────────────────────────────────────────
 (function(){
   const IDLE_MS=30*60*1000;   // 30 minutes
   const WARN_BEFORE_MS=60*1000; // show warning 1 min before logout
@@ -8216,7 +8239,7 @@ function clearAIChat(){
     _removeDialog();
     if(!S||!S.user) return;
     if(typeof cleanupPresence==='function') cleanupPresence();
-    try{ sb.auth.signOut(); }catch(_){}
+    try{ sb.auth.signOut({scope:'local'}); }catch(_){}
     S.user=null; S.profile=null;
     loadingOff();
     showLogin();

@@ -1074,7 +1074,6 @@ const S={
   rptTab:'school',rptActivityId:null,rptDate:todayStr(),rptSession:'morning',rptStuId:null,rptStuClass:null,rptStuSearch:'',rptStuActivityId:null,rptSchoolData:null,rptActData:null,rptStuData:null,rptPctData:null,rptPctThreshold:80,rptPctActivityId:null,rptPctClass:null,
   rptServiceDate:todayStr(),rptServiceTeachers:['','',''],
   rptClassActivityId:null,rptClassClass:null,rptClassDate:null,rptClassSession:'morning',rptClassData:null,
-  rptLateActivityId:null,rptLateDate:null,
   rptStreakActivityId:null,rptStreakMin:3,
   unifViolations:[],unifDate:todayStr(),unifClass:null,unifChecks:{},unifTab:'check',
   ckUnifChecks:{},unifCheckSessions:'',
@@ -1102,7 +1101,20 @@ function toast(msg,type='ok',dur=2500){const t=$('toast');t.textContent=msg;t.cl
 function loading(b){$('loader').style.display=b?'flex':'none'}
 function q(p){return p.then(({data,error})=>{if(error)throw error;return data})}
 // activity_attend query: legacy 'tardy' records are counted as 'present'
-function qA(p){return q(p).then(rows=>{if(Array.isArray(rows))rows.forEach(r=>{if(r.status==='tardy')r.status='present'});return rows})}
+function _normTardy(rows){if(Array.isArray(rows))rows.forEach(r=>{if(r.status==='tardy')r.status='present'});return rows}
+function qA(p){return q(p).then(_normTardy)}
+// ดึงทุกแถวแบบแบ่งหน้า (Supabase ตัดผลลัพธ์ที่ 1000 แถวโดยไม่แจ้ง) — mk ต้องคืน query builder ใหม่ทุกครั้ง
+async function qAll(mk,size=1000){
+  let all=[],from=0;
+  for(;;){
+    const rows=await q(mk().range(from,from+size-1));
+    all=all.concat(rows);
+    if(rows.length<size)break;
+    from+=size;
+  }
+  return all;
+}
+function qAllA(mk){return qAll(mk).then(_normTardy)}
 
 function actBg(id){const cs=['#ff9500','#007aff','#34c759','#af52de','#ff3b30','#30b0c7','#ff6b6b','#5856d6'];return cs[id%cs.length]}
 function actEmoji(name){
@@ -1126,7 +1138,7 @@ function actEmoji(name){
 // ─── Data ──────────────────────────────────────────────────────────────────
 async function loadActivities(){S.activities=await q(sb.from('activities').select('id,name,description,has_evening,is_active').order('id'))}
 async function loadStudents(){
-  S.students=await q(sb.from('students').select('id,student_code,student_name,grade_level,room').order('grade_level').order('room').order('student_code'));
+  S.students=await qAll(()=>sb.from('students').select('id,student_code,student_name,grade_level,room').order('grade_level').order('room').order('student_code'));
   const seen=new Set();S.classes=[];
   S.students.forEach(s=>{const k=`${s.grade_level}_${s.room}`;if(!seen.has(k)){seen.add(k);S.classes.push({grade_level:s.grade_level,room:s.room})}});
   const gradeCnt={};S.classes.forEach(c=>{gradeCnt[c.grade_level]=(gradeCnt[c.grade_level]||0)+1});
@@ -1144,7 +1156,7 @@ async function loadUnifCheckSetting(){
 async function loadAttend(actId,date,session){
   const key=`${actId}_${date}_${session}`;
   if(S.attendCache[key])return S.attendCache[key];
-  const rows=await qA(sb.from('activity_attend').select('id,student_id,status').eq('activity_id',actId).eq('date',date).eq('session',session));
+  const rows=await qAllA(()=>sb.from('activity_attend').select('id,student_id,status').eq('activity_id',actId).eq('date',date).eq('session',session));
   const map={};rows.forEach(r=>{map[r.student_id]={id:r.id,status:r.status}});
   S.attendCache[key]=map;
   return map;
@@ -1474,7 +1486,7 @@ async function renderHome(){
     }else if(total>0){
       try{
         const ids=acts.map(a=>a.id);
-        const rows=await qA(sb.from('activity_attend').select('activity_id,session,status,student_id').in('activity_id',ids).eq('date',today));
+        const rows=await qAllA(()=>sb.from('activity_attend').select('activity_id,session,status,student_id').in('activity_id',ids).eq('date',today));
         rows.forEach(r=>{
           if(!aMap[r.activity_id])aMap[r.activity_id]={};
           if(!aMap[r.activity_id][r.session])aMap[r.activity_id][r.session]={ok:0,n:0,cls:new Set()};
@@ -1740,7 +1752,8 @@ async function setStatus(stuId,status){
       S.ckAttend[stuId]=rec;
       if(S.attendCache[cacheKey])S.attendCache[cacheKey][stuId]=rec;
     }else{
-      const r=await q(sb.from('activity_attend').insert(payload).select('id,status'));
+      // upsert กันแถวซ้ำเมื่อกดปุ่มรัวๆ ก่อน insert แรกจะเสร็จ (แบบเดียวกับ checkAll)
+      const r=await q(sb.from('activity_attend').upsert(payload,{onConflict:'activity_id,student_id,date,session'}).select('id,status'));
       const rec={id:r[0].id,status};
       S.ckAttend[stuId]=rec;
       if(S.attendCache[cacheKey])S.attendCache[cacheKey][stuId]=rec;
@@ -2018,8 +2031,8 @@ async function renderRptActivity(){
   if(S.rptActCacheKey===_rptActKey&&S.rptActData?.bodyHtml){$('rpt-act-body').innerHTML=S.rptActData.bodyHtml;return}
   try{
     const[mR,eR]=await Promise.all([
-      qA(sb.from('activity_attend').select('student_id,status').eq('activity_id',S.rptActivityId).eq('date',S.rptDate).eq('session','morning')),
-      qA(sb.from('activity_attend').select('student_id,status').eq('activity_id',S.rptActivityId).eq('date',S.rptDate).eq('session','evening')),
+      qAllA(()=>sb.from('activity_attend').select('student_id,status').eq('activity_id',S.rptActivityId).eq('date',S.rptDate).eq('session','morning')),
+      qAllA(()=>sb.from('activity_attend').select('student_id,status').eq('activity_id',S.rptActivityId).eq('date',S.rptDate).eq('session','evening')),
     ]);
     const act=S.activities.find(a=>a.id==S.rptActivityId);
     const mM={};mR.forEach(r=>mM[r.student_id]=r.status);
@@ -2124,9 +2137,12 @@ async function _loadRptStudentData(){
   if(!S.rptStuId){$('rpt-stu-body').innerHTML='<div class="empty-state">เลือกนักเรียนเพื่อดูประวัติ</div>';return}
   $('rpt-stu-body').innerHTML='<div class="loading-text">กำลังโหลด...</div>';
   try{
-    let qb=sb.from('activity_attend').select('date,session,status,activities(name)').eq('student_id',S.rptStuId).order('date',{ascending:false}).order('session');
-    if(S.rptStuActivityId) qb=qb.eq('activity_id',S.rptStuActivityId);
-    const rows=await qA(qb);
+    const _mk=()=>{
+      let qb=sb.from('activity_attend').select('date,session,status,activities(name)').eq('student_id',S.rptStuId).order('date',{ascending:false}).order('session');
+      if(S.rptStuActivityId) qb=qb.eq('activity_id',S.rptStuActivityId);
+      return qb;
+    };
+    const rows=await qAllA(_mk);
     if(!rows.length){$('rpt-stu-body').innerHTML='<div class="empty-state">ยังไม่มีข้อมูลการเข้าร่วมกิจกรรม</div>';return}
     const stu=S.students.find(s=>s.id===S.rptStuId)||{};
     S.rptStuData={rows,stu};
@@ -2202,7 +2218,7 @@ async function renderRptClass(){
     const session=ev?S.rptClassSession:'morning';
     const[gl,room]=S.rptClassClass.split('_');
     const classStudents=S.students.filter(s=>String(s.grade_level)===gl&&String(s.room)===room);
-    const rows=await qA(sb.from('activity_attend').select('student_id,status').eq('activity_id',S.rptClassActivityId).eq('date',S.rptClassDate).eq('session',session));
+    const rows=await qAllA(()=>sb.from('activity_attend').select('student_id,status').eq('activity_id',S.rptClassActivityId).eq('date',S.rptClassDate).eq('session',session));
     const aMap={};rows.forEach(r=>aMap[r.student_id]=r.status);
     const stuWithStatus=classStudents.map(s=>({...s,status:aMap[s.id]||'unrecorded'}));
     const pr=stuWithStatus.filter(s=>s.status==='present').length;
@@ -2235,80 +2251,6 @@ async function renderRptClass(){
     S.rptClassData.bodyHtml=$('rpt-class-body').innerHTML;S.rptClassCacheKey=_rptClsKey;
   }catch(e){$('rpt-class-body').innerHTML=`<div class="empty-state">เกิดข้อผิดพลาด: ${esc(e.message)}</div>`}
 }
-
-// ── Report: late arrivals (absent morning + present evening) ──
-async function renderRptLate(){
-  if(!S.rptLateDate)S.rptLateDate=todayStr();
-  const evActs=S.activities.filter(a=>a.has_evening);
-  const aOpts=evActs.map(a=>`<option value="${a.id}"${S.rptLateActivityId==a.id?' selected':''}>${esc(a.name)}</option>`).join('');
-  $('rpt-content').innerHTML=`
-    <div class="filter-row">
-      <select class="ios-select" onchange="S.rptLateActivityId=+this.value||null;renderRptLate()">${'<option value="">-- เลือกกิจกรรม --</option>'+aOpts}</select>
-    </div>
-    <div class="filter-row">
-      <input type="date" class="ios-input" value="${S.rptLateDate}" onchange="S.rptLateDate=this.value;renderRptLate()">
-    </div>
-    <div id="rpt-late-body">${!S.rptLateActivityId?'<div class="empty-state">เลือกกิจกรรมเพื่อดูรายงาน<small>เฉพาะกิจกรรมที่มีทั้งรอบเช้าและบ่าย</small></div>':'<div class="loading-text">กำลังโหลด...</div>'}</div>`;
-  if(!S.rptLateActivityId)return;
-  try{
-    const rows=await qA(sb.from('activity_attend').select('student_id,session,status').eq('activity_id',S.rptLateActivityId).eq('date',S.rptLateDate));
-    const mMap={},eMap={};
-    rows.forEach(r=>{
-      if(r.session==='morning')mMap[r.student_id]=r.status;
-      else if(r.session==='evening')eMap[r.student_id]=r.status;
-    });
-    const lateIds=Object.keys(eMap).filter(id=>mMap[id]==='absent'&&eMap[id]==='present');
-    const lateStus=lateIds.map(id=>S.students.find(s=>String(s.id)===String(id))).filter(Boolean);
-    lateStus.sort((a,b)=>{
-      const ka=`${a.grade_level}_${String(a.room).padStart(3,'0')}_${a.student_name}`;
-      const kb=`${b.grade_level}_${String(b.room).padStart(3,'0')}_${b.student_name}`;
-      return ka.localeCompare(kb,'th');
-    });
-    const act=S.activities.find(a=>a.id==S.rptLateActivityId);
-    S.rptLateData={lateStus,act,date:S.rptLateDate};
-    const hdr=`<div style="text-align:center;border-bottom:2px solid #e5e7eb;padding-bottom:12px;margin-bottom:14px">
-      <div style="font-size:13px;font-weight:700;color:#1e40af">${esc(act?.name||'')}</div>
-      <div style="font-size:13px;font-weight:600;color:#374151;margin-top:4px">รายชื่อนักเรียนที่มาสาย</div>
-      <div style="font-size:12px;color:#6b7280;margin-top:3px">${thDate(S.rptLateDate)} · ขาดเช้า–มาบ่าย</div>
-      <div style="font-size:12px;color:#6b7280;margin-top:2px">พบ ${lateStus.length} คน</div>
-    </div>`;
-    let body='';
-    if(!lateStus.length){
-      body='<div class="empty-state">ไม่พบนักเรียนที่มาสายในวันนี้</div>';
-    }else{
-      let trs='';
-      lateStus.forEach((s,i)=>{trs+=`<tr><td>${i+1}</td><td class="screen-hide">${esc(s.student_code||'')}</td><td class="left" style="white-space:nowrap">${esc(s.student_name)}</td><td class="nowrap">${classLabel(s.grade_level,s.room)}</td></tr>`});
-      body=`<div class="table-wrap"><table class="rpt-table">
-        <thead><tr><th>#</th><th class="screen-hide">รหัส</th><th class="left">ชื่อ-สกุล</th><th>ชั้น</th></tr></thead>
-        <tbody>${trs}</tbody></table></div>
-        <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
-          <button class="btn btn-export" onclick="exportLatePDF()">📄 PDF/พิมพ์</button>
-          <button class="btn btn-export" onclick="exportLateXLSX()">📊 Excel</button>
-          <button class="btn btn-export" onclick="exportLateImg()">🖼 รูปภาพ</button>
-        </div>`;
-    }
-    $('rpt-late-body').innerHTML=hdr+body;
-  }catch(e){$('rpt-late-body').innerHTML=`<div class="empty-state">เกิดข้อผิดพลาด: ${esc(e.message)}</div>`}
-}
-
-// ── Export: late arrivals ──
-function exportLatePDF(){
-  const d=S.rptLateData;if(!d)return;
-  let rows='';
-  d.lateStus.forEach((s,i)=>{rows+=`<tr><td>${i+1}</td><td>${esc(s.student_code||'')}</td><td class="left">${esc(s.student_name)}</td><td>${classLabel(s.grade_level,s.room)}</td></tr>`});
-  const body=`<div class="sr-header"><div class="sr-school">${esc(S.schoolName)}</div><div class="sr-title">รายชื่อนักเรียนที่มาสาย</div><div class="sr-date">${esc(d.act?.name||'')} · ${thDate(d.date)} · พบ ${d.lateStus.length} คน</div></div>
-    <table><thead><tr><th>#</th><th>รหัส</th><th>ชื่อ-สกุล</th><th>ชั้น</th></tr></thead><tbody>${rows}</tbody></table>`;
-  _openPrintWin('รายชื่อนักเรียนที่มาสาย',body);
-}
-function exportLateXLSX(){
-  const d=S.rptLateData;if(!d)return;
-  const a1=[[S.schoolName],[`รายชื่อนักเรียนที่มาสาย — ${d.act?.name||''}`],[thDate(d.date)],[],['#','รหัส','ชื่อ-สกุล','ชั้น']];
-  d.lateStus.forEach((s,i)=>a1.push([i+1,s.student_code||'',s.student_name,classLabel(s.grade_level,s.room)]));
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(a1),'นักเรียนสาย');
-  XLSX.writeFile(wb,`นักเรียนสาย_${d.date}.xlsx`);
-}
-function exportLateImg(){_captureImage('rpt-content',`นักเรียนสาย_${S.rptLateDate}.png`)}
 
 // ── Export: per class ──
 function exportClassPDF(){
@@ -2359,11 +2301,11 @@ async function renderRptSchool(){
   if(S.rptSchoolCacheKey===_rptSchKey&&S.rptSchoolData?.bodyHtml){$('rpt-school-body').innerHTML=S.rptSchoolData.bodyHtml;return}
   try{
     const session=ev?S.rptSession:'morning';
-    const rows=await qA(sb.from('activity_attend').select('student_id,status').eq('activity_id',S.rptActivityId).eq('date',S.rptDate).eq('session',session));
+    const rows=await qAllA(()=>sb.from('activity_attend').select('student_id,status').eq('activity_id',S.rptActivityId).eq('date',S.rptDate).eq('session',session));
     const aM={};rows.forEach(r=>aM[r.student_id]=r.status);
     let morningMap={};
     if(session==='evening'){
-      const mRows=await qA(sb.from('activity_attend').select('student_id,status').eq('activity_id',S.rptActivityId).eq('date',S.rptDate).eq('session','morning'));
+      const mRows=await qAllA(()=>sb.from('activity_attend').select('student_id,status').eq('activity_id',S.rptActivityId).eq('date',S.rptDate).eq('session','morning'));
       mRows.forEach(r=>morningMap[r.student_id]=r.status);
     }
     const classData={};
@@ -2378,7 +2320,7 @@ async function renderRptSchool(){
     const sessLbl=session==='morning'?'รอบเช้า':'รอบบ่าย';
     S.rptSchoolData={classData,act,sessLbl,morningMap};
     const docHTML=buildSchoolDoc(classData,act,sessLbl,morningMap);
-    $('rpt-school-body').innerHTML=_expBar('exportSchoolPDF','exportSchoolExcel','exportSchoolImage')+docHTML;
+    $('rpt-school-body').innerHTML=_expBar('exportSchoolPDF','exportSchoolExcel','exportSchoolImage')+`<div id="rpt-school-doc">${docHTML}</div>`;
     S.rptSchoolData.bodyHtml=$('rpt-school-body').innerHTML;S.rptSchoolCacheKey=_rptSchKey;
   }catch(e){$('rpt-school-body').innerHTML=`<div class="empty-state">เกิดข้อผิดพลาด: ${esc(e.message)}</div>`}
 }
@@ -2485,9 +2427,12 @@ async function renderRptPercent(){
     </button>
     <div id="rpt-pct-body"><div class="loading-text">กำลังโหลด...</div></div>`;
   try{
-    let qb=sb.from('activity_attend').select('student_id,status');
-    if(S.rptPctActivityId) qb=qb.eq('activity_id',S.rptPctActivityId);
-    const rows=await qA(qb);
+    const _mk=()=>{
+      let qb=sb.from('activity_attend').select('student_id,status');
+      if(S.rptPctActivityId) qb=qb.eq('activity_id',S.rptPctActivityId);
+      return qb;
+    };
+    const rows=await qAllA(_mk);
     if(!rows.length){$('rpt-pct-body').innerHTML='<div class="empty-state">ยังไม่มีข้อมูลการเช็คชื่อ</div>';return}
     const stuMap={};
     rows.forEach(r=>{
@@ -2657,7 +2602,7 @@ async function exportSchoolPDF(){
     .badge-sm{font-size:11px;padding:1px 7px;border-radius:10px;color:#fff;flex-shrink:0}
     .badge-sm.red{background:#c0000a}.badge-sm.orange{background:#b35900}
     .export-bar{display:none}`;
-  const body=buildSchoolDoc(classData,act,sessLbl);
+  const body=buildSchoolDoc(classData,act,sessLbl,S.rptSchoolData.morningMap||{});
   const w=window.open('','_blank');
   if(!w){toast('บล็อก Popup — กรุณาอนุญาต popup','er');return}
   w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><style>${css}</style><title>รายงาน ${esc(act?.name||'')}</title></head><body>${body}<script>setTimeout(()=>window.print(),800)<\/script></body></html>`);
@@ -2685,13 +2630,20 @@ async function exportSchoolExcel(){
   const a2=[['ชั้น','ลำดับ','รหัสนักเรียน','ชื่อ-สกุล','สถานะ']];
   entries.forEach(c=>c.stus.filter(s=>s.status==='absent'||s.status==='late').forEach((s,i)=>a2.push([classLabel(c.gl,c.r),i+1,s.student_code,s.student_name,s.status==='late'?'ลา':'ขาด'])));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(a2),'รายชื่อขาด-ลา');
+  // Sheet 3 สาย (ขาดเช้า–มาบ่าย) — เฉพาะรายงานรอบบ่ายที่มีข้อมูลรอบเช้า
+  const morningMap=S.rptSchoolData.morningMap||{};
+  if(Object.keys(morningMap).length){
+    const a3=[['ชั้น','ลำดับ','รหัสนักเรียน','ชื่อ-สกุล']];
+    entries.forEach(c=>c.stus.filter(s=>s.status==='present'&&morningMap[s.id]==='absent').forEach((s,i)=>a3.push([classLabel(c.gl,c.r),i+1,s.student_code,s.student_name])));
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(a3),'รายชื่อสาย (ขาดเช้า-มาบ่าย)');
+  }
   XLSX.writeFile(wb,`รายงาน_${act?.name||'กิจกรรม'}_${S.rptDate}.xlsx`);
   toast('ดาวน์โหลด Excel แล้ว');
 }
 
 async function exportSchoolImage(){
   if(!S.rptSchoolData){toast('กรุณาโหลดรายงานก่อน','er');return}
-  _captureImage('school-report-doc',`รายงาน_${S.rptSchoolData.act?.name||'กิจกรรม'}_${S.rptDate}.png`);
+  _captureImage('rpt-school-doc',`รายงาน_${S.rptSchoolData.act?.name||'กิจกรรม'}_${S.rptDate}.png`);
 }
 
 // ── Export: per activity ──
@@ -2808,8 +2760,8 @@ async function renderRptService(){
   try{
     const[unifRows,mAbsentRows,eAttendRows]=await Promise.all([
       q(sb.from('uniform_checks').select('student_id,note,uniform_check_violations(uniform_violations(name))').eq('date',S.rptServiceDate).eq('status','fail').in('student_id',stuIds)),
-      qA(sb.from('activity_attend').select('student_id,activity_id').eq('date',S.rptServiceDate).eq('session','morning').eq('status','absent').in('student_id',stuIds)),
-      qA(sb.from('activity_attend').select('student_id,activity_id,status').eq('date',S.rptServiceDate).eq('session','evening').in('student_id',stuIds)),
+      qAllA(()=>sb.from('activity_attend').select('student_id,activity_id').eq('date',S.rptServiceDate).eq('session','morning').eq('status','absent').in('student_id',stuIds)),
+      qAllA(()=>sb.from('activity_attend').select('student_id,activity_id,status').eq('date',S.rptServiceDate).eq('session','evening').in('student_id',stuIds)),
     ]);
     // Build per-student service record
     const _emptyRec=()=>({unifViols:[],unifNote:'',absentMorning:false,absentMorningActs:[]});
@@ -2820,9 +2772,9 @@ async function renderRptService(){
       rec[r.student_id].unifViols=viols;
       rec[r.student_id].unifNote=r.note||'';
     });
-    // ขาดเช้า + มาบ่าย: same activity_id, morning=absent, evening=present/tardy
+    // ขาดเช้า + มาบ่าย: same activity_id, morning=absent, evening=present (qAllA แปลง tardy เก่าเป็น present แล้ว)
     const mAbsentSet=new Set(mAbsentRows.map(r=>`${r.activity_id}_${r.student_id}`));
-    eAttendRows.filter(r=>['present','tardy'].includes(r.status)&&mAbsentSet.has(`${r.activity_id}_${r.student_id}`)).forEach(r=>{
+    eAttendRows.filter(r=>r.status==='present'&&mAbsentSet.has(`${r.activity_id}_${r.student_id}`)).forEach(r=>{
       const act=S.activities.find(a=>a.id===r.activity_id);
       if(!rec[r.student_id])rec[r.student_id]=_emptyRec();
       rec[r.student_id].absentMorning=true;
@@ -3040,7 +2992,7 @@ async function renderRptStreak(){
     const sinceStr=since.toISOString().split('T')[0];
     const stuIds=S.students.map(s=>s.id);
     if(!stuIds.length){$('rpt-streak-body').innerHTML='<div class="empty-state">ไม่พบข้อมูลนักเรียน</div>';return}
-    const rows=await qA(sb.from('activity_attend').select('student_id,date,status').eq('activity_id',S.rptStreakActivityId).eq('session',useSession).gte('date',sinceStr).order('date',{ascending:true}));
+    const rows=await qAllA(()=>sb.from('activity_attend').select('student_id,date,status').eq('activity_id',S.rptStreakActivityId).eq('session',useSession).gte('date',sinceStr).order('date',{ascending:true}));
     if(!rows.length){$('rpt-streak-body').innerHTML='<div class="empty-state">ไม่มีข้อมูลการเช็คชื่อ</div>';return}
     // หาวันที่มีการเช็คชื่อ (เรียงจากเก่า→ใหม่)
     const checkedDates=[...new Set(rows.map(r=>r.date))].sort();
@@ -3257,10 +3209,11 @@ async function doLogin(){
   try{
     const{data,error}=await sb.auth.signInWithPassword({email,password:pass});
     if(error)throw error;
+    // จำเฉพาะอีเมล — ไม่เก็บรหัสผ่านไว้ในเครื่อง (session ค้างอยู่ผ่าน Supabase token อยู่แล้ว)
     if($('login-remember')?.checked){
-      localStorage.setItem('_ac_saved',btoa(unescape(encodeURIComponent(JSON.stringify({e:email,p:pass})))));
+      localStorage.setItem('_ac_email',email);
     }else{
-      localStorage.removeItem('_ac_saved');
+      localStorage.removeItem('_ac_email');
     }
     $('login-overlay').style.display='none';
     $('logout-btn').style.display='';
@@ -3271,9 +3224,14 @@ async function doLogin(){
 }
 function _loadSavedCred(){
   try{
-    const raw=localStorage.getItem('_ac_saved');if(!raw)return;
-    const{e,p}=JSON.parse(decodeURIComponent(escape(atob(raw))));
-    if(e&&p){$('login-email').value=e;$('login-pass').value=p;const r=$('login-remember');if(r)r.checked=true;}
+    // ล้างค่ารูปแบบเก่าที่เคยเก็บรหัสผ่านไว้ (ความปลอดภัย) — ย้ายเฉพาะอีเมลมาใช้ต่อ
+    const legacy=localStorage.getItem('_ac_saved');
+    if(legacy){
+      try{const{e}=JSON.parse(decodeURIComponent(escape(atob(legacy))));if(e)localStorage.setItem('_ac_email',e);}catch(_){}
+      localStorage.removeItem('_ac_saved');
+    }
+    const e=localStorage.getItem('_ac_email');
+    if(e){$('login-email').value=e;const r=$('login-remember');if(r)r.checked=true;}
   }catch(e){}
 }
 
@@ -3286,8 +3244,8 @@ async function confirmLogout(){
   closeLogoutModal();
   loading(true);
   try{
-    await sb.auth.signOut();
-    localStorage.removeItem('_ac_saved');
+    // scope:'local' — ออกเฉพาะแอปนี้ ไม่เตะ session ของระบบ ปพ.5 ที่เปิดค้างอยู่
+    await sb.auth.signOut({scope:'local'});
     $('login-overlay').style.display='flex';
     $('logout-btn').style.display='none';
     $('login-pass').value='';
@@ -3377,21 +3335,6 @@ async function init(){
     return;
   }
   _loadSavedCred();
-  const raw=localStorage.getItem('_ac_saved');
-  if(raw){
-    try{
-      const{e,p}=JSON.parse(decodeURIComponent(escape(atob(raw))));
-      if(e&&p){
-        const{data,error}=await sb.auth.signInWithPassword({email:e,password:p});
-        if(!error&&data.session){
-          $('login-overlay').style.display='none';
-          $('logout-btn').style.display='';
-          await loadAppData();
-          return;
-        }
-      }
-    }catch(err){}
-  }
 }
 function startClock(){
   const D=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];

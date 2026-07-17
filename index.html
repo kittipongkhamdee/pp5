@@ -348,7 +348,7 @@ body{animation:pageFadeIn .25s ease}
       </div>
       <div class="hstat-sep"></div>
       <div class="hstat">
-        <div class="hstat-num">มิ.ย. 2569</div>
+        <div class="hstat-num">ก.ค. 2569</div>
         <div class="hstat-lbl">อัพเดตล่าสุด</div>
       </div>
     </div>
@@ -662,6 +662,8 @@ document.querySelectorAll('.sys-card').forEach(card=>{
     this.appendChild(r);
   });
   card.addEventListener('click',function(e){
+    // เปิดแท็บใหม่ด้วย Ctrl/Cmd/Shift/คลิกกลาง ให้เบราว์เซอร์จัดการเอง
+    if(e.metaKey||e.ctrlKey||e.shiftKey||e.button!==0)return;
     e.preventDefault();
     if(state.navigating)return;state.navigating=true;
     const href=this.getAttribute('href');
