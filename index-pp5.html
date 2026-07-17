@@ -3114,7 +3114,7 @@ async function loadAttData(){
 function invalidateAtt(){ cacheInv('att_'+S.selSub); }
 
 // state สำหรับเดือนที่กำลังดู และวันที่สอนในเดือนนั้น
-let attYear = new Date().getFullYear();  // ปี ค.ศ. จริง (สำหรับ year_month key)
+let attYear = new Date().getFullYear();  // fallback เมื่อไม่ได้ตั้งปีการศึกษา (ปีจริงดูที่ attCalYear())
 let attMonthIdx = null;                  // index เดือน (0-11)
 let attDays = [];                        // [{day, periods}] วันที่สอนในเดือนนี้
 
@@ -3219,8 +3219,15 @@ function renderAttPage(){
 }
 
 // ── จัดการวันที่สอนในเดือน ──
-function curYM(){ return attYear+'-'+String(attMonthIdx+1).padStart(2,'0'); }
-function getBuddhistYear(){ return S.config.academic_year || String(attYear+543); }
+// ปี ค.ศ. ของเดือนที่เลือก คำนวณจากปีการศึกษาในตั้งค่า (ไม่ใช่ปีที่เปิดหน้าจอ)
+// ปีการศึกษาไทยเริ่ม พ.ค. — เดือน ม.ค.-เม.ย. เป็นปีปฏิทินถัดไป (ภาคเรียนที่ 2 คร่อมปี)
+function attCalYear(){
+  const ay=parseInt(S.config.academic_year);
+  if(ay&&ay>2500){ const ce=ay-543; return attMonthIdx<=3?ce+1:ce; }
+  return attYear;
+}
+function curYM(){ return attCalYear()+'-'+String(attMonthIdx+1).padStart(2,'0'); }
+function getBuddhistYear(){ return String(attCalYear()+543); }
 
 // ดึงวันสอนของเดือนนี้จากข้อมูลที่บันทึกไว้ + sync attDays
 function syncAttDaysFromData(){
@@ -3263,10 +3270,11 @@ function autoGenDays(){
   try{ classDays=JSON.parse(S.config['class_days_'+sid]||'[]'); }catch(e){ classDays=[]; }
   if(!classDays.length){toast('รายวิชานี้ยังไม่ได้กำหนดวันสอนประจำสัปดาห์ (ตั้งค่าได้ที่หน้าแก้ไขรายวิชา)','er');return;}
   const dowMap={}; classDays.forEach(d=>{ dowMap[d.weekday]=d.periods; });
-  const daysInMonth=new Date(attYear,attMonthIdx+1,0).getDate();
+  const calY=attCalYear();
+  const daysInMonth=new Date(calY,attMonthIdx+1,0).getDate();
   let added=0;
   for(let day=1;day<=daysInMonth;day++){
-    const dow=new Date(attYear,attMonthIdx,day).getDay(); // 0=อา..6=ส
+    const dow=new Date(calY,attMonthIdx,day).getDay(); // 0=อา..6=ส
     if(!(dow in dowMap))continue;
     if(attDays.find(d=>d.day===day))continue;
     attDays.push({day,periods:dowMap[dow]});
