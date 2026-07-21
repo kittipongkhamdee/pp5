@@ -2941,22 +2941,33 @@ async function renderRptServiceCheck(){
   try{
     const entries=await _buildServiceReasonEntries(S.rptServiceDate);
     const stuIds=entries.map(e=>e.id);
-    const[doneMap,totalMap]=await Promise.all([
+    const[doneMap,flagMap]=await Promise.all([
       _fetchServiceCompletions(S.rptServiceDate,stuIds),
-      _fetchServiceTotalCounts(stuIds),
+      _fetchServiceFlagCounts(stuIds),
     ]);
     _mergeServiceDone(entries,doneMap);
-    entries.forEach(e=>{e.totalCount=totalMap[e.id]||0});
+    entries.forEach(e=>{e.flagCount=flagMap[e.id]||0});
     S.rptSvChkData={entries,date:S.rptServiceDate};
     _renderSvChkList();
   }catch(e){$('rpt-svchk-body').innerHTML=`<div class="empty-state">เกิดข้อผิดพลาด: ${esc(e.message)}</div>`}
 }
-// นับจำนวนครั้งที่นักเรียนแต่ละคนเคยบำเพ็ญประโยชน์แล้ว (ทุกวันที่ผ่านมา ไม่ใช่แค่วันที่เลือก)
-async function _fetchServiceTotalCounts(stuIds){
+// นับจำนวนวันที่นักเรียนแต่ละคน "มีชื่อต้องบำเพ็ญประโยชน์" สะสมทั้งหมด (ไม่ว่าจะเช็คว่าทำแล้วหรือยังก็ตาม)
+// ใช้เงื่อนไขเดียวกับ _buildServiceReasonEntries แต่ไล่ทุกวันที่มีข้อมูล แทนที่จะดูวันเดียว
+async function _fetchServiceFlagCounts(stuIds){
   if(!stuIds.length)return{};
-  const rows=await qAllA(()=>sb.from('service_completions').select('student_id').in('student_id',stuIds));
+  const[failRows,mAbsentRows,eAttendRows]=await Promise.all([
+    qAllA(()=>sb.from('uniform_checks').select('student_id,date').eq('status','fail').in('student_id',stuIds)),
+    qAllA(()=>sb.from('activity_attend').select('student_id,activity_id,date').eq('session','morning').eq('status','absent').in('student_id',stuIds)),
+    qAllA(()=>sb.from('activity_attend').select('student_id,activity_id,date,status').eq('session','evening').in('student_id',stuIds)),
+  ]);
+  const dateSets={};
+  const add=(sid,date)=>{ if(!dateSets[sid])dateSets[sid]=new Set(); dateSets[sid].add(date); };
+  failRows.forEach(r=>add(r.student_id,r.date));
+  const mAbsentSet=new Set(mAbsentRows.map(r=>`${r.activity_id}_${r.date}_${r.student_id}`));
+  eAttendRows.filter(r=>r.status==='present'&&mAbsentSet.has(`${r.activity_id}_${r.date}_${r.student_id}`))
+    .forEach(r=>add(r.student_id,r.date));
   const map={};
-  rows.forEach(r=>{map[r.student_id]=(map[r.student_id]||0)+1});
+  Object.keys(dateSets).forEach(sid=>{map[sid]=dateSets[sid].size});
   return map;
 }
 function _svChkReasons(s){
@@ -2978,7 +2989,7 @@ function _svChkCardHtml(s){
   const body=s.done
     ?`<div class="svchk-done-note">✓ บำเพ็ญประโยชน์แล้ว<span class="svchk-done-meta">${s.completedBy?` · ${esc(s.completedBy)}`:''}${s.completedAt?` · ${_svChkTime(s.completedAt)}`:''}</span></div>`
     :`<div class="svchk-reasons">${reasons.map(r=>`<span class="svchk-chip">${r}</span>`).join('')}</div>`;
-  const countBadge=s.totalCount>0?`<span class="svchk-count-badge" title="สะสมทั้งหมด ${s.totalCount} ครั้ง">${s.totalCount} ครั้ง</span>`:'';
+  const countBadge=s.flagCount>0?`<span class="svchk-count-badge" title="เคยมีชื่อต้องบำเพ็ญประโยชน์สะสม ${s.flagCount} ครั้ง">ต้องทำ ${s.flagCount} ครั้ง</span>`:'';
   return`<div class="svchk-card ${s.done?'done':'pending'}" onclick="toggleServiceDone('${s.id}')">
     <div class="svchk-box"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
     <div class="svchk-info"><div class="svchk-name">${esc(s.student_name)}${countBadge}</div>${body}</div>
@@ -3016,12 +3027,11 @@ function _renderSvChkList(){
 async function toggleServiceDone(stuId){
   const d=S.rptSvChkData;if(!d)return;
   const s=d.entries.find(e=>String(e.id)===String(stuId));if(!s)return;
-  const wasDone=s.done,prevAt=s.completedAt,prevBy=s.completedBy,prevCount=s.totalCount||0;
-  // optimistic update — ตอบสนองทันที ไม่ต้องรอเครือข่าย
+  const wasDone=s.done,prevAt=s.completedAt,prevBy=s.completedBy;
+  // optimistic update — ตอบสนองทันที ไม่ต้องรอเครือข่าย (flagCount ไม่เปลี่ยนตามการติ๊ก เพราะนับ "วันที่มีชื่อ" ไม่ใช่ "วันที่เช็คแล้ว")
   s.done=!wasDone;
   s.completedAt=s.done?new Date().toISOString():null;
   s.completedBy=s.done?(S.teacherName||S.user?.email||''):'';
-  s.totalCount=s.done?prevCount+1:Math.max(0,prevCount-1);
   _renderSvChkList();
   try{
     if(wasDone){
@@ -3035,7 +3045,7 @@ async function toggleServiceDone(stuId){
       if(cur){cur.done=s.done;cur.completedAt=s.completedAt;cur.completedBy=s.completedBy;}
     }
   }catch(e){
-    s.done=wasDone;s.completedAt=prevAt;s.completedBy=prevBy;s.totalCount=prevCount;
+    s.done=wasDone;s.completedAt=prevAt;s.completedBy=prevBy;
     _renderSvChkList();
     toast('บันทึกไม่สำเร็จ: '+e.message,'er');
   }
