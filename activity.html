@@ -400,6 +400,7 @@ html[data-theme="dark"] .svchk-card.done{background:rgba(5,150,105,.12);border-c
 .svchk-reasons{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
 .svchk-chip{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;background:#fff7e6;color:#b45309;border:1px solid #fde3b0}
 .svchk-done-note{margin-top:6px;font-size:12px;font-weight:600;color:#059669}
+.svchk-done-meta{font-weight:400;color:var(--txt3);font-size:11px}
 
 /* ── Student autocomplete ── */
 .suggest-wrap{position:relative;margin-bottom:12px}
@@ -2960,7 +2961,7 @@ function _svChkTime(iso){
 function _svChkCardHtml(s){
   const reasons=_svChkReasons(s);
   const body=s.done
-    ?`<div class="svchk-done-note">✓ บำเพ็ญประโยชน์แล้ว${s.completedBy?` · ${esc(s.completedBy)}`:''}${s.completedAt?` · ${_svChkTime(s.completedAt)}`:''}</div>`
+    ?`<div class="svchk-done-note">✓ บำเพ็ญประโยชน์แล้ว<span class="svchk-done-meta">${s.completedBy?` · ${esc(s.completedBy)}`:''}${s.completedAt?` · ${_svChkTime(s.completedAt)}`:''}</span></div>`
     :`<div class="svchk-reasons">${reasons.map(r=>`<span class="svchk-chip">${r}</span>`).join('')}</div>`;
   return`<div class="svchk-card ${s.done?'done':'pending'}" onclick="toggleServiceDone('${s.id}')">
     <div class="svchk-box"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
