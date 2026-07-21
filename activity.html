@@ -382,6 +382,8 @@ html[data-theme="dark"] .ios-select,html[data-theme="dark"] .ios-input{backgroun
 .svchk-hint{font-size:12px;color:var(--txt3);text-align:center;margin-bottom:10px}
 .svchk-list{display:flex;flex-direction:column;gap:8px}
 .svchk-section-lbl{font-size:12px;font-weight:700;color:var(--txt3);margin:14px 2px 2px}
+.svchk-class-hd{font-size:13px;font-weight:700;color:var(--txt);background:var(--card2);padding:6px 12px;border-radius:8px;margin:6px 0 0}
+.svchk-class-hd:first-child{margin-top:0}
 .svchk-card{display:flex;align-items:flex-start;gap:10px;background:var(--card);border:1px solid var(--sep);border-radius:var(--radius);padding:12px 14px;cursor:pointer;transition:border-color .15s,background .15s,transform .1s;user-select:none}
 .svchk-card:active{transform:scale(.985)}
 .svchk-card.pending{box-shadow:inset 3px 0 0 #d97706}
@@ -2962,8 +2964,18 @@ function _svChkCardHtml(s){
     :`<div class="svchk-reasons">${reasons.map(r=>`<span class="svchk-chip">${r}</span>`).join('')}</div>`;
   return`<div class="svchk-card ${s.done?'done':'pending'}" onclick="toggleServiceDone('${s.id}')">
     <div class="svchk-box"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
-    <div class="svchk-info"><div class="svchk-name">${esc(s.student_name)}</div><div class="svchk-meta">${classLabel(s.grade_level,s.room)}</div>${body}</div>
+    <div class="svchk-info"><div class="svchk-name">${esc(s.student_name)}</div>${body}</div>
   </div>`;
+}
+// จัดกลุ่มตามชั้นเรียน — entries เรียงตามชั้น/ห้อง/ชื่อมาแล้วจาก _buildServiceReasonEntries จึงแค่คั่นหัวข้อเมื่อชั้นเปลี่ยน
+function _svChkGroupedHtml(list){
+  let h='',curLabel=null;
+  list.forEach(s=>{
+    const lbl=classLabel(s.grade_level,s.room);
+    if(lbl!==curLabel){curLabel=lbl;h+=`<div class="svchk-class-hd">${esc(lbl)}</div>`}
+    h+=_svChkCardHtml(s);
+  });
+  return h;
 }
 function _renderSvChkList(){
   const d=S.rptSvChkData;if(!d)return;
@@ -2978,9 +2990,9 @@ function _renderSvChkList(){
   </div>
   <div class="svchk-hint">แตะที่การ์ดเพื่อติ๊ก/ยกเลิก — บันทึกทันที ครูคนไหนก็แก้ไขได้</div>
   <div class="svchk-list">`;
-  h+=pending.map(_svChkCardHtml).join('');
+  h+=_svChkGroupedHtml(pending);
   h+=`<div class="svchk-section-lbl">ทำแล้ว · ${done.length} คน</div>`;
-  h+=done.length?done.map(_svChkCardHtml).join(''):`<div class="empty-state" style="padding:20px">ยังไม่มีใครติ๊กว่าทำแล้ว</div>`;
+  h+=done.length?_svChkGroupedHtml(done):`<div class="empty-state" style="padding:20px">ยังไม่มีใครติ๊กว่าทำแล้ว</div>`;
   h+=`</div>`;
   $('rpt-svchk-body').innerHTML=h;
 }
