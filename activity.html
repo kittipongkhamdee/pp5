@@ -2989,7 +2989,7 @@ function _svChkCardHtml(s){
   const body=s.done
     ?`<div class="svchk-done-note">✓ บำเพ็ญประโยชน์แล้ว<span class="svchk-done-meta">${s.completedBy?` · ${esc(s.completedBy)}`:''}${s.completedAt?` · ${_svChkTime(s.completedAt)}`:''}</span></div>`
     :`<div class="svchk-reasons">${reasons.map(r=>`<span class="svchk-chip">${r}</span>`).join('')}</div>`;
-  const countBadge=s.flagCount>0?`<span class="svchk-count-badge" title="เคยมีชื่อต้องบำเพ็ญประโยชน์สะสม ${s.flagCount} ครั้ง">${s.flagCount} ครั้ง</span>`:'';
+  const countBadge=s.flagCount>0?`<span class="svchk-count-badge" title="เคยมีชื่อต้องบำเพ็ญประโยชน์สะสม ${s.flagCount} ครั้ง">ครั้งที่ ${s.flagCount}</span>`:'';
   return`<div class="svchk-card ${s.done?'done':'pending'}" onclick="toggleServiceDone('${s.id}')">
     <div class="svchk-box"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
     <div class="svchk-info"><div class="svchk-name">${esc(s.student_name)}${countBadge}</div>${body}</div>
