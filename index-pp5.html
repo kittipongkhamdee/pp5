@@ -7280,6 +7280,13 @@ async function pgSchoolReport(){
             '<div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px">การกระจายผลการเรียน</div>'+
             '<div style="display:flex;gap:8px;align-items:flex-end">'+gradeBar+'</div>'+
           '</div>'+
+          // ดูรายละเอียดรายนักเรียน (แอดมิน — read-only)
+          '<div style="padding:0 16px 14px;border-top:1px solid var(--bdr);padding-top:12px">'+
+            '<button class="btn bs" style="width:100%;justify-content:center" onclick="event.stopPropagation();openSubjectDetailModal(\''+sub.id+'\')">'+
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>'+
+              'ดูรายละเอียดรายนักเรียน'+
+            '</button>'+
+          '</div>'+
         '</div>'+
       '</div>';
     }
@@ -7432,6 +7439,84 @@ async function pgSchoolReport(){
     loading(false);
     toast('โหลดข้อมูลไม่สำเร็จ: '+e.message,'er');
   }
+}
+
+// ── แอดมิน: ดูรายละเอียดรายนักเรียนของวิชาใดก็ได้ (read-only ไม่แก้ไขที่นี่) ──
+async function openSubjectDetailModal(subId){
+  const sub=(S._schoolReport||[]).find(s=>String(s.id)===String(subId));
+  if(!sub){toast('ไม่พบข้อมูลวิชา','er');return;}
+  const st=sub._stats;
+  const stuMap=Object.fromEntries((S._schoolStudents||[]).map(s=>[String(s.id),s]));
+  loading(true);
+  let evalReadRows=[],evalCharRows=[];
+  try{
+    [evalReadRows,evalCharRows]=await Promise.all([
+      q(sb.from('eval_read').select('*').eq('subject_id',subId)),
+      q(sb.from('eval_char').select('*').eq('subject_id',subId)),
+    ]);
+  }catch(e){}
+  loading(false);
+  const evalReadMap=Object.fromEntries(evalReadRows.map(r=>[String(r.student_id),r]));
+  const evalCharMap=Object.fromEntries(evalCharRows.map(r=>[String(r.student_id),r]));
+
+  const stuIds=[...st.stuIds].sort((a,b)=>{
+    const ca=stuMap[String(a)]?.student_code||'', cb=stuMap[String(b)]?.student_code||'';
+    return ca.localeCompare(cb,'th');
+  });
+  const totalH=sub.total_hours||60;
+
+  const scoreRows=stuIds.map(sid=>{
+    const stu=stuMap[String(sid)];
+    const sc=st.sumRows.find(r=>String(r.student_id)===String(sid));
+    return '<tr><td class="tl">'+esc(stu?.student_name||'')+'</td>'+
+      '<td class="tc">'+(sc?sc.total_score:'—')+'</td>'+
+      '<td class="tc">'+(sc?sc.grade:'—')+'</td>'+
+      '<td class="tc">'+esc(sc?.special_result||'')+'</td></tr>';
+  }).join('');
+
+  const attRows=stuIds.map(sid=>{
+    const stu=stuMap[String(sid)];
+    const am=st.attMap[String(sid)];
+    const attended=am?am.attended:0;
+    const pct=totalH>0?(attended/totalH*100).toFixed(1):'—';
+    return '<tr><td class="tl">'+esc(stu?.student_name||'')+'</td>'+
+      '<td class="tc">'+attended+'</td><td class="tc">'+totalH+'</td><td class="tc">'+pct+'%</td></tr>';
+  }).join('');
+
+  const evalRows=stuIds.map(sid=>{
+    const stu=stuMap[String(sid)];
+    const er=evalReadMap[String(sid)], ec=evalCharMap[String(sid)];
+    return '<tr><td class="tl">'+esc(stu?.student_name||'')+'</td>'+
+      '<td class="tc">'+(er?'✓ ผล '+elb(er.result):'—')+'</td>'+
+      '<td class="tc">'+(ec?'✓ ผล '+elb(ec.overall_result):'—')+'</td></tr>';
+  }).join('');
+
+  document.body.insertAdjacentHTML('beforeend',
+    '<div class="mo" id="subDetailMod"><div class="md md-lg">'+
+      '<div class="mh"><div class="mt">'+esc(sub.subject_name)+' ('+grm(sub.grade_level,sub.room)+')</div>'+
+      '<button class="mx" onclick="rmModal(\'subDetailMod\')">✕</button></div>'+
+      '<div class="mb">'+
+        '<div style="font-size:12px;color:var(--muted);margin-bottom:12px">ครูผู้สอน: '+esc(st.teacherName)+' &nbsp;·&nbsp; ดูอย่างเดียว ไม่สามารถแก้ไขได้ที่นี่</div>'+
+        '<div class="tabs">'+
+          '<button class="tab active" data-tg="sdtl" data-ti="sdtl-score" onclick="swTab(\'sdtl\',\'sdtl-score\')">คะแนน</button>'+
+          '<button class="tab" data-tg="sdtl" data-ti="sdtl-att" onclick="swTab(\'sdtl\',\'sdtl-att\')">เวลาเรียน</button>'+
+          '<button class="tab" data-tg="sdtl" data-ti="sdtl-eval" onclick="swTab(\'sdtl\',\'sdtl-eval\')">ประเมิน</button>'+
+        '</div>'+
+        '<div class="tp active" id="sdtl-score" data-tp="sdtl">'+
+          (scoreRows?'<div class="tw"><table><thead><tr><th class="tl">ชื่อ-สกุล</th><th>คะแนนรวม</th><th>เกรด</th><th>สถานะพิเศษ</th></tr></thead><tbody>'+scoreRows+'</tbody></table></div>'
+            :'<div class="empty">ยังไม่มีนักเรียนในชั้น/ห้องนี้</div>')+
+        '</div>'+
+        '<div class="tp" id="sdtl-att" data-tp="sdtl">'+
+          (attRows?'<div class="tw"><table><thead><tr><th class="tl">ชื่อ-สกุล</th><th>เข้าเรียน (ชม.)</th><th>ทั้งหมด (ชม.)</th><th>% เวลาเรียน</th></tr></thead><tbody>'+attRows+'</tbody></table></div>'
+            :'<div class="empty">ยังไม่มีนักเรียนในชั้น/ห้องนี้</div>')+
+        '</div>'+
+        '<div class="tp" id="sdtl-eval" data-tp="sdtl">'+
+          (evalRows?'<div class="tw"><table><thead><tr><th class="tl">ชื่อ-สกุล</th><th>อ่าน/คิด/เขียน</th><th>คุณลักษณะ</th></tr></thead><tbody>'+evalRows+'</tbody></table></div>'
+            :'<div class="empty">ยังไม่มีนักเรียนในชั้น/ห้องนี้</div>')+
+        '</div>'+
+      '</div>'+
+      '<div class="mf"><button class="btn bs" onclick="rmModal(\'subDetailMod\')">ปิด</button></div>'+
+    '</div></div>');
 }
 
 function printMsReport(){
