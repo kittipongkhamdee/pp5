@@ -7220,6 +7220,12 @@ async function pgSchoolReport(){
       const barColor = !passOk?'#e5e5ea':parseFloat(passRate)>=80?'#007AFF':parseFloat(passRate)>=60?'#FF9500':'#FF3B30';
       const hasWarn = passOk && parseFloat(passRate)<80;
       const cardId='sc-card-'+sub.id;
+      const attBadge = st.hasAttendance
+        ? '<span class="badge bg-g" style="font-size:10px">✓ เวลาเรียน</span>'
+        : '<span class="badge bg-gr" style="font-size:10px">⚪ ยังไม่บันทึกเวลาเรียน</span>';
+      const evalBadge = st.hasEval
+        ? '<span class="badge bg-g" style="font-size:10px">✓ ประเมิน</span>'
+        : '<span class="badge bg-gr" style="font-size:10px">⚪ ยังไม่ประเมิน</span>';
 
       // grade bar
       const maxCnt = Math.max(...Object.values(st.gradeCount),1);
@@ -7242,6 +7248,7 @@ async function pgSchoolReport(){
               '<div style="font-size:15px;font-weight:700;color:var(--txt)">'+esc(sub.subject_name)+'</div>'+
               '<span class="badge bg-b">'+grm(sub.grade_level,sub.room)+'</span>'+
               (hasWarn?'<span class="badge bg-r" style="font-size:10px">'+_ico.warning+' ผ่านต่ำกว่า 80%</span>':'')+
+              attBadge+evalBadge+
             '</div>'+
             '<div style="font-size:11.5px;color:var(--muted);margin-bottom:8px">'+
               esc(sub.subject_code)+' &nbsp;·&nbsp; '+esc(st.teacherName)+' &nbsp;·&nbsp; '+sub.hours_per_week+' ชม./สัปดาห์'+
