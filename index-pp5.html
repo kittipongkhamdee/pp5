@@ -4573,11 +4573,18 @@ function evSel(id,val){
 }
 
 function updEvCls(el){el.className='es '+({'3':'ev3','2':'ev2','1':'ev1','0':'ev0'}[el.value]||'');}
+function _evActiveType(){
+  const activeTab=document.querySelector('.tab.active[data-tg="ev"]');
+  return (activeTab&&activeTab.dataset.ti==='ev-char')?'char':'read';
+}
 function renderEvPage(){
   const sid=S.selSub;
   $('pg').innerHTML=`
   <div class="ph"><div class="ptitle">ประเมินการอ่าน คิด วิเคราะห์ เขียน และคุณลักษณะ</div>
-    <div style="display:flex;gap:8px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn bs no-print" onclick="clearEv(_evActiveType())" style="color:#dc2626;background:#fff1f0;border-color:#fecaca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>ล้างทั้งหมด</button>
+      <button class="btn bs no-print" onclick="autoFillEv(_evActiveType(),'3')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>ดีเยี่ยมทั้งหมด</button>
+      <button class="btn bs no-print" onclick="autoFillEv(_evActiveType(),'2')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>ดีทั้งหมด</button>
       <button class="btn bs no-print" onclick="exportEval()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>Excel</button>
       <button class="btn bs no-print" onclick="printEval()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>พิมพ์</button>
     </div>
