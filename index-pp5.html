@@ -7114,7 +7114,7 @@ async function pgSchoolReport(){
     // ดึงข้อมูลทั้งหมดโดยไม่กรอง user_id
     const [allSubjects, allSumRows, allAttRows, allProfiles, allEvalRead, allEvalChar] = await Promise.all([
       q(sb.from('subjects').select('*').order('grade_level').order('room').order('subject_name')),
-      q(sb.from('score_summary').select('subject_id,student_id,grade,total_score,special_result')),
+      q(sb.from('score_summary').select('subject_id,student_id,grade,total_score,special_result,mid_normal,mid_retake,mid_repeat,final_score')),
       qAll(()=>sb.from('attendance').select('subject_id,student_id,status,periods')),
       q(sb.from('profiles').select('id,full_name')),
       qAll(()=>sb.from('eval_read').select('subject_id')),
@@ -7171,7 +7171,10 @@ async function pgSchoolReport(){
       const hasScore = sumRows.length>0;
       const hasAttendance = (attBySubj[sub.id]||[]).length>0;
       const hasEval = evalReadSubjIds.has(sub.id) && evalCharSubjIds.has(sub.id);
-      return {...sub,_stats:{total,pass:passNum,fail:failNum,avg,pct,msCount,teacherName,gradeCount,sumRows,stuIds,msStudentIds,attMap:stuAttMapSub,hasScore,hasAttendance,hasEval}};
+      // คะแนนสอบตัวจริง — แยกจาก hasScore เพราะกรอกแค่คะแนนเก็บก็ทำให้ hasScore เป็นจริงได้ทั้งที่ยังไม่สอบ
+      const hasMidExam = sumRows.some(r=>(parseFloat(r.mid_normal)||0)>0||(parseFloat(r.mid_retake)||0)>0||(parseFloat(r.mid_repeat)||0)>0);
+      const hasFinalExam = sumRows.some(r=>(parseFloat(r.final_score)||0)>0);
+      return {...sub,_stats:{total,pass:passNum,fail:failNum,avg,pct,msCount,teacherName,gradeCount,sumRows,stuIds,msStudentIds,attMap:stuAttMapSub,hasScore,hasAttendance,hasEval,hasMidExam,hasFinalExam}};
     });
 
     // ── รวมสถิติโรงเรียน ──
@@ -7226,6 +7229,12 @@ async function pgSchoolReport(){
       const evalBadge = st.hasEval
         ? '<span class="badge bg-g" style="font-size:10px">✓ ประเมิน</span>'
         : '<span class="badge bg-gr" style="font-size:10px">⚪ ยังไม่ประเมิน</span>';
+      const midBadge = st.hasMidExam
+        ? '<span class="badge bg-g" style="font-size:10px">✓ สอบกลางภาค</span>'
+        : '<span class="badge bg-gr" style="font-size:10px">⚪ ยังไม่สอบกลางภาค</span>';
+      const finalBadge = st.hasFinalExam
+        ? '<span class="badge bg-g" style="font-size:10px">✓ สอบปลายภาค</span>'
+        : '<span class="badge bg-gr" style="font-size:10px">⚪ ยังไม่สอบปลายภาค</span>';
 
       // grade bar
       const maxCnt = Math.max(...Object.values(st.gradeCount),1);
@@ -7248,7 +7257,7 @@ async function pgSchoolReport(){
               '<div style="font-size:15px;font-weight:700;color:var(--txt)">'+esc(sub.subject_name)+'</div>'+
               '<span class="badge bg-b">'+grm(sub.grade_level,sub.room)+'</span>'+
               (hasWarn?'<span class="badge bg-r" style="font-size:10px">'+_ico.warning+' ผ่านต่ำกว่า 80%</span>':'')+
-              attBadge+evalBadge+
+              attBadge+evalBadge+midBadge+finalBadge+
             '</div>'+
             '<div style="font-size:11.5px;color:var(--muted);margin-bottom:8px">'+
               esc(sub.subject_code)+' &nbsp;·&nbsp; '+esc(st.teacherName)+' &nbsp;·&nbsp; '+sub.hours_per_week+' ชม./สัปดาห์'+
