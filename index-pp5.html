@@ -2139,17 +2139,25 @@ async function pgDash(){
     await loadSubjects();
     const subjIds = S.subjects.map(s=>s.id);
     // ใช้ .eq() ต่อ subject เหมือน Report เพื่อหลีกเลี่ยงปัญหา RLS กับ .in()
-    const [allSumArrays, allStu, allAttArrays] = await Promise.all([
+    const [allSumArrays, allStu, allAttArrays, allEvalReadArrays, allEvalCharArrays] = await Promise.all([
       subjIds.length ?
-        Promise.all(subjIds.map(id=>q(sb.from('score_summary').select('subject_id,student_id,grade,total_score').eq('subject_id',id))))
+        Promise.all(subjIds.map(id=>q(sb.from('score_summary').select('subject_id,student_id,grade,total_score,mid_normal,mid_retake,mid_repeat,final_score').eq('subject_id',id))))
         : Promise.resolve([[]]),
       qAll(()=>sb.from('students').select('id,grade_level,room')),
       subjIds.length ?
         Promise.all(subjIds.map(id=>qAll(()=>sb.from('attendance').select('subject_id,student_id,status,periods').eq('subject_id',id))))
+        : Promise.resolve([[]]),
+      subjIds.length ?
+        Promise.all(subjIds.map(id=>q(sb.from('eval_read').select('subject_id').eq('subject_id',id).limit(1))))
+        : Promise.resolve([[]]),
+      subjIds.length ?
+        Promise.all(subjIds.map(id=>q(sb.from('eval_char').select('subject_id').eq('subject_id',id).limit(1))))
         : Promise.resolve([[]])
     ]);
     const allSum = allSumArrays.flat();
     const allAtt = allAttArrays.flat();
+    const evalReadSubjIds = new Set(allEvalReadArrays.flat().map(r=>r.subject_id));
+    const evalCharSubjIds = new Set(allEvalCharArrays.flat().map(r=>r.subject_id));
     const stuCount = {};
     const stuIdsByRoom = {};
     allStu.forEach(s=>{
@@ -2181,7 +2189,11 @@ async function pgDash(){
       const subTotalH = s.total_hours||60;
       const msCount=Object.values(stuAttMap).filter(m=>subTotalH>0&&(m.attended/subTotalH*100)<80).length;
       const recorded=sum.filter(r=>(parseFloat(r.total_score)||0)>0).length;
-      return {...s,stats:{total,pass,recorded,avg,passPercent:pct,msCount}};
+      const hasAttendance = attForSubj.length>0;
+      const hasEval = evalReadSubjIds.has(s.id) && evalCharSubjIds.has(s.id);
+      const hasMidExam = sum.some(r=>(parseFloat(r.mid_normal)||0)>0||(parseFloat(r.mid_retake)||0)>0||(parseFloat(r.mid_repeat)||0)>0);
+      const hasFinalExam = sum.some(r=>(parseFloat(r.final_score)||0)>0);
+      return {...s,stats:{total,pass,recorded,avg,passPercent:pct,msCount,hasAttendance,hasEval,hasMidExam,hasFinalExam}};
     });
     // นับเฉพาะนักเรียนในห้องที่ครูสอน (ตาม grade_level+room ของวิชาที่มี)
     const _teachRooms = new Set(S.subjects.map(s=>s.grade_level+'_'+s.room));
@@ -2317,6 +2329,13 @@ async function pgDash(){
         <div style="font-size:12px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
           <span style="display:inline-flex;align-items:center;gap:3px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>${esc(s.teacher_name||'-')}</span>
           <span style="display:inline-flex;align-items:center;gap:3px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${s.hours_per_week} ชม./สัปดาห์</span>
+        </div>
+        <!-- สถานะงานที่ต้องทำ -->
+        <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">
+          ${st.hasAttendance?'<span class="badge bg-g" style="font-size:10px">✓ เวลาเรียน</span>':'<span class="badge bg-gr" style="font-size:10px">⚪ ยังไม่บันทึกเวลาเรียน</span>'}
+          ${st.hasMidExam?'<span class="badge bg-g" style="font-size:10px">✓ สอบกลางภาค</span>':'<span class="badge bg-gr" style="font-size:10px">⚪ ยังไม่สอบกลางภาค</span>'}
+          ${st.hasFinalExam?'<span class="badge bg-g" style="font-size:10px">✓ สอบปลายภาค</span>':'<span class="badge bg-gr" style="font-size:10px">⚪ ยังไม่สอบปลายภาค</span>'}
+          ${st.hasEval?'<span class="badge bg-g" style="font-size:10px">✓ ประเมิน</span>':'<span class="badge bg-gr" style="font-size:10px">⚪ ยังไม่ประเมิน</span>'}
         </div>
         <!-- Tags + Progress (flex-grow ดัน buttons ลงล่างสุด) -->
         <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end">
