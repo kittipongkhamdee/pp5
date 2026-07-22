@@ -7114,7 +7114,7 @@ async function pgSchoolReport(){
     // ดึงข้อมูลทั้งหมดโดยไม่กรอง user_id
     const [allSubjects, allSumRows, allAttRows, allProfiles, allEvalRead, allEvalChar] = await Promise.all([
       q(sb.from('subjects').select('*').order('grade_level').order('room').order('subject_name')),
-      q(sb.from('score_summary').select('subject_id,student_id,grade,total_score,special_result,mid_normal,mid_retake,mid_repeat,final_score')),
+      q(sb.from('score_summary').select('subject_id,student_id,grade,total_score,special_result,mid_normal,mid_retake,mid_repeat,final_score,total_before_mid,total_after_mid')),
       qAll(()=>sb.from('attendance').select('subject_id,student_id,status,periods')),
       q(sb.from('profiles').select('id,full_name')),
       qAll(()=>sb.from('eval_read').select('subject_id')),
@@ -7174,7 +7174,9 @@ async function pgSchoolReport(){
       // คะแนนสอบตัวจริง — แยกจาก hasScore เพราะกรอกแค่คะแนนเก็บก็ทำให้ hasScore เป็นจริงได้ทั้งที่ยังไม่สอบ
       const hasMidExam = sumRows.some(r=>(parseFloat(r.mid_normal)||0)>0||(parseFloat(r.mid_retake)||0)>0||(parseFloat(r.mid_repeat)||0)>0);
       const hasFinalExam = sumRows.some(r=>(parseFloat(r.final_score)||0)>0);
-      return {...sub,_stats:{total,pass:passNum,fail:failNum,avg,pct,msCount,teacherName,gradeCount,sumRows,stuIds,msStudentIds,attMap:stuAttMapSub,hasScore,hasAttendance,hasEval,hasMidExam,hasFinalExam}};
+      // คะแนนเก็บ (ระหว่างภาค) — รวมจาก score_units ก่อน/หลังกลางภาค
+      const hasCollectScore = sumRows.some(r=>(parseFloat(r.total_before_mid)||0)>0||(parseFloat(r.total_after_mid)||0)>0);
+      return {...sub,_stats:{total,pass:passNum,fail:failNum,avg,pct,msCount,teacherName,gradeCount,sumRows,stuIds,msStudentIds,attMap:stuAttMapSub,hasScore,hasAttendance,hasEval,hasMidExam,hasFinalExam,hasCollectScore}};
     });
 
     // ── รวมสถิติโรงเรียน ──
@@ -7198,19 +7200,19 @@ async function pgSchoolReport(){
     subjectsWithStats.forEach(sub=>{
       const t=sub._stats.teacherName;
       if(!t||t==='—')return;
-      if(!teacherProgress[t])teacherProgress[t]={teacher:t,total:0,scoreDone:0,attDone:0,evalDone:0,midDone:0,finalDone:0,fullyDone:0};
+      if(!teacherProgress[t])teacherProgress[t]={teacher:t,total:0,collectDone:0,attDone:0,evalDone:0,midDone:0,finalDone:0,fullyDone:0};
       const tp=teacherProgress[t];
       tp.total++;
-      if(sub._stats.hasScore)tp.scoreDone++;
+      if(sub._stats.hasCollectScore)tp.collectDone++;
       if(sub._stats.hasAttendance)tp.attDone++;
       if(sub._stats.hasEval)tp.evalDone++;
       if(sub._stats.hasMidExam)tp.midDone++;
       if(sub._stats.hasFinalExam)tp.finalDone++;
-      if(sub._stats.hasScore&&sub._stats.hasAttendance&&sub._stats.hasEval&&sub._stats.hasMidExam&&sub._stats.hasFinalExam)tp.fullyDone++;
+      if(sub._stats.hasCollectScore&&sub._stats.hasAttendance&&sub._stats.hasEval&&sub._stats.hasMidExam&&sub._stats.hasFinalExam)tp.fullyDone++;
     });
     const teacherProgressList = Object.values(teacherProgress).map(tp=>({
       ...tp,
-      pct: tp.total>0?Math.round((tp.scoreDone+tp.attDone+tp.evalDone+tp.midDone+tp.finalDone)/(tp.total*5)*100):0,
+      pct: tp.total>0?Math.round((tp.collectDone+tp.attDone+tp.evalDone+tp.midDone+tp.finalDone)/(tp.total*5)*100):0,
     })).sort((a,b)=>a.pct-b.pct||a.teacher.localeCompare(b.teacher,'th'));
 
     // เก็บไว้ใน state เพื่อให้ exportSchoolReport ใช้ได้
@@ -7324,7 +7326,7 @@ async function pgSchoolReport(){
         return '<tr style="cursor:pointer" onclick="_jumpToTeacher(\''+tEsc+'\')">'+
           '<td class="tl" style="font-weight:600">'+esc(tp.teacher)+'</td>'+
           '<td class="tc">'+tp.total+'</td>'+
-          '<td class="tc">'+tp.scoreDone+'/'+tp.total+'</td>'+
+          '<td class="tc">'+tp.collectDone+'/'+tp.total+'</td>'+
           '<td class="tc">'+tp.attDone+'/'+tp.total+'</td>'+
           '<td class="tc">'+tp.midDone+'/'+tp.total+'</td>'+
           '<td class="tc">'+tp.finalDone+'/'+tp.total+'</td>'+
@@ -7343,7 +7345,7 @@ async function pgSchoolReport(){
         '<div class="ch"><div class="ct">สรุปความคืบหน้ารายครู</div><span style="font-size:11px;color:var(--muted);font-weight:400">คลิกชื่อครูเพื่อดูรายวิชา</span></div>'+
         '<div class="cb" style="padding:0">'+
           '<div class="tw"><table>'+
-            '<thead><tr><th class="tl">ครู</th><th>วิชา</th><th>คะแนน</th><th>เวลาเรียน</th><th>กลางภาค</th><th>ปลายภาค</th><th>ประเมิน</th><th>ความคืบหน้า</th></tr></thead>'+
+            '<thead><tr><th class="tl">ครู</th><th>วิชา</th><th>คะแนนเก็บ</th><th>เวลาเรียน</th><th>กลางภาค</th><th>ปลายภาค</th><th>ประเมิน</th><th>ความคืบหน้า</th></tr></thead>'+
             '<tbody>'+rows+'</tbody>'+
           '</table></div>'+
         '</div>'+
