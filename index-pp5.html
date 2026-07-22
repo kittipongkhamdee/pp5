@@ -230,6 +230,14 @@ button{font-family:var(--font);}
 .bg-b{background:var(--ac-lt);color:var(--ac);}
 .bg-o{background:var(--warn-bg);color:var(--warn-txt);}
 .bg-gr{background:var(--card2);color:var(--muted);}
+/* Toggle switch */
+.tglsw{position:relative;display:inline-block;width:38px;height:22px;flex-shrink:0;vertical-align:middle;}
+.tglsw input{opacity:0;width:0;height:0;position:absolute;}
+.tglsw .tgl-slider{position:absolute;inset:0;cursor:pointer;background:var(--card2);border:1.5px solid var(--bdr);border-radius:22px;transition:background .18s,border-color .18s;}
+.tglsw .tgl-slider:before{content:"";position:absolute;height:15px;width:15px;left:2.5px;top:2px;background:#fff;border-radius:50%;transition:transform .18s;box-shadow:0 1px 2px rgba(0,0,0,.25);}
+.tglsw input:checked+.tgl-slider{background:var(--ok-txt,#16803d);border-color:var(--ok-txt,#16803d);}
+.tglsw input:checked+.tgl-slider:before{transform:translateX(16px);}
+.tglsw input:disabled+.tgl-slider{opacity:.5;cursor:not-allowed;}
 /* Form */
 .fg{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;}
 .fl{font-size:12.5px;font-weight:600;color:var(--txt2);margin-bottom:5px;display:block;}
@@ -2388,7 +2396,7 @@ async function pgSubjects(){
   <div class="tw"><table>
     <thead><tr><th>ลำดับ</th><th class="tl">รหัส</th><th class="tl">ชื่อวิชา</th>
       <th>ชั้น/ห้อง</th><th>ชม./สัปดาห์</th><th>ชม./ภาค</th><th class="tl">ครูผู้สอน</th>
-      <th>โครงสร้างคะแนน</th><th>จัดการ</th></tr></thead>
+      <th>โครงสร้างคะแนน</th><th>ประกาศผลการเรียน</th><th>จัดการ</th></tr></thead>
     <tbody>${S.subjects.map((s,i)=>`<tr>
       <td class="tc">${i+1}</td><td>${esc(s.subject_code)}</td>
       <td><strong>${esc(s.subject_name)}</strong></td>
@@ -2400,11 +2408,34 @@ async function pgSubjects(){
         หลังกลาง ${s.score_after_mid}|ปลาย ${s.score_final}
       </td>
       <td class="tc">
+        <label class="tglsw" title="${s.published?'นักเรียนดูผลการเรียนวิชานี้ได้':'นักเรียนยังดูผลการเรียนวิชานี้ไม่ได้'}">
+          <input type="checkbox" ${s.published?'checked':''} onchange="toggleSubjectPublish('${s.id}',this)">
+          <span class="tgl-slider"></span>
+        </label>
+      </td>
+      <td class="tc">
         <button class="btn bs btn-sm" onclick="openSubModal('${s.id}')" style="padding:5px 8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
         <button class="btn bd btn-sm" onclick="delSub('${s.id}','${escJs(s.subject_name)}')" style="padding:5px 8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
       </td></tr>`).join('')}
     </tbody></table></div>`}
   </div></div>`;
+}
+
+async function toggleSubjectPublish(id,cb){
+  const val=cb.checked;
+  cb.disabled=true;
+  try{
+    await q(sb.from('subjects').update({published:val}).eq('id',id));
+    const sub=S.subjects.find(s=>s.id===id);
+    if(sub) sub.published=val;
+    if(cb.closest('label')) cb.closest('label').title=val?'นักเรียนดูผลการเรียนวิชานี้ได้':'นักเรียนยังดูผลการเรียนวิชานี้ไม่ได้';
+    toast(val?'เปิดประกาศผลการเรียนแล้ว — นักเรียนดูคะแนนวิชานี้ได้':'ปิดประกาศผลการเรียนแล้ว');
+  }catch(e){
+    cb.checked=!val;
+    toast('บันทึกไม่สำเร็จ: '+e.message,'er');
+  }finally{
+    cb.disabled=false;
+  }
 }
 
 // ── Subject Autocomplete ──────────────────────────────────────────
