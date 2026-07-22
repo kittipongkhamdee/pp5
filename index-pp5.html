@@ -7112,11 +7112,13 @@ async function pgSchoolReport(){
   loading(true);
   try{
     // ดึงข้อมูลทั้งหมดโดยไม่กรอง user_id
-    const [allSubjects, allSumRows, allAttRows, allProfiles] = await Promise.all([
+    const [allSubjects, allSumRows, allAttRows, allProfiles, allEvalRead, allEvalChar] = await Promise.all([
       q(sb.from('subjects').select('*').order('grade_level').order('room').order('subject_name')),
       q(sb.from('score_summary').select('subject_id,student_id,grade,total_score,special_result')),
       qAll(()=>sb.from('attendance').select('subject_id,student_id,status,periods')),
       q(sb.from('profiles').select('id,full_name')),
+      qAll(()=>sb.from('eval_read').select('subject_id')),
+      qAll(()=>sb.from('eval_char').select('subject_id')),
     ]);
     loading(false);
 
@@ -7126,6 +7128,8 @@ async function pgSchoolReport(){
     allSumRows.forEach(r=>{ (sumBySubj[r.subject_id]=sumBySubj[r.subject_id]||[]).push(r); });
     const attBySubj = {};
     allAttRows.forEach(r=>{ (attBySubj[r.subject_id]=attBySubj[r.subject_id]||[]).push(r); });
+    const evalReadSubjIds = new Set(allEvalRead.map(r=>r.subject_id));
+    const evalCharSubjIds = new Set(allEvalChar.map(r=>r.subject_id));
 
     // นับนักเรียนต่อ ชั้น/ห้อง
     const stuCountMap = {};
@@ -7163,7 +7167,11 @@ async function pgSchoolReport(){
       const failNum = sumRows.length>0?sumRows.length-pass:null;
       const gradeCount={4:0,3.5:0,3:0,2.5:0,2:0,1.5:0,1:0,0:0};
       sumRows.forEach(r=>{ const g=parseFloat(r.grade); if(gradeCount[g]!==undefined)gradeCount[g]++; });
-      return {...sub,_stats:{total,pass:passNum,fail:failNum,avg,pct,msCount,teacherName,gradeCount,sumRows,stuIds,msStudentIds,attMap:stuAttMapSub}};
+      // ความคืบหน้า ปพ.5 ต้องครบ 3 อย่าง: คะแนน + เวลาเรียน + ประเมิน (อ่าน/คิด/เขียน และ คุณลักษณะ ต้องมีทั้งคู่)
+      const hasScore = sumRows.length>0;
+      const hasAttendance = (attBySubj[sub.id]||[]).length>0;
+      const hasEval = evalReadSubjIds.has(sub.id) && evalCharSubjIds.has(sub.id);
+      return {...sub,_stats:{total,pass:passNum,fail:failNum,avg,pct,msCount,teacherName,gradeCount,sumRows,stuIds,msStudentIds,attMap:stuAttMapSub,hasScore,hasAttendance,hasEval}};
     });
 
     // ── รวมสถิติโรงเรียน ──
@@ -7181,6 +7189,24 @@ async function pgSchoolReport(){
     const noScoreSubjects   = subjectsWithStats.filter(s=>s._stats.pass===null).length;
     const aboveThreshold    = subjectsWithStats.filter(s=>s._stats.pass!==null&&parseFloat(s._stats.pct)>=80).length;
     const totalRStudents    = allSumRows.filter(r=>r.special_result==='ร').length;
+
+    // ── สรุปความคืบหน้ารายครู (คะแนน + เวลาเรียน + ประเมิน ต้องครบทั้ง 3 ถึงจะนับว่าวิชานั้นเสร็จ) ──
+    const teacherProgress = {};
+    subjectsWithStats.forEach(sub=>{
+      const t=sub._stats.teacherName;
+      if(!t||t==='—')return;
+      if(!teacherProgress[t])teacherProgress[t]={teacher:t,total:0,scoreDone:0,attDone:0,evalDone:0,fullyDone:0};
+      const tp=teacherProgress[t];
+      tp.total++;
+      if(sub._stats.hasScore)tp.scoreDone++;
+      if(sub._stats.hasAttendance)tp.attDone++;
+      if(sub._stats.hasEval)tp.evalDone++;
+      if(sub._stats.hasScore&&sub._stats.hasAttendance&&sub._stats.hasEval)tp.fullyDone++;
+    });
+    const teacherProgressList = Object.values(teacherProgress).map(tp=>({
+      ...tp,
+      pct: tp.total>0?Math.round((tp.scoreDone+tp.attDone+tp.evalDone)/(tp.total*3)*100):0,
+    })).sort((a,b)=>a.pct-b.pct||a.teacher.localeCompare(b.teacher,'th'));
 
     // เก็บไว้ใน state เพื่อให้ exportSchoolReport ใช้ได้
     S._schoolReport = subjectsWithStats;
@@ -7265,22 +7291,65 @@ async function pgSchoolReport(){
       '</div>';
     }
 
+    function renderTeacherProgressTable(){
+      if(!teacherProgressList.length) return '';
+      const rows=teacherProgressList.map(tp=>{
+        const barColor=tp.pct>=80?'#16803d':tp.pct>=50?'#b45309':'#dc2626';
+        const tEsc=esc(tp.teacher).replace(/'/g,"&#39;");
+        return '<tr style="cursor:pointer" onclick="_jumpToTeacher(\''+tEsc+'\')">'+
+          '<td class="tl" style="font-weight:600">'+esc(tp.teacher)+'</td>'+
+          '<td class="tc">'+tp.total+'</td>'+
+          '<td class="tc">'+tp.scoreDone+'/'+tp.total+'</td>'+
+          '<td class="tc">'+tp.attDone+'/'+tp.total+'</td>'+
+          '<td class="tc">'+tp.evalDone+'/'+tp.total+'</td>'+
+          '<td style="min-width:120px">'+
+            '<div style="display:flex;align-items:center;gap:8px">'+
+              '<div style="flex:1;height:6px;border-radius:10px;background:var(--bg2);overflow:hidden">'+
+                '<div style="height:100%;border-radius:10px;background:'+barColor+';width:'+tp.pct+'%"></div>'+
+              '</div>'+
+              '<span style="font-size:12px;font-weight:700;color:'+barColor+'">'+tp.pct+'%</span>'+
+            '</div>'+
+          '</td>'+
+        '</tr>';
+      }).join('');
+      return '<div class="card" style="margin-bottom:14px">'+
+        '<div class="ch"><div class="ct">สรุปความคืบหน้ารายครู</div><span style="font-size:11px;color:var(--muted);font-weight:400">คลิกชื่อครูเพื่อดูรายวิชา</span></div>'+
+        '<div class="cb" style="padding:0">'+
+          '<div class="tw"><table>'+
+            '<thead><tr><th class="tl">ครู</th><th>วิชา</th><th>คะแนน</th><th>เวลาเรียน</th><th>ประเมิน</th><th>ความคืบหน้า</th></tr></thead>'+
+            '<tbody>'+rows+'</tbody>'+
+          '</table></div>'+
+        '</div>'+
+      '</div>';
+    }
+    window._jumpToTeacher=function(name){
+      window._teacherFilter=name;
+      const sel=$('sr-teacher'); if(sel) sel.value=name;
+      window._renderCards&&window._renderCards();
+      const cardsEl=$('school-cards'); if(cardsEl) cardsEl.scrollIntoView({behavior:'smooth',block:'start'});
+    };
+
     // ── filter state (global เพื่อให้ onchange เข้าถึงได้) ──
     window._gradeFilter=''; window._teacherFilter='';
     const grades=[...new Set(allSubjects.map(s=>s.grade_level))].sort();
     const teachers=[...new Set(subjectsWithStats.map(s=>s._stats.teacherName))].filter(t=>t&&t!=='—').sort();
 
     window._renderCards=function(){
+      const container=$('school-cards');
+      const cnt=$('school-count');
+      if(!window._teacherFilter){
+        if(container) container.innerHTML='<div class="empty" style="padding:32px 16px;text-align:center;color:var(--muted)">เลือกครูด้านบนเพื่อแสดงรายวิชา<br><span style="font-size:12px">(หรือเลือก "ครูทุกคน" เพื่อแสดงทั้งหมด)</span></div>';
+        if(cnt) cnt.textContent='';
+        return;
+      }
       let filtered=subjectsWithStats.filter(s=>{
         if(window._gradeFilter && String(s.grade_level)!==String(window._gradeFilter)) return false;
-        if(window._teacherFilter && s._stats.teacherName!==window._teacherFilter) return false;
+        if(window._teacherFilter!=='__all__' && s._stats.teacherName!==window._teacherFilter) return false;
         return true;
       });
-      const container=$('school-cards');
       if(container) container.innerHTML=filtered.length
         ? filtered.map((s,i)=>renderSubjectCard(s,i)).join('')
         : '<div class="empty">ไม่พบรายวิชาที่ตรงกับตัวกรอง</div>';
-      const cnt=$('school-count');
       if(cnt) cnt.textContent='แสดง '+filtered.length+' วิชา';
     }
 
@@ -7327,6 +7396,9 @@ async function pgSchoolReport(){
         '<div class="sc"><div class="si or"><svg viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div><div class="sv" style="color:#b45309">'+totalRStudents+'</div><div class="sl">นักเรียน ร (รอผล)</div></div></div>'+
       '</div>'+
 
+      // สรุปความคืบหน้ารายครู
+      renderTeacherProgressTable()+
+
       // filter bar
       '<div class="card" style="margin-bottom:14px">'+
         '<div class="cb" style="padding:10px 16px">'+
@@ -7336,7 +7408,8 @@ async function pgSchoolReport(){
               grades.map(g=>'<option value="'+g+'">ม.'+g+'</option>').join('')+
             '</select>'+
             '<select class="fs" style="max-width:220px" id="sr-teacher" onchange="window._teacherFilter=this.value;window._renderCards&&window._renderCards()">'+
-              '<option value="">ครูทุกคน</option>'+
+              '<option value="">-- เลือกครู --</option>'+
+              '<option value="__all__">ครูทุกคน</option>'+
               teachers.map(t=>'<option value="'+esc(t)+'">'+esc(t)+'</option>').join('')+
             '</select>'+
             '<div style="margin-left:auto;font-size:12px;color:var(--muted)" id="school-count">แสดง '+subjectsWithStats.length+' วิชา</div>'+
