@@ -7326,8 +7326,8 @@ async function pgSchoolReport(){
         return '<tr style="cursor:pointer" onclick="_jumpToTeacher(\''+tEsc+'\')">'+
           '<td class="tl" style="font-weight:600">'+esc(tp.teacher)+'</td>'+
           '<td class="tc">'+tp.total+'</td>'+
-          '<td class="tc">'+tp.collectDone+'/'+tp.total+'</td>'+
           '<td class="tc">'+tp.attDone+'/'+tp.total+'</td>'+
+          '<td class="tc">'+tp.collectDone+'/'+tp.total+'</td>'+
           '<td class="tc">'+tp.midDone+'/'+tp.total+'</td>'+
           '<td class="tc">'+tp.finalDone+'/'+tp.total+'</td>'+
           '<td class="tc">'+tp.evalDone+'/'+tp.total+'</td>'+
@@ -7345,7 +7345,7 @@ async function pgSchoolReport(){
         '<div class="ch"><div class="ct">สรุปความคืบหน้ารายครู</div><span style="font-size:11px;color:var(--muted);font-weight:400">คลิกชื่อครูเพื่อดูรายวิชา</span></div>'+
         '<div class="cb" style="padding:0">'+
           '<div class="tw"><table>'+
-            '<thead><tr><th class="tl">ครู</th><th>วิชา</th><th>คะแนนเก็บ</th><th>เวลาเรียน</th><th>กลางภาค</th><th>ปลายภาค</th><th>ประเมิน</th><th>ความคืบหน้า</th></tr></thead>'+
+            '<thead><tr><th class="tl">ครู</th><th>วิชา</th><th>เวลาเรียน</th><th>คะแนนเก็บ</th><th>กลางภาค</th><th>ปลายภาค</th><th>ประเมิน</th><th>ความคืบหน้า</th></tr></thead>'+
             '<tbody>'+rows+'</tbody>'+
           '</table></div>'+
         '</div>'+
