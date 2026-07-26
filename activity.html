@@ -884,6 +884,7 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
       <button class="rpt-tab" id="rpt-tab-student" onclick="switchRptTab('student')">รายนักเรียน</button>
       <button class="rpt-tab" id="rpt-tab-streak" onclick="switchRptTab('streak')">ขาดต่อเนื่อง</button>
       <button class="rpt-tab" id="rpt-tab-percent" onclick="switchRptTab('percent')">ร้อยละ</button>
+      <button class="rpt-tab" id="rpt-tab-leave" onclick="switchRptTab('leave')">แจ้งขอลา</button>
     </div>
     <div id="rpt-content"></div>
   </div>
@@ -1890,6 +1891,50 @@ function _hideLeaveAlert(){
   $('leave-sheet').classList.remove('show');
 }
 
+// ── รายงาน "แจ้งขอลา" — ดูย้อนหลังทุกรายการ เผื่อพลาด popup ตอนเช็คชื่อ ──
+async function renderRptLeave(){
+  if(!S.rptLeaveFrom){const d=new Date();d.setDate(d.getDate()-7);S.rptLeaveFrom=d.toISOString().slice(0,10)}
+  if(!S.rptLeaveTo)S.rptLeaveTo=todayStr();
+  const cOpts=S.classes.map(c=>`<option value="${c.grade_level}_${c.room}"${S.rptLeaveClass===`${c.grade_level}_${c.room}`?' selected':''}>${classLabel(c.grade_level,c.room)}</option>`).join('');
+  $('rpt-content').innerHTML=`
+    <div class="filter-row" style="flex-direction:row;gap:8px;align-items:center">
+      <input type="date" class="ios-input" style="flex:1" value="${S.rptLeaveFrom}" onchange="S.rptLeaveFrom=this.value;renderRptLeave()">
+      <span style="color:var(--txt3);flex-shrink:0">ถึง</span>
+      <input type="date" class="ios-input" style="flex:1" value="${S.rptLeaveTo}" onchange="S.rptLeaveTo=this.value;renderRptLeave()">
+    </div>
+    <div class="filter-row">
+      <select class="ios-select" onchange="S.rptLeaveClass=this.value||null;renderRptLeave()">${'<option value="">ทุกชั้นเรียน</option>'+cOpts}</select>
+    </div>
+    <div id="rpt-leave-body"><div class="loading-text">กำลังโหลด...</div></div>`;
+  try{
+    let query=sb.from('leave_requests')
+      .select('id,leave_type,start_date,end_date,reason,photo_url,gps_lat,gps_lng,created_at,students(student_name,grade_level,room)')
+      .gte('start_date',S.rptLeaveFrom).lte('start_date',S.rptLeaveTo).order('created_at',{ascending:false});
+    if(S.rptLeaveClass){const[gl,r]=S.rptLeaveClass.split('_');query=query.eq('grade_level',gl).eq('room',r)}
+    const rows=await q(query);
+    if(!rows.length){$('rpt-leave-body').innerHTML='<div class="empty-state">ไม่พบรายการแจ้งขอลาในช่วงนี้</div>';return}
+    $('rpt-leave-body').innerHTML=rows.map(row=>{
+      const name=row.students?.student_name||'';
+      const cls=row.students?classLabel(row.students.grade_level,row.students.room):'';
+      const range=row.start_date===row.end_date?thDate(row.start_date):`${thDate(row.start_date)} – ${thDate(row.end_date)}`;
+      const photo=row.photo_url
+        ?`<img class="leave-card-photo" src="${esc(row.photo_url)}" onclick="window.open('${esc(row.photo_url)}','_blank')">`
+        :`<div class="leave-card-icon">${row.leave_type==='sick'?'🤒':'📝'}</div>`;
+      const mapLink=(row.gps_lat!=null&&row.gps_lng!=null)
+        ?`<a class="leave-card-map" href="https://maps.google.com/?q=${row.gps_lat},${row.gps_lng}" target="_blank">📍 ดูตำแหน่งบนแผนที่</a>`:'';
+      return`<div class="leave-card" style="margin-bottom:10px">
+        ${photo}
+        <div style="flex:1;min-width:0">
+          <div class="leave-card-name">${esc(name)} <span style="font-weight:400;color:var(--txt2)">· ${esc(cls)}</span></div>
+          <div class="leave-card-meta">${_leaveTypeLabel(row.leave_type)} · ${range}</div>
+          ${row.reason?`<div class="leave-card-reason">${esc(row.reason)}</div>`:''}
+          ${mapLink}
+        </div>
+      </div>`;
+    }).join('');
+  }catch(e){$('rpt-leave-body').innerHTML=`<div class="empty-state">เกิดข้อผิดพลาด: ${esc(e.message)}</div>`}
+}
+
 // ── iOS-style confirm sheet ──
 let _confirmFn=null;
 function _showConfirm(title,sub,btnLabel,btnColor,fn){
@@ -2098,7 +2143,7 @@ async function onCkSessionChange(s){S.ckSession=s;await renderCheckin()}
 // ─── REPORT ────────────────────────────────────────────────────────────────
 function renderReport(){
   const tabs=$('rpt-tabs');if(tabs)tabs.style.display='flex';
-  ['activity','student','class','school','percent','streak','service','servicecheck'].forEach(t=>$('rpt-tab-'+t)?.classList.toggle('active',S.rptTab===t));
+  ['activity','student','class','school','percent','streak','service','servicecheck','leave'].forEach(t=>$('rpt-tab-'+t)?.classList.toggle('active',S.rptTab===t));
   if(S.rptTab==='activity')renderRptActivity();
   else if(S.rptTab==='student')renderRptStudent();
   else if(S.rptTab==='class')renderRptClass();
@@ -2106,6 +2151,7 @@ function renderReport(){
   else if(S.rptTab==='streak')renderRptStreak();
   else if(S.rptTab==='service')renderRptService();
   else if(S.rptTab==='servicecheck')renderRptServiceCheck();
+  else if(S.rptTab==='leave')renderRptLeave();
   else renderRptPercent();
 }
 function switchRptTab(tab){
