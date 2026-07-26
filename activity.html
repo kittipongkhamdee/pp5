@@ -520,7 +520,9 @@ html[data-theme="dark"] #leave-sheet{background:rgba(28,35,50,.9)}
 .leave-sheet-title{font-size:17px;font-weight:700;text-align:center;margin:2px 0 4px;color:var(--txt);flex-shrink:0}
 .leave-sheet-sub{font-size:13px;color:var(--txt2);text-align:center;margin-bottom:16px;flex-shrink:0}
 .leave-list{overflow-y:auto;flex:1;min-height:0;margin-bottom:14px}
-.leave-card{background:var(--card2);border-radius:14px;padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start}
+.leave-card{background:var(--card2);border-radius:14px;padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start;position:relative}
+.leave-card-del{position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:8px;border:none;background:rgba(220,38,38,0.1);color:#dc2626;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.leave-card-del:active{opacity:.7}
 .leave-card-icon{width:52px;height:52px;border-radius:12px;background:var(--card);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
 .leave-card-photo{width:52px;height:52px;border-radius:12px;object-fit:cover;flex-shrink:0;cursor:pointer;background:var(--card)}
 .leave-card-name{font-weight:700;font-size:14.5px;color:var(--txt)}
@@ -1251,18 +1253,26 @@ async function loadAdminPin(){
   try{const r=await q(sb.from('config').select('value').eq('key','admin_password').limit(1));if(r&&r[0])_adminPin=r[0].value}catch(e){}
 }
 
-function showPinModal(){
+// _pinCallback: ถ้ามีค่า แปลว่าเรียก showPinModal มาเพื่อขอสิทธิ์ admin ทำอย่างอื่น
+// (เช่น ลบประวัติแจ้งขอลา) ไม่ใช่เพื่อเข้าหน้า "จัดการกิจกรรม" ตามปกติ — checkPin() จะ
+// เรียก callback แทนแล้วไม่สลับหน้าไปหน้า admin
+let _pinCallback=null;
+function showPinModal(cb){
+  _pinCallback=cb||null;
   $('pin-input').value='';$('pin-err').textContent='';
   $('pin-modal').classList.add('open');
   setTimeout(()=>$('pin-input').focus(),100);
 }
-function closePinModal(){$('pin-modal').classList.remove('open')}
+function closePinModal(){$('pin-modal').classList.remove('open');_pinCallback=null}
 
 function checkPin(){
   const entered=$('pin-input').value;
   if(!entered){$('pin-err').textContent='กรุณากรอกรหัสผ่าน';return}
   if(entered===_adminPin){
-    _adminUnlocked=true;closePinModal();
+    _adminUnlocked=true;
+    const cb=_pinCallback;_pinCallback=null;
+    closePinModal();
+    if(cb){cb();return}
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
     document.querySelectorAll('.nav-item,.side-nav-item').forEach(n=>n.classList.remove('active'));
     $('admin-page').classList.add('active');
@@ -1923,8 +1933,9 @@ async function renderRptLeave(){
       const mapLink=(row.gps_lat!=null&&row.gps_lng!=null)
         ?`<a class="leave-card-map" href="https://maps.google.com/?q=${row.gps_lat},${row.gps_lng}" target="_blank">📍 ดูตำแหน่งบนแผนที่</a>`:'';
       return`<div class="leave-card" style="margin-bottom:10px">
+        <button class="leave-card-del" onclick="requestDeleteLeaveRequest('${row.id}')" title="ลบ (admin)">🗑️</button>
         ${photo}
-        <div style="flex:1;min-width:0">
+        <div style="flex:1;min-width:0;padding-right:30px">
           <div class="leave-card-name">${esc(name)} <span style="font-weight:400;color:var(--txt2)">· ${esc(cls)}</span></div>
           <div class="leave-card-meta">${_leaveTypeLabel(row.leave_type)} · ${range}</div>
           ${row.reason?`<div class="leave-card-reason">${esc(row.reason)}</div>`:''}
@@ -1933,6 +1944,20 @@ async function renderRptLeave(){
       </div>`;
     }).join('');
   }catch(e){$('rpt-leave-body').innerHTML=`<div class="empty-state">เกิดข้อผิดพลาด: ${esc(e.message)}</div>`}
+}
+
+// ลบประวัติแจ้งขอลา — เฉพาะ admin (ต้องกรอกรหัสผ่านเดียวกับที่ใช้เข้า "จัดการกิจกรรม"
+// ก่อน ถ้ายังไม่เคยปลดล็อกในเซสชันนี้) ป้องกันครูทั่วไปลบประวัติทิ้งโดยไม่ตั้งใจ
+function requestDeleteLeaveRequest(id){
+  if(!_adminUnlocked){showPinModal(()=>requestDeleteLeaveRequest(id));return}
+  _showConfirm('ลบประวัติแจ้งขอลานี้?','การลบไม่สามารถย้อนกลับได้','ลบ','#dc2626',()=>_deleteLeaveRequest(id));
+}
+async function _deleteLeaveRequest(id){
+  try{
+    await q(sb.from('leave_requests').delete().eq('id',id));
+    toast('ลบประวัติแล้ว');
+    renderRptLeave();
+  }catch(e){toast('ลบไม่สำเร็จ: '+e.message,'er')}
 }
 
 // ── iOS-style confirm sheet ──
