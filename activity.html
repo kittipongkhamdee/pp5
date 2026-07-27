@@ -895,6 +895,7 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
     <div id="rpt-tabs">
       <button class="rpt-tab active" id="rpt-tab-school" onclick="switchRptTab('school')">ทั้งโรงเรียน</button>
       <button class="rpt-tab" id="rpt-tab-class" onclick="switchRptTab('class')">ทั้งห้อง</button>
+      <button class="rpt-tab" id="rpt-tab-leave" onclick="switchRptTab('leave')">แจ้งขอลา</button>
       <div class="rpt-more-wrap">
         <button class="rpt-tab rpt-tab-more" id="rpt-tab-more" onclick="toggleRptMoreMenu(event)">
           <span class="rpt-more-label">เพิ่มเติม</span>
@@ -907,7 +908,6 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
           <button id="rpt-tab-student" onclick="selectRptMore('student')">รายนักเรียน</button>
           <button id="rpt-tab-streak" onclick="selectRptMore('streak')">ขาดต่อเนื่อง</button>
           <button id="rpt-tab-percent" onclick="selectRptMore('percent')">ร้อยละ</button>
-          <button id="rpt-tab-leave" onclick="selectRptMore('leave')">แจ้งขอลา</button>
         </div>
       </div>
     </div>
@@ -2191,11 +2191,11 @@ async function onCkDateChange(){
 async function onCkSessionChange(s){S.ckSession=s;await renderCheckin()}
 
 // ─── REPORT ────────────────────────────────────────────────────────────────
-const RPT_MORE_TABS=['servicecheck','service','activity','student','streak','percent','leave'];
-const RPT_MORE_LABELS={servicecheck:'เช็คบำเพ็ญประโยชน์',service:'บำเพ็ญประโยชน์',activity:'รายกิจกรรม',student:'รายนักเรียน',streak:'ขาดต่อเนื่อง',percent:'ร้อยละ',leave:'แจ้งขอลา'};
+const RPT_MORE_TABS=['servicecheck','service','activity','student','streak','percent'];
+const RPT_MORE_LABELS={servicecheck:'เช็คบำเพ็ญประโยชน์',service:'บำเพ็ญประโยชน์',activity:'รายกิจกรรม',student:'รายนักเรียน',streak:'ขาดต่อเนื่อง',percent:'ร้อยละ'};
 function renderReport(){
   const tabs=$('rpt-tabs');if(tabs)tabs.style.display='flex';
-  ['school','class'].forEach(t=>$('rpt-tab-'+t)?.classList.toggle('active',S.rptTab===t));
+  ['school','class','leave'].forEach(t=>$('rpt-tab-'+t)?.classList.toggle('active',S.rptTab===t));
   RPT_MORE_TABS.forEach(t=>$('rpt-tab-'+t)?.classList.toggle('active',S.rptTab===t));
   const moreBtn=$('rpt-tab-more');
   if(moreBtn){
