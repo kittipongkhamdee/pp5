@@ -1873,11 +1873,13 @@ async function checkActiveLeaves(gl,r){
   }catch(e){/* เงียบไว้ ไม่ให้บั๊กจุดนี้ไปรบกวนการเช็คชื่อหลัก */}
 }
 function _leaveTypeLabel(t){return t==='sick'?'🤒 ลาป่วย':'📝 ลากิจ'}
+// จำนวนวันลา นับรวมทั้งวันเริ่มและวันสิ้นสุด (ลาวันเดียว = 1 วัน)
+function _leaveDayCount(s,e){return Math.round((new Date(e)-new Date(s))/86400000)+1}
 function _showLeaveAlert(rows,gl,r){
   $('leave-sheet-sub').textContent=`${classLabel(gl,r)} · วันที่ ${thDate(todayStr())}`;
   $('leave-list').innerHTML=rows.map(row=>{
     const name=row.students?.student_name||'';
-    const range=row.start_date===row.end_date?thDate(row.start_date):`${thDate(row.start_date)} – ${thDate(row.end_date)}`;
+    const range=(row.start_date===row.end_date?thDate(row.start_date):`${thDate(row.start_date)} – ${thDate(row.end_date)}`)+` (${_leaveDayCount(row.start_date,row.end_date)} วัน)`;
     const photo=row.photo_url
       ?`<img class="leave-card-photo" src="${esc(row.photo_url)}" onclick="window.open('${esc(row.photo_url)}','_blank')">`
       :`<div class="leave-card-icon">${row.leave_type==='sick'?'🤒':'📝'}</div>`;
@@ -1926,7 +1928,7 @@ async function renderRptLeave(){
     $('rpt-leave-body').innerHTML=rows.map(row=>{
       const name=row.students?.student_name||'';
       const cls=row.students?classLabel(row.students.grade_level,row.students.room):'';
-      const range=row.start_date===row.end_date?thDate(row.start_date):`${thDate(row.start_date)} – ${thDate(row.end_date)}`;
+      const range=(row.start_date===row.end_date?thDate(row.start_date):`${thDate(row.start_date)} – ${thDate(row.end_date)}`)+` (${_leaveDayCount(row.start_date,row.end_date)} วัน)`;
       const photo=row.photo_url
         ?`<img class="leave-card-photo" src="${esc(row.photo_url)}" onclick="window.open('${esc(row.photo_url)}','_blank')">`
         :`<div class="leave-card-icon">${row.leave_type==='sick'?'🤒':'📝'}</div>`;
