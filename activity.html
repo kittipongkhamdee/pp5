@@ -318,6 +318,21 @@ html[data-theme="dark"] .ios-select,html[data-theme="dark"] .ios-input{backgroun
   border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;
 }
 .rpt-tab.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:700}
+.rpt-more-wrap{position:relative;flex:0 0 auto}
+.rpt-tab-more{display:inline-flex;align-items:center;gap:4px}
+.rpt-more-menu{
+  display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:40;min-width:180px;
+  background:var(--card);border:1px solid var(--sep);border-radius:12px;
+  box-shadow:0 8px 24px rgba(0,0,0,.14);padding:6px;
+}
+.rpt-more-menu.open{display:block}
+.rpt-more-menu button{
+  display:block;width:100%;text-align:left;padding:10px 12px;font-size:13.5px;font-weight:500;
+  color:var(--txt2);background:none;border:none;border-radius:8px;font-family:var(--font);
+  cursor:pointer;white-space:nowrap;
+}
+.rpt-more-menu button:active{background:var(--bg2)}
+.rpt-more-menu button.active{color:var(--primary);font-weight:700;background:var(--primary-soft,rgba(0,122,255,.08))}
 
 #rpt-content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 20px;padding-bottom:calc(80px + var(--safe-bottom))}
 
@@ -880,13 +895,21 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
     <div id="rpt-tabs">
       <button class="rpt-tab active" id="rpt-tab-school" onclick="switchRptTab('school')">ทั้งโรงเรียน</button>
       <button class="rpt-tab" id="rpt-tab-class" onclick="switchRptTab('class')">ทั้งห้อง</button>
-      <button class="rpt-tab" id="rpt-tab-servicecheck" onclick="switchRptTab('servicecheck')">เช็คบำเพ็ญประโยชน์</button>
-      <button class="rpt-tab" id="rpt-tab-service" onclick="switchRptTab('service')">บำเพ็ญประโยชน์</button>
-      <button class="rpt-tab" id="rpt-tab-activity" onclick="switchRptTab('activity')">รายกิจกรรม</button>
-      <button class="rpt-tab" id="rpt-tab-student" onclick="switchRptTab('student')">รายนักเรียน</button>
-      <button class="rpt-tab" id="rpt-tab-streak" onclick="switchRptTab('streak')">ขาดต่อเนื่อง</button>
-      <button class="rpt-tab" id="rpt-tab-percent" onclick="switchRptTab('percent')">ร้อยละ</button>
-      <button class="rpt-tab" id="rpt-tab-leave" onclick="switchRptTab('leave')">แจ้งขอลา</button>
+      <div class="rpt-more-wrap">
+        <button class="rpt-tab rpt-tab-more" id="rpt-tab-more" onclick="toggleRptMoreMenu(event)">
+          <span class="rpt-more-label">เพิ่มเติม</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="rpt-more-menu" id="rpt-more-menu">
+          <button id="rpt-tab-servicecheck" onclick="selectRptMore('servicecheck')">เช็คบำเพ็ญประโยชน์</button>
+          <button id="rpt-tab-service" onclick="selectRptMore('service')">บำเพ็ญประโยชน์</button>
+          <button id="rpt-tab-activity" onclick="selectRptMore('activity')">รายกิจกรรม</button>
+          <button id="rpt-tab-student" onclick="selectRptMore('student')">รายนักเรียน</button>
+          <button id="rpt-tab-streak" onclick="selectRptMore('streak')">ขาดต่อเนื่อง</button>
+          <button id="rpt-tab-percent" onclick="selectRptMore('percent')">ร้อยละ</button>
+          <button id="rpt-tab-leave" onclick="selectRptMore('leave')">แจ้งขอลา</button>
+        </div>
+      </div>
     </div>
     <div id="rpt-content"></div>
   </div>
@@ -2168,9 +2191,19 @@ async function onCkDateChange(){
 async function onCkSessionChange(s){S.ckSession=s;await renderCheckin()}
 
 // ─── REPORT ────────────────────────────────────────────────────────────────
+const RPT_MORE_TABS=['servicecheck','service','activity','student','streak','percent','leave'];
+const RPT_MORE_LABELS={servicecheck:'เช็คบำเพ็ญประโยชน์',service:'บำเพ็ญประโยชน์',activity:'รายกิจกรรม',student:'รายนักเรียน',streak:'ขาดต่อเนื่อง',percent:'ร้อยละ',leave:'แจ้งขอลา'};
 function renderReport(){
   const tabs=$('rpt-tabs');if(tabs)tabs.style.display='flex';
-  ['activity','student','class','school','percent','streak','service','servicecheck','leave'].forEach(t=>$('rpt-tab-'+t)?.classList.toggle('active',S.rptTab===t));
+  ['school','class'].forEach(t=>$('rpt-tab-'+t)?.classList.toggle('active',S.rptTab===t));
+  RPT_MORE_TABS.forEach(t=>$('rpt-tab-'+t)?.classList.toggle('active',S.rptTab===t));
+  const moreBtn=$('rpt-tab-more');
+  if(moreBtn){
+    const isMore=RPT_MORE_TABS.includes(S.rptTab);
+    moreBtn.classList.toggle('active',isMore);
+    const lbl=moreBtn.querySelector('.rpt-more-label');
+    if(lbl)lbl.textContent=isMore?RPT_MORE_LABELS[S.rptTab]:'เพิ่มเติม';
+  }
   if(S.rptTab==='activity')renderRptActivity();
   else if(S.rptTab==='student')renderRptStudent();
   else if(S.rptTab==='class')renderRptClass();
@@ -2188,6 +2221,19 @@ function switchRptTab(tab){
   $('topbar-title').textContent='รายงาน';
   renderReport();
 }
+function toggleRptMoreMenu(e){
+  e.stopPropagation();
+  const m=$('rpt-more-menu');if(!m)return;
+  m.classList.toggle('open');
+}
+function selectRptMore(tab){
+  const m=$('rpt-more-menu');if(m)m.classList.remove('open');
+  switchRptTab(tab);
+}
+document.addEventListener('click',(e)=>{
+  const m=$('rpt-more-menu');
+  if(m&&m.classList.contains('open')&&!e.target.closest('.rpt-more-wrap'))m.classList.remove('open');
+});
 
 // ── Report: per activity ──
 async function renderRptActivity(){
