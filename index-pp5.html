@@ -1473,6 +1473,7 @@ async function loadConfig(){
     S.config = {};
     rows.forEach(r=>{ S.config[r.key]=r.value; });
     if(S.config.subject_groups){try{SUBJECT_GROUPS=JSON.parse(S.config.subject_groups);}catch(e){}}
+    if(S.config.subject_types){try{SUBJECT_TYPES=JSON.parse(S.config.subject_types);}catch(e){}}
   }catch(e){ S.config = {}; }
 }
 
@@ -2076,6 +2077,8 @@ let SUBJECT_GROUPS=['ภาษาไทย','คณิตศาสตร์','�
   'สังคมศึกษา ศาสนา และวัฒนธรรม','สุขศึกษาและพลศึกษา','ศิลปะ',
   'การงานอาชีพ','ภาษาต่างประเทศ','การศึกษาค้นคว้าด้วยตนเอง (IS)'];
 let _sgList=[];
+let SUBJECT_TYPES=['รายวิชาพื้นฐาน','วิชาเพิ่มเติม'];
+let _stList=[];
 const IQA_DEFAULT_TARGETS={'ภาษาไทย':2.60,'คณิตศาสตร์':2.00,'วิทยาศาสตร์และเทคโนโลยี':2.75,
   'สังคมศึกษา ศาสนา และวัฒนธรรม':3.00,'สุขศึกษาและพลศึกษา':3.20,'ศิลปะ':3.20,
   'การงานอาชีพ':3.20,'ภาษาต่างประเทศ':2.50,'การศึกษาค้นคว้าด้วยตนเอง (IS)':3.10};
@@ -2549,12 +2552,21 @@ function openSubModal(id){
           <div><label class="fl">ชื่อวิชา <span class="req">*</span></label>
             <input class="fi" id="f-name" value="${esc(s?.subject_name||'')}"></div>
         </div>
-        <div style="margin-top:14px">
-          <label class="fl">กลุ่มสาระการเรียนรู้</label>
-          <select class="fs" id="f-sg">
-            <option value="">— ไม่ระบุ —</option>
-            ${SUBJECT_GROUPS.map(g=>`<option value="${esc(g)}" ${s?.subject_group===g?'selected':''}>${esc(g)}</option>`).join('')}
-          </select>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
+          <div>
+            <label class="fl">กลุ่มสาระการเรียนรู้</label>
+            <select class="fs" id="f-sg">
+              <option value="">— ไม่ระบุ —</option>
+              ${SUBJECT_GROUPS.map(g=>`<option value="${esc(g)}" ${s?.subject_group===g?'selected':''}>${esc(g)}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label class="fl">ประเภทรายวิชา</label>
+            <select class="fs" id="f-st">
+              <option value="">— ไม่ระบุ —</option>
+              ${SUBJECT_TYPES.map(t=>`<option value="${esc(t)}" ${s?.subject_type===t?'selected':''}>${esc(t)}</option>`).join('')}
+            </select>
+          </div>
         </div>
         <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:14px;margin-top:14px">
           <div><label class="fl">ชั้น ม.</label>
@@ -2627,6 +2639,7 @@ async function saveSubForm(id){
     credits:+$('f-cr').value,hours_per_week:+$('f-hw').value,total_hours:+$('f-th').value,
     teacher_name:$('f-tch').value.trim(),head_of_group:$('f-hog')?.value||'',advisor_name:'',
     subject_group:$('f-sg')?.value||'',
+    subject_type:$('f-st')?.value||'',
     score_before_mid:sbm,score_mid:sm,score_after_mid:sam,score_final:sf,
     academic_year:S.config.academic_year||'2568',semester:parseInt(S.config.semester||1),
     user_id:S.user.id
@@ -3945,8 +3958,13 @@ function renderUnitTab(period,maxTotal){
         <input type="number" class="fi" id="${period}-un" value="${units.length+1}" min="1" style="width:72px"></div>
       <div style="flex:1;min-width:150px"><label class="fl">ชื่อหน่วย</label>
         <input class="fi" id="${period}-unm" placeholder="เช่น สิ่งมีชีวิต"></div>
-      <div style="min-width:140px"><label class="fl">มาตรฐาน/ตัวชี้วัด</label>
-        <input class="fi" id="${period}-std" placeholder="เช่น ว1.2 ม.1/1"></div>
+      <div style="min-width:180px"><label class="fl">มาตรฐาน/ตัวชี้วัด</label>
+        <div style="display:flex;gap:6px">
+          <input class="fi" id="${period}-std" placeholder="เช่น ว1.2 ม.1/1" style="flex:1">
+          <button type="button" class="btn bs" onclick="openIndicatorPicker('${period}')" title="เลือกจากคลังตัวชี้วัด" style="padding:0 10px;white-space:nowrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </button>
+        </div></div>
       <div><label class="fl">คะแนนเต็ม</label>
         <input type="number" class="fi" id="${period}-mx" value="${maxTotal}" min="1" style="width:80px"></div>
     </div>
@@ -4014,6 +4032,68 @@ function renderUnitTab(period,maxTotal){
   </div></div>`}`;
 }
 let _unitCtx={}; // เก็บ context ของ unit modal
+// ── คลังตัวชี้วัด: โหลดครั้งเดียว + modal ค้นหา/เลือก ──────────
+let _indicatorsCache=null;
+async function loadIndicatorsOnce(){
+  if(_indicatorsCache) return _indicatorsCache;
+  try{ _indicatorsCache=await qAll(()=>sb.from('indicators').select('*')); }
+  catch(e){ _indicatorsCache=[]; }
+  return _indicatorsCache;
+}
+function _indicatorSubjectType(){
+  return scSub?.subject_type || 'รายวิชาพื้นฐาน';
+}
+function _indicatorGradeMatch(ind){
+  const g=parseInt(scSub?.grade_level)||0;
+  if(ind.grade_level==='ม.'+g) return true;
+  if(ind.grade_level==='ม.4-6' && g>=4) return true;
+  return false;
+}
+async function openIndicatorPicker(period){
+  _indPickerCtx={period};
+  document.body.insertAdjacentHTML('beforeend',`
+  <div class="mo" id="indMod"><div class="md md-lg">
+    <div class="mh"><div class="mt">เลือกจากคลังตัวชี้วัด</div>
+      <button class="mx" onclick="rmModal('indMod')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="10" height="10"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="mb">
+      <input class="fi" id="ind-q" placeholder="พิมพ์คำค้น เช่น เซลล์, ป.6/1, ว 1.2..." style="margin-bottom:10px" oninput="_indRefresh()" autofocus>
+      <div id="ind-list" style="max-height:50vh;overflow-y:auto">
+        <div style="text-align:center;color:var(--muted);padding:20px 0;font-size:13px">กำลังโหลด...</div>
+      </div>
+    </div>
+    <div class="mf"><button class="btn bs" onclick="rmModal('indMod')">ปิด</button></div>
+  </div></div>`);
+  await loadIndicatorsOnce();
+  _indRefresh();
+}
+function _indRefresh(){
+  const el=document.getElementById('ind-list'); if(!el) return;
+  const q=(document.getElementById('ind-q')?.value||'').trim().toLowerCase();
+  const stype=_indicatorSubjectType();
+  let list=(_indicatorsCache||[]).filter(ind=>ind.subject_type===stype && _indicatorGradeMatch(ind));
+  if(scSub?.subject_group) list=list.filter(ind=>ind.subject_group===scSub.subject_group);
+  if(q) list=list.filter(ind=>(ind.indicator_code+' '+ind.indicator_text).toLowerCase().includes(q));
+  list=list.slice(0,150);
+  if(!list.length){
+    el.innerHTML=`<div style="text-align:center;color:var(--muted);padding:20px 0;font-size:13px">ไม่พบตัวชี้วัดที่ตรงกับวิชานี้ — ลองพิมพ์คำค้นอื่น หรือพิมพ์เองในช่องได้เลย</div>`;
+    return;
+  }
+  el.innerHTML=list.map(ind=>`
+    <div onclick="pickIndicator('${ind.id}')" style="padding:9px 10px;border-bottom:1px solid var(--bdr);cursor:pointer;border-radius:8px" onmouseover="this.style.background='var(--card2)'" onmouseout="this.style.background=''">
+      <div style="font-size:12.5px;font-weight:600;color:var(--ac)">${esc(ind.indicator_code)} <span style="font-weight:400;color:var(--muted);font-size:11px">(${esc(ind.kind)})</span></div>
+      <div style="font-size:12.5px;color:var(--txt2);margin-top:2px">${esc(ind.indicator_text)}</div>
+    </div>`).join('');
+}
+function pickIndicator(id){
+  const ind=(_indicatorsCache||[]).find(x=>String(x.id)===String(id)); if(!ind) return;
+  const {period}=_indPickerCtx||{};
+  const el=document.getElementById(period+'-std');
+  if(el) el.value=ind.indicator_code+' '+ind.indicator_text;
+  rmModal('indMod');
+}
+let _indPickerCtx=null;
+
 function openUnitModal(period){
   const un=parseInt($(period+'-un')?.value)||1;
   const unm=($(period+'-unm')?.value||'').trim()||('หน่วยที่ '+un);
@@ -5781,11 +5861,39 @@ async function saveSgList(){
   finally{ loading(false); }
 }
 
+function _stListHTML(list){
+  if(!list.length) return '<div style="color:#8e8e93;font-size:13px;text-align:center;padding:12px 0">ยังไม่มีประเภทรายวิชา</div>';
+  return list.map((g,i)=>`<div style="display:flex;align-items:center;gap:6px;padding:7px 0;border-bottom:1px solid var(--bdr)"><span style="font-size:12px;color:#8e8e93;min-width:22px">${i+1}.</span><span style="flex:1;font-size:13px">${esc(g)}</span><button class="btn bs" onclick="stMove(${i},-1)" ${i===0?'disabled':''} style="padding:3px 8px;min-width:28px">▲</button><button class="btn bs" onclick="stMove(${i},1)" ${i===list.length-1?'disabled':''} style="padding:3px 8px;min-width:28px">▼</button><button class="btn" onclick="stDel(${i})" style="padding:3px 9px;color:#FF3B30;border-color:rgba(255,59,48,.3);background:rgba(255,59,48,.08);font-size:12px">ลบ</button></div>`).join('');
+}
+function _stRefresh(){ const el=document.getElementById('st-list'); if(el) el.innerHTML=_stListHTML(_stList); }
+function stAdd(){
+  const inp=document.getElementById('st-new'); if(!inp) return;
+  const name=inp.value.trim();
+  if(!name){ toast('กรุณาใส่ชื่อประเภทรายวิชา','er'); return; }
+  if(_stList.includes(name)){ toast('ประเภทรายวิชานี้มีอยู่แล้ว','er'); return; }
+  _stList.push(name); inp.value=''; _stRefresh();
+}
+function stMove(i,dir){ const j=i+dir; if(j<0||j>=_stList.length) return; [_stList[i],_stList[j]]=[_stList[j],_stList[i]]; _stRefresh(); }
+function stDel(i){ if(!confirm(`ลบ "${_stList[i]}" ออกจากรายการประเภทรายวิชา?`)) return; _stList.splice(i,1); _stRefresh(); }
+async function saveStList(){
+  if(!_stList.length){ toast('ต้องมีประเภทรายวิชาอย่างน้อย 1 ประเภท','er'); return; }
+  loading(true);
+  try{
+    await q(sb.from('config').upsert([{key:'subject_types',value:JSON.stringify(_stList)}],{onConflict:'key'}));
+    SUBJECT_TYPES=[..._stList];
+    S.config.subject_types=JSON.stringify(_stList);
+    toast('บันทึกประเภทรายวิชาเรียบร้อย');
+    pgSettings();
+  }catch(e){ toast('เกิดข้อผิดพลาด: '+e.message,'er'); }
+  finally{ loading(false); }
+}
+
 let _syncActivities=[];
 let _mpTeachers=[],_mpGrants=new Set(); // menu_permissions grid state (จัดการสิทธิ์การเข้าถึงเมนู)
 async function pgSettings(){
   const cfg=S.config;
   _sgList=[...SUBJECT_GROUPS];
+  _stList=[...SUBJECT_TYPES];
   loading(true);
   try{ _syncActivities=await q(sb.from('activities').select('id,name').eq('is_active',true).order('id')); }
   catch(e){ _syncActivities=[]; }
@@ -5984,6 +6092,31 @@ async function pgSettings(){
       <button class="btn bp" onclick="saveSgList()" style="margin-top:14px;width:100%;justify-content:center">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
         บันทึกกลุ่มสาระ
+      </button>
+    </div>
+  </div>
+
+  <!-- ── ประเภทรายวิชา ── -->
+  <div class="card">
+    <div class="ch">
+      <div class="ct" style="display:flex;align-items:center;gap:7px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--ac)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M20 7h-9m9 5H6m14 5H4"/></svg>
+        ประเภทรายวิชา
+      </div>
+    </div>
+    <div class="cb">
+      <div style="font-size:12px;color:#6e6e73;margin-bottom:14px;line-height:1.6">เพิ่ม ลบ หรือเรียงลำดับประเภทรายวิชาที่ใช้ในระบบ (ใช้ในฟอร์มรายวิชาและคลังตัวชี้วัด)</div>
+      <div id="st-list">${_stListHTML(_stList)}</div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <input class="fi" id="st-new" placeholder="ชื่อประเภทรายวิชาใหม่..." style="flex:1" onkeydown="if(event.key==='Enter')stAdd()">
+        <button class="btn bs" onclick="stAdd()" style="white-space:nowrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          เพิ่ม
+        </button>
+      </div>
+      <button class="btn bp" onclick="saveStList()" style="margin-top:14px;width:100%;justify-content:center">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        บันทึกประเภทรายวิชา
       </button>
     </div>
   </div>
