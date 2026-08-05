@@ -339,9 +339,12 @@ tbody tr:hover td{background:rgba(0,122,255,.04);}
 .rowdel:hover{background:var(--err-bg);color:var(--err-txt);}
 .kpa-tag{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;white-space:nowrap;}
 .kpa-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block;}
-.ind-chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--ac);background:var(--ac-lt);border-radius:7px;padding:3px 8px;margin:2px 3px 2px 0;}
-.ind-chip button{background:none;border:none;color:inherit;opacity:.6;cursor:pointer;padding:0;font-size:12px;line-height:1;}
-.ind-chip button:hover{opacity:1;}
+.ind-detail{background:var(--ac-lt);border-radius:8px;padding:6px 9px;margin:0 0 6px;}
+.ind-detail-head{display:flex;align-items:center;justify-content:space-between;gap:6px;}
+.ind-detail-code{font-size:11.5px;font-weight:700;color:var(--ac);}
+.ind-detail-text{font-size:12px;color:var(--txt2);margin-top:2px;line-height:1.45;}
+.ind-detail button{background:none;border:none;color:var(--ac);opacity:.6;cursor:pointer;padding:0;font-size:12px;line-height:1;flex-shrink:0;}
+.ind-detail button:hover{opacity:1;}
 .summary-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden;margin-top:14px;}
 .summary-strip .cell{padding:12px 10px;text-align:center;border-right:1px solid var(--bdr);background:var(--card2);}
 .summary-strip .cell:last-child{border-right:none;}
@@ -5065,7 +5068,13 @@ function renderIndCell(u){
   const ids=epUnitInd[u.id]||[];
   const inds=ids.map(id=>(_indicatorsAll||[]).find(x=>x.id===id)).filter(Boolean);
   return`<div>
-    ${inds.map(ind=>`<span class="ind-chip" title="${esc(ind.indicator_text)}">${esc(ind.indicator_code)}<button onclick="rmEplUnitIndicator('${u.id}',${ind.id})" title="เอาออก">✕</button></span>`).join('')}
+    ${inds.map(ind=>`<div class="ind-detail">
+      <div class="ind-detail-head">
+        <span class="ind-detail-code">${esc(ind.indicator_code)}</span>
+        <button onclick="rmEplUnitIndicator('${u.id}',${ind.id})" title="เอาออก">✕</button>
+      </div>
+      <div class="ind-detail-text">${esc(ind.indicator_text)}</div>
+    </div>`).join('')}
     <button class="btn bs btn-sm" style="padding:3px 8px;margin-top:2px" onclick="openIndPicker('${u.id}')">+ เพิ่มตัวชี้วัด</button>
   </div>`;
 }
