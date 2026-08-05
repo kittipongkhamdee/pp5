@@ -995,6 +995,9 @@ body.dark .subc{
       </div>
       <svg viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" style="margin-left:auto;flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
     </div>
+    <div class="ni" id="nav-standards" onclick="nav('standards')">
+      <span class="ic"></span>มาตรฐานและตัวชี้วัด
+    </div>
     <div class="ni" id="nav-settings" onclick="nav('settings')">
       <span class="ic"></span>ตั้งค่า<span style="font-size:9px;color:var(--ac);font-weight:700;margin-left:4px;opacity:.8">Admin</span>
     </div>
@@ -1169,6 +1172,7 @@ const IC = {
   plus:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
   refresh: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>',
   checklist:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
+  standard:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9c1.66 0 3.22.45 4.56 1.24"/></svg>',
 };
 
 function toast(msg, type='ok'){
@@ -1492,7 +1496,7 @@ function canAccessMenu(key){
 }
 // ซ่อนรายการเมนูฝั่งซ้ายที่ไม่มีสิทธิ์เข้าถึง (settings/students/school_report) — กันสับสน ไม่ใช่การป้องกันความปลอดภัยหลัก
 function _applyMenuVisibility(){
-  const map={'nav-settings':'settings','nav-students':'students','nav-school':'school_report'};
+  const map={'nav-settings':'settings','nav-students':'students','nav-school':'school_report','nav-standards':'standards'};
   Object.entries(map).forEach(([id,key])=>{
     const el=$(id); if(el) el.style.display=canAccessMenu(key)?'':'none';
   });
@@ -1559,7 +1563,8 @@ function showApp(){
   const _navIcons={
     'nav-dashboard':IC.dash,'nav-subjects':IC.grid,'nav-students':IC.users,
     'nav-evalplan':IC.checklist,'nav-attendance':IC.calendar,'nav-scores':IC.pencil,'nav-eval':IC.star,
-    'nav-report':IC.chart,'nav-cover':IC.pp5,'nav-iqa':IC.iqa,'nav-settings':IC.settings,'nav-manual':IC.book
+    'nav-report':IC.chart,'nav-cover':IC.pp5,'nav-iqa':IC.iqa,'nav-settings':IC.settings,'nav-manual':IC.book,
+    'nav-standards':IC.standard
   };
   Object.entries(_navIcons).forEach(([id,svg])=>{
     const el=$(id); if(!el) return;
@@ -2113,7 +2118,7 @@ async function doLogout(){
 const TITLES={dashboard:'แดชบอร์ด',subjects:'รายวิชา',students:'นักเรียน',
   attendance:'เวลาเรียน',scores:'บันทึกคะแนน',eval:'ประเมิน อ่าน/คุณลักษณะ',
   report:'รายงานผลการเรียน',cover:'ปก ปพ.5',iqa:'รายงาน IQA กลุ่มสาระ',
-  settings:'ตั้งค่า',manual:'คู่มือการใช้งาน',evalplan:'แผนการวัดและประเมินผล'};
+  settings:'ตั้งค่า',manual:'คู่มือการใช้งาน',evalplan:'แผนการวัดและประเมินผล',standards:'มาตรฐานและตัวชี้วัด'};
 let SUBJECT_GROUPS=['ภาษาไทย','คณิตศาสตร์','วิทยาศาสตร์และเทคโนโลยี',
   'สังคมศึกษา ศาสนา และวัฒนธรรม','สุขศึกษาและพลศึกษา','ศิลปะ',
   'การงานอาชีพ','ภาษาต่างประเทศ','การศึกษาค้นคว้าด้วยตนเอง (IS)'];
@@ -2151,7 +2156,7 @@ function closeSidebar(){
 }
 
 // เมนูที่ควบคุมสิทธิ์รายคน (ดู canAccessMenu/_loadMenuPerms) — key ต้องตรงกับ menu_permissions.menu_key
-const GATED_MENUS={settings:'ตั้งค่าระบบ',students:'นักเรียน'};
+const GATED_MENUS={settings:'ตั้งค่าระบบ',students:'นักเรียน',standards:'มาตรฐานและตัวชี้วัด'};
 function nav(page,subId){
   // reset loading ก่อนเสมอ
   loadingOff();
@@ -2163,7 +2168,8 @@ function nav(page,subId){
   $('tbt').textContent=TITLES[page]||page;
   const fn={dashboard:pgDash,subjects:pgSubjects,students:pgStudents,
     attendance:pgAttendance,scores:pgScores,eval:pgEval,evalplan:pgEvalPlan,
-    report:pgReport,cover:pgCover,iqa:pgIQA,settings:pgSettings,manual:pgManual}[page];
+    report:pgReport,cover:pgCover,iqa:pgIQA,settings:pgSettings,manual:pgManual,
+    standards:pgStandards}[page];
   if(fn){
     // wrap ทุก page fn ให้ loadingOff() เสมอเมื่อเสร็จ ไม่ว่าจะ error หรือไม่
     Promise.resolve(fn())
@@ -5509,6 +5515,193 @@ function printEvalPlan(){
 }
 
 // ════════════════════════════════════════════════════════════════
+// 6.6 STANDARDS (มาตรฐานและตัวชี้วัด) — แอดมิน + ครูที่ได้รับสิทธิ์ (menu_permissions.standards)
+// ════════════════════════════════════════════════════════════════
+let stdList=[];
+let stdFilterGroup='', stdFilterGrade='', stdFilterKind='', stdSearch='';
+
+async function pgStandards(){
+  loading(true);
+  try{
+    stdList=await qAll(()=>sb.from('indicators').select('*').order('subject_group').order('grade_level').order('indicator_code'));
+    _indicatorsAll=stdList; // sync กับแคชที่หน้าแผนการวัดใช้ ให้เห็นข้อมูลล่าสุดเสมอ
+  }catch(e){ stdList=[]; toast('โหลดข้อมูลไม่สำเร็จ: '+e.message,'er'); }
+  loading(false);
+  if(!stdFilterGroup) stdFilterGroup=stdList[0]?.subject_group||SUBJECT_GROUPS[0]||'';
+  renderStandardsPage();
+}
+function _stdGroupsPresent(){
+  const set=new Set(stdList.map(r=>r.subject_group));
+  SUBJECT_GROUPS.forEach(g=>set.add(g));
+  return [...set].filter(Boolean);
+}
+function _stdGradesForGroup(group){
+  const set=new Set(stdList.filter(r=>!group||r.subject_group===group).map(r=>r.grade_level));
+  return [...set].filter(Boolean).sort((a,b)=>a.localeCompare(b,'th'));
+}
+function _stdFiltered(){
+  const kw=(stdSearch||'').trim().toLowerCase();
+  return stdList.filter(r=>{
+    if(stdFilterGroup && r.subject_group!==stdFilterGroup) return false;
+    if(stdFilterGrade && r.grade_level!==stdFilterGrade) return false;
+    if(stdFilterKind && r.kind!==stdFilterKind) return false;
+    if(kw && !(r.indicator_code.toLowerCase().includes(kw)||r.indicator_text.toLowerCase().includes(kw)||(r.standard_code||'').toLowerCase().includes(kw))) return false;
+    return true;
+  });
+}
+function renderStandardsPage(){
+  const groups=_stdGroupsPresent();
+  const grades=_stdGradesForGroup(stdFilterGroup);
+  $('pg').innerHTML=`
+  <div class="ph"><div class="ptitle">มาตรฐานและตัวชี้วัด</div>
+    <button class="btn bp" onclick="openStdModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>เพิ่มตัวชี้วัด</button>
+  </div>
+  <div class="card"><div class="cb">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px">
+      <div style="min-width:220px"><label class="fl">กลุ่มสาระการเรียนรู้</label>
+        <select class="fs" onchange="stdFilterGroup=this.value;stdFilterGrade='';_stdRefreshFilters();_stdRefreshTable();">
+          ${groups.map(g=>`<option value="${esc(g)}" ${g===stdFilterGroup?'selected':''}>${esc(g)}</option>`).join('')}
+        </select></div>
+      <div style="min-width:140px"><label class="fl">ระดับชั้น</label>
+        <select class="fs" id="std-grade-sel" onchange="stdFilterGrade=this.value;_stdRefreshTable();">
+          <option value="">ทั้งหมด</option>
+          ${grades.map(g=>`<option value="${esc(g)}" ${g===stdFilterGrade?'selected':''}>${esc(g)}</option>`).join('')}
+        </select></div>
+      <div style="min-width:140px"><label class="fl">ประเภท</label>
+        <select class="fs" onchange="stdFilterKind=this.value;_stdRefreshTable();">
+          <option value="">ทั้งหมด</option>
+          <option value="ระหว่างทาง" ${stdFilterKind==='ระหว่างทาง'?'selected':''}>ระหว่างทาง</option>
+          <option value="ปลายทาง" ${stdFilterKind==='ปลายทาง'?'selected':''}>ปลายทาง</option>
+        </select></div>
+      <div style="flex:1;min-width:200px"><label class="fl">ค้นหา</label>
+        <input class="fi" value="${esc(stdSearch)}" placeholder="รหัส / มาตรฐาน / ข้อความ..." oninput="stdSearch=this.value;_stdRefreshTable();"></div>
+    </div>
+    <div id="std-table-wrap">${_stdTableHTML()}</div>
+  </div></div>`;
+}
+function _stdRefreshFilters(){
+  const el=$('std-grade-sel'); if(!el) return;
+  const grades=_stdGradesForGroup(stdFilterGroup);
+  el.innerHTML=`<option value="">ทั้งหมด</option>`+grades.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join('');
+}
+function _stdRefreshTable(){
+  const el=$('std-table-wrap'); if(el) el.innerHTML=_stdTableHTML();
+}
+function _stdTableHTML(){
+  const rows=_stdFiltered();
+  if(!rows.length) return `<div class="empty" style="padding:28px">ไม่พบตัวชี้วัดที่ตรงกับตัวกรอง</div>`;
+  return `<div class="tw"><table>
+    <thead><tr>
+      <th class="tl" style="min-width:90px">มาตรฐาน</th>
+      <th class="tl" style="min-width:110px">รหัสตัวชี้วัด</th>
+      <th class="tl" style="min-width:260px">คำอธิบาย</th>
+      <th style="width:80px">ระดับชั้น</th>
+      <th style="width:100px">ประเภท</th>
+      <th style="width:80px">จัดการ</th>
+    </tr></thead>
+    <tbody>${rows.map(r=>`<tr>
+      <td class="tl">${esc(r.standard_code||'-')}</td>
+      <td class="tl" style="font-weight:600;color:var(--ac)">${esc(r.indicator_code)}</td>
+      <td class="tl">${esc(r.indicator_text)}</td>
+      <td class="tc">${esc(r.grade_level)}</td>
+      <td class="tc"><span class="badge ${r.kind==='ปลายทาง'?'bg-o':'bg-b'}">${esc(r.kind)}</span></td>
+      <td class="tc">
+        <button class="btn bs btn-sm" style="padding:4px 7px" onclick="openStdModal(${r.id})" title="แก้ไข"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+        <button class="btn bd btn-sm" style="padding:4px 7px" onclick="delStdIndicator(${r.id})" title="ลบ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
+      </td>
+    </tr>`).join('')}</tbody>
+  </table></div>
+  <div style="margin-top:10px;font-size:11.5px;color:var(--muted)">${rows.length.toLocaleString()} รายการ</div>`;
+}
+
+function openStdModal(id){
+  const r=id?stdList.find(x=>x.id===id):null;
+  const defGrade=r?.grade_level||stdFilterGrade||(GRADE_PREFIX+(GRADE_LEVELS[0]||'1'));
+  document.body.insertAdjacentHTML('beforeend',`
+  <div class="mo" id="stdMod"><div class="md md-lg">
+    <div class="mh"><div class="mt">${r?'แก้ไขตัวชี้วัด':'เพิ่มตัวชี้วัดใหม่'}</div>
+      <button class="mx" onclick="rmModal('stdMod')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="10" height="10"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="mb">
+      <div class="fg">
+        <div><label class="fl">กลุ่มสาระการเรียนรู้ <span class="req">*</span></label>
+          <select class="fs" id="std-f-sg">
+            ${SUBJECT_GROUPS.map(g=>`<option value="${esc(g)}" ${(r?.subject_group||stdFilterGroup)===g?'selected':''}>${esc(g)}</option>`).join('')}
+          </select></div>
+        <div><label class="fl">ประเภทวิชา</label>
+          <input class="fi" id="std-f-st" value="${esc(r?.subject_type||'รายวิชาพื้นฐาน')}"></div>
+      </div>
+      <div class="fg" style="margin-top:14px">
+        <div><label class="fl">ระดับชั้น <span class="req">*</span></label>
+          <input class="fi" id="std-f-gr" value="${esc(defGrade)}" placeholder="เช่น ${esc(GRADE_PREFIX)}1 หรือ ${esc(GRADE_PREFIX)}4-6"></div>
+        <div><label class="fl">มาตรฐาน</label>
+          <input class="fi" id="std-f-std" value="${esc(r?.standard_code||'')}" placeholder="เช่น ว 1.2"></div>
+      </div>
+      <div style="margin-top:14px"><label class="fl">รหัสตัวชี้วัด <span class="req">*</span></label>
+        <input class="fi" id="std-f-code" value="${esc(r?.indicator_code||'')}" placeholder="เช่น ว 1.2 ม.1/1"></div>
+      <div style="margin-top:14px"><label class="fl">คำอธิบายตัวชี้วัด <span class="req">*</span></label>
+        <textarea class="fta" id="std-f-text" rows="3">${esc(r?.indicator_text||'')}</textarea></div>
+      <div style="margin-top:14px"><label class="fl">ประเภท <span class="req">*</span></label>
+        <select class="fs" id="std-f-kind">
+          <option value="ระหว่างทาง" ${(r?.kind||'ระหว่างทาง')==='ระหว่างทาง'?'selected':''}>ระหว่างทาง</option>
+          <option value="ปลายทาง" ${r?.kind==='ปลายทาง'?'selected':''}>ปลายทาง</option>
+        </select></div>
+    </div>
+    <div class="mf">
+      <button class="btn bs" onclick="rmModal('stdMod')">ยกเลิก</button>
+      <button class="btn bp" onclick="saveStdIndicator(${id||'null'})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>บันทึก</button>
+    </div>
+  </div></div>`);
+}
+async function saveStdIndicator(id){
+  const subject_group=$('std-f-sg').value;
+  const subject_type=($('std-f-st').value||'').trim()||'รายวิชาพื้นฐาน';
+  const grade_level=($('std-f-gr').value||'').trim();
+  const standard_code=($('std-f-std').value||'').trim();
+  const indicator_code=($('std-f-code').value||'').trim();
+  const indicator_text=($('std-f-text').value||'').trim();
+  const kind=$('std-f-kind').value;
+  if(!grade_level||!indicator_code||!indicator_text){ toast('กรุณากรอกระดับชั้น รหัสตัวชี้วัด และคำอธิบายให้ครบ','er'); return; }
+  loading(true);
+  try{
+    const payload={subject_group,subject_type,grade_level,standard_code,indicator_code,indicator_text,kind};
+    if(id){ await q(sb.from('indicators').update(payload).eq('id',id)); }
+    else{ await q(sb.from('indicators').insert(payload)); }
+    rmModal('stdMod');
+    toast(id?'แก้ไขตัวชี้วัดเรียบร้อย':'เพิ่มตัวชี้วัดเรียบร้อย');
+    stdFilterGroup=subject_group;
+    await pgStandards();
+  }catch(e){
+    const dup=/duplicate|unique/i.test(e.message);
+    toast('บันทึกไม่สำเร็จ: '+(dup?'มีตัวชี้วัดรหัสนี้ + ระดับชั้น + ประเภทนี้อยู่แล้ว':e.message),'er');
+  }finally{ loading(false); }
+}
+async function delStdIndicator(id){
+  const ind=stdList.find(x=>x.id===id); if(!ind) return;
+  loading(true);
+  let usageCount=0;
+  try{
+    const[a,b]=await Promise.all([
+      q(sb.from('eval_plan_unit_indicators').select('id').eq('indicator_id',id)),
+      q(sb.from('eval_plan_indicator_scores').select('id').eq('indicator_id',id)),
+    ]);
+    usageCount=a.length+b.length;
+  }catch(e){}
+  loading(false);
+  const warnMsg=usageCount>0
+    ?`<br><span style="color:var(--warn-txt)">ตัวชี้วัดนี้ถูกใช้อยู่ในแผนการวัดของบางวิชาแล้ว (${usageCount} จุด) — ลบแล้วจะถูกเอาออกจากแผนเหล่านั้นด้วย</span>`
+    :'';
+  confirm2({title:'ลบตัวชี้วัด',msg:`ต้องการลบ "<strong>${esc(ind.indicator_code)}</strong>"?${warnMsg}`,type:'danger',confirmText:'ลบเลย',cancelText:'ยกเลิก',onConfirm:async()=>{
+    loading(true);
+    try{
+      await q(sb.from('indicators').delete().eq('id',id));
+      toast('ลบเรียบร้อย');
+      await pgStandards();
+    }catch(e){ toast('ลบไม่สำเร็จ: '+e.message,'er'); }
+    finally{ loading(false); }
+  }});
+}
+
+// ════════════════════════════════════════════════════════════════
 // 7. REPORT
 // ════════════════════════════════════════════════════════════════
 async function pgReport(){
@@ -7109,12 +7302,13 @@ async function pgSettings(){
       </div>
       ${!_mpTeachers.length?`<div style="font-size:13px;color:var(--muted);text-align:center;padding:16px">ไม่มีครูที่ต้องตั้งค่า (มีแต่บัญชีแอดมิน)</div>`:`
       <div class="tw"><table>
-        <thead><tr><th class="tl">ครู</th><th>ตั้งค่าระบบ</th><th>รายงานทั้งโรงเรียน</th><th>นักเรียน</th></tr></thead>
+        <thead><tr><th class="tl">ครู</th><th>ตั้งค่าระบบ</th><th>รายงานทั้งโรงเรียน</th><th>นักเรียน</th><th>มาตรฐานและตัวชี้วัด</th></tr></thead>
         <tbody>${_mpTeachers.map(t=>`<tr>
           <td class="tl">${esc(t.full_name||'')}</td>
           <td class="tc"><input type="checkbox" class="mp-cb" data-tid="${t.id}" data-key="settings" ${_mpGrants.has(t.id+'_settings')?'checked':''}></td>
           <td class="tc"><input type="checkbox" class="mp-cb" data-tid="${t.id}" data-key="school_report" ${_mpGrants.has(t.id+'_school_report')?'checked':''}></td>
           <td class="tc"><input type="checkbox" class="mp-cb" data-tid="${t.id}" data-key="students" ${_mpGrants.has(t.id+'_students')?'checked':''}></td>
+          <td class="tc"><input type="checkbox" class="mp-cb" data-tid="${t.id}" data-key="standards" ${_mpGrants.has(t.id+'_standards')?'checked':''}></td>
         </tr>`).join('')}</tbody>
       </table></div>
       <button class="btn bp" onclick="saveMenuPerms()" style="margin-top:14px;width:100%;justify-content:center">
@@ -7133,7 +7327,7 @@ async function saveMenuPerms(){
   });
   loading(true);
   try{
-    await q(sb.from('menu_permissions').delete().in('menu_key',['settings','school_report','students']));
+    await q(sb.from('menu_permissions').delete().in('menu_key',['settings','school_report','students','standards']));
     if(rows.length) await q(sb.from('menu_permissions').insert(rows));
     _mpGrants=new Set(rows.map(r=>r.teacher_id+'_'+r.menu_key));
     toast('บันทึกสิทธิ์การเข้าถึงเรียบร้อย');
