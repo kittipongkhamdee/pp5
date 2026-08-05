@@ -2476,7 +2476,7 @@ async function pgSubjects(){
       <th>โครงสร้างคะแนน</th><th>ประกาศผลการเรียน</th><th>จัดการ</th></tr></thead>
     <tbody>${S.subjects.map((s,i)=>`<tr>
       <td class="tc">${i+1}</td><td>${esc(s.subject_code)}</td>
-      <td><strong>${esc(s.subject_name)}</strong></td>
+      <td><strong>${esc(s.subject_name)}</strong>${s.subject_type==='วิชาเพิ่มเติม'?' <span class="badge bg-o" style="margin-left:4px">เพิ่มเติม</span>':''}</td>
       <td class="tc">${grm(s.grade_level,s.room)}</td>
       <td class="tc">${s.hours_per_week}</td><td class="tc">${s.total_hours||60}</td>
       <td>${esc(s.teacher_name||'-')}</td>
@@ -2618,12 +2618,21 @@ function openSubModal(id){
           <div><label class="fl">ชื่อวิชา <span class="req">*</span></label>
             <input class="fi" id="f-name" value="${esc(s?.subject_name||'')}"></div>
         </div>
-        <div style="margin-top:14px">
-          <label class="fl">กลุ่มสาระการเรียนรู้</label>
-          <select class="fs" id="f-sg">
-            <option value="">— ไม่ระบุ —</option>
-            ${SUBJECT_GROUPS.map(g=>`<option value="${esc(g)}" ${s?.subject_group===g?'selected':''}>${esc(g)}</option>`).join('')}
-          </select>
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-top:14px">
+          <div>
+            <label class="fl">กลุ่มสาระการเรียนรู้</label>
+            <select class="fs" id="f-sg">
+              <option value="">— ไม่ระบุ —</option>
+              ${SUBJECT_GROUPS.map(g=>`<option value="${esc(g)}" ${s?.subject_group===g?'selected':''}>${esc(g)}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label class="fl">ประเภทวิชา</label>
+            <select class="fs" id="f-styp">
+              <option value="รายวิชาพื้นฐาน" ${(s?.subject_type||'รายวิชาพื้นฐาน')==='รายวิชาพื้นฐาน'?'selected':''}>รายวิชาพื้นฐาน</option>
+              <option value="วิชาเพิ่มเติม" ${s?.subject_type==='วิชาเพิ่มเติม'?'selected':''}>วิชาเพิ่มเติม</option>
+            </select>
+          </div>
         </div>
         <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:14px;margin-top:14px">
           <div><label class="fl">ชั้น ม.</label>
@@ -2696,6 +2705,7 @@ async function saveSubForm(id){
     credits:+$('f-cr').value,hours_per_week:+$('f-hw').value,total_hours:+$('f-th').value,
     teacher_name:$('f-tch').value.trim(),head_of_group:$('f-hog')?.value||'',advisor_name:'',
     subject_group:$('f-sg')?.value||'',
+    subject_type:$('f-styp')?.value||'รายวิชาพื้นฐาน',
     score_before_mid:sbm,score_mid:sm,score_after_mid:sam,score_final:sf,
     academic_year:S.config.academic_year||'2568',semester:parseInt(S.config.semester||1),
     user_id:S.user.id
@@ -5518,7 +5528,7 @@ function printEvalPlan(){
 // 6.6 STANDARDS (มาตรฐานและตัวชี้วัด) — แอดมิน + ครูที่ได้รับสิทธิ์ (menu_permissions.standards)
 // ════════════════════════════════════════════════════════════════
 let stdList=[];
-let stdFilterGroup='', stdFilterGrade='', stdFilterKind='', stdSearch='';
+let stdFilterGroup='', stdFilterGrade='', stdFilterKind='', stdFilterType='', stdSearch='';
 
 async function pgStandards(){
   loading(true);
@@ -5545,6 +5555,7 @@ function _stdFiltered(){
     if(stdFilterGroup && r.subject_group!==stdFilterGroup) return false;
     if(stdFilterGrade && r.grade_level!==stdFilterGrade) return false;
     if(stdFilterKind && r.kind!==stdFilterKind) return false;
+    if(stdFilterType && (r.subject_type||'รายวิชาพื้นฐาน')!==stdFilterType) return false;
     if(kw && !(r.indicator_code.toLowerCase().includes(kw)||r.indicator_text.toLowerCase().includes(kw)||(r.standard_code||'').toLowerCase().includes(kw))) return false;
     return true;
   });
@@ -5566,6 +5577,12 @@ function renderStandardsPage(){
         <select class="fs" id="std-grade-sel" onchange="stdFilterGrade=this.value;_stdRefreshTable();">
           <option value="">ทั้งหมด</option>
           ${grades.map(g=>`<option value="${esc(g)}" ${g===stdFilterGrade?'selected':''}>${esc(g)}</option>`).join('')}
+        </select></div>
+      <div style="min-width:140px"><label class="fl">ประเภทวิชา</label>
+        <select class="fs" onchange="stdFilterType=this.value;_stdRefreshTable();">
+          <option value="">ทั้งหมด</option>
+          <option value="รายวิชาพื้นฐาน" ${stdFilterType==='รายวิชาพื้นฐาน'?'selected':''}>รายวิชาพื้นฐาน</option>
+          <option value="วิชาเพิ่มเติม" ${stdFilterType==='วิชาเพิ่มเติม'?'selected':''}>วิชาเพิ่มเติม</option>
         </select></div>
       <div style="min-width:140px"><label class="fl">ประเภท</label>
         <select class="fs" onchange="stdFilterKind=this.value;_stdRefreshTable();">
@@ -5596,6 +5613,7 @@ function _stdTableHTML(){
       <th class="tl" style="min-width:110px">รหัสตัวชี้วัด</th>
       <th class="tl" style="min-width:260px">คำอธิบาย</th>
       <th style="width:80px">ระดับชั้น</th>
+      <th style="width:110px">ประเภทวิชา</th>
       <th style="width:100px">ประเภท</th>
       <th style="width:80px">จัดการ</th>
     </tr></thead>
@@ -5604,6 +5622,7 @@ function _stdTableHTML(){
       <td class="tl" style="font-weight:600;color:var(--ac)">${esc(r.indicator_code)}</td>
       <td class="tl">${esc(r.indicator_text)}</td>
       <td class="tc">${esc(r.grade_level)}</td>
+      <td class="tc">${(r.subject_type||'รายวิชาพื้นฐาน')==='วิชาเพิ่มเติม'?'<span class="badge bg-o">เพิ่มเติม</span>':'<span style="color:var(--muted);font-size:11.5px">พื้นฐาน</span>'}</td>
       <td class="tc"><span class="badge ${r.kind==='ปลายทาง'?'bg-o':'bg-b'}">${esc(r.kind)}</span></td>
       <td class="tc">
         <button class="btn bs btn-sm" style="padding:4px 7px" onclick="openStdModal(${r.id})" title="แก้ไข"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
@@ -5628,7 +5647,10 @@ function openStdModal(id){
             ${SUBJECT_GROUPS.map(g=>`<option value="${esc(g)}" ${(r?.subject_group||stdFilterGroup)===g?'selected':''}>${esc(g)}</option>`).join('')}
           </select></div>
         <div><label class="fl">ประเภทวิชา</label>
-          <input class="fi" id="std-f-st" value="${esc(r?.subject_type||'รายวิชาพื้นฐาน')}"></div>
+          <select class="fs" id="std-f-st">
+            <option value="รายวิชาพื้นฐาน" ${(r?.subject_type||'รายวิชาพื้นฐาน')==='รายวิชาพื้นฐาน'?'selected':''}>รายวิชาพื้นฐาน</option>
+            <option value="วิชาเพิ่มเติม" ${r?.subject_type==='วิชาเพิ่มเติม'?'selected':''}>วิชาเพิ่มเติม</option>
+          </select></div>
       </div>
       <div class="fg" style="margin-top:14px">
         <div><label class="fl">ระดับชั้น <span class="req">*</span></label>
