@@ -230,6 +230,7 @@ button{font-family:var(--font);}
 .bg-b{background:var(--ac-lt);color:var(--ac);}
 .bg-o{background:var(--warn-bg);color:var(--warn-txt);}
 .bg-gr{background:var(--card2);color:var(--muted);}
+.bg-p{background:rgba(175,82,222,.15);color:#af52de;}
 /* Toggle switch */
 .tglsw{position:relative;display:inline-block;width:38px;height:22px;flex-shrink:0;vertical-align:middle;}
 .tglsw input{opacity:0;width:0;height:0;position:absolute;}
@@ -5325,7 +5326,7 @@ function renderIndPickList(){
     <label class="ind-pick-row">
       <input type="checkbox" ${selected.has(ind.id)?'checked':''} onchange="toggleEplUnitIndicator('${_epPickUnit}',${ind.id},this.checked)">
       <div style="min-width:0;flex:1">
-        <div style="font-size:12px;font-weight:700;color:var(--ac)">${esc(ind.indicator_code)} <span class="badge ${ind.kind==='ปลายทาง'?'bg-o':'bg-b'}" style="margin-left:4px">${esc(ind.kind)}</span></div>
+        <div style="font-size:12px;font-weight:700;color:var(--ac)">${esc(ind.indicator_code)} <span class="badge ${_kindBadgeCls(ind.kind)}" style="margin-left:4px">${esc(ind.kind)}</span></div>
         <div style="font-size:12.5px;color:var(--txt2);margin-top:2px">${esc(ind.indicator_text)}</div>
       </div>
     </label>`).join('');
@@ -5676,6 +5677,20 @@ function printEvalPlan(){
 // ════════════════════════════════════════════════════════════════
 let stdList=[];
 let stdFilterGroup='', stdFilterGrade='', stdFilterKind='', stdFilterType='', stdSearch='';
+// วิชาเพิ่มเติมไม่ใช้ "ตัวชี้วัด" ระหว่างทาง/ปลายทางแบบรายวิชาพื้นฐาน — ใช้ "ผลการเรียนรู้" แทนตามหลักสูตรแกนกลาง
+function _kindBadgeCls(kind){ return kind==='ปลายทาง'?'bg-o':kind==='ผลการเรียนรู้'?'bg-p':'bg-b'; }
+function _stdKindOptions(subjectType,kind){
+  if(subjectType==='วิชาเพิ่มเติม') return `<option value="ผลการเรียนรู้" selected>ผลการเรียนรู้</option>`;
+  return `<option value="ระหว่างทาง" ${(kind||'ระหว่างทาง')==='ระหว่างทาง'?'selected':''}>ระหว่างทาง</option>
+    <option value="ปลายทาง" ${kind==='ปลายทาง'?'selected':''}>ปลายทาง</option>`;
+}
+function _stdKindRefresh(){
+  const stEl=$('std-f-st'), kEl=$('std-f-kind'), hint=$('std-f-kind-hint'); if(!stEl||!kEl) return;
+  const subjectType=stEl.value;
+  kEl.innerHTML=_stdKindOptions(subjectType);
+  kEl.disabled=subjectType==='วิชาเพิ่มเติม';
+  if(hint) hint.style.display=subjectType==='วิชาเพิ่มเติม'?'':'none';
+}
 
 async function pgStandards(){
   loading(true);
@@ -5736,6 +5751,7 @@ function renderStandardsPage(){
           <option value="">ทั้งหมด</option>
           <option value="ระหว่างทาง" ${stdFilterKind==='ระหว่างทาง'?'selected':''}>ระหว่างทาง</option>
           <option value="ปลายทาง" ${stdFilterKind==='ปลายทาง'?'selected':''}>ปลายทาง</option>
+          <option value="ผลการเรียนรู้" ${stdFilterKind==='ผลการเรียนรู้'?'selected':''}>ผลการเรียนรู้</option>
         </select></div>
       <div style="flex:1;min-width:200px"><label class="fl">ค้นหา</label>
         <input class="fi" value="${esc(stdSearch)}" placeholder="รหัส / มาตรฐาน / ข้อความ..." oninput="stdSearch=this.value;_stdRefreshTable();"></div>
@@ -5770,7 +5786,7 @@ function _stdTableHTML(){
       <td class="tl">${esc(r.indicator_text)}</td>
       <td class="tc">${esc(r.grade_level)}</td>
       <td class="tc">${(r.subject_type||'รายวิชาพื้นฐาน')==='วิชาเพิ่มเติม'?'<span class="badge bg-o">เพิ่มเติม</span>':'<span style="color:var(--muted);font-size:11.5px">พื้นฐาน</span>'}</td>
-      <td class="tc"><span class="badge ${r.kind==='ปลายทาง'?'bg-o':'bg-b'}">${esc(r.kind)}</span></td>
+      <td class="tc"><span class="badge ${_kindBadgeCls(r.kind)}">${esc(r.kind)}</span></td>
       <td class="tc">
         <button class="btn bs btn-sm" style="padding:4px 7px" onclick="openStdModal(${r.id})" title="แก้ไข"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
         <button class="btn bd btn-sm" style="padding:4px 7px" onclick="delStdIndicator(${r.id})" title="ลบ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
@@ -5794,7 +5810,7 @@ function openStdModal(id){
             ${SUBJECT_GROUPS.map(g=>`<option value="${esc(g)}" ${(r?.subject_group||stdFilterGroup)===g?'selected':''}>${esc(g)}</option>`).join('')}
           </select></div>
         <div><label class="fl">ประเภทวิชา</label>
-          <select class="fs" id="std-f-st">
+          <select class="fs" id="std-f-st" onchange="_stdKindRefresh()">
             <option value="รายวิชาพื้นฐาน" ${(r?.subject_type||'รายวิชาพื้นฐาน')==='รายวิชาพื้นฐาน'?'selected':''}>รายวิชาพื้นฐาน</option>
             <option value="วิชาเพิ่มเติม" ${r?.subject_type==='วิชาเพิ่มเติม'?'selected':''}>วิชาเพิ่มเติม</option>
           </select></div>
@@ -5810,10 +5826,11 @@ function openStdModal(id){
       <div style="margin-top:14px"><label class="fl">คำอธิบายตัวชี้วัด <span class="req">*</span></label>
         <textarea class="fta" id="std-f-text" rows="3">${esc(r?.indicator_text||'')}</textarea></div>
       <div style="margin-top:14px"><label class="fl">ประเภท <span class="req">*</span></label>
-        <select class="fs" id="std-f-kind">
-          <option value="ระหว่างทาง" ${(r?.kind||'ระหว่างทาง')==='ระหว่างทาง'?'selected':''}>ระหว่างทาง</option>
-          <option value="ปลายทาง" ${r?.kind==='ปลายทาง'?'selected':''}>ปลายทาง</option>
-        </select></div>
+        <select class="fs" id="std-f-kind" ${(r?.subject_type||'รายวิชาพื้นฐาน')==='วิชาเพิ่มเติม'?'disabled':''}>
+          ${_stdKindOptions(r?.subject_type||'รายวิชาพื้นฐาน',r?.kind)}
+        </select>
+        <div id="std-f-kind-hint" style="font-size:11.5px;color:var(--muted);margin-top:4px${(r?.subject_type||'รายวิชาพื้นฐาน')==='วิชาเพิ่มเติม'?'':';display:none'}">วิชาเพิ่มเติมใช้ "ผลการเรียนรู้" แทนตัวชี้วัดระหว่างทาง/ปลายทาง</div>
+      </div>
     </div>
     <div class="mf">
       <button class="btn bs" onclick="rmModal('stdMod')">ยกเลิก</button>
@@ -6849,7 +6866,7 @@ async function saveGradeLevels(){
 
 // ── จัดการตัวชี้วัด: นำเข้า/ส่งออก Excel (แอดมินเท่านั้น) ──────────
 let _indExcelData=[], _indExcelSkipped=0;
-const IND_KIND_VALUES=['ระหว่างทาง','ปลายทาง'];
+const IND_KIND_VALUES=['ระหว่างทาง','ปลายทาง','ผลการเรียนรู้'];
 
 function openIndicatorImport(){
   document.body.insertAdjacentHTML('beforeend',`
@@ -6863,7 +6880,7 @@ function openIndicatorImport(){
           <code>กลุ่มสาระ | ประเภทวิชา | ระดับชั้น | มาตรฐาน | รหัสตัวชี้วัด | คำอธิบาย | ประเภท</code><br>
           <span style="font-size:12px;color:var(--muted)">
             • ประเภทวิชา เว้นว่างได้ (ค่าเริ่มต้น "รายวิชาพื้นฐาน")<br>
-            • ประเภท ต้องเป็น "ระหว่างทาง" หรือ "ปลายทาง" เท่านั้น<br>
+            • ประเภท ต้องเป็น "ระหว่างทาง" หรือ "ปลายทาง" (รายวิชาพื้นฐาน) หรือ "ผลการเรียนรู้" (วิชาเพิ่มเติม) เท่านั้น — แถวที่ประเภทวิชาเป็น "วิชาเพิ่มเติม" จะถูกบังคับเป็น "ผลการเรียนรู้" เสมอไม่ว่าคอลัมน์นี้จะระบุอะไร<br>
             • รายการที่มี ระดับชั้น + รหัสตัวชี้วัด + ประเภท ซ้ำกับที่มีอยู่แล้ว จะถูกอัปเดตทับ ไม่สร้างซ้ำ<br>
             • กด "ส่งออก Excel" ก่อน เพื่อใช้ไฟล์เดิมเป็นเทมเพลตได้
           </span>
@@ -6925,11 +6942,13 @@ function parseIndExcelRows(rows){
     const r=(rows[i]||[]).map(c=>String(c??'').trim());
     if(r.every(c=>!c)) continue; // ข้ามแถวว่าง
     const [subject_group,subject_type_raw,grade_level,standard_code,indicator_code,indicator_text,kind_raw]=r;
-    const kind=(kind_raw||'').trim();
+    const subject_type=(subject_type_raw||'').trim()||'รายวิชาพื้นฐาน';
+    // วิชาเพิ่มเติมใช้ "ผลการเรียนรู้" เสมอ ไม่ว่าคอลัมน์ประเภทในไฟล์จะระบุอะไรมา
+    const kind=subject_type==='วิชาเพิ่มเติม'?'ผลการเรียนรู้':(kind_raw||'').trim();
     if(!subject_group||!grade_level||!indicator_code||!indicator_text||!IND_KIND_VALUES.includes(kind)){ _indExcelSkipped++; continue; }
     _indExcelData.push({
       subject_group,
-      subject_type:(subject_type_raw||'').trim()||'รายวิชาพื้นฐาน',
+      subject_type,
       grade_level,
       standard_code:(standard_code||'').trim(),
       indicator_code,
@@ -6942,7 +6961,7 @@ function parseIndExcelRows(rows){
   const groupList=Object.entries(groups).sort((a,b)=>a[0].localeCompare(b[0],'th'));
   const btn=$('ind-imp-btn');
   if(!_indExcelData.length){
-    $('ind-imp-preview').innerHTML=`<div class="alert al-er">ไม่พบข้อมูลที่ถูกต้อง — ตรวจสอบ format คอลัมน์ และค่า "ประเภท" ต้องเป็น ระหว่างทาง/ปลายทาง เท่านั้น</div>`;
+    $('ind-imp-preview').innerHTML=`<div class="alert al-er">ไม่พบข้อมูลที่ถูกต้อง — ตรวจสอบ format คอลัมน์ และค่า "ประเภท" ต้องเป็น ระหว่างทาง/ปลายทาง/ผลการเรียนรู้ เท่านั้น</div>`;
     if(btn) btn.disabled=true;
   }else{
     $('ind-imp-preview').innerHTML=`<div class="alert al-ok" style="margin-bottom:8px">
@@ -7516,7 +7535,7 @@ async function pgSettings(){
       </div>
       <div class="cb">
         <div style="font-size:13px;color:#6e6e73;line-height:1.9;margin-bottom:14px;">
-          คลังตัวชี้วัดระหว่างทาง/ปลายทาง ที่ใช้ในหน้า "แผนการวัดและประเมินผล" — ปัจจุบันมี <strong>${_indicatorCount.toLocaleString()}</strong> รายการ<br>
+          คลังตัวชี้วัดระหว่างทาง/ปลายทาง (รายวิชาพื้นฐาน) และผลการเรียนรู้ (วิชาเพิ่มเติม) ที่ใช้ในหน้า "แผนการวัดและประเมินผล" — ปัจจุบันมี <strong>${_indicatorCount.toLocaleString()}</strong> รายการ<br>
           <span style="font-size:12px;color:#8e8e93">นำเข้าไฟล์ Excel เพื่อเพิ่มตัวชี้วัดของระดับชั้นอื่น (เช่นประถมศึกษา) เอง — ข้อมูลที่มีรหัสตัวชี้วัด+ระดับชั้น+ประเภทซ้ำกับที่มีอยู่แล้วจะถูกอัปเดตทับ ไม่สร้างซ้ำ</span>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
