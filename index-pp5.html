@@ -1504,6 +1504,7 @@ async function loadConfig(){
     S.config = {};
     rows.forEach(r=>{ S.config[r.key]=r.value; });
     if(S.config.subject_groups){try{SUBJECT_GROUPS=JSON.parse(S.config.subject_groups);}catch(e){}}
+    if(S.config.rooms_per_grade){try{ROOMS_PER_GRADE=JSON.parse(S.config.rooms_per_grade);}catch(e){}}
   }catch(e){ S.config = {}; }
 }
 
@@ -2107,6 +2108,19 @@ let SUBJECT_GROUPS=['ภาษาไทย','คณิตศาสตร์','�
   'สังคมศึกษา ศาสนา และวัฒนธรรม','สุขศึกษาและพลศึกษา','ศิลปะ',
   'การงานอาชีพ','ภาษาต่างประเทศ','การศึกษาค้นคว้าด้วยตนเอง (IS)'];
 let _sgList=[];
+let ROOMS_PER_GRADE={1:2,2:2,3:2,4:1,5:1,6:1};
+let _rpgList={};
+function _roomOptions(grade,selectedRoom){
+  const n=ROOMS_PER_GRADE[String(grade)]||2;
+  let opts='';
+  for(let r=1;r<=n;r++){ opts+=`<option value="${r}" ${String(r)===String(selectedRoom)?'selected':''}>${r}</option>`; }
+  return opts;
+}
+function _rmOptsRefresh(){
+  const gEl=$('f-gr'), rEl=$('f-rm'); if(!gEl||!rEl) return;
+  const cur=rEl.value;
+  rEl.innerHTML=_roomOptions(gEl.value,cur);
+}
 const IQA_DEFAULT_TARGETS={'ภาษาไทย':2.60,'คณิตศาสตร์':2.00,'วิทยาศาสตร์และเทคโนโลยี':2.75,
   'สังคมศึกษา ศาสนา และวัฒนธรรม':3.00,'สุขศึกษาและพลศึกษา':3.20,'ศิลปะ':3.20,
   'การงานอาชีพ':3.20,'ภาษาต่างประเทศ':2.50,'การศึกษาค้นคว้าด้วยตนเอง (IS)':3.10};
@@ -2590,8 +2604,8 @@ function openSubModal(id){
         </div>
         <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:14px;margin-top:14px">
           <div><label class="fl">ชั้น ม.</label>
-            <select class="fs" id="f-gr">${[1,2,3,4,5,6].map(g=>`<option ${s?.grade_level==g?'selected':''}>${g}</option>`).join('')}</select></div>
-          <div><label class="fl">ห้อง</label><input class="fi" id="f-rm" value="${esc(s?.room||'')}"></div>
+            <select class="fs" id="f-gr" onchange="_rmOptsRefresh()">${[1,2,3,4,5,6].map(g=>`<option ${s?.grade_level==g?'selected':''}>${g}</option>`).join('')}</select></div>
+          <div><label class="fl">ห้อง</label><select class="fs" id="f-rm">${_roomOptions(s?.grade_level||1,s?.room)}</select></div>
           <div><label class="fl">หน่วยกิต</label><input type="number" class="fi" id="f-cr" value="${s?.credits||1.5}" step="0.5" min="0.5" oninput="updHours()"></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
@@ -6364,11 +6378,26 @@ async function saveSgList(){
   finally{ loading(false); }
 }
 
+async function saveRoomsPerGrade(){
+  const obj={};
+  for(let g=1;g<=6;g++){ obj[g]=Math.max(1,parseInt($('rpg-'+g)?.value)||1); }
+  loading(true);
+  try{
+    await q(sb.from('config').upsert([{key:'rooms_per_grade',value:JSON.stringify(obj)}],{onConflict:'key'}));
+    ROOMS_PER_GRADE={...obj};
+    S.config.rooms_per_grade=JSON.stringify(obj);
+    toast('บันทึกจำนวนห้องเรียบร้อย');
+    pgSettings();
+  }catch(e){ toast('เกิดข้อผิดพลาด: '+e.message,'er'); }
+  finally{ loading(false); }
+}
+
 let _syncActivities=[];
 let _mpTeachers=[],_mpGrants=new Set(); // menu_permissions grid state (จัดการสิทธิ์การเข้าถึงเมนู)
 async function pgSettings(){
   const cfg=S.config;
   _sgList=[...SUBJECT_GROUPS];
+  _rpgList={...ROOMS_PER_GRADE};
   loading(true);
   try{ _syncActivities=await q(sb.from('activities').select('id,name').eq('is_active',true).order('id')); }
   catch(e){ _syncActivities=[]; }
@@ -6567,6 +6596,26 @@ async function pgSettings(){
       <button class="btn bp" onclick="saveSgList()" style="margin-top:14px;width:100%;justify-content:center">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
         บันทึกกลุ่มสาระ
+      </button>
+    </div>
+  </div>
+
+  <!-- ── จำนวนห้องต่อระดับชั้น ── -->
+  <div class="card">
+    <div class="ch">
+      <div class="ct" style="display:flex;align-items:center;gap:7px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--ac)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        จำนวนห้องต่อระดับชั้น
+      </div>
+    </div>
+    <div class="cb">
+      <div style="font-size:12px;color:#6e6e73;margin-bottom:14px;line-height:1.6">กำหนดจำนวนห้องของแต่ละชั้น ม. เพื่อใช้เป็นตัวเลือกในช่อง "ห้อง" ของฟอร์มรายวิชา</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+        ${[1,2,3,4,5,6].map(g=>`<div><label class="fl">ม.${g}</label><input type="number" class="fi" id="rpg-${g}" value="${_rpgList[g]||1}" min="1" max="30"></div>`).join('')}
+      </div>
+      <button class="btn bp" onclick="saveRoomsPerGrade()" style="margin-top:14px;width:100%;justify-content:center">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        บันทึกจำนวนห้อง
       </button>
     </div>
   </div>
