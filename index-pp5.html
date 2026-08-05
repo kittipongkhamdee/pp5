@@ -323,6 +323,33 @@ tbody tr:hover td{background:rgba(0,122,255,.04);}
 .score-box{background:var(--info-bg);border:1px solid var(--info-bdr);border-radius:var(--r);padding:14px;margin-top:14px;}
 .score-box-title{font-size:13px;font-weight:600;color:var(--info-txt);margin-bottom:10px;}
 .wc{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+/* Eval Plan (แผนการวัดและประเมินผล) */
+.cell-in{width:100%;border:1px solid transparent;background:transparent;color:var(--txt);font-family:var(--font);font-size:12.5px;padding:5px 7px;border-radius:6px;}
+.cell-in:hover{border-color:var(--bdr);}
+.cell-in:focus{outline:none;border-color:var(--ac);background:var(--card);}
+.cell-in.num{text-align:center;font-variant-numeric:tabular-nums;}
+.ratio-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.ratio-in{width:64px;text-align:center;border:1.5px solid var(--bdr);background:var(--bg);color:var(--txt);border-radius:8px;padding:8px 4px;font-size:14px;font-weight:700;font-family:var(--font);font-variant-numeric:tabular-nums;}
+.ratio-in:focus{outline:none;border-color:var(--ac);}
+.ratio-sep{font-size:13px;color:var(--muted);font-weight:600;}
+.ratio-pill{font-size:11px;font-weight:700;padding:2px 9px;border-radius:99px;}
+.pill-ok{background:var(--ok-bg);color:var(--ok-txt);border:1px solid var(--ok-bdr);}
+.pill-warn{background:var(--warn-bg);color:var(--warn-txt);border:1px solid var(--warn-bdr);}
+.rowdel{width:22px;height:22px;border-radius:6px;border:none;background:none;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+.rowdel:hover{background:var(--err-bg);color:var(--err-txt);}
+.kpa-tag{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;white-space:nowrap;}
+.kpa-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block;}
+.ind-chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--ac);background:var(--ac-lt);border-radius:7px;padding:3px 8px;margin:2px 3px 2px 0;}
+.ind-chip button{background:none;border:none;color:inherit;opacity:.6;cursor:pointer;padding:0;font-size:12px;line-height:1;}
+.ind-chip button:hover{opacity:1;}
+.summary-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden;margin-top:14px;}
+.summary-strip .cell{padding:12px 10px;text-align:center;border-right:1px solid var(--bdr);background:var(--card2);}
+.summary-strip .cell:last-child{border-right:none;}
+.summary-strip .cell .v{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--ac);}
+.summary-strip .cell .l{font-size:10.5px;color:var(--muted);margin-top:2px;}
+.ind-pick-row{display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--sep);cursor:pointer;}
+.ind-pick-row:hover{background:rgba(0,122,255,.05);}
+.ind-pick-row input[type=checkbox]{flex-shrink:0;width:16px;height:16px;accent-color:var(--ac);}
 .pbw{background:var(--bg2);border-radius:10px;height:5px;overflow:hidden;}
 .pb{height:100%;border-radius:10px;background:var(--ac);transition:width .4s ease;}
 .skel{background:linear-gradient(90deg,var(--bg2) 25%,var(--bg) 50%,var(--bg2) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:6px;}
@@ -2071,7 +2098,7 @@ async function doLogout(){
 const TITLES={dashboard:'แดชบอร์ด',subjects:'รายวิชา',students:'นักเรียน',
   attendance:'เวลาเรียน',scores:'บันทึกคะแนน',eval:'ประเมิน อ่าน/คุณลักษณะ',
   report:'รายงานผลการเรียน',cover:'ปก ปพ.5',iqa:'รายงาน IQA กลุ่มสาระ',
-  settings:'ตั้งค่า',manual:'คู่มือการใช้งาน'};
+  settings:'ตั้งค่า',manual:'คู่มือการใช้งาน',evalplan:'แผนการวัดและประเมินผล'};
 let SUBJECT_GROUPS=['ภาษาไทย','คณิตศาสตร์','วิทยาศาสตร์และเทคโนโลยี',
   'สังคมศึกษา ศาสนา และวัฒนธรรม','สุขศึกษาและพลศึกษา','ศิลปะ',
   'การงานอาชีพ','ภาษาต่างประเทศ','การศึกษาค้นคว้าด้วยตนเอง (IS)'];
@@ -2100,7 +2127,7 @@ function nav(page,subId){
   const el=$('nav-'+page);if(el)el.classList.add('active');
   $('tbt').textContent=TITLES[page]||page;
   const fn={dashboard:pgDash,subjects:pgSubjects,students:pgStudents,
-    attendance:pgAttendance,scores:pgScores,eval:pgEval,
+    attendance:pgAttendance,scores:pgScores,eval:pgEval,evalplan:pgEvalPlan,
     report:pgReport,cover:pgCover,iqa:pgIQA,settings:pgSettings,manual:pgManual}[page];
   if(fn){
     // wrap ทุก page fn ให้ loadingOff() เสมอเมื่อเสร็จ ไม่ว่าจะ error หรือไม่
@@ -2423,6 +2450,7 @@ async function pgSubjects(){
         </label>
       </td>
       <td class="tc">
+        <button class="btn bs btn-sm" onclick="nav('evalplan','${s.id}')" title="แผนการวัดและประเมินผล" style="padding:5px 8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></button>
         <button class="btn bs btn-sm" onclick="openSubModal('${s.id}')" style="padding:5px 8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
         <button class="btn bd btn-sm" onclick="delSub('${s.id}','${escJs(s.subject_name)}')" style="padding:5px 8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
       </td></tr>`).join('')}
@@ -4847,6 +4875,426 @@ function printEval(){
   p2+='</div></div>';
 
   printHTML(`การประเมิน — ${sub.subject_name} ${grm(sub.grade_level,sub.room)}`, p1+p2, 'portrait');
+}
+
+// ════════════════════════════════════════════════════════════════
+// 6.5 EVAL PLAN (แผนการวัดและประเมินผล)
+// ════════════════════════════════════════════════════════════════
+let epUnits=[], epUnitInd={}, epIndScores=[], _indicatorsAll=null;
+let _epPickUnit=null, _epPickSearch='';
+
+async function pgEvalPlan(){
+  if(!S.subjects.length){$('pg').innerHTML=`<div class="card"><div class="empty"><svg class="ei" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg><div>ยังไม่มีรายวิชา</div></div></div>`;return;}
+  if(!S.selSub) S.selSub=S.subjects[0].id;
+  loading(true);
+  try{
+    await _loadIndicatorsAll();
+    await loadEvalPlan(S.selSub);
+  }finally{ loading(false); }
+  renderEvalPlanPage();
+}
+async function _loadIndicatorsAll(){
+  if(_indicatorsAll) return;
+  _indicatorsAll = await qAll(()=>sb.from('indicators').select('*'));
+}
+async function loadEvalPlan(sid){
+  epUnits = await q(sb.from('eval_plan_units').select('*').eq('subject_id',sid).order('seq'));
+  const unitIds = epUnits.map(u=>u.id);
+  const links = unitIds.length ? await q(sb.from('eval_plan_unit_indicators').select('*').in('unit_id',unitIds)) : [];
+  epUnitInd = {};
+  links.forEach(l=>{
+    if(!epUnitInd[l.unit_id]) epUnitInd[l.unit_id]=[];
+    epUnitInd[l.unit_id].push(l.indicator_id);
+  });
+  epIndScores = await q(sb.from('eval_plan_indicator_scores').select('*').eq('subject_id',sid));
+}
+function changeEvalPlanSub(id){ S.selSub=id; pgEvalPlan(); }
+
+function renderEvalPlanPage(){
+  const sid=S.selSub;
+  const sub=S.subjects.find(s=>s.id===sid);
+  $('pg').innerHTML=`
+  <div class="ph"><div class="ptitle">แผนการวัดและประเมินผล</div>
+    <div style="font-size:13px;color:var(--muted);margin-top:2px">${esc(sub?.subject_name||'')} &nbsp;·&nbsp; ${esc(sub?.subject_code||'')} &nbsp;·&nbsp; ${grm(sub?.grade_level,sub?.room)} &nbsp;·&nbsp; ภาคเรียนที่ ${sub?.semester||1}/${esc(sub?.academic_year||'')}</div>
+  </div>
+  <div style="margin-bottom:14px">
+    <select class="fs" style="max-width:340px" onchange="changeEvalPlanSub(this.value)">
+      ${S.subjects.map(s=>`<option value="${s.id}" ${s.id===sid?'selected':''}>${esc(s.subject_name)} ${grm(s.grade_level,s.room)}</option>`).join('')}
+    </select>
+  </div>
+  <div class="tabs">
+    <button class="tab active" data-tg="epl" data-ti="epl-units" onclick="swTab('epl','epl-units')">หน่วยการเรียนรู้ &amp; มาตรฐาน</button>
+    <button class="tab" data-tg="epl" data-ti="epl-ratio" onclick="swTab('epl','epl-ratio')">สัดส่วนคะแนน</button>
+  </div>
+  <div class="tp active" id="epl-units" data-tp="epl">${renderEplUnitsTab()}</div>
+  <div class="tp" id="epl-ratio" data-tp="epl">${renderEplRatioTab()}</div>`;
+}
+
+// ── TAB 1: หน่วยการเรียนรู้ & มาตรฐาน ──────────────────────────────
+function renderEplUnitsTab(){
+  const sub=S.subjects.find(s=>s.id===S.selSub)||{};
+  let sumHours=0,sumWeight=0;
+  epUnits.forEach(u=>{ sumHours+=+u.hours||0; sumWeight+=+u.weight||0; });
+  const mid=+sub.score_mid||0, fin=+sub.score_final||0;
+  const grand=sumWeight+mid+fin;
+  return`<div class="card">
+    <div class="ch"><div class="ct">หน่วยการเรียนรู้ มาตรฐานการเรียนรู้ ภาระงาน และสัดส่วนคะแนนประเมินผล</div>
+      <span style="font-size:11.5px;color:var(--muted)">${epUnits.length} หน่วย</span></div>
+    <div class="cb">
+      <div class="tw"><table>
+        <thead><tr>
+          <th style="width:34px">ที่</th>
+          <th class="tl" style="min-width:150px">ชื่อหน่วยการเรียนรู้</th>
+          <th class="tl" style="min-width:240px">มาตรฐานการเรียนรู้ / ตัวชี้วัด</th>
+          <th style="width:80px">เวลา (ชม.)</th>
+          <th style="width:100px">น้ำหนักคะแนน</th>
+          <th style="width:30px"></th>
+        </tr></thead>
+        <tbody>
+        ${epUnits.length===0?`<tr><td colspan="6" class="tc" style="padding:20px;color:var(--muted)">ยังไม่มีหน่วยการเรียนรู้ — กด "เพิ่มหน่วยการเรียนรู้" ด้านล่าง</td></tr>`:
+        epUnits.map((u,i)=>`<tr>
+          <td class="tc">${i+1}</td>
+          <td><input class="cell-in" value="${esc(u.unit_name)}" placeholder="ชื่อหน่วยการเรียนรู้" onchange="saveEplUnit('${u.id}',{unit_name:this.value})"></td>
+          <td>${renderIndCell(u)}</td>
+          <td><input class="cell-in num" type="number" value="${u.hours||0}" min="0" onchange="saveEplUnit('${u.id}',{hours:+this.value||0})"></td>
+          <td><input class="cell-in num" type="number" value="${u.weight||0}" min="0" onchange="saveEplUnit('${u.id}',{weight:+this.value||0})"></td>
+          <td class="tc"><button class="rowdel" title="ลบหน่วย" onclick="delEplUnit('${u.id}','${escJs(u.unit_name||'หน่วยที่ '+(i+1))}')">✕</button></td>
+        </tr>`).join('')}
+        <tr style="font-weight:700;background:var(--card2)">
+          <td colspan="3" style="text-align:right;padding-right:14px">รวมหน่วยการเรียนรู้</td>
+          <td class="tc">${sumHours}</td><td class="tc">${sumWeight}</td><td></td>
+        </tr>
+        <tr>
+          <td colspan="3" style="text-align:right;padding-right:14px;color:var(--txt2)">คะแนนประเมินผลกลางภาค</td>
+          <td colspan="2" class="tc"><input class="cell-in num" type="number" value="${mid}" style="max-width:90px;margin:0 auto" onchange="saveSubjectScoreField('score_mid',this.value)"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td colspan="3" style="text-align:right;padding-right:14px;color:var(--txt2)">คะแนนประเมินผลปลายภาค</td>
+          <td colspan="2" class="tc"><input class="cell-in num" type="number" value="${fin}" style="max-width:90px;margin:0 auto" onchange="saveSubjectScoreField('score_final',this.value)"></td>
+          <td></td>
+        </tr>
+        <tr style="font-weight:700;background:var(--card2)">
+          <td colspan="3" style="text-align:right;padding-right:14px">รวมคะแนนประเมินผล</td>
+          <td colspan="2" class="tc" style="font-size:14px;color:${grand===100?'var(--ok-txt)':'var(--err-txt)'}">${grand}${grand===100?' ✓':' (ต้อง = 100)'}</td>
+          <td></td>
+        </tr>
+        </tbody>
+      </table></div>
+      <button class="btn bs" style="margin-top:10px" onclick="addEplUnit()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>เพิ่มหน่วยการเรียนรู้</button>
+    </div>
+  </div>`;
+}
+function renderIndCell(u){
+  const ids=epUnitInd[u.id]||[];
+  const inds=ids.map(id=>(_indicatorsAll||[]).find(x=>x.id===id)).filter(Boolean);
+  return`<div>
+    ${inds.map(ind=>`<span class="ind-chip" title="${esc(ind.indicator_text)}">${esc(ind.indicator_code)}<button onclick="rmEplUnitIndicator('${u.id}',${ind.id})" title="เอาออก">✕</button></span>`).join('')}
+    <button class="btn bs btn-sm" style="padding:3px 8px;margin-top:2px" onclick="openIndPicker('${u.id}')">+ เพิ่มตัวชี้วัด</button>
+  </div>`;
+}
+async function saveEplUnit(id,patch){
+  try{
+    await q(sb.from('eval_plan_units').update(patch).eq('id',id));
+    const u=epUnits.find(x=>x.id===id); if(u) Object.assign(u,patch);
+    const tab=$('epl-units'); if(tab) tab.innerHTML=renderEplUnitsTab();
+  }catch(e){ toast('บันทึกไม่สำเร็จ: '+e.message,'er'); }
+}
+async function saveSubjectScoreField(field,val){
+  const n=+val||0;
+  loading(true);
+  try{
+    await q(sb.from('subjects').update({[field]:n}).eq('id',S.selSub));
+    invalidateSubjects(); await loadSubjects();
+    const utab=$('epl-units'); if(utab) utab.innerHTML=renderEplUnitsTab();
+    const rtab=$('epl-ratio'); if(rtab) rtab.innerHTML=renderEplRatioTab();
+  }catch(e){ toast('บันทึกไม่สำเร็จ: '+e.message,'er'); }
+  finally{ loading(false); }
+}
+async function addEplUnit(){
+  loading(true);
+  try{
+    const seq=epUnits.length?Math.max(...epUnits.map(u=>u.seq||0))+1:1;
+    const inserted=await q(sb.from('eval_plan_units').insert({subject_id:S.selSub,seq,unit_name:'',hours:0,weight:0}).select('*'));
+    epUnits.push(inserted[0]);
+    const tab=$('epl-units'); if(tab) tab.innerHTML=renderEplUnitsTab();
+  }catch(e){ toast('เพิ่มหน่วยไม่สำเร็จ: '+e.message,'er'); }
+  finally{ loading(false); }
+}
+function delEplUnit(id,name){
+  confirm2({title:'ลบหน่วยการเรียนรู้',msg:'ต้องการลบหน่วย "<strong>'+name+'</strong>"? ตัวชี้วัดที่ผูกไว้จะถูกเอาออกด้วย',type:'danger',confirmText:'ลบเลย',cancelText:'ยกเลิก',onConfirm:async()=>{
+    loading(true);
+    try{
+      await q(sb.from('eval_plan_units').delete().eq('id',id));
+      epUnits=epUnits.filter(u=>u.id!==id);
+      delete epUnitInd[id];
+      const utab=$('epl-units'); if(utab) utab.innerHTML=renderEplUnitsTab();
+      const rtab=$('epl-ratio'); if(rtab) rtab.innerHTML=renderEplRatioTab();
+      toast('ลบเรียบร้อย');
+    }catch(e){ toast('ลบไม่สำเร็จ: '+e.message,'er'); }
+    finally{ loading(false); }
+  }});
+}
+
+// ── ตัวเลือกตัวชี้วัด (จากคลัง indicators กรองตามกลุ่มสาระ/ระดับชั้น/ประเภทวิชา) ──
+function openIndPicker(unitId){
+  _epPickUnit=unitId; _epPickSearch='';
+  const sub=S.subjects.find(s=>s.id===S.selSub)||{};
+  document.body.insertAdjacentHTML('beforeend',`
+  <div class="mo" id="indPickMod"><div class="md md-lg">
+    <div class="mh"><div class="mt">เลือกตัวชี้วัด — ${esc(sub.subject_group||'ไม่ระบุกลุ่มสาระ')} ม.${esc(String(sub.grade_level||''))}</div>
+      <button class="mx" onclick="rmModal('indPickMod')">✕</button></div>
+    <div class="mb">
+      <input class="fi" placeholder="ค้นหารหัสหรือข้อความตัวชี้วัด..." autocomplete="off" oninput="_epPickFilter(this.value)" style="margin-bottom:10px">
+      <div id="ind-pick-list">${renderIndPickList()}</div>
+    </div>
+    <div class="mf"><button class="btn bp" onclick="rmModal('indPickMod')">เสร็จสิ้น</button></div>
+  </div></div>`);
+}
+function _epPickFilter(v){
+  _epPickSearch=v;
+  const el=$('ind-pick-list'); if(el) el.innerHTML=renderIndPickList();
+}
+function renderIndPickList(){
+  const sub=S.subjects.find(s=>s.id===S.selSub)||{};
+  const g=String(sub.grade_level||'');
+  const stype=sub.subject_type||'รายวิชาพื้นฐาน';
+  const pool=(_indicatorsAll||[]).filter(ind=>{
+    if(sub.subject_group && ind.subject_group!==sub.subject_group) return false;
+    if(ind.subject_type!==stype) return false;
+    if(g){
+      const grOk = ind.grade_level==='ม.'+g || (['4','5','6'].includes(g) && ind.grade_level==='ม.4-6');
+      if(!grOk) return false;
+    }
+    return true;
+  });
+  const kw=(_epPickSearch||'').trim().toLowerCase();
+  const filtered = kw ? pool.filter(ind=>ind.indicator_code.toLowerCase().includes(kw)||ind.indicator_text.toLowerCase().includes(kw)||(ind.standard_code||'').toLowerCase().includes(kw)) : pool;
+  if(!filtered.length) return `<div class="empty" style="padding:24px">ไม่พบตัวชี้วัดที่ตรงกับรายวิชานี้ — ตรวจสอบกลุ่มสาระ/ระดับชั้นของรายวิชาในหน้าจัดการรายวิชา</div>`;
+  const selected=new Set(epUnitInd[_epPickUnit]||[]);
+  return filtered.map(ind=>`
+    <label class="ind-pick-row">
+      <input type="checkbox" ${selected.has(ind.id)?'checked':''} onchange="toggleEplUnitIndicator('${_epPickUnit}',${ind.id},this.checked)">
+      <div style="min-width:0;flex:1">
+        <div style="font-size:12px;font-weight:700;color:var(--ac)">${esc(ind.indicator_code)} <span class="badge ${ind.kind==='ปลายทาง'?'bg-o':'bg-b'}" style="margin-left:4px">${esc(ind.kind)}</span></div>
+        <div style="font-size:12.5px;color:var(--txt2);margin-top:2px">${esc(ind.indicator_text)}</div>
+      </div>
+    </label>`).join('');
+}
+async function toggleEplUnitIndicator(unitId,indId,checked){
+  try{
+    if(checked){
+      await q(sb.from('eval_plan_unit_indicators').insert({unit_id:unitId,indicator_id:indId}));
+      if(!epUnitInd[unitId]) epUnitInd[unitId]=[];
+      epUnitInd[unitId].push(indId);
+    }else{
+      await q(sb.from('eval_plan_unit_indicators').delete().eq('unit_id',unitId).eq('indicator_id',indId));
+      if(epUnitInd[unitId]) epUnitInd[unitId]=epUnitInd[unitId].filter(x=>x!==indId);
+    }
+    const tab=$('epl-units'); if(tab) tab.innerHTML=renderEplUnitsTab();
+    const rtab=$('epl-ratio'); if(rtab) rtab.innerHTML=renderEplRatioTab();
+  }catch(e){ toast('บันทึกไม่สำเร็จ: '+e.message,'er'); }
+}
+function rmEplUnitIndicator(unitId,indId){ toggleEplUnitIndicator(unitId,indId,false); }
+
+// ── TAB 2: สัดส่วนคะแนน ────────────────────────────────────────────
+function renderEplRatioTab(){
+  const sub=S.subjects.find(s=>s.id===S.selSub)||{};
+  const bef=+sub.score_before_mid||0, mid=+sub.score_mid||0, aft=+sub.score_after_mid||0, fin=+sub.score_final||0;
+  const totScore=bef+mid+aft+fin;
+  const between=bef+mid+aft;
+  const k=+sub.knowledge_ratio||0, p=+sub.skill_ratio||0, a=+sub.moral_ratio||0;
+  return`
+  <div class="card">
+    <div class="ch"><div class="ct">1. สัดส่วนคะแนนระหว่างภาค : ปลายภาค</div></div>
+    <div class="cb">
+      <div class="score-box" style="margin-top:0">
+        <div class="score-box-title">โครงสร้างคะแนน (รวม = <span id="epl-tot" style="color:${totScore===100?'var(--ok)':'var(--err)'}">${totScore}</span> / 100)</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div><label class="fl">ก่อนกลางภาค</label><input type="number" class="fi" id="epl-sbm" value="${bef}" min="0" max="100" oninput="_eplUpdTot()"></div>
+          <div><label class="fl">กลางภาค</label><input type="number" class="fi" id="epl-sm" value="${mid}" min="0" max="100" oninput="_eplUpdTot()"></div>
+          <div><label class="fl">หลังกลางภาค</label><input type="number" class="fi" id="epl-sam" value="${aft}" min="0" max="100" oninput="_eplUpdTot()"></div>
+          <div><label class="fl">ปลายภาค</label><input type="number" class="fi" id="epl-sf" value="${fin}" min="0" max="100" oninput="_eplUpdTot()"></div>
+        </div>
+      </div>
+      <div style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span class="kpa-tag"><span class="kpa-dot" style="background:var(--ac)"></span>ระหว่างภาค <strong>${between}</strong></span>
+        <span class="ratio-sep">:</span>
+        <span class="kpa-tag"><span class="kpa-dot" style="background:var(--warn)"></span>ปลายภาค <strong>${fin}</strong></span>
+        <button class="btn bp btn-sm" onclick="saveEplScoreStructure()">บันทึก</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ch"><div class="ct">2. สัดส่วนคะแนน ด้านความรู้ : ทักษะ/กระบวนการ : คุณธรรม</div></div>
+    <div class="cb">
+      <div class="ratio-row">
+        <span class="kpa-tag"><span class="kpa-dot" style="background:#007AFF"></span>ความรู้ (K)</span>
+        <input class="ratio-in" id="epl-k" value="${k}" oninput="_eplUpdKpa()">
+        <span class="ratio-sep">:</span>
+        <span class="kpa-tag"><span class="kpa-dot" style="background:#34C759"></span>ทักษะ (P)</span>
+        <input class="ratio-in" id="epl-p" value="${p}" oninput="_eplUpdKpa()">
+        <span class="ratio-sep">:</span>
+        <span class="kpa-tag"><span class="kpa-dot" style="background:#FF9500"></span>คุณธรรม (A)</span>
+        <input class="ratio-in" id="epl-a" value="${a}" oninput="_eplUpdKpa()">
+        <span class="ratio-pill ${k+p+a===100?'pill-ok':'pill-warn'}" id="epl-kpa-pill">รวม ${k+p+a}${k+p+a===100?' ✓':' — ต้องเท่ากับ 100'}</span>
+        <button class="btn bp btn-sm" onclick="saveEplKpaRatio()">บันทึก</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ch"><div class="ct">3. ตารางแสดงสัดส่วนคะแนน</div><span style="font-size:11.5px;color:var(--muted)">แบ่งตามช่วงเวลาสอบ</span></div>
+    <div class="cb">${renderKpaMatrix(sub)}</div>
+  </div>
+
+  <div class="card">
+    <div class="ch"><div class="ct">4. ตารางแสดงน้ำหนักคะแนนรายตัวชี้วัด</div><span style="font-size:11.5px;color:var(--muted)">อ้างอิงจากหน่วยการเรียนรู้ในแท็บแรก</span></div>
+    <div class="cb">${renderIndicatorScoreTable()}</div>
+  </div>
+
+  <div class="summary-strip">
+    <div class="cell"><div class="v">${k}%</div><div class="l">ด้านความรู้ (K)</div></div>
+    <div class="cell"><div class="v">${p}%</div><div class="l">ด้านทักษะ (P)</div></div>
+    <div class="cell"><div class="v">${a}%</div><div class="l">ด้านคุณธรรม (A)</div></div>
+    <div class="cell"><div class="v">${totScore}</div><div class="l">คะแนนรวมทั้งหมด</div></div>
+  </div>`;
+}
+function _eplUpdTot(){
+  const t=['epl-sbm','epl-sm','epl-sam','epl-sf'].reduce((a,i)=>a+(+$(i)?.value||0),0);
+  const el=$('epl-tot'); if(el){ el.textContent=t; el.style.color=t===100?'var(--ok)':'var(--err)'; }
+}
+async function saveEplScoreStructure(){
+  const bef=+$('epl-sbm').value||0, mid=+$('epl-sm').value||0, aft=+$('epl-sam').value||0, fin=+$('epl-sf').value||0;
+  if(bef+mid+aft+fin!==100){ toast('คะแนนรวมต้องเท่ากับ 100','er'); return; }
+  loading(true);
+  try{
+    await q(sb.from('subjects').update({score_before_mid:bef,score_mid:mid,score_after_mid:aft,score_final:fin}).eq('id',S.selSub));
+    invalidateSubjects(); await loadSubjects();
+    toast('บันทึกโครงสร้างคะแนนเรียบร้อย');
+    const tab=$('epl-ratio'); if(tab) tab.innerHTML=renderEplRatioTab();
+    const utab=$('epl-units'); if(utab) utab.innerHTML=renderEplUnitsTab();
+  }catch(e){ toast('บันทึกไม่สำเร็จ: '+e.message,'er'); }
+  finally{ loading(false); }
+}
+function _eplUpdKpa(){
+  const k=+$('epl-k').value||0,p=+$('epl-p').value||0,a=+$('epl-a').value||0;
+  const pill=$('epl-kpa-pill'); const t=k+p+a;
+  if(pill){ pill.textContent='รวม '+t+(t===100?' ✓':' — ต้องเท่ากับ 100'); pill.className='ratio-pill '+(t===100?'pill-ok':'pill-warn'); }
+}
+async function saveEplKpaRatio(){
+  const k=+$('epl-k').value||0,p=+$('epl-p').value||0,a=+$('epl-a').value||0;
+  if(k+p+a!==100){ toast('สัดส่วน K:P:A ต้องรวมเท่ากับ 100','er'); return; }
+  loading(true);
+  try{
+    await q(sb.from('subjects').update({knowledge_ratio:k,skill_ratio:p,moral_ratio:a}).eq('id',S.selSub));
+    invalidateSubjects(); await loadSubjects();
+    toast('บันทึกสัดส่วนเรียบร้อย');
+    const tab=$('epl-ratio'); if(tab) tab.innerHTML=renderEplRatioTab();
+  }catch(e){ toast('บันทึกไม่สำเร็จ: '+e.message,'er'); }
+  finally{ loading(false); }
+}
+function renderKpaMatrix(sub){
+  const periods=[{key:'before_mid',label:'ก่อนกลางภาค'},{key:'mid',label:'กลางภาค'},{key:'after_mid',label:'หลังกลางภาค'},{key:'final',label:'ปลายภาค'}];
+  const rows=[{k:'k',label:'ความรู้ (K)',color:'#007AFF'},{k:'p',label:'ทักษะ/กระบวนการ (P)',color:'#34C759'},{k:'a',label:'คุณธรรมฯ (A)',color:'#FF9500'}];
+  const val=(pk,rk)=>+sub['kpa_'+pk+'_'+rk]||0;
+  const colTotal=pk=>rows.reduce((s,r)=>s+val(pk,r.k),0);
+  const rowTotal=rk=>periods.reduce((s,p)=>s+val(p.key,rk),0);
+  const grand=periods.reduce((s,p)=>s+colTotal(p.key),0);
+  return`<div class="tw"><table>
+    <thead><tr><th class="tl">คุณลักษณะ</th>${periods.map(p=>`<th>${p.label}</th>`).join('')}<th>รวม</th></tr></thead>
+    <tbody>
+      ${rows.map(r=>`<tr>
+        <td class="tl"><span class="kpa-tag"><span class="kpa-dot" style="background:${r.color}"></span>${r.label}</span></td>
+        ${periods.map(p=>`<td><input class="cell-in num" type="number" id="epl-kpa-${p.key}-${r.k}" value="${val(p.key,r.k)}" oninput="_eplKpaMatrixTouch()"></td>`).join('')}
+        <td class="tc" style="font-weight:700" id="epl-kpa-row-${r.k}">${rowTotal(r.k)}</td>
+      </tr>`).join('')}
+      <tr style="font-weight:700;background:var(--card2)">
+        <td class="tl">รวม</td>
+        ${periods.map(p=>`<td class="tc" id="epl-kpa-col-${p.key}">${colTotal(p.key)}</td>`).join('')}
+        <td class="tc" id="epl-kpa-grand">${grand}</td>
+      </tr>
+    </tbody>
+  </table></div>
+  <div style="margin-top:10px;display:flex;justify-content:flex-end">
+    <button class="btn bp btn-sm" onclick="saveEplKpaMatrix()">บันทึกตาราง</button>
+  </div>`;
+}
+function _eplKpaMatrixTouch(){
+  const periods=['before_mid','mid','after_mid','final'], rows=['k','p','a'];
+  let grand=0;
+  rows.forEach(rk=>{
+    let rt=0; periods.forEach(pk=>{ rt+=+$('epl-kpa-'+pk+'-'+rk)?.value||0; });
+    grand+=rt;
+    const el=$('epl-kpa-row-'+rk); if(el) el.textContent=rt;
+  });
+  periods.forEach(pk=>{
+    let ct=0; rows.forEach(rk=>{ ct+=+$('epl-kpa-'+pk+'-'+rk)?.value||0; });
+    const el=$('epl-kpa-col-'+pk); if(el) el.textContent=ct;
+  });
+  const gEl=$('epl-kpa-grand'); if(gEl) gEl.textContent=grand;
+}
+async function saveEplKpaMatrix(){
+  const periods=['before_mid','mid','after_mid','final'], rows=['k','p','a'];
+  const patch={};
+  periods.forEach(pk=>rows.forEach(rk=>{ patch['kpa_'+pk+'_'+rk]=+$('epl-kpa-'+pk+'-'+rk)?.value||0; }));
+  loading(true);
+  try{
+    await q(sb.from('subjects').update(patch).eq('id',S.selSub));
+    invalidateSubjects(); await loadSubjects();
+    toast('บันทึกตารางสัดส่วนคะแนนเรียบร้อย');
+  }catch(e){ toast('บันทึกไม่สำเร็จ: '+e.message,'er'); }
+  finally{ loading(false); }
+}
+function renderIndicatorScoreTable(){
+  const idSet=new Set();
+  Object.values(epUnitInd).forEach(arr=>arr.forEach(id=>idSet.add(id)));
+  const ids=[...idSet];
+  if(!ids.length) return `<div class="empty" style="padding:20px">ยังไม่มีตัวชี้วัดที่ผูกกับหน่วยการเรียนรู้ — ไปที่แท็บ "หน่วยการเรียนรู้ &amp; มาตรฐาน" เพื่อเพิ่มตัวชี้วัด</div>`;
+  const rows=ids.map(id=>{
+    const ind=(_indicatorsAll||[]).find(x=>x.id===id);
+    const sc=epIndScores.find(x=>x.indicator_id===id)||{score_k:0,score_p:0,score_a:0,score_mid:0,score_final:0,note:''};
+    return {ind,sc};
+  }).filter(r=>r.ind).sort((a,b)=>a.ind.indicator_code.localeCompare(b.ind.indicator_code,'th'));
+  const fields=['score_k','score_p','score_a','score_mid','score_final'];
+  const totals={score_k:0,score_p:0,score_a:0,score_mid:0,score_final:0};
+  rows.forEach(r=>fields.forEach(f=>totals[f]+=+r.sc[f]||0));
+  return`<div class="tw"><table>
+    <thead><tr>
+      <th class="tl" style="min-width:170px">ตัวชี้วัด</th>
+      <th>คะแนนเก็บ (K)</th><th>คะแนนเก็บ (P)</th><th>คะแนนเก็บ (A)</th>
+      <th>กลางภาค</th><th>ปลายภาค</th><th>รวม</th><th class="tl" style="min-width:100px">หมายเหตุ</th>
+    </tr></thead>
+    <tbody>
+    ${rows.map(({ind,sc})=>{
+      const rowTot=fields.reduce((s,f)=>s+(+sc[f]||0),0);
+      return`<tr>
+        <td class="tl" title="${esc(ind.indicator_text)}">${esc(ind.indicator_code)}</td>
+        ${fields.map(f=>`<td><input class="cell-in num" type="number" value="${sc[f]||0}" onchange="saveEplIndScore(${ind.id},{${f}:+this.value||0})"></td>`).join('')}
+        <td class="tc" style="font-weight:700">${rowTot}</td>
+        <td><input class="cell-in" value="${esc(sc.note||'')}" placeholder="—" onchange="saveEplIndScore(${ind.id},{note:this.value})"></td>
+      </tr>`;
+    }).join('')}
+    <tr style="font-weight:700;background:var(--card2)">
+      <td class="tl">รวมคะแนน</td>
+      ${fields.map(f=>`<td class="tc">${totals[f]}</td>`).join('')}
+      <td class="tc">${fields.reduce((s,f)=>s+totals[f],0)}</td>
+      <td></td>
+    </tr>
+    </tbody>
+  </table></div>`;
+}
+async function saveEplIndScore(indId,patch){
+  try{
+    const existing=epIndScores.find(x=>x.indicator_id===indId);
+    const row=Object.assign({subject_id:S.selSub,indicator_id:indId,
+      score_k:existing?.score_k||0,score_p:existing?.score_p||0,score_a:existing?.score_a||0,
+      score_mid:existing?.score_mid||0,score_final:existing?.score_final||0,note:existing?.note||''},patch);
+    const saved=await q(sb.from('eval_plan_indicator_scores').upsert(row,{onConflict:'subject_id,indicator_id'}).select('*'));
+    if(existing) Object.assign(existing,patch); else epIndScores.push(saved[0]);
+    const tab=$('epl-ratio'); if(tab) tab.innerHTML=renderEplRatioTab();
+  }catch(e){ toast('บันทึกไม่สำเร็จ: '+e.message,'er'); }
 }
 
 // ════════════════════════════════════════════════════════════════
