@@ -963,6 +963,9 @@ body.dark .subc{
     </div>
 
     <div class="text-[10px] font-bold uppercase tracking-widest px-2.5 pt-3.5 pb-1" style="color:var(--muted2)">บันทึก</div>
+    <div class="ni" id="nav-evalplan" onclick="nav('evalplan')">
+      <span class="ic"></span>แผนการวัด
+    </div>
     <div class="ni" id="nav-attendance" onclick="nav('attendance')" style="justify-content:space-between">
       <div style="display:flex;align-items:center;gap:8px"><span class="ic"></span>เวลาเรียน</div>
       <span id="ms-badge" class="ms-badge" style="display:none">0</span>
@@ -1162,6 +1165,7 @@ const IC = {
   edit:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
   plus:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
   refresh: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>',
+  checklist:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
 };
 
 function toast(msg, type='ok'){
@@ -1543,7 +1547,7 @@ function showApp(){
   // Inject SVG nav icons
   const _navIcons={
     'nav-dashboard':IC.dash,'nav-subjects':IC.grid,'nav-students':IC.users,
-    'nav-attendance':IC.calendar,'nav-scores':IC.pencil,'nav-eval':IC.star,
+    'nav-evalplan':IC.checklist,'nav-attendance':IC.calendar,'nav-scores':IC.pencil,'nav-eval':IC.star,
     'nav-report':IC.chart,'nav-cover':IC.pp5,'nav-iqa':IC.iqa,'nav-settings':IC.settings,'nav-manual':IC.book
   };
   Object.entries(_navIcons).forEach(([id,svg])=>{
@@ -4914,8 +4918,15 @@ function renderEvalPlanPage(){
   const sid=S.selSub;
   const sub=S.subjects.find(s=>s.id===sid);
   $('pg').innerHTML=`
-  <div class="ph"><div class="ptitle">แผนการวัดและประเมินผล</div>
-    <div style="font-size:13px;color:var(--muted);margin-top:2px">${esc(sub?.subject_name||'')} &nbsp;·&nbsp; ${esc(sub?.subject_code||'')} &nbsp;·&nbsp; ${grm(sub?.grade_level,sub?.room)} &nbsp;·&nbsp; ภาคเรียนที่ ${sub?.semester||1}/${esc(sub?.academic_year||'')}</div>
+  <div class="ph">
+    <div>
+      <div class="ptitle">แผนการวัดและประเมินผล</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:2px">${esc(sub?.subject_name||'')} &nbsp;·&nbsp; ${esc(sub?.subject_code||'')} &nbsp;·&nbsp; ${grm(sub?.grade_level,sub?.room)} &nbsp;·&nbsp; ภาคเรียนที่ ${sub?.semester||1}/${esc(sub?.academic_year||'')}</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn bs no-print" onclick="exportEvalPlan()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>Excel</button>
+      <button class="btn bs no-print" onclick="printEvalPlan()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>พิมพ์</button>
+    </div>
   </div>
   <div style="margin-bottom:14px">
     <select class="fs" style="max-width:340px" onchange="changeEvalPlanSub(this.value)">
@@ -5295,6 +5306,130 @@ async function saveEplIndScore(indId,patch){
     if(existing) Object.assign(existing,patch); else epIndScores.push(saved[0]);
     const tab=$('epl-ratio'); if(tab) tab.innerHTML=renderEplRatioTab();
   }catch(e){ toast('บันทึกไม่สำเร็จ: '+e.message,'er'); }
+}
+
+// ── พิมพ์ / ส่งออก Excel ────────────────────────────────────────
+function buildEvalPlanUnitRows(){
+  const sub=getSubject(S.selSub)||{};
+  const h=['ที่','ชื่อหน่วยการเรียนรู้','มาตรฐานการเรียนรู้ / ตัวชี้วัด','เวลา (ชม.)','น้ำหนักคะแนน'];
+  const rows=[h];
+  let sumHours=0,sumWeight=0;
+  epUnits.forEach((u,i)=>{
+    const codes=(epUnitInd[u.id]||[]).map(id=>{
+      const ind=(_indicatorsAll||[]).find(x=>x.id===id);
+      return ind?ind.indicator_code:null;
+    }).filter(Boolean).join(', ');
+    sumHours+=+u.hours||0; sumWeight+=+u.weight||0;
+    rows.push([i+1,u.unit_name||'',codes,u.hours||0,u.weight||0]);
+  });
+  const mid=+sub.score_mid||0, fin=+sub.score_final||0;
+  rows.push(['','รวมหน่วยการเรียนรู้','',sumHours,sumWeight]);
+  rows.push(['','คะแนนประเมินผลกลางภาค','','',mid]);
+  rows.push(['','คะแนนประเมินผลปลายภาค','','',fin]);
+  rows.push(['','รวมคะแนนประเมินผล','','',sumWeight+mid+fin]);
+  return rows;
+}
+function buildEvalPlanKpaRows(){
+  const sub=getSubject(S.selSub)||{};
+  const periods=[{key:'before_mid',label:'ก่อนกลางภาค'},{key:'mid',label:'กลางภาค'},{key:'after_mid',label:'หลังกลางภาค'},{key:'final',label:'ปลายภาค'}];
+  const rowsDef=[{k:'k',label:'ความรู้ (K)'},{k:'p',label:'ทักษะ/กระบวนการ (P)'},{k:'a',label:'คุณธรรมฯ (A)'}];
+  const val=(pk,rk)=>+sub['kpa_'+pk+'_'+rk]||0;
+  const h=['คุณลักษณะ',...periods.map(p=>p.label),'รวม'];
+  const rows=[h];
+  rowsDef.forEach(r=>{
+    const vals=periods.map(p=>val(p.key,r.k));
+    rows.push([r.label,...vals,vals.reduce((a,b)=>a+b,0)]);
+  });
+  const colTotals=periods.map(p=>rowsDef.reduce((s,r)=>s+val(p.key,r.k),0));
+  rows.push(['รวม',...colTotals,colTotals.reduce((a,b)=>a+b,0)]);
+  return rows;
+}
+function buildEvalPlanIndicatorRows(){
+  const idSet=new Set();
+  Object.values(epUnitInd).forEach(arr=>arr.forEach(id=>idSet.add(id)));
+  const h=['ตัวชี้วัด','คะแนนเก็บ (K)','คะแนนเก็บ (P)','คะแนนเก็บ (A)','กลางภาค','ปลายภาค','รวม','หมายเหตุ'];
+  const rows=[h];
+  const fields=['score_k','score_p','score_a','score_mid','score_final'];
+  const totals={score_k:0,score_p:0,score_a:0,score_mid:0,score_final:0};
+  [...idSet].map(id=>{
+    const ind=(_indicatorsAll||[]).find(x=>x.id===id);
+    const sc=epIndScores.find(x=>x.indicator_id===id)||{};
+    return {ind,sc};
+  }).filter(r=>r.ind).sort((a,b)=>a.ind.indicator_code.localeCompare(b.ind.indicator_code,'th')).forEach(({ind,sc})=>{
+    const vals=fields.map(f=>+sc[f]||0);
+    vals.forEach((v,i)=>totals[fields[i]]+=v);
+    rows.push([ind.indicator_code,...vals,vals.reduce((a,b)=>a+b,0),sc.note||'']);
+  });
+  rows.push(['รวมคะแนน',...fields.map(f=>totals[f]),fields.reduce((s,f)=>s+totals[f],0),'']);
+  return rows;
+}
+function exportEvalPlan(){
+  const sub=getSubject(S.selSub); if(!sub){ toast('ไม่พบรายวิชา','er'); return; }
+  const head=[
+    [`${S.config.school_name||''} — แผนการวัดและประเมินผล`],
+    [`วิชา ${sub.subject_name} (${sub.subject_code}) ${grm(sub.grade_level,sub.room)}  ครู${sub.teacher_name||''}`],
+    [`ปีการศึกษา ${S.config.academic_year} ภาคเรียนที่ ${S.config.semester}`],
+    []
+  ];
+  exportExcel([
+    {name:'หน่วยการเรียนรู้',aoa:[...head,...buildEvalPlanUnitRows()],colWidths:[6,26,30,10,12]},
+    {name:'สัดส่วนคะแนน',aoa:[...head,...buildEvalPlanKpaRows()],colWidths:[22,14,14,14,14,12]},
+    {name:'น้ำหนักตัวชี้วัด',aoa:[...head,...buildEvalPlanIndicatorRows()],colWidths:[18,12,12,12,10,10,10,24]},
+  ],`แผนการวัดและประเมินผล_${sub.subject_code}_ม${sub.grade_level}-${sub.room}.xlsx`);
+}
+function printEvalPlan(){
+  const sub=getSubject(S.selSub); if(!sub){ toast('ไม่พบรายวิชา','er'); return; }
+  const e2=v=>esc(String(v));
+
+  const unitRows=buildEvalPlanUnitRows();
+  let p1='<div style="page-break-after:always">';
+  p1+='<h3 style="margin-bottom:6px">หน่วยการเรียนรู้ มาตรฐานการเรียนรู้ และสัดส่วนคะแนนประเมินผล</h3>';
+  p1+=`<div class="meta" style="margin-bottom:8px">วิชา ${esc(sub.subject_name)} (${esc(sub.subject_code)}) ${grm(sub.grade_level,sub.room)} &nbsp; ครู ${esc(sub.teacher_name||'')}</div>`;
+  p1+='<table><thead><tr>';
+  unitRows[0].forEach(h=>{p1+=`<th>${e2(h)}</th>`;});
+  p1+='</tr></thead><tbody>';
+  for(let i=1;i<unitRows.length;i++){
+    const isFoot=i>=unitRows.length-4;
+    p1+=`<tr${isFoot?' style="font-weight:700;background:#f5f5f5"':''}>`;
+    unitRows[i].forEach((v,j)=>{p1+=`<td class="${j===1||j===2?'l':''}">${e2(v)}</td>`;});
+    p1+='</tr>';
+  }
+  p1+='</tbody></table></div>';
+
+  const kpaRows=buildEvalPlanKpaRows();
+  const between=(+sub.score_before_mid||0)+(+sub.score_mid||0)+(+sub.score_after_mid||0);
+  const fin=+sub.score_final||0;
+  let p2='<div style="page-break-after:always">';
+  p2+='<h3 style="margin-bottom:6px">สัดส่วนคะแนน</h3>';
+  p2+=`<div class="meta" style="margin-bottom:8px">วิชา ${esc(sub.subject_name)} (${esc(sub.subject_code)}) ${grm(sub.grade_level,sub.room)}</div>`;
+  p2+=`<div class="meta" style="margin-bottom:4px">ระหว่างภาค : ปลายภาค = ${between} : ${fin} &nbsp;&nbsp;|&nbsp;&nbsp; ความรู้(K) : ทักษะ(P) : คุณธรรม(A) = ${+sub.knowledge_ratio||0} : ${+sub.skill_ratio||0} : ${+sub.moral_ratio||0}</div>`;
+  p2+='<table><thead><tr>';
+  kpaRows[0].forEach(h=>{p2+=`<th>${e2(h)}</th>`;});
+  p2+='</tr></thead><tbody>';
+  for(let i=1;i<kpaRows.length;i++){
+    const isFoot=i===kpaRows.length-1;
+    p2+=`<tr${isFoot?' style="font-weight:700;background:#f5f5f5"':''}>`;
+    kpaRows[i].forEach((v,j)=>{p2+=`<td class="${j===0?'l':''}">${e2(v)}</td>`;});
+    p2+='</tr>';
+  }
+  p2+='</tbody></table></div>';
+
+  const indRows=buildEvalPlanIndicatorRows();
+  let p3='<div>';
+  p3+='<h3 style="margin-bottom:6px">น้ำหนักคะแนนรายตัวชี้วัด</h3>';
+  p3+=`<div class="meta" style="margin-bottom:8px">วิชา ${esc(sub.subject_name)} (${esc(sub.subject_code)}) ${grm(sub.grade_level,sub.room)}</div>`;
+  p3+='<table><thead><tr>';
+  indRows[0].forEach(h=>{p3+=`<th>${e2(h)}</th>`;});
+  p3+='</tr></thead><tbody>';
+  for(let i=1;i<indRows.length;i++){
+    const isFoot=i===indRows.length-1;
+    p3+=`<tr${isFoot?' style="font-weight:700;background:#f5f5f5"':''}>`;
+    indRows[i].forEach((v,j)=>{p3+=`<td class="${j===0||j===7?'l':''}">${e2(v)}</td>`;});
+    p3+='</tr>';
+  }
+  p3+='</tbody></table></div>';
+
+  printHTML(`แผนการวัดและประเมินผล — ${sub.subject_name} ${grm(sub.grade_level,sub.room)}`, p1+p2+p3, 'portrait');
 }
 
 // ════════════════════════════════════════════════════════════════
