@@ -1112,7 +1112,7 @@ const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replac
 // ตัดคำว่า "โรงเรียน" ที่ขึ้นต้นชื่อโรงเรียนออก กันข้อความซ้ำเวลาต่อท้ายป้าย "ผู้อำนวยการโรงเรียน..."
 const schoolNameOnly = s => String(s||'').replace(/^โรงเรียน/,'');
 const escJs = s => String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-const grm = (g,r) => +r===0 ? 'ม.'+g : 'ม.'+g+'/'+r;
+const grm = (g,r) => +r===0 ? GRADE_PREFIX+g : GRADE_PREFIX+g+'/'+r;
 let _loadTimer=null;
 let _loadCount=0;
 window._dashShowAll=false;
@@ -1505,6 +1505,13 @@ async function loadConfig(){
     rows.forEach(r=>{ S.config[r.key]=r.value; });
     if(S.config.subject_groups){try{SUBJECT_GROUPS=JSON.parse(S.config.subject_groups);}catch(e){}}
     if(S.config.rooms_per_grade){try{ROOMS_PER_GRADE=JSON.parse(S.config.rooms_per_grade);}catch(e){}}
+    if(S.config.grade_config){
+      try{
+        const gc=JSON.parse(S.config.grade_config);
+        if(gc.prefix) GRADE_PREFIX=gc.prefix;
+        if(Array.isArray(gc.levels)&&gc.levels.length) GRADE_LEVELS=gc.levels;
+      }catch(e){}
+    }
   }catch(e){ S.config = {}; }
 }
 
@@ -2108,6 +2115,13 @@ let SUBJECT_GROUPS=['ภาษาไทย','คณิตศาสตร์','�
   'สังคมศึกษา ศาสนา และวัฒนธรรม','สุขศึกษาและพลศึกษา','ศิลปะ',
   'การงานอาชีพ','ภาษาต่างประเทศ','การศึกษาค้นคว้าด้วยตนเอง (IS)'];
 let _sgList=[];
+// ระดับชั้นที่ใช้ในระบบ — เก็บ grade_level เป็นเลขเปล่าเหมือนเดิมทุกจุด (ไม่กระทบข้อมูลเดิม)
+// คำนำหน้า (GRADE_PREFIX) และรายการระดับ (GRADE_LEVELS) ตั้งค่าได้จากหน้าตั้งค่าเท่านั้น
+let GRADE_PREFIX='ม.', GRADE_LEVELS=['1','2','3','4','5','6'];
+let _glPrefix='ม.', _glList=[];
+function gradeSelectOptions(selected){
+  return GRADE_LEVELS.map(g=>`<option value="${g}" ${String(selected)===String(g)?'selected':''}>${g}</option>`).join('');
+}
 let ROOMS_PER_GRADE={1:2,2:2,3:2,4:1,5:1,6:1};
 let _rpgList={};
 function _roomOptions(grade,selectedRoom){
@@ -2604,7 +2618,7 @@ function openSubModal(id){
         </div>
         <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:14px;margin-top:14px">
           <div><label class="fl">ชั้น ม.</label>
-            <select class="fs" id="f-gr" onchange="_rmOptsRefresh()">${[1,2,3,4,5,6].map(g=>`<option ${s?.grade_level==g?'selected':''}>${g}</option>`).join('')}</select></div>
+            <select class="fs" id="f-gr" onchange="_rmOptsRefresh()">${gradeSelectOptions(s?.grade_level)}</select></div>
           <div><label class="fl">ห้อง</label><select class="fs" id="f-rm">${_roomOptions(s?.grade_level||1,s?.room)}</select></div>
           <div><label class="fl">หน่วยกิต</label><input type="number" class="fi" id="f-cr" value="${s?.credits||1.5}" step="0.5" min="0.5" oninput="updHours()"></div>
         </div>
@@ -2725,8 +2739,8 @@ function openPromoteDialog(){
   wrap.id = 'promote-wrap';
   wrap.style.cssText = 'position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.45);backdrop-filter:blur(10px);animation:fadeIn .15s ease';
 
-  const gradeOpts = (sel='') => [1,2,3,4,5,6].map(g=>
-    `<option value="${g}" ${sel==g?'selected':''}> ม.${g}</option>`
+  const gradeOpts = (sel='') => GRADE_LEVELS.map(g=>
+    `<option value="${g}" ${String(sel)===String(g)?'selected':''}>${GRADE_PREFIX}${g}</option>`
   ).join('');
   const roomOpts = (sel='') => [0,1,2,3,4,5,6,7,8,9,10].map(r=>
     `<option value="${r}" ${sel==r?'selected':''}>${r===0?'ห้อง 0 (ไม่ระบุห้อง)':'ห้อง '+r}</option>`
@@ -2734,7 +2748,8 @@ function openPromoteDialog(){
 
   // คำนวณค่า default: ชั้นถัดไปของ room แรก
   const firstRoom = rooms[0];
-  const nextGrade = Math.min(6, firstRoom.grade+1);
+  const _maxGradeNum = Math.max(...GRADE_LEVELS.map(g=>+g||0));
+  const nextGrade = Math.min(_maxGradeNum, firstRoom.grade+1);
 
   wrap.innerHTML =
     '<div id="promote-box" style="background:rgba(255,255,255,.85);backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);border-radius:22px;width:100%;max-width:400px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.2);animation:dlgPop .22s cubic-bezier(.34,1.56,.64,1)">' +
@@ -2970,7 +2985,7 @@ function _doOpenStuModal(id){
         <input class="fi" id="sf-nm" value="${esc(s?.student_name?.replace(/^(เด็กชาย|เด็กหญิง|นาย|นางสาว|นาง)/,'').trim()||'')}"></div>
       <div><label class="fl">รหัสนักเรียน</label><input class="fi" id="sf-code" value="${esc(s?.student_code||'')}"></div>
       <div><label class="fl">ชั้น ม.</label>
-        <select class="fs" id="sf-gr">${[1,2,3,4,5,6].map(g=>`<option ${s?.grade_level==g?'selected':''}>${g}</option>`).join('')}</select></div>
+        <select class="fs" id="sf-gr">${gradeSelectOptions(s?.grade_level)}</select></div>
       <div><label class="fl">ห้อง</label><input class="fi" id="sf-rm" value="${esc(s?.room||'')}"></div>
     </div></div>
     <div class="mf">
@@ -3059,7 +3074,7 @@ function openImport(){
         </div>
         <div class="fg" style="margin-bottom:12px">
           <div><label class="fl">ชั้น ม.</label>
-            <select class="fs" id="imp-gr">${[1,2,3,4,5,6].map(g=>`<option>${g}</option>`).join('')}</select></div>
+            <select class="fs" id="imp-gr">${gradeSelectOptions()}</select></div>
           <div><label class="fl">ห้อง <span class="req">*</span></label>
             <input class="fi" id="imp-rm" placeholder="เช่น 1"></div>
         </div>
@@ -6380,7 +6395,7 @@ async function saveSgList(){
 
 async function saveRoomsPerGrade(){
   const obj={};
-  for(let g=1;g<=6;g++){ obj[g]=Math.max(1,parseInt($('rpg-'+g)?.value)||1); }
+  GRADE_LEVELS.forEach(g=>{ obj[g]=Math.max(1,parseInt($('rpg-'+g)?.value)||1); });
   loading(true);
   try{
     await q(sb.from('config').upsert([{key:'rooms_per_grade',value:JSON.stringify(obj)}],{onConflict:'key'}));
@@ -6392,12 +6407,44 @@ async function saveRoomsPerGrade(){
   finally{ loading(false); }
 }
 
+// ── ระดับชั้นที่ใช้ในระบบ (คำนำหน้า + รายการ) ──────────────────────
+function _glListHTML(list){
+  if(!list.length) return '<div style="color:#8e8e93;font-size:13px;text-align:center;padding:12px 0">ยังไม่มีระดับชั้น</div>';
+  return list.map((g,i)=>`<div style="display:flex;align-items:center;gap:6px;padding:7px 0;border-bottom:1px solid var(--bdr)"><span style="font-size:12px;color:#8e8e93;min-width:22px">${i+1}.</span><span style="flex:1;font-size:13px">${esc(_glPrefix)}${esc(g)}</span><button class="btn bs" onclick="glMove(${i},-1)" ${i===0?'disabled':''} style="padding:3px 8px;min-width:28px">▲</button><button class="btn bs" onclick="glMove(${i},1)" ${i===list.length-1?'disabled':''} style="padding:3px 8px;min-width:28px">▼</button><button class="btn" onclick="glDel(${i})" style="padding:3px 9px;color:#FF3B30;border-color:rgba(255,59,48,.3);background:rgba(255,59,48,.08);font-size:12px">ลบ</button></div>`).join('');
+}
+function _glRefresh(){ const el=$('gl-list'); if(el) el.innerHTML=_glListHTML(_glList); }
+function _glPrefixInput(v){ _glPrefix=v; _glRefresh(); }
+function glAdd(){
+  const inp=$('gl-new'); if(!inp) return;
+  const v=inp.value.trim();
+  if(!v){ toast('กรุณาใส่ระดับชั้น','er'); return; }
+  if(_glList.includes(v)){ toast('มีระดับชั้นนี้อยู่แล้ว','er'); return; }
+  _glList.push(v); inp.value=''; _glRefresh();
+}
+function glMove(i,dir){ const j=i+dir; if(j<0||j>=_glList.length) return; [_glList[i],_glList[j]]=[_glList[j],_glList[i]]; _glRefresh(); }
+function glDel(i){ if(!confirm(`ลบระดับชั้น "${_glPrefix}${_glList[i]}" ออกจากรายการ?`)) return; _glList.splice(i,1); _glRefresh(); }
+async function saveGradeLevels(){
+  if(!_glList.length){ toast('ต้องมีระดับชั้นอย่างน้อย 1 ระดับ','er'); return; }
+  const prefix=($('gl-prefix')?.value||'').trim()||'ม.';
+  loading(true);
+  try{
+    const payload={prefix,levels:[..._glList]};
+    await q(sb.from('config').upsert([{key:'grade_config',value:JSON.stringify(payload)}],{onConflict:'key'}));
+    GRADE_PREFIX=prefix; GRADE_LEVELS=[..._glList];
+    S.config.grade_config=JSON.stringify(payload);
+    toast('บันทึกระดับชั้นเรียบร้อย');
+    pgSettings();
+  }catch(e){ toast('เกิดข้อผิดพลาด: '+e.message,'er'); }
+  finally{ loading(false); }
+}
+
 let _syncActivities=[];
 let _mpTeachers=[],_mpGrants=new Set(); // menu_permissions grid state (จัดการสิทธิ์การเข้าถึงเมนู)
 async function pgSettings(){
   const cfg=S.config;
   _sgList=[...SUBJECT_GROUPS];
   _rpgList={...ROOMS_PER_GRADE};
+  _glPrefix=GRADE_PREFIX; _glList=[...GRADE_LEVELS];
   loading(true);
   try{ _syncActivities=await q(sb.from('activities').select('id,name').eq('is_active',true).order('id')); }
   catch(e){ _syncActivities=[]; }
@@ -6600,6 +6647,36 @@ async function pgSettings(){
     </div>
   </div>
 
+  <!-- ── ระดับชั้นที่ใช้ในระบบ ── -->
+  <div class="card">
+    <div class="ch">
+      <div class="ct" style="display:flex;align-items:center;gap:7px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--ac)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        ระดับชั้นที่ใช้ในระบบ
+      </div>
+    </div>
+    <div class="cb">
+      <div style="font-size:12px;color:#6e6e73;margin-bottom:14px;line-height:1.6">กำหนดคำนำหน้าและรายการระดับชั้นที่เปิดใช้งานในระบบ (ใช้ในฟอร์มรายวิชา นักเรียน และรายงานต่างๆ) — ปัจจุบันข้อมูลตัวชี้วัด/มาตรฐานที่มีในระบบเป็นของมัธยมศึกษาเท่านั้น หากเพิ่มระดับชั้นอื่นในอนาคต ต้องเตรียมข้อมูลตัวชี้วัดของระดับนั้นเพิ่มเติมเอง</div>
+      <div style="margin-bottom:14px">
+        <label class="fl">คำนำหน้าระดับชั้น</label>
+        <input class="fi" id="gl-prefix" value="${esc(_glPrefix)}" placeholder="เช่น ม. หรือ ป." oninput="_glPrefixInput(this.value)">
+      </div>
+      <label class="fl">รายการระดับชั้น</label>
+      <div id="gl-list">${_glListHTML(_glList)}</div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <input class="fi" id="gl-new" placeholder="เช่น 1, 2, 3..." style="flex:1" onkeydown="if(event.key==='Enter')glAdd()">
+        <button class="btn bs" onclick="glAdd()" style="white-space:nowrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          เพิ่ม
+        </button>
+      </div>
+      <button class="btn bp" onclick="saveGradeLevels()" style="margin-top:14px;width:100%;justify-content:center">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        บันทึกระดับชั้น
+      </button>
+    </div>
+  </div>
+
   <!-- ── จำนวนห้องต่อระดับชั้น ── -->
   <div class="card">
     <div class="ch">
@@ -6609,9 +6686,9 @@ async function pgSettings(){
       </div>
     </div>
     <div class="cb">
-      <div style="font-size:12px;color:#6e6e73;margin-bottom:14px;line-height:1.6">กำหนดจำนวนห้องของแต่ละชั้น ม. เพื่อใช้เป็นตัวเลือกในช่อง "ห้อง" ของฟอร์มรายวิชา</div>
+      <div style="font-size:12px;color:#6e6e73;margin-bottom:14px;line-height:1.6">กำหนดจำนวนห้องของแต่ละระดับชั้น เพื่อใช้เป็นตัวเลือกในช่อง "ห้อง" ของฟอร์มรายวิชา</div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
-        ${[1,2,3,4,5,6].map(g=>`<div><label class="fl">ม.${g}</label><input type="number" class="fi" id="rpg-${g}" value="${_rpgList[g]||1}" min="1" max="30"></div>`).join('')}
+        ${GRADE_LEVELS.map(g=>`<div><label class="fl">${esc(GRADE_PREFIX)}${esc(g)}</label><input type="number" class="fi" id="rpg-${g}" value="${_rpgList[g]||1}" min="1" max="30"></div>`).join('')}
       </div>
       <button class="btn bp" onclick="saveRoomsPerGrade()" style="margin-top:14px;width:100%;justify-content:center">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
