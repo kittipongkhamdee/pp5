@@ -3921,6 +3921,7 @@ function printAttendance(){
 // ════════════════════════════════════════════════════════════════
 let scStus=[], scUnits=[], scSum=[], scSub=null;
 let scU={before:[],after:[]};
+let scPlanUnits=[]; // หน่วยการเรียนรู้จากแผนการวัดฯ ของวิชานี้ — ใช้เป็นทางลัดเติมฟอร์มเพิ่มหน่วย ไม่บังคับใช้
 
 async function pgScores(){
   if(!S.subjects.length){$('pg').innerHTML=`<div class="card"><div class="empty"><div class="ei"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div><div>ยังไม่มีรายวิชา</div></div></div>`;return;}
@@ -3936,8 +3937,35 @@ async function loadScData(){
     qc('sc_units_'+S.selSub, ()=>qAll(()=>sb.from('score_units').select('*').eq('subject_id',S.selSub))),
     qc('sc_sum_'+S.selSub,   ()=>q(sb.from('score_summary').select('*').eq('subject_id',S.selSub)))
   ]);
+  await loadScPlanUnits(S.selSub);
   rebuildUnits();
   loading(false);
+}
+async function loadScPlanUnits(sid){
+  try{
+    const units=await q(sb.from('eval_plan_units').select('*').eq('subject_id',sid).order('seq'));
+    if(!units.length){ scPlanUnits=[]; return; }
+    await _loadIndicatorsAll();
+    const unitIds=units.map(u=>u.id);
+    const links=await q(sb.from('eval_plan_unit_indicators').select('*').in('unit_id',unitIds));
+    const byUnit={};
+    links.forEach(l=>{ if(!byUnit[l.unit_id]) byUnit[l.unit_id]=[]; byUnit[l.unit_id].push(l.indicator_id); });
+    scPlanUnits=units.map(u=>{
+      const codes=(byUnit[u.id]||[]).map(id=>{
+        const ind=(_indicatorsAll||[]).find(x=>x.id===id);
+        return ind?ind.indicator_code:null;
+      }).filter(Boolean);
+      return {id:u.id,unit_name:u.unit_name||'',weight:u.weight||0,standard_ref:codes.join(', ')};
+    });
+  }catch(e){ scPlanUnits=[]; }
+}
+function _fillUnitFromPlan(period,unitId){
+  if(!unitId) return;
+  const u=scPlanUnits.find(x=>String(x.id)===String(unitId)); if(!u) return;
+  const nmEl=$(period+'-unm'), stdEl=$(period+'-std'), mxEl=$(period+'-mx');
+  if(nmEl) nmEl.value=u.unit_name;
+  if(stdEl) stdEl.value=u.standard_ref;
+  if(mxEl && u.weight) mxEl.value=u.weight;
 }
 function invalidateSc(){ cacheInv('sc_units_'+S.selSub,'sc_sum_'+S.selSub,'sc_sum_all_'+(S.user?.id||'')); }
 function rebuildUnits(){
@@ -4001,6 +4029,14 @@ function renderUnitTab(period,maxTotal){
   <!-- ── เพิ่มหน่วยการเรียน ── -->
   <div class="card" style="margin-bottom:14px"><div class="cb">
     <div style="font-size:13.5px;font-weight:600;color:var(--txt);margin-bottom:12px">เพิ่มหน่วยการเรียน${lbl}</div>
+    ${scPlanUnits.length?`
+    <div style="margin-bottom:12px">
+      <label class="fl">เลือกจากแผนการวัด (ถ้ามี) <span style="font-weight:400;color:var(--muted)">— เติมชื่อหน่วย/มาตรฐาน/คะแนนเต็มให้อัตโนมัติ แก้ไขได้ก่อนบันทึก</span></label>
+      <select class="fs" onchange="_fillUnitFromPlan('${period}',this.value)">
+        <option value="">— พิมพ์เอง —</option>
+        ${scPlanUnits.map(u=>`<option value="${u.id}">${esc(u.unit_name||'(ไม่มีชื่อหน่วย)')}${u.weight?` (${u.weight} คะแนน)`:''}</option>`).join('')}
+      </select>
+    </div>`:''}
     <div class="wc">
       <div><label class="fl">หน่วยที่</label>
         <input type="number" class="fi" id="${period}-un" value="${units.length+1}" min="1" style="width:72px"></div>
