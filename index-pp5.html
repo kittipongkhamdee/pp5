@@ -5504,7 +5504,8 @@ function printEvalPlan(){
   }
   p3+='</tbody></table></div>';
 
-  printHTML(`แผนการวัดและประเมินผล — ${sub.subject_name} ${grm(sub.grade_level,sub.room)}`, p1+p2+p3, 'portrait');
+  const styleTag='<style>.ep-print td{vertical-align:top}</style>';
+  printHTML(`แผนการวัดและประเมินผล — ${sub.subject_name} ${grm(sub.grade_level,sub.room)}`, styleTag+'<div class="ep-print">'+p1+p2+p3+'</div>', 'portrait');
 }
 
 // ════════════════════════════════════════════════════════════════
