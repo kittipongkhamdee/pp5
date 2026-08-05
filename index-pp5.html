@@ -2468,7 +2468,8 @@ async function pgSubjects(){
   $('pg').innerHTML=`
   <div class="ph"><div class="ptitle">จัดการรายวิชา</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-    <button class="btn bs" onclick="openCopySubjectsModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>คัดลอกวิชาไปปีการศึกษาใหม่</button>
+    ${(S.profile?.is_admin||S.config.copy_subjects_enabled!=='0')?`
+    <button class="btn bs" onclick="openCopySubjectsModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>คัดลอกวิชาไปปีการศึกษาใหม่</button>`:''}
     <button class="btn bp" onclick="openSubModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>เพิ่มรายวิชา</button>
     </div></div>
   <div class="card"><div class="cb">
@@ -2756,6 +2757,7 @@ function _subYearCombos(){
     String(b.academic_year||'').localeCompare(String(a.academic_year||''))||(+b.semester||0)-(+a.semester||0));
 }
 function openCopySubjectsModal(){
+  if(!S.profile?.is_admin&&S.config.copy_subjects_enabled==='0'){ _denyMenuAccess('คัดลอกวิชาไปปีการศึกษาใหม่'); return; }
   const combos=_subYearCombos();
   if(!combos.length){ toast('ยังไม่มีรายวิชาให้คัดลอก','er'); return; }
   const curY=S.config.academic_year||'2568', curS=parseInt(S.config.semester||1);
@@ -7246,6 +7248,26 @@ async function pgSettings(){
     </div>
   </div>
 
+  ${S.profile?.is_admin?`
+  <!-- ── ปุ่มคัดลอกวิชาไปปีการศึกษาใหม่ ── -->
+  <div class="card">
+    <div class="ch">
+      <div class="ct" style="display:flex;align-items:center;gap:7px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--ac)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        ปุ่มคัดลอกวิชาไปปีการศึกษาใหม่
+      </div>
+    </div>
+    <div class="cb">
+      <div style="font-size:12px;color:#6e6e73;margin-bottom:14px;line-height:1.6">
+        ควบคุมว่าครู (ที่ไม่ใช่แอดมิน) จะเห็นปุ่ม "คัดลอกวิชาไปปีการศึกษาใหม่" ในหน้าจัดการรายวิชาหรือไม่ — ปิดไว้เพื่อป้องกันการกดโดยไม่ตั้งใจ แอดมินจะเห็นปุ่มนี้เสมอไม่ว่าจะตั้งค่าอย่างไร
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input type="checkbox" id="c-copysub-on" ${S.config.copy_subjects_enabled!=='0'?'checked':''} onchange="toggleCopySubjectsEnabled(this)" style="width:18px;height:18px;accent-color:var(--ac)">
+        <span style="font-size:14px;font-weight:600">แสดงปุ่มคัดลอกวิชาสำหรับครู</span>
+      </label>
+    </div>
+  </div>`:''}
+
   <!-- ── เชื่อมโยงกับระบบเช็คชื่อ ── -->
   <div class="card">
     <div class="ch">
@@ -7869,6 +7891,19 @@ async function saveCheckinSync(){
     await loadConfig();
     toast('บันทึกการตั้งค่าเรียบร้อย');
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
+}
+
+async function toggleCopySubjectsEnabled(cb){
+  const val=cb.checked?'1':'0';
+  cb.disabled=true;
+  try{
+    await q(sb.from('config').upsert([{key:'copy_subjects_enabled',value:val}],{onConflict:'key'}));
+    S.config.copy_subjects_enabled=val;
+    toast(cb.checked?'เปิดใช้งานปุ่มคัดลอกวิชาสำหรับครูแล้ว':'ปิดปุ่มคัดลอกวิชาสำหรับครูแล้ว — ครูจะไม่เห็นปุ่มนี้ในหน้าจัดการรายวิชา');
+  }catch(e){
+    cb.checked=!cb.checked;
+    toast('บันทึกไม่สำเร็จ: '+e.message,'er');
+  }finally{ cb.disabled=false; }
 }
 
 // ════ LOGO UPLOAD ════════════════════════════════════════════════
