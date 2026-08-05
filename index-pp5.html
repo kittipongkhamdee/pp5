@@ -2467,7 +2467,10 @@ async function pgSubjects(){
   loading(true); await loadSubjects(); loading(false);
   $('pg').innerHTML=`
   <div class="ph"><div class="ptitle">จัดการรายวิชา</div>
-    <button class="btn bp" onclick="openSubModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>เพิ่มรายวิชา</button></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn bs" onclick="openCopySubjectsModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>คัดลอกวิชาไปปีการศึกษาใหม่</button>
+    <button class="btn bp" onclick="openSubModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>เพิ่มรายวิชา</button>
+    </div></div>
   <div class="card"><div class="cb">
   ${!S.subjects.length?`<div class="empty"><svg class="ei" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg><div>ยังไม่มีรายวิชา</div></div>`:`
   <div class="tw"><table>
@@ -2739,6 +2742,148 @@ async function delSub(id,name){
   }
   catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
 }});
+}
+
+// ── คัดลอกวิชาไปปีการศึกษาใหม่ ──────────────────────────────────────
+function _subYearCombos(){
+  const map=new Map();
+  S.subjects.forEach(s=>{
+    const k=(s.academic_year||'')+'|'+(s.semester||'');
+    if(!map.has(k)) map.set(k,{academic_year:s.academic_year,semester:s.semester,count:0});
+    map.get(k).count++;
+  });
+  return [...map.values()].sort((a,b)=>
+    String(b.academic_year||'').localeCompare(String(a.academic_year||''))||(+b.semester||0)-(+a.semester||0));
+}
+function openCopySubjectsModal(){
+  const combos=_subYearCombos();
+  if(!combos.length){ toast('ยังไม่มีรายวิชาให้คัดลอก','er'); return; }
+  const curY=S.config.academic_year||'2568', curS=parseInt(S.config.semester||1);
+  const defaultSrc=combos.find(c=>String(c.academic_year)!==String(curY)||+c.semester!==curS)||combos[0];
+  document.body.insertAdjacentHTML('beforeend',`
+  <div class="mo" id="cpsMod"><div class="md md-lg">
+    <div class="mh"><div class="mt">คัดลอกวิชาไปปีการศึกษาใหม่</div>
+    <button class="mx" onclick="rmModal('cpsMod')">✕</button></div>
+    <div class="mb">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div>
+          <label class="fl">คัดลอกจาก</label>
+          <select class="fs" id="cps-src" onchange="_renderCopySubList()">
+            ${combos.map(c=>`<option value="${esc(c.academic_year)}|${esc(c.semester)}" ${c===defaultSrc?'selected':''}>ภาคเรียนที่ ${esc(c.semester)}/${esc(c.academic_year)} (${c.count} วิชา)</option>`).join('')}
+          </select>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div><label class="fl">ปีการศึกษาใหม่</label><input class="fi" id="cps-ty" value="${esc(curY)}"></div>
+          <div><label class="fl">ภาคเรียน</label><select class="fs" id="cps-ts">
+            <option value="1" ${curS===1?'selected':''}>1</option>
+            <option value="2" ${curS===2?'selected':''}>2</option>
+          </select></div>
+        </div>
+      </div>
+      <div style="margin-top:14px">
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+          <input type="checkbox" id="cps-evalplan" checked> คัดลอกแผนการวัดและประเมินผลด้วย (หน่วยการเรียนรู้ + ตัวชี้วัด + สัดส่วนคะแนน)
+        </label>
+      </div>
+      <div style="margin-top:14px;display:flex;align-items:center;justify-content:space-between">
+        <label class="fl" style="margin:0">เลือกรายวิชาที่ต้องการคัดลอก</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12.5px;cursor:pointer;color:var(--muted)">
+          <input type="checkbox" id="cps-all" checked onchange="document.querySelectorAll('.cps-item').forEach(c=>c.checked=this.checked)"> เลือกทั้งหมด
+        </label>
+      </div>
+      <div id="cps-list" style="margin-top:8px"></div>
+    </div>
+    <div class="mf">
+      <button class="btn bs" onclick="rmModal('cpsMod')">ยกเลิก</button>
+      <button class="btn bp" onclick="doCopySubjects()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>คัดลอกวิชา</button>
+    </div>
+  </div></div>`);
+  _renderCopySubList();
+}
+function _renderCopySubList(){
+  const wrap=$('cps-list'); if(!wrap) return;
+  const [y,sem]=$('cps-src').value.split('|');
+  const list=S.subjects.filter(x=>String(x.academic_year)===y&&String(x.semester)===sem)
+    .sort((a,b)=>String(a.grade_level||'').localeCompare(String(b.grade_level||''))||String(a.room||'').localeCompare(String(b.room||''))||a.subject_name.localeCompare(b.subject_name,'th'));
+  if(!list.length){ wrap.innerHTML=`<div class="empty" style="padding:20px 0">ไม่มีวิชาในภาคเรียนนี้</div>`; return; }
+  wrap.innerHTML=`<div style="max-height:320px;overflow-y:auto;border:1.5px solid var(--bdr);border-radius:10px">
+    ${list.map(sub=>`
+    <label style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--bdr,#eee);cursor:pointer">
+      <input type="checkbox" class="cps-item" value="${sub.id}" checked>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600">${esc(sub.subject_code)} ${esc(sub.subject_name)}</div>
+        <div style="font-size:11.5px;color:var(--muted)">${grm(sub.grade_level,sub.room)}</div>
+      </div>
+    </label>`).join('')}
+  </div>`;
+  const all=$('cps-all'); if(all) all.checked=true;
+}
+async function doCopySubjects(){
+  const checked=[...document.querySelectorAll('.cps-item:checked')].map(c=>c.value);
+  if(!checked.length){ toast('กรุณาเลือกอย่างน้อย 1 วิชา','er'); return; }
+  const targetYear=$('cps-ty').value.trim();
+  if(!targetYear){ toast('กรุณาระบุปีการศึกษาใหม่','er'); return; }
+  const targetSem=$('cps-ts').value;
+  const copyEval=$('cps-evalplan').checked;
+  const srcSubjects=checked.map(id=>S.subjects.find(s=>s.id===id)).filter(Boolean);
+  const existingCodes=new Set(S.subjects.filter(x=>String(x.academic_year)===targetYear&&String(x.semester)===targetSem).map(x=>x.subject_code));
+  const skipped=[]; let copiedCount=0;
+  loading(true);
+  try{
+    for(const sub of srcSubjects){
+      if(existingCodes.has(sub.subject_code)){ skipped.push(sub.subject_code+' '+sub.subject_name); continue; }
+      const payload={
+        subject_code:sub.subject_code,subject_name:sub.subject_name,
+        grade_level:sub.grade_level,room:sub.room,
+        credits:sub.credits,hours_per_week:sub.hours_per_week,total_hours:sub.total_hours,
+        teacher_name:sub.teacher_name||'',head_of_group:sub.head_of_group||'',advisor_name:sub.advisor_name||'',
+        subject_group:sub.subject_group||'',subject_type:sub.subject_type||'รายวิชาพื้นฐาน',
+        score_before_mid:sub.score_before_mid,score_mid:sub.score_mid,score_after_mid:sub.score_after_mid,score_final:sub.score_final,
+        knowledge_ratio:sub.knowledge_ratio,skill_ratio:sub.skill_ratio,moral_ratio:sub.moral_ratio,
+        academic_year:targetYear,semester:parseInt(targetSem),
+        published:false,user_id:S.user.id
+      };
+      const inserted=await q(sb.from('subjects').insert(payload).select('id'));
+      const newId=inserted[0].id;
+      existingCodes.add(sub.subject_code);
+      copiedCount++;
+      try{
+        const cd=S.config['class_days_'+sub.id]||'[]';
+        await q(sb.from('config').upsert([{key:'class_days_'+newId,value:cd}],{onConflict:'key'}));
+      }catch(e){}
+      if(copyEval){
+        try{
+          const units=await q(sb.from('eval_plan_units').select('*').eq('subject_id',sub.id).order('seq'));
+          const unitIdMap={};
+          for(const u of units){
+            const nu=await q(sb.from('eval_plan_units').insert({subject_id:newId,seq:u.seq,unit_name:u.unit_name,hours:u.hours,weight:u.weight}).select('id'));
+            unitIdMap[u.id]=nu[0].id;
+          }
+          const oldUnitIds=units.map(u=>u.id);
+          if(oldUnitIds.length){
+            const links=await q(sb.from('eval_plan_unit_indicators').select('*').in('unit_id',oldUnitIds));
+            if(links.length){
+              const newLinks=links.map(l=>({unit_id:unitIdMap[l.unit_id],indicator_id:l.indicator_id}));
+              await q(sb.from('eval_plan_unit_indicators').insert(newLinks));
+            }
+          }
+          const scores=await q(sb.from('eval_plan_indicator_scores').select('*').eq('subject_id',sub.id));
+          if(scores.length){
+            const newScores=scores.map(s=>({subject_id:newId,indicator_id:s.indicator_id,
+              score_k:s.score_k,score_p:s.score_p,score_a:s.score_a,score_mid:s.score_mid,score_final:s.score_final,note:s.note}));
+            await q(sb.from('eval_plan_indicator_scores').insert(newScores));
+          }
+        }catch(e){ console.error('copy eval plan error',e); }
+      }
+    }
+    await loadConfig();
+    invalidateSubjects(); await loadSubjects();
+    rmModal('cpsMod');
+    if(copiedCount) toast(`คัดลอกวิชาสำเร็จ ${copiedCount} วิชา`+(skipped.length?` (ข้าม ${skipped.length} วิชาที่มีรหัสซ้ำในปีการศึกษาปลายทาง)`:''));
+    else toast('ไม่มีวิชาที่คัดลอกได้ — รหัสวิชาซ้ำกับที่มีอยู่แล้วในปีการศึกษาปลายทางทั้งหมด','er');
+    pgSubjects();
+  }catch(e){ toast('เกิดข้อผิดพลาด: '+e.message,'er'); }
+  finally{ loading(false); }
 }
 
 // ════════════════════════════════════════════════════════════════
