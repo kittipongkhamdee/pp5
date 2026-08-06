@@ -510,6 +510,11 @@ body.dark .subc{
   body.printing-cover select,body.printing-cover .no-print{display:none!important;}
   body.printing-cover .ph{display:none!important;}
 }
+/* พับ/กางแถบเมนูด้านซ้าย — ใช้ได้ทุกขนาดหน้าจอเพื่อขยายพื้นที่ทำงาน */
+@media(min-width:769px){
+  .sb.sb-collapsed{transform:translateX(-244px);}
+  .mc{transition:margin-left .28s cubic-bezier(.4,0,.2,1);}
+}
 /* Mobile */
 @media(max-width:768px){
   .sb{transform:translateX(-244px)!important;}
@@ -1034,8 +1039,8 @@ body.dark .subc{
 
   <!-- Toolbar -->
   <header class="tb sticky top-0 z-[100] flex items-center gap-2.5 no-print" style="height:52px;background:rgba(255,255,255,.9);backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--sep);padding:0 20px">
-    <!-- Mobile menu button -->
-    <button class="mob-menu-btn" id="mob-btn" onclick="openSidebar()" style="display:none;background:none;border:none;cursor:pointer;padding:4px;border-radius:8px;color:var(--txt)">
+    <!-- เมนูแฮมเบอร์เกอร์ — พับ/กางแถบเมนูซ้าย ใช้ได้ทุกขนาดหน้าจอ -->
+    <button class="mob-menu-btn" id="mob-btn" onclick="toggleSidebarNav()" title="พับ/กางเมนู" style="display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;padding:4px;border-radius:8px;color:var(--txt)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="20" height="20"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
     <!-- Title -->
@@ -1561,6 +1566,7 @@ function showApp(){
   const _tbu=$('tb-user');
   if(_tbu) _tbu.style.display='none';
   _applyMenuVisibility();
+  _applySidebarCollapse();
   nav('dashboard');
   initPresence();
   updateMsBadge();
@@ -2221,6 +2227,27 @@ function closeSidebar(){
   $('sidebar').classList.remove('open');
   $('mob-overlay').style.display='none';
 }
+// พับ/กางแถบเมนูซ้ายถาวร (จำค่าไว้ใน localStorage) — ใช้บนจอกว้าง; บนมือถือยังใช้ overlay เปิด/ปิดแบบเดิม
+let _sbCollapsed=false;
+try{ _sbCollapsed=localStorage.getItem('sbCollapsed')==='1'; }catch(e){}
+function toggleSidebarNav(){
+  if(window.innerWidth<=768){
+    const sb=$('sidebar');
+    if(sb.classList.contains('open')) closeSidebar(); else openSidebar();
+    return;
+  }
+  _sbCollapsed=!_sbCollapsed;
+  try{ localStorage.setItem('sbCollapsed',_sbCollapsed?'1':'0'); }catch(e){}
+  _applySidebarCollapse();
+}
+function _applySidebarCollapse(){
+  if(window.innerWidth<=768) return; // มือถือใช้ overlay อยู่แล้ว ไม่ต้องยุบถาวร
+  const sb=$('sidebar'), mc=document.querySelector('.mc');
+  if(!sb||!mc) return;
+  if(_sbCollapsed){ sb.classList.add('sb-collapsed'); mc.style.marginLeft='0'; }
+  else{ sb.classList.remove('sb-collapsed'); mc.style.marginLeft='244px'; }
+}
+window.addEventListener('resize',_applySidebarCollapse);
 
 // เมนูที่ควบคุมสิทธิ์รายคน (ดู canAccessMenu/_loadMenuPerms) — key ต้องตรงกับ menu_permissions.menu_key
 const GATED_MENUS={settings:'ตั้งค่าระบบ',students:'นักเรียน',standards:'มาตรฐานและตัวชี้วัด'};
