@@ -434,6 +434,9 @@ body.dark .prof-popup{background:rgba(30,30,32,.95);border-color:rgba(255,255,25
 .prof-hd{padding:18px 18px 14px;display:flex;align-items:center;gap:13px;border-bottom:1px solid rgba(0,0,0,.07);}
 body.dark .prof-hd{border-color:rgba(255,255,255,.08);}
 .prof-av{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;flex-shrink:0;letter-spacing:.5px;}
+.prof-av-wrap{position:relative;flex-shrink:0;cursor:pointer;}
+.prof-av-wrap img.prof-av{display:block;}
+.prof-av-edit{position:absolute;right:-2px;bottom:-2px;width:18px;height:18px;border-radius:50%;background:#007AFF;display:flex;align-items:center;justify-content:center;border:2px solid var(--card,#fff);}
 .prof-name{font-size:14.5px;font-weight:700;color:var(--txt);line-height:1.3;}
 .prof-email{font-size:11.5px;color:var(--muted);margin-top:2px;word-break:break-all;}
 .prof-role{font-size:11px;color:var(--ac);font-weight:600;margin-top:3px;}
@@ -1811,9 +1814,18 @@ function openProfilePopup(ev){
   _profPopEl = document.createElement('div');
   _profPopEl.className = 'prof-popup';
   _profPopEl.addEventListener('click',e=>e.stopPropagation());
+  const photoUrl = S.profile?.photo_url||'';
   _profPopEl.innerHTML = `
     <div class="prof-hd">
-      <div class="prof-av" style="background:linear-gradient(135deg,${col.bg},${col.bg}cc)">${ini}</div>
+      <div class="prof-av-wrap" onclick="document.getElementById('prof-photo-input').click()" title="เปลี่ยนรูปโปรไฟล์">
+        ${photoUrl
+          ? `<img src="${esc(photoUrl)}" class="prof-av" style="object-fit:cover">`
+          : `<div class="prof-av" style="background:linear-gradient(135deg,${col.bg},${col.bg}cc)">${ini}</div>`}
+        <div class="prof-av-edit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </div>
+        <input type="file" id="prof-photo-input" accept="image/*" style="display:none" onchange="uploadProfilePhoto(this)">
+      </div>
       <div style="min-width:0">
         <div class="prof-name">${esc(n)}</div>
         <div class="prof-email">${esc(em)}</div>
@@ -1833,6 +1845,13 @@ function openProfilePopup(ev){
         </div>
         เปลี่ยนรหัสผ่าน
       </div>
+      ${photoUrl ? `
+      <div class="prof-row" onclick="_closeProfilePopup();removeProfilePhoto()">
+        <div class="prof-row-ic" style="background:rgba(220,38,38,.1)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        </div>
+        ลบรูปโปรไฟล์
+      </div>` : ''}
       ${_deferredInstall ? `
       <div class="prof-row" onclick="_closeProfilePopup();installPWA()">
         <div class="prof-row-ic" style="background:rgba(52,199,89,.1)">
@@ -1853,6 +1872,60 @@ function openProfilePopup(ev){
 function _closeProfilePopup(){
   if(_profPopEl){ _profPopEl.remove(); _profPopEl=null; }
   if(_profPopBd){ _profPopBd.remove(); _profPopBd=null; }
+}
+
+async function uploadProfilePhoto(input){
+  const file=input.files?.[0];
+  if(!file) return;
+  if(!file.type.startsWith('image/')){ toast('กรุณาเลือกไฟล์รูปภาพ','er'); return; }
+  if(file.size>5*1024*1024){ toast('ไฟล์ใหญ่เกิน 5MB กรุณาเลือกไฟล์ที่เล็กกว่า','er'); return; }
+  loading(true);
+  try{
+    const blob=await new Promise((res,rej)=>{
+      const reader=new FileReader();
+      reader.onerror=rej;
+      reader.onload=e=>{
+        const img=new Image();
+        img.onerror=rej;
+        img.onload=()=>{
+          const MAX=400;
+          let w=img.width,h=img.height;
+          if(w>MAX||h>MAX){
+            if(w>=h){ h=Math.round(h*MAX/w); w=MAX; }
+            else { w=Math.round(w*MAX/h); h=MAX; }
+          }
+          const cv=document.createElement('canvas');
+          cv.width=w; cv.height=h;
+          cv.getContext('2d').drawImage(img,0,0,w,h);
+          cv.toBlob(b=>res(b),'image/jpeg',0.9);
+        };
+        img.src=e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+    const path=S.user.id+'.jpg';
+    const {error:upErr}=await sb.storage.from('staff-photos').upload(path,blob,{upsert:true,contentType:'image/jpeg'});
+    if(upErr) throw upErr;
+    const {data:{publicUrl}}=sb.storage.from('staff-photos').getPublicUrl(path);
+    const photoUrl=publicUrl+'?t='+Date.now();
+    await q(sb.from('profiles').update({photo_url:photoUrl}).eq('id',S.user.id));
+    S.profile.photo_url=photoUrl;
+    toast('บันทึกรูปโปรไฟล์เรียบร้อย');
+    _closeProfilePopup();
+    openProfilePopup({stopPropagation(){}});
+  }catch(e){ toast('อัปโหลดไม่สำเร็จ: '+e.message,'er'); }
+  finally{ loading(false); }
+}
+
+async function removeProfilePhoto(){
+  loading(true);
+  try{
+    await q(sb.from('profiles').update({photo_url:null}).eq('id',S.user.id));
+    delete S.profile.photo_url;
+    toast('ลบรูปโปรไฟล์แล้ว');
+    _closeProfilePopup(); openProfilePopup({stopPropagation(){}});
+  }catch(e){ toast('เกิดข้อผิดพลาด: '+e.message,'er'); }
+  finally{ loading(false); }
 }
 
 function openEditNameModal(){
