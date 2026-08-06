@@ -2672,14 +2672,9 @@ function openSubModal(id){
             ${(S.config.teachers||'').split('\n').filter(t=>t.trim()).map(t=>`<option value="${esc(t.trim())}" ${s?.head_of_group===t.trim()?'selected':''}>${esc(t.trim())}</option>`).join('')}
           </select>
         </div>
-      <div class="score-box" style="margin-top:14px">
-        <div class="score-box-title">${_ico.barChart} โครงสร้างคะแนน (รวม = <span id="f-tot">${(s?.score_before_mid||25)+(s?.score_mid||20)+(s?.score_after_mid||25)+(s?.score_final||30)}</span> / 100)</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-          <div><label class="fl">ก่อนกลางภาค</label><input type="number" class="fi" id="f-sbm" value="${s?.score_before_mid||25}" min="0" max="100" oninput="updTot()"></div>
-          <div><label class="fl">กลางภาค</label><input type="number" class="fi" id="f-sm" value="${s?.score_mid||20}" min="0" max="100" oninput="updTot()"></div>
-          <div><label class="fl">หลังกลางภาค</label><input type="number" class="fi" id="f-sam" value="${s?.score_after_mid||25}" min="0" max="100" oninput="updTot()"></div>
-          <div><label class="fl">ปลายภาค</label><input type="number" class="fi" id="f-sf" value="${s?.score_final||30}" min="0" max="100" oninput="updTot()"></div>
-        </div>
+      <div style="margin-top:14px;font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:6px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        โครงสร้างคะแนน (ก่อนกลาง/กลาง/หลังกลาง/ปลายภาค) ปรับได้ที่หน้า "แผนการวัดและประเมินผล" ของวิชานี้ — วิชาใหม่เริ่มต้นที่ 25/20/25/30
       </div>
     </div>
     <div class="mf">
@@ -2696,22 +2691,15 @@ function updHours(){
   if(th&&!th.dataset.man)th.value=Math.round(cr*40);
   if(hw&&!hw.dataset.man)hw.value=Math.round(cr*2);
 }
-function updTot(){
-  const t=['f-sbm','f-sm','f-sam','f-sf'].reduce((a,i)=>a+(+$(i)?.value||0),0);
-  const el=$('f-tot');if(el){el.textContent=t;el.style.color=t===100?'var(--ok)':'var(--err)';}
-}
 async function saveSubForm(id){
   const code=$('f-code').value.trim(),name=$('f-name').value.trim();
   if(!code||!name){toast('กรุณากรอกรหัสและชื่อวิชา','er');return;}
-  const sbm=+$('f-sbm').value,sm=+$('f-sm').value,sam=+$('f-sam').value,sf=+$('f-sf').value;
-  if(sbm+sm+sam+sf!==100){toast('คะแนนรวมต้องเท่ากับ 100','er');return;}
   const payload={
     subject_code:code,subject_name:name,grade_level:$('f-gr').value,room:$('f-rm').value.trim(),
     credits:+$('f-cr').value,hours_per_week:+$('f-hw').value,total_hours:+$('f-th').value,
     teacher_name:$('f-tch').value.trim(),head_of_group:$('f-hog')?.value||'',advisor_name:'',
     subject_group:$('f-sg')?.value||'',
     subject_type:$('f-styp')?.value||'รายวิชาพื้นฐาน',
-    score_before_mid:sbm,score_mid:sm,score_after_mid:sam,score_final:sf,
     academic_year:S.config.academic_year||'2568',semester:parseInt(S.config.semester||1),
     user_id:S.user.id
   };
