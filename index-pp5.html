@@ -1323,13 +1323,21 @@ async function q(fn){
 }
 // ดึงทุกแถวแบบแบ่งหน้า (Supabase ตัดผลลัพธ์ที่ 1000 แถวโดยไม่แจ้ง)
 // mk ต้องเป็นฟังก์ชันที่คืน query builder ใหม่ทุกครั้ง
+// หน้าแรกยิงเดี่ยวๆ ก่อน (ยังไม่รู้ว่ามีกี่หน้า) ถ้ามีมากกว่า 1 หน้า ยิงหน้าที่เหลือเป็นชุดขนานแทนรอทีละหน้า
+// เพื่อลดเวลารวมลงมากเมื่อตารางมีข้อมูลหลายพันแถว (เช่น attendance ของทั้งโรงเรียน)
 async function qAll(mk,size=1000){
-  let all=[],from=0;
-  for(;;){
-    const rows=await q(mk().range(from,from+size-1));
-    all=all.concat(rows);
-    if(rows.length<size)break;
-    from+=size;
+  const first=await q(mk().range(0,size-1));
+  if(first.length<size) return first;
+  let all=first, from=size, done=false;
+  const BATCH=8; // จำนวนหน้าที่ยิงพร้อมกันต่อรอบ
+  while(!done){
+    const froms=Array.from({length:BATCH},(_,i)=>from+i*size);
+    const results=await Promise.all(froms.map(f=>q(mk().range(f,f+size-1))));
+    for(const rows of results){
+      all=all.concat(rows);
+      if(rows.length<size){ done=true; break; }
+    }
+    if(!done) from+=BATCH*size;
   }
   return all;
 }
@@ -8475,16 +8483,17 @@ let _schoolUnlocked=false; // session flag
 async function pgSchoolReport(){
   loading(true);
   try{
-    // ดึงข้อมูลทั้งหมดโดยไม่กรอง user_id
-    const [allSubjects, allSumRows, allAttRows, allProfiles, allEvalRead, allEvalChar] = await Promise.all([
-      q(sb.from('subjects').select('*').order('grade_level').order('room').order('subject_name')),
-      q(sb.from('score_summary').select('subject_id,student_id,grade,total_score,special_result,mid_normal,mid_retake,mid_repeat,final_score,total_before_mid,total_after_mid')),
+    // ดึงข้อมูลทั้งหมดโดยไม่กรอง user_id — ทุกตารางยิงพร้อมกัน (รวม students ที่เดิมยิงแยกทีหลัง) และใช้ qAll()
+    // แม้กับตารางที่ปัจจุบันมีไม่ถึง 1000 แถว เพื่อกันไม่ให้ข้อมูลหายเงียบๆ เมื่อโรงเรียนมีข้อมูลมากขึ้นในอนาคต
+    const [allSubjects, allSumRows, allAttRows, allProfiles, allEvalRead, allEvalChar, allStus] = await Promise.all([
+      qAll(()=>sb.from('subjects').select('*').order('grade_level').order('room').order('subject_name')),
+      qAll(()=>sb.from('score_summary').select('subject_id,student_id,grade,total_score,special_result,mid_normal,mid_retake,mid_repeat,final_score,total_before_mid,total_after_mid').order('id')),
       qAll(()=>sb.from('attendance').select('subject_id,student_id,status,periods')),
-      q(sb.from('profiles').select('id,full_name')),
+      qAll(()=>sb.from('profiles').select('id,full_name').order('id')),
       qAll(()=>sb.from('eval_read').select('subject_id')),
       qAll(()=>sb.from('eval_char').select('subject_id')),
+      qAll(()=>sb.from('students').select('id,grade_level,room,student_name,student_code').order('grade_level').order('room').order('student_code')),
     ]);
-    loading(false);
 
     // สร้าง map
     const profileMap = Object.fromEntries(allProfiles.map(p=>[p.id,p.full_name||'']));
@@ -8497,7 +8506,6 @@ async function pgSchoolReport(){
 
     // นับนักเรียนต่อ ชั้น/ห้อง
     const stuCountMap = {};
-    const allStus = await qAll(()=>sb.from('students').select('id,grade_level,room,student_name,student_code').order('grade_level').order('room').order('student_code'));
     allStus.forEach(s=>{ const k=s.grade_level+'_'+s.room; stuCountMap[k]=(stuCountMap[k]||[]).concat(s.id); });
     S._schoolStudents = allStus;
 
@@ -8822,8 +8830,9 @@ async function pgSchoolReport(){
     window._renderCards();
 
   }catch(e){
-    loading(false);
     toast('โหลดข้อมูลไม่สำเร็จ: '+e.message,'er');
+  }finally{
+    loading(false);
   }
 }
 
