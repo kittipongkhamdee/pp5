@@ -6427,66 +6427,6 @@ async function printAllPP5(){
   }
 }
 
-async function exportAllPP5(){
-  if(!S.selSub){ toast('กรุณาเลือกรายวิชาก่อน','er'); return; }
-  const sub=getSubject(S.selSub);
-  if(!sub){ toast('ไม่พบข้อมูลรายวิชา','er'); return; }
-  const subId=sub.id;
-  const cfg=S.config||{};
-
-  toast('กำลังเตรียมข้อมูล...','in');
-  loading(true);
-  try{
-    const [stus,sumRows,erRows,ecRows,scUnitsAll,attRows]=await Promise.all([
-      getStudentsBySubject(subId),
-      qc('sc_sum_'+subId,   ()=>q(sb.from('score_summary').select('*').eq('subject_id',subId))),
-      qc('ev_read_'+subId,  ()=>q(sb.from('eval_read').select('*').eq('subject_id',subId))),
-      qc('ev_char_'+subId,  ()=>q(sb.from('eval_char').select('*').eq('subject_id',subId))),
-      qc('sc_units_'+subId, ()=>qAll(()=>sb.from('score_units').select('*').eq('subject_id',subId))),
-      qc('att_'+subId,      ()=>qAll(()=>sb.from('attendance').select('*').eq('subject_id',subId))),
-      _loadIndicatorsAll(),
-      loadEvalPlan(subId)
-    ]);
-    loading(false);
-    const sumMap=Object.fromEntries(sumRows.map(s=>[s.student_id,s]));
-    const erMap=Object.fromEntries(erRows.map(e=>[e.student_id,e]));
-    const ecMap=Object.fromEntries(ecRows.map(e=>[e.student_id,e]));
-    const totH=sub.total_hours||60;
-    const attMap={};
-    stus.forEach(s=>{ attMap[s.id]={present:0,absent:0,leave:0,attended:0,pct:0,ms:false}; });
-    attRows.forEach(a=>{ if(!attMap[a.student_id]) attMap[a.student_id]={present:0,absent:0,leave:0,attended:0,pct:0,ms:false}; const p=parseInt(a.periods)||1; if(a.status in attMap[a.student_id]) attMap[a.student_id][a.status]+=p; });
-    Object.values(attMap).forEach(m=>{ m.attended=m.present+m.leave; m.pct=totH>0?Math.round(m.attended/totH*100):0; m.ms=m.pct<80; });
-
-    const body=_buildPP5Body(sub,cfg,stus,sumMap,erMap,ecMap,scUnitsAll,attRows,attMap,totH);
-    const css=`
-      @page{size:A4 portrait;margin:12mm 14mm;}
-      *{box-sizing:border-box;}
-      body{margin:0;padding:0;background:#fff;font-family:'Sarabun','TH SarabunNew','Noto Sans Thai',sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact;font-size:12px;color:#000;line-height:1.4;}
-      .sec{padding:0;margin:0;} .pb{page-break-before:always;}
-      .ph{text-align:center;margin-bottom:6px;border-bottom:2px solid #000;padding-bottom:5px;}
-      .ph h1{font-size:15px;font-weight:800;margin:0 0 2px;} .ph h2{font-size:13px;font-weight:600;margin:0 0 2px;} .ph .meta{font-size:11px;color:#444;margin:0;}
-      .m2{font-size:10.5px;color:#444;margin:3px 0;}
-      h3{font-size:12px;font-weight:700;margin:8px 0 4px;}
-      table{width:100%;border-collapse:collapse;margin-top:4px;} thead{display:table-header-group;} tr{page-break-inside:avoid;}
-      .sec:not(.cv) th,.sec:not(.cv) td{border:1px solid #666;padding:2px 3px;font-size:10px;text-align:center;font-family:'Sarabun','TH SarabunNew',sans-serif;}
-      .sec:not(.cv) th{font-weight:700;background:#f0f0f0;} .sec:not(.cv) td.l,.sec:not(.cv) th.l{text-align:left;padding-left:5px;white-space:nowrap;}
-      .legend{font-size:9.5px;margin-top:4px;color:#555;}
-      .action-bar{display:flex;gap:12px;align-items:center;justify-content:center;padding:14px;margin-top:20px;background:#f5f5f7;border-radius:10px;position:sticky;bottom:0;}
-      .btn-exp{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#FF3B30;color:#fff;font-weight:600;}
-      .tip{font-size:12px;color:#555;}
-      @media print{.action-bar{display:none!important;}}
-    `;
-    const w=window.open('','_blank');
-    if(!w){ toast('เบราว์เซอร์บล็อก Popup — กรุณาอนุญาต Popup แล้วลองใหม่','er'); return; }
-    w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>Export PDF ทั้งหมด — ${esc(sub.subject_name)} ${grm(sub.grade_level,sub.room)}</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet"><style>${css}</style></head><body><div id="pbody">${body}</div><div class="action-bar"><button class="btn-exp" onclick="window.print()"><svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> บันทึกเป็น PDF</button><span class="tip">เลือก "บันทึกเป็น PDF" ในช่องปลายทางการพิมพ์</span></div><script>window.addEventListener('load',function(){setTimeout(function(){window.print();},500);});<\/script></body></html>`);
-    w.document.close();
-    toast('กำลังเปิดหน้าต่าง Export PDF...');
-  }catch(e){
-    loading(false);
-    toast('เกิดข้อผิดพลาด: '+(e.message||e),'er');
-  }
-}
-
 // ════════════════════════════════════════════════════════════════
 // 8. COVER
 // ════════════════════════════════════════════════════════════════
@@ -6537,10 +6477,6 @@ async function pgCover(){
     <button class="btn bs no-print" onclick="exportCoverPdf()" style="background:rgba(255,59,48,.1);color:#FF3B30;border-color:rgba(255,59,48,.2)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 13h6M9 17h6"/></svg>
         Export PDF ปก
-      </button>
-      <button class="btn bs no-print" onclick="exportAllPP5()" style="background:rgba(255,59,48,.1);color:#FF3B30;border-color:rgba(255,59,48,.2)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 13h6M9 17h6"/></svg>
-        Export PDF ทั้งหมด
       </button>
       <button class="btn bs no-print" onclick="printCover()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>พิมพ์ปก</button>
       <button class="btn no-print" style="background:linear-gradient(135deg,#1d1d1f,#3a3a3c);color:#fff;border:none;font-weight:600" onclick="printAllPP5()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>พิมพ์ทั้งหมด</button></div>
