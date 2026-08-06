@@ -6218,7 +6218,8 @@ function _buildPP5Body(sub,cfg,stus,sumMap,erMap,ecMap,scUnitsAll,attRows,attMap
 <tr><td style="padding:4px 6px">อำเภอ/เขต</td><td style="padding:4px 6px;border-bottom:1px solid #666">${esc(cfg.school_district||'')}</td><td style="padding:4px 6px">จังหวัด</td><td style="padding:4px 6px;border-bottom:1px solid #666">${esc(cfg.school_province||'')}</td></tr>
 <tr><td style="padding:4px 6px">ชั้นมัธยมศึกษาปีที่</td><td style="padding:4px 6px;border-bottom:1px solid #666">${sub.grade_level}</td><td style="padding:4px 6px">ห้อง</td><td style="padding:4px 6px;border-bottom:1px solid #666">${+sub.room===0?'':sub.room}</td></tr>
 <tr><td style="padding:4px 6px">ภาคเรียนที่</td><td style="padding:4px 6px;border-bottom:1px solid #666;white-space:nowrap">${cfg.semester||''}</td><td style="padding:4px 6px;white-space:nowrap">ปีการศึกษา</td><td style="padding:4px 6px;border-bottom:1px solid #666;white-space:nowrap">${cfg.academic_year||''}</td></tr>
-<tr><td style="padding:4px 6px">รายวิชา</td><td colspan="2" style="padding:4px 6px;border-bottom:1px solid #666">${esc(sub.subject_name)}</td><td style="padding:4px 6px;border-bottom:1px solid #666">${esc(sub.subject_code)}</td></tr>
+<tr><td style="padding:4px 6px">รายวิชา</td><td colspan="3" style="padding:4px 6px;border-bottom:1px solid #666">${esc(sub.subject_name)}</td></tr>
+<tr><td style="padding:4px 6px">รหัสวิชา</td><td style="padding:4px 6px;border-bottom:1px solid #666">${esc(sub.subject_code)}</td><td style="padding:4px 6px;white-space:nowrap">ประเภทรายวิชา</td><td style="padding:4px 6px;border-bottom:1px solid #666">${esc(sub.subject_type||'')}</td></tr>
 <tr><td style="padding:4px 6px">หน่วยกิต</td><td style="padding:4px 6px;border-bottom:1px solid #666;white-space:nowrap">${sub.credits}</td><td style="padding:4px 6px;white-space:nowrap">เวลาเรียน</td><td style="padding:4px 6px;border-bottom:1px solid #666;white-space:nowrap">${sub.total_hours} ชม./ภาค (${sub.hours_per_week} ชม./สัปดาห์)</td></tr>
 <tr><td style="padding:4px 6px">ครูผู้สอน</td><td colspan="3" style="padding:4px 6px;border-bottom:1px solid #666">${esc(sub.teacher_name||'')}</td></tr>
 </table>
@@ -6522,8 +6523,11 @@ async function pgCover(){
           <td style="padding:4px 6px;white-space:nowrap">ปีการศึกษา</td>
           <td style="padding:4px 6px;border-bottom:1px solid #666;white-space:nowrap">${cfg.academic_year||''}</td></tr>
       <tr><td style="padding:4px 6px">รายวิชา</td>
-          <td colspan="2" style="padding:4px 6px;border-bottom:1px solid #666">${esc(sub.subject_name)}</td>
-          <td style="padding:4px 6px;border-bottom:1px solid #666">${esc(sub.subject_code)}</td></tr>
+          <td colspan="3" style="padding:4px 6px;border-bottom:1px solid #666">${esc(sub.subject_name)}</td></tr>
+      <tr><td style="padding:4px 6px">รหัสวิชา</td>
+          <td style="padding:4px 6px;border-bottom:1px solid #666">${esc(sub.subject_code)}</td>
+          <td style="padding:4px 6px;white-space:nowrap">ประเภทรายวิชา</td>
+          <td style="padding:4px 6px;border-bottom:1px solid #666">${esc(sub.subject_type||'')}</td></tr>
       <tr><td style="padding:4px 6px">หน่วยกิต</td>
           <td style="padding:4px 6px;border-bottom:1px solid #666;white-space:nowrap">${sub.credits}</td>
           <td style="padding:4px 6px;white-space:nowrap">เวลาเรียน</td>
