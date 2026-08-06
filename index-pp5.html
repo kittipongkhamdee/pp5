@@ -2789,7 +2789,7 @@ async function saveSubForm(id){
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
 }
 async function delSub(id,name){
-  confirm2({title:'ลบรายวิชา',msg:'ต้องการลบวิชา "<strong>'+name+'</strong>"?',type:'danger',confirmText:'ลบเลย',cancelText:'ยกเลิก',onConfirm:async()=>{
+  confirm2({title:'ลบรายวิชา',msg:'ต้องการลบวิชา "<strong>'+name+'</strong>"?<br><br><span style="color:#dc2626">จะลบข้อมูล <strong>เวลาเรียน คะแนน การประเมิน และแผนการวัดและประเมินผล</strong> ของนักเรียนทั้งหมดในวิชานี้ไปด้วย<br>ไม่สามารถกู้คืนได้</span>',type:'danger',confirmText:'ลบเลย',cancelText:'ยกเลิก',onConfirm:async()=>{
   loading(true);
   try{
     await q(sb.from('subjects').delete().eq('id',id).eq('user_id',S.user.id));
