@@ -5712,6 +5712,15 @@ function _stdKindRefresh(){
   kEl.disabled=subjectType==='วิชาเพิ่มเติม';
   if(hint) hint.style.display=subjectType==='วิชาเพิ่มเติม'?'':'none';
 }
+// วิชาเพิ่มเติมไม่มี "มาตรฐาน" อ้างอิงแบบรายวิชาพื้นฐาน และใช้คำว่า "ข้อที่"/"ผลการเรียนรู้ที่คาดหวัง" แทน "รหัสตัวชี้วัด"/"คำอธิบายตัวชี้วัด"
+function _stdLabelsRefresh(){
+  const stEl=$('std-f-st'); if(!stEl) return;
+  const isAdd=stEl.value==='วิชาเพิ่มเติม';
+  const stdWrap=$('std-f-std-wrap'); if(stdWrap) stdWrap.style.display=isAdd?'none':'';
+  const codeLbl=$('std-f-code-lbl'); if(codeLbl) codeLbl.innerHTML=(isAdd?'ข้อที่':'รหัสตัวชี้วัด')+' <span class="req">*</span>';
+  const codeInp=$('std-f-code'); if(codeInp) codeInp.placeholder=isAdd?'เช่น 1':'เช่น ว 1.2 ม.1/1';
+  const textLbl=$('std-f-text-lbl'); if(textLbl) textLbl.innerHTML=(isAdd?'ผลการเรียนรู้ที่คาดหวัง':'คำอธิบายตัวชี้วัด')+' <span class="req">*</span>';
+}
 
 async function pgStandards(){
   loading(true);
@@ -5831,7 +5840,7 @@ function openStdModal(id){
             ${SUBJECT_GROUPS.map(g=>`<option value="${esc(g)}" ${(r?.subject_group||stdFilterGroup)===g?'selected':''}>${esc(g)}</option>`).join('')}
           </select></div>
         <div><label class="fl">ประเภทวิชา</label>
-          <select class="fs" id="std-f-st" onchange="_stdKindRefresh()">
+          <select class="fs" id="std-f-st" onchange="_stdKindRefresh();_stdLabelsRefresh()">
             <option value="รายวิชาพื้นฐาน" ${(r?.subject_type||'รายวิชาพื้นฐาน')==='รายวิชาพื้นฐาน'?'selected':''}>รายวิชาพื้นฐาน</option>
             <option value="วิชาเพิ่มเติม" ${r?.subject_type==='วิชาเพิ่มเติม'?'selected':''}>วิชาเพิ่มเติม</option>
           </select></div>
@@ -5839,12 +5848,12 @@ function openStdModal(id){
       <div class="fg" style="margin-top:14px">
         <div><label class="fl">ระดับชั้น <span class="req">*</span></label>
           <input class="fi" id="std-f-gr" value="${esc(defGrade)}" placeholder="เช่น ${esc(GRADE_PREFIX)}1 หรือ ${esc(GRADE_PREFIX)}4-6"></div>
-        <div><label class="fl">มาตรฐาน</label>
+        <div id="std-f-std-wrap" style="display:${(r?.subject_type||'รายวิชาพื้นฐาน')==='วิชาเพิ่มเติม'?'none':''}"><label class="fl">มาตรฐาน</label>
           <input class="fi" id="std-f-std" value="${esc(r?.standard_code||'')}" placeholder="เช่น ว 1.2"></div>
       </div>
-      <div style="margin-top:14px"><label class="fl">รหัสตัวชี้วัด <span class="req">*</span></label>
-        <input class="fi" id="std-f-code" value="${esc(r?.indicator_code||'')}" placeholder="เช่น ว 1.2 ม.1/1"></div>
-      <div style="margin-top:14px"><label class="fl">คำอธิบายตัวชี้วัด <span class="req">*</span></label>
+      <div style="margin-top:14px"><label class="fl" id="std-f-code-lbl">${(r?.subject_type||'รายวิชาพื้นฐาน')==='วิชาเพิ่มเติม'?'ข้อที่':'รหัสตัวชี้วัด'} <span class="req">*</span></label>
+        <input class="fi" id="std-f-code" value="${esc(r?.indicator_code||'')}" placeholder="${(r?.subject_type||'รายวิชาพื้นฐาน')==='วิชาเพิ่มเติม'?'เช่น 1':'เช่น ว 1.2 ม.1/1'}"></div>
+      <div style="margin-top:14px"><label class="fl" id="std-f-text-lbl">${(r?.subject_type||'รายวิชาพื้นฐาน')==='วิชาเพิ่มเติม'?'ผลการเรียนรู้ที่คาดหวัง':'คำอธิบายตัวชี้วัด'} <span class="req">*</span></label>
         <textarea class="fta" id="std-f-text" rows="3">${esc(r?.indicator_text||'')}</textarea></div>
       <div style="margin-top:14px"><label class="fl">ประเภท <span class="req">*</span></label>
         <select class="fs" id="std-f-kind" ${(r?.subject_type||'รายวิชาพื้นฐาน')==='วิชาเพิ่มเติม'?'disabled':''}>
@@ -5863,11 +5872,14 @@ async function saveStdIndicator(id){
   const subject_group=$('std-f-sg').value;
   const subject_type=($('std-f-st').value||'').trim()||'รายวิชาพื้นฐาน';
   const grade_level=($('std-f-gr').value||'').trim();
-  const standard_code=($('std-f-std').value||'').trim();
+  const standard_code=subject_type==='วิชาเพิ่มเติม'?'':($('std-f-std').value||'').trim();
   const indicator_code=($('std-f-code').value||'').trim();
   const indicator_text=($('std-f-text').value||'').trim();
   const kind=$('std-f-kind').value;
-  if(!grade_level||!indicator_code||!indicator_text){ toast('กรุณากรอกระดับชั้น รหัสตัวชี้วัด และคำอธิบายให้ครบ','er'); return; }
+  if(!grade_level||!indicator_code||!indicator_text){
+    toast(subject_type==='วิชาเพิ่มเติม'?'กรุณากรอกระดับชั้น ข้อที่ และผลการเรียนรู้ที่คาดหวังให้ครบ':'กรุณากรอกระดับชั้น รหัสตัวชี้วัด และคำอธิบายให้ครบ','er');
+    return;
+  }
   loading(true);
   try{
     const payload={subject_group,subject_type,grade_level,standard_code,indicator_code,indicator_text,kind};
