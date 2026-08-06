@@ -5117,7 +5117,7 @@ function printEval(){
 // 6.5 EVAL PLAN (แผนการวัดและประเมินผล)
 // ════════════════════════════════════════════════════════════════
 let epUnits=[], epUnitInd={}, epIndScores=[], _indicatorsAll=null;
-let _epPickUnit=null, _epPickSearch='';
+let _epPickUnit=null, _epPickSearch='', _epPickKind='';
 
 async function pgEvalPlan(){
   if(!S.subjects.length){$('pg').innerHTML=`<div class="card"><div class="empty"><svg class="ei" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg><div>ยังไม่มีรายวิชา</div></div></div>`;return;}
@@ -5286,29 +5286,10 @@ function delEplUnit(id,name){
 }
 
 // ── ตัวเลือกตัวชี้วัด (จากคลัง indicators กรองตามกลุ่มสาระ/ระดับชั้น/ประเภทวิชา) ──
-function openIndPicker(unitId){
-  _epPickUnit=unitId; _epPickSearch='';
-  const sub=S.subjects.find(s=>s.id===S.selSub)||{};
-  document.body.insertAdjacentHTML('beforeend',`
-  <div class="mo" id="indPickMod"><div class="md md-lg">
-    <div class="mh"><div class="mt">เลือกตัวชี้วัด — ${esc(sub.subject_group||'ไม่ระบุกลุ่มสาระ')} ม.${esc(String(sub.grade_level||''))}</div>
-      <button class="mx" onclick="rmModal('indPickMod')">✕</button></div>
-    <div class="mb">
-      <input class="fi" placeholder="ค้นหารหัสหรือข้อความตัวชี้วัด..." autocomplete="off" oninput="_epPickFilter(this.value)" style="margin-bottom:10px">
-      <div id="ind-pick-list">${renderIndPickList()}</div>
-    </div>
-    <div class="mf"><button class="btn bp" onclick="rmModal('indPickMod')">เสร็จสิ้น</button></div>
-  </div></div>`);
-}
-function _epPickFilter(v){
-  _epPickSearch=v;
-  const el=$('ind-pick-list'); if(el) el.innerHTML=renderIndPickList();
-}
-function renderIndPickList(){
-  const sub=S.subjects.find(s=>s.id===S.selSub)||{};
+function _epPickBasePool(sub){
   const g=String(sub.grade_level||'');
   const stype=sub.subject_type||'รายวิชาพื้นฐาน';
-  const pool=(_indicatorsAll||[]).filter(ind=>{
+  return (_indicatorsAll||[]).filter(ind=>{
     if(sub.subject_group && ind.subject_group!==sub.subject_group) return false;
     if(ind.subject_type!==stype) return false;
     if(g){
@@ -5318,9 +5299,49 @@ function renderIndPickList(){
     }
     return true;
   });
+}
+function openIndPicker(unitId){
+  _epPickUnit=unitId; _epPickSearch='';
+  const sub=S.subjects.find(s=>s.id===S.selSub)||{};
+  // ค่าเริ่มต้น: เริ่มออกแบบหน่วยจากตัวชี้วัด "ปลายทาง" ก่อนเสมอถ้ามี (ตามแนวทาง backward design) — ถ้าไม่มี (เช่นวิชาเพิ่มเติมที่มีแต่ "ผลการเรียนรู้") ค่อย fallback
+  const kindsPresent=new Set(_epPickBasePool(sub).map(i=>i.kind));
+  _epPickKind = kindsPresent.has('ปลายทาง') ? 'ปลายทาง' : (kindsPresent.has('ผลการเรียนรู้') ? 'ผลการเรียนรู้' : '');
+  document.body.insertAdjacentHTML('beforeend',`
+  <div class="mo" id="indPickMod"><div class="md md-lg">
+    <div class="mh"><div class="mt">เลือกตัวชี้วัด — ${esc(sub.subject_group||'ไม่ระบุกลุ่มสาระ')} ม.${esc(String(sub.grade_level||''))}</div>
+      <button class="mx" onclick="rmModal('indPickMod')">✕</button></div>
+    <div class="mb">
+      <div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;align-items:flex-end">
+        <div style="min-width:170px">
+          <label class="fl">ประเภทตัวชี้วัด</label>
+          <select class="fs" id="ind-pick-kind" onchange="_epPickKindChange(this.value)">
+            <option value="" ${_epPickKind===''?'selected':''}>ทั้งหมด</option>
+            <option value="ปลายทาง" ${_epPickKind==='ปลายทาง'?'selected':''}>ปลายทาง</option>
+            <option value="ระหว่างทาง" ${_epPickKind==='ระหว่างทาง'?'selected':''}>ระหว่างทาง</option>
+            <option value="ผลการเรียนรู้" ${_epPickKind==='ผลการเรียนรู้'?'selected':''}>ผลการเรียนรู้</option>
+          </select>
+        </div>
+        <input class="fi" placeholder="ค้นหารหัสหรือข้อความตัวชี้วัด..." autocomplete="off" oninput="_epPickFilter(this.value)" style="flex:1;min-width:200px">
+      </div>
+      <div id="ind-pick-list">${renderIndPickList()}</div>
+    </div>
+    <div class="mf"><button class="btn bp" onclick="rmModal('indPickMod')">เสร็จสิ้น</button></div>
+  </div></div>`);
+}
+function _epPickFilter(v){
+  _epPickSearch=v;
+  const el=$('ind-pick-list'); if(el) el.innerHTML=renderIndPickList();
+}
+function _epPickKindChange(v){
+  _epPickKind=v;
+  const el=$('ind-pick-list'); if(el) el.innerHTML=renderIndPickList();
+}
+function renderIndPickList(){
+  const sub=S.subjects.find(s=>s.id===S.selSub)||{};
+  const pool=_epPickBasePool(sub).filter(ind=>!_epPickKind||ind.kind===_epPickKind);
   const kw=(_epPickSearch||'').trim().toLowerCase();
   const filtered = kw ? pool.filter(ind=>ind.indicator_code.toLowerCase().includes(kw)||ind.indicator_text.toLowerCase().includes(kw)||(ind.standard_code||'').toLowerCase().includes(kw)) : pool;
-  if(!filtered.length) return `<div class="empty" style="padding:24px">ไม่พบตัวชี้วัดที่ตรงกับรายวิชานี้ — ตรวจสอบกลุ่มสาระ/ระดับชั้นของรายวิชาในหน้าจัดการรายวิชา</div>`;
+  if(!filtered.length) return `<div class="empty" style="padding:24px">ไม่พบตัวชี้วัดที่ตรงกับตัวกรอง — ลองปรับประเภทตัวชี้วัดหรือคำค้นหา</div>`;
   const selected=new Set(epUnitInd[_epPickUnit]||[]);
   return filtered.map(ind=>`
     <label class="ind-pick-row">
