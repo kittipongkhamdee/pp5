@@ -1571,6 +1571,17 @@ function showApp(){
 
 
 
+// เวลาเรียนสะสมที่ครูได้เช็คชื่อจริง (ผลรวมคาบของทุกวันที่มีการบันทึกเช็คชื่อแล้ว)
+// ใช้เป็นตัวหารแทน total_hours (เป้าหมายเต็มภาคเรียน) เพื่อไม่ให้ขึ้น มส ก่อนเวลาอันควรตอนที่ยังสอนไม่ครบ
+function attHeldHours(rows){
+  const dateMap={};
+  (rows||[]).forEach(a=>{
+    const key=a.year_month+'_'+a.date_day;
+    if(!(key in dateMap)) dateMap[key]=parseInt(a.periods)||1;
+  });
+  return Object.values(dateMap).reduce((a,b)=>a+b,0);
+}
+
 // ════ มส. BADGE ══════════════════════════════════════════════════
 
 async function updateMsBadge(){
@@ -1583,27 +1594,27 @@ async function updateMsBadge(){
 
     // ดึง attendance ด้วย .eq() ต่อ subject (หลีกเลี่ยง RLS ปัญหากับ .in())
     const attArrays = await Promise.all(
-      subjIds.map(id=>qAll(()=>sb.from('attendance').select('subject_id,student_id,status,periods').eq('subject_id',id)))
+      subjIds.map(id=>qAll(()=>sb.from('attendance').select('subject_id,student_id,status,periods,year_month,date_day').eq('subject_id',id)))
     );
     const attRows = attArrays.flat();
 
-    // สรุปต่อ student ต่อ subject (attended = present + leave)
+    // แยกแถวดิบต่อวิชา (เก็บ year_month/date_day ไว้คำนวณเวลาเรียนสะสมที่เช็คชื่อแล้ว)
     const attBySub = {};
-    attRows.forEach(a=>{
-      if(!attBySub[a.subject_id]) attBySub[a.subject_id]={};
-      const sid = String(a.student_id);
-      if(!attBySub[a.subject_id][sid]) attBySub[a.subject_id][sid]={attended:0};
-      const p = parseInt(a.periods)||1;
-      if(a.status==='present'||a.status==='leave') attBySub[a.subject_id][sid].attended += p;
-    });
+    attRows.forEach(a=>{ (attBySub[a.subject_id]=attBySub[a.subject_id]||[]).push(a); });
 
-    // นับนักเรียนที่มี % < 80% โดยใช้ total_hours เป็นตัวหาร (ตรงกับหน้าเวลาเรียน)
+    // นับนักเรียนที่มี % < 80% โดยใช้เวลาเรียนสะสมที่เช็คชื่อแล้วเป็นตัวหาร (ตรงกับหน้าเวลาเรียน)
     const msSet = new Set();
     S.subjects.forEach(sub=>{
-      const totalH = sub.total_hours||60;
-      const stuMap = attBySub[sub.id]||{};
-      Object.entries(stuMap).forEach(([sid,m])=>{
-        if(totalH>0 && (m.attended/totalH*100)<80) msSet.add(sid);
+      const rows = attBySub[sub.id]||[];
+      const totalH = attHeldHours(rows);
+      const attMap = {};
+      rows.forEach(a=>{
+        const sid = String(a.student_id);
+        if(!(sid in attMap)) attMap[sid]=0;
+        if(a.status==='present'||a.status==='leave') attMap[sid]+=(parseInt(a.periods)||1);
+      });
+      Object.entries(attMap).forEach(([sid,attended])=>{
+        if(totalH>0 && (attended/totalH*100)<80) msSet.add(sid);
       });
     });
 
@@ -2277,7 +2288,7 @@ async function pgDash(){
         : Promise.resolve([[]]),
       qAll(()=>sb.from('students').select('id,grade_level,room')),
       subjIds.length ?
-        Promise.all(subjIds.map(id=>qAll(()=>sb.from('attendance').select('subject_id,student_id,status,periods').eq('subject_id',id))))
+        Promise.all(subjIds.map(id=>qAll(()=>sb.from('attendance').select('subject_id,student_id,status,periods,year_month,date_day').eq('subject_id',id))))
         : Promise.resolve([[]]),
       subjIds.length ?
         Promise.all(subjIds.map(id=>q(sb.from('eval_read').select('subject_id').eq('subject_id',id).limit(1))))
@@ -2308,7 +2319,7 @@ async function pgDash(){
       const pass = sum.filter(x=>x.grade!=null&&x.grade!==''&&parseFloat(x.grade)>0).length;
       const avg = sum.length>0?(sum.reduce((a,b)=>a+(parseFloat(b.total_score)||0),0)/sum.length).toFixed(1):0;
       const pct = total>0?((pass/total)*100).toFixed(1):0;
-      // นับ มส. จาก attendance (present+leave)/total_hours < 80% (ตรงกับหน้าเวลาเรียน)
+      // นับ มส. จาก attendance (present+leave)/เวลาเรียนสะสมที่เช็คชื่อแล้ว < 80% (ตรงกับหน้าเวลาเรียน)
       // กรองเฉพาะนักเรียนที่อยู่ในห้องนี้จริง (roomStuIds) เพื่อไม่นับ ghost records
       const attForSubj = allAtt.filter(a=>a.subject_id===s.id);
       const stuAttMap={};
@@ -2318,7 +2329,7 @@ async function pgDash(){
         const p=parseInt(a.periods)||1;
         if(a.status==='present'||a.status==='leave')stuAttMap[a.student_id].attended+=p;
       });
-      const subTotalH = s.total_hours||60;
+      const subTotalH = attHeldHours(attForSubj);
       const msCount=Object.values(stuAttMap).filter(m=>subTotalH>0&&(m.attended/subTotalH*100)<80).length;
       const recorded=sum.filter(r=>(parseFloat(r.total_score)||0)>0).length;
       const hasAttendance = attForSubj.length>0;
@@ -2350,9 +2361,11 @@ async function pgDash(){
         if(!attBySub[a.subject_id][sid]) attBySub[a.subject_id][sid]={attended:0};
         if(a.status==='present'||a.status==='leave') attBySub[a.subject_id][sid].attended+=(parseInt(a.periods)||1);
       });
+      const attRowsBySub = {};
+      allAtt.forEach(a=>{ (attRowsBySub[a.subject_id]=attRowsBySub[a.subject_id]||[]).push(a); });
       const msSet = new Set();
       S.subjects.forEach(sub=>{
-        const totalH = sub.total_hours||60;
+        const totalH = attHeldHours(attRowsBySub[sub.id]||[]);
         const rKey = sub.grade_level+'_'+sub.room;
         const enrolledIds = stuIdsByRoom[rKey]||new Set();
         const stuMap = attBySub[sub.id]||{};
@@ -3483,9 +3496,9 @@ function renderAttPage(){
   const sid=S.selSub, today=new Date();
   if(attMonthIdx===null) attMonthIdx=today.getMonth();
 
-  // ── คำนวณสรุปเวลาเรียนรวมทุกเดือน ──
+  // ── คำนวณสรุปเวลาเรียนรวมทุกเดือน (ตัวหาร = เวลาเรียนสะสมที่เช็คชื่อแล้ว ไม่ใช่เป้าหมายเต็มภาคเรียน) ──
   const sumMap={};
-  const totalH=attSub?.total_hours||60;
+  const totalH=attHeldHours(attData);
   attStus.forEach(s=>{ sumMap[s.id]={present:0,absent:0,leave:0,attended:0,totalH,pct:0,ms:false}; });
   attData.forEach(a=>{
     const m=sumMap[a.student_id]; if(!m) return;
@@ -3495,7 +3508,7 @@ function renderAttPage(){
     // late removed
     else if(a.status==='leave')m.leave+=periods;
   });
-  Object.values(sumMap).forEach(m=>{ m.attended=m.present+m.leave; m.pct=m.totalH>0?Math.round(m.attended/m.totalH*100):0; m.ms=m.pct<80; });
+  Object.values(sumMap).forEach(m=>{ m.attended=m.present+m.leave; m.pct=m.totalH>0?Math.round(m.attended/m.totalH*100):0; m.ms=m.totalH>0&&m.pct<80; });
 
   $('pg').innerHTML=`
   <div class="ph"><div class="ptitle">บันทึกเวลาเรียน</div>
@@ -3556,7 +3569,7 @@ function renderAttPage(){
       <div class="tw"><table>
         <thead><tr><th>เลขที่</th><th class="tl">ชื่อ-สกุล</th>
           <th>มา</th><th>ขาด</th><th>ลา</th>
-          <th>รวมเข้า</th><th>ชม.ทั้งหมด</th><th>% เข้าเรียน</th><th>สถานะ</th>
+          <th>รวมเข้า</th><th>ชม.ที่เช็คชื่อ</th><th>% เข้าเรียน</th><th>สถานะ</th>
         </tr></thead>
         <tbody>${attStus.map((s,i)=>{
           const m=sumMap[s.id]||{present:0,absent:0,leave:0,attended:0,totalH:60,pct:0,ms:false};
@@ -3814,7 +3827,7 @@ async function saveMonth(){
 // อัปเฉพาะแท็บสรุปโดยไม่ render ทั้งหน้า
 function _refreshSummaryTab(overrideSumMap){
   const tab=$('att-sum'); if(!tab) return;
-  const totalH=attSub?.total_hours||60;
+  const totalH=attHeldHours(attData);
   let sumMap=overrideSumMap;
   if(!sumMap){
     sumMap={};
@@ -3829,7 +3842,7 @@ function _refreshSummaryTab(overrideSumMap){
     Object.values(sumMap).forEach(m=>{
       m.attended=m.present+m.leave;
       m.pct=m.totalH>0?Math.round(m.attended/m.totalH*100):0;
-      m.ms=m.pct<80;
+      m.ms=m.totalH>0&&m.pct<80;
     });
   }
   tab.innerHTML=`<div class="card"><div class="ch"><div class="ct">สรุปเวลาเรียนรายคน</div></div><div class="cb">
@@ -3868,7 +3881,6 @@ function cycleAtt(el){
 }
 // คำนวณสรุปจากสถานะปัจจุบันใน DOM (ก่อน save)
 function _refreshSummaryFromDOM(){
-  const totalH=attSub?.total_hours||60;
   const domMap={};
   attStus.forEach(s=>{ domMap[s.id]={present:0,absent:0,leave:0}; });
   // อ่านสถานะจาก DOM ของเดือนปัจจุบัน
@@ -3882,10 +3894,13 @@ function _refreshSummaryFromDOM(){
   });
   // รวมกับเดือนอื่นจาก attData
   const ym=curYM();
+  // เวลาเรียนสะสมที่เช็คชื่อแล้ว = วันที่บันทึกแล้วในเดือนอื่น (attData) + วันที่ตั้งไว้ในเดือนนี้ (attDays)
+  const otherMonthRows=attData.filter(a=>String(a.year_month)!==String(ym));
+  const totalH=attHeldHours(otherMonthRows)+attDays.reduce((a,d)=>a+(d.periods||1),0);
   const sumMap={};
   attStus.forEach(s=>{ sumMap[s.id]={present:0,absent:0,leave:0,attended:0,totalH,pct:0,ms:false}; });
   // เดือนอื่น: ดึงจาก attData
-  attData.filter(a=>String(a.year_month)!==String(ym)).forEach(a=>{
+  otherMonthRows.forEach(a=>{
     const m=sumMap[a.student_id]; if(!m) return;
     const p=parseInt(a.periods)||1;
     if(a.status in m) m[a.status]+=p;
@@ -3899,7 +3914,7 @@ function _refreshSummaryFromDOM(){
   Object.values(sumMap).forEach(m=>{
     m.attended=m.present+m.leave;
     m.pct=m.totalH>0?Math.round(m.attended/m.totalH*100):0;
-    m.ms=m.pct<80;
+    m.ms=m.totalH>0&&m.pct<80;
   });
   // อัป DOM ของแท็บสรุปถ้าเปิดอยู่
   // ถ้าแท็บสรุปเปิดอยู่ ให้ re-render ด้วย sumMap จาก DOM ทันที
@@ -3931,14 +3946,14 @@ function buildAttMonths(){
 // คำนวณสรุป มา/ขาด/ลา รายคน (นับตามจำนวนคาบ)
 function attSummaryByStudent(){
   const sum={};
-  const totalH=attSub?.total_hours||60;
+  const totalH=attHeldHours(attData);
   attStus.forEach(s=>{sum[s.id]={present:0,absent:0,leave:0};});
   attData.forEach(a=>{
     const m=sum[a.student_id]; if(!m) return;
     const p=parseInt(a.periods)||1;
     if(a.status in m) m[a.status]+=p;
   });
-  Object.values(sum).forEach(m=>{m.attended=m.present+m.leave;m.pct=totalH>0?Math.round(m.attended/totalH*100):0;m.ms=m.pct<80;m.totalH=totalH;});
+  Object.values(sum).forEach(m=>{m.attended=m.present+m.leave;m.pct=totalH>0?Math.round(m.attended/totalH*100):0;m.ms=totalH>0&&m.pct<80;m.totalH=totalH;});
   return sum;
 }
 
@@ -5983,7 +5998,7 @@ async function pgReport(){
     qc('sc_sum_'+S.selSub,  ()=>q(sb.from('score_summary').select('*').eq('subject_id',S.selSub))),
     qc('ev_read_'+S.selSub, ()=>q(sb.from('eval_read').select('*').eq('subject_id',S.selSub))),
     qc('ev_char_'+S.selSub, ()=>q(sb.from('eval_char').select('*').eq('subject_id',S.selSub))),
-    qc('att_sum_'+S.selSub, ()=>qAll(()=>sb.from('attendance').select('student_id,status,periods').eq('subject_id',S.selSub)))
+    qc('att_sum_'+S.selSub, ()=>qAll(()=>sb.from('attendance').select('student_id,status,periods,year_month,date_day').eq('subject_id',S.selSub)))
   ]);
   loading(false);
   const sumMap=Object.fromEntries(sumRows.map(s=>[s.student_id,s]));
@@ -5991,13 +6006,13 @@ async function pgReport(){
   const ecMap=Object.fromEntries(ecRows.map(e=>[e.student_id,e]));
   // calc att summary
   const attMap={};
-  const totalH=sub?.total_hours||60;
+  const totalH=attHeldHours(attRows);
   stus.forEach(s=>{attMap[s.id]={attended:0,totalH,pct:0,ms:false};});
   attRows.forEach(a=>{
     if(!attMap[a.student_id])attMap[a.student_id]={attended:0,totalH,pct:0,ms:false};
     if(a.status!=='absent')attMap[a.student_id].attended+=(parseInt(a.periods)||1);
   });
-  Object.values(attMap).forEach(m=>{m.pct=m.totalH>0?Math.round(m.attended/m.totalH*100):0;m.ms=m.pct<80;});
+  Object.values(attMap).forEach(m=>{m.pct=m.totalH>0?Math.round(m.attended/m.totalH*100):0;m.ms=m.totalH>0&&m.pct<80;});
   // เก็บไว้ใน state เพื่อให้ export ใช้ได้
   S._rpt={sub,stus,sumMap,erMap,ecMap,attMap};
   // stats — filter เฉพาะนักเรียนในห้องจริง
@@ -6259,7 +6274,7 @@ ${cvTh('รายการประเมิน','text-align:left;padding-left:6
   aCk.forEach((cols,ci)=>{
     const isLast=ci===aCk.length-1;
     const mg=[]; cols.forEach(c=>{ if(!mg.length||mg[mg.length-1].name!==c.monthName) mg.push({name:c.monthName,count:1}); else mg[mg.length-1].count++; });
-    body+=`<div class="sec pb">${ph('บันทึกเวลาเรียน — '+sub.subject_name+' '+grm(sub.grade_level,sub.room),ci+1,aCk.length)}<div class="m2">เวลาเรียนรวม ${totH} ชั่วโมง</div><table><thead><tr><th rowspan="2">เลขที่</th><th rowspan="2">รหัส</th><th rowspan="2" class="l">ชื่อ-สกุล</th>`;
+    body+=`<div class="sec pb">${ph('บันทึกเวลาเรียน — '+sub.subject_name+' '+grm(sub.grade_level,sub.room),ci+1,aCk.length)}<div class="m2">เวลาเรียนสะสม (เช็คชื่อแล้ว) ${totH} ชั่วโมง</div><table><thead><tr><th rowspan="2">เลขที่</th><th rowspan="2">รหัส</th><th rowspan="2" class="l">ชื่อ-สกุล</th>`;
     mg.forEach(g=>{ body+=`<th colspan="${g.count}">${esc(g.name)}</th>`; });
     if(isLast) body+=`<th rowspan="2">มา</th><th rowspan="2">ขาด</th><th rowspan="2">ลา</th><th rowspan="2">รวม</th><th rowspan="2">%</th><th rowspan="2">สถานะ</th>`;
     body+=`</tr><tr>`; cols.forEach(c=>{ body+=`<th>${c.day}</th>`; }); body+=`</tr></thead><tbody>`;
@@ -6399,11 +6414,11 @@ async function printAllPP5(){
     const sumMap=Object.fromEntries(sumRows.map(s=>[s.student_id,s]));
     const erMap=Object.fromEntries(erRows.map(e=>[e.student_id,e]));
     const ecMap=Object.fromEntries(ecRows.map(e=>[e.student_id,e]));
-    const totH=sub.total_hours||60;
+    const totH=attHeldHours(attRows);
     const attMap={};
     stus.forEach(s=>{ attMap[s.id]={present:0,absent:0,leave:0,attended:0,pct:0,ms:false}; });
     attRows.forEach(a=>{ if(!attMap[a.student_id]) attMap[a.student_id]={present:0,absent:0,leave:0,attended:0,pct:0,ms:false}; const p=parseInt(a.periods)||1; if(a.status in attMap[a.student_id]) attMap[a.student_id][a.status]+=p; });
-    Object.values(attMap).forEach(m=>{ m.attended=m.present+m.leave; m.pct=totH>0?Math.round(m.attended/totH*100):0; m.ms=m.pct<80; });
+    Object.values(attMap).forEach(m=>{ m.attended=m.present+m.leave; m.pct=totH>0?Math.round(m.attended/totH*100):0; m.ms=totH>0&&m.pct<80; });
 
     const body=_buildPP5Body(sub,cfg,stus,sumMap,erMap,ecMap,scUnitsAll,attRows,attMap,totH);
     const css=`
@@ -8570,7 +8585,7 @@ async function pgSchoolReport(){
     const [allSubjects, allSumRows, allAttRows, allProfiles, allEvalRead, allEvalChar, allStus] = await Promise.all([
       qAll(()=>sb.from('subjects').select('*').order('grade_level').order('room').order('subject_name')),
       qAll(()=>sb.from('score_summary').select('subject_id,student_id,grade,total_score,special_result,mid_normal,mid_retake,mid_repeat,final_score,total_before_mid,total_after_mid').order('id')),
-      qAll(()=>sb.from('attendance').select('subject_id,student_id,status,periods')),
+      qAll(()=>sb.from('attendance').select('subject_id,student_id,status,periods,year_month,date_day')),
       qAll(()=>sb.from('profiles').select('id,full_name').order('id')),
       qAll(()=>sb.from('eval_read').select('subject_id')),
       qAll(()=>sb.from('eval_char').select('subject_id')),
@@ -8609,7 +8624,7 @@ async function pgSchoolReport(){
         const p=parseInt(a.periods)||1;
         if(a.status==='present'||a.status==='leave')stuAttMapSub[sid].attended+=p;
       });
-      const totalH = sub.total_hours||60;
+      const totalH = attHeldHours(attRows);
       const msStudentIds = stuIds.filter(sid=>{
         const m=stuAttMapSub[String(sid)];
         if(!m) return false;
@@ -8630,7 +8645,7 @@ async function pgSchoolReport(){
       const hasFinalExam = sumRows.some(r=>(parseFloat(r.final_score)||0)>0);
       // คะแนนเก็บ (ระหว่างภาค) — รวมจาก score_units ก่อน/หลังกลางภาค
       const hasCollectScore = sumRows.some(r=>(parseFloat(r.total_before_mid)||0)>0||(parseFloat(r.total_after_mid)||0)>0);
-      return {...sub,_stats:{total,pass:passNum,fail:failNum,avg,pct,msCount,teacherName,gradeCount,sumRows,stuIds,msStudentIds,attMap:stuAttMapSub,hasScore,hasAttendance,hasEval,hasMidExam,hasFinalExam,hasCollectScore}};
+      return {...sub,_stats:{total,pass:passNum,fail:failNum,avg,pct,msCount,teacherName,gradeCount,sumRows,stuIds,msStudentIds,attMap:stuAttMapSub,attTotalH:totalH,hasScore,hasAttendance,hasEval,hasMidExam,hasFinalExam,hasCollectScore}};
     });
 
     // ── รวมสถิติโรงเรียน ──
@@ -8940,7 +8955,7 @@ async function openSubjectDetailModal(subId){
     const ca=stuMap[String(a)]?.student_code||'', cb=stuMap[String(b)]?.student_code||'';
     return ca.localeCompare(cb,'th');
   });
-  const totalH=sub.total_hours||60;
+  const totalH=st.attTotalH??(sub.total_hours||60);
 
   const scoreRows=stuIds.map(sid=>{
     const stu=stuMap[String(sid)];
@@ -8984,7 +8999,7 @@ async function openSubjectDetailModal(subId){
             :'<div class="empty">ยังไม่มีนักเรียนในชั้น/ห้องนี้</div>')+
         '</div>'+
         '<div class="tp" id="sdtl-att" data-tp="sdtl">'+
-          (attRows?'<div class="tw"><table><thead><tr><th class="tl">ชื่อ-สกุล</th><th>เข้าเรียน (ชม.)</th><th>ทั้งหมด (ชม.)</th><th>% เวลาเรียน</th></tr></thead><tbody>'+attRows+'</tbody></table></div>'
+          (attRows?'<div class="tw"><table><thead><tr><th class="tl">ชื่อ-สกุล</th><th>เข้าเรียน (ชม.)</th><th>เช็คชื่อแล้ว (ชม.)</th><th>% เวลาเรียน</th></tr></thead><tbody>'+attRows+'</tbody></table></div>'
             :'<div class="empty">ยังไม่มีนักเรียนในชั้น/ห้องนี้</div>')+
         '</div>'+
         '<div class="tp" id="sdtl-eval" data-tp="sdtl">'+
@@ -9013,7 +9028,7 @@ function printMsReport(){
   let pages='';
   subjectsWithMs.forEach((sub,i)=>{
     const st=sub._stats;
-    const totalH=sub.total_hours||60;
+    const totalH=st.attTotalH??(sub.total_hours||60);
     const sorted=[...st.msStudentIds].sort((a,b)=>{
       const sa=stuMap[String(a)]?.student_code||'';
       const sb2=stuMap[String(b)]?.student_code||'';
@@ -9034,7 +9049,7 @@ function printMsReport(){
             <th style="width:90px;padding:5px 8px;border:1px solid #ccc;text-align:center">เลขประจำตัว</th>
             <th style="padding:5px 8px;border:1px solid #ccc;text-align:left">ชื่อ-นามสกุล</th>
             <th style="width:62px;padding:5px 6px;border:1px solid #ccc;text-align:center">ชม.ที่มา</th>
-            <th style="width:62px;padding:5px 6px;border:1px solid #ccc;text-align:center">ชม.รวม</th>
+            <th style="width:62px;padding:5px 6px;border:1px solid #ccc;text-align:center">ชม.ที่เช็คชื่อ</th>
             <th style="width:62px;padding:5px 6px;border:1px solid #ccc;text-align:center;color:#dc2626">%เวลา</th>
           </tr>
         </thead>
