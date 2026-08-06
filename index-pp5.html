@@ -7290,30 +7290,6 @@ async function pgSettings(){
     </div>
   </div>
 
-  <!-- ── ค่าเป้าหมาย IQA ── -->
-  <div class="card">
-    <div class="ch">
-      <div class="ct" style="display:flex;align-items:center;gap:7px">
-        <svg viewBox="0 0 24 24" fill="none" stroke="var(--ac)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        ค่าเป้าหมายระดับผลการเรียน (IQA)
-      </div>
-    </div>
-    <div class="cb">
-      <div style="font-size:12px;color:#6e6e73;margin-bottom:14px;line-height:1.6">ตั้งค่าเป้าหมายระดับผลการเรียนเฉลี่ยต่อกลุ่มสาระ เพื่อใช้ในรายงาน IQA</div>
-      <div style="display:grid;grid-template-columns:1fr 90px;gap:6px 10px;align-items:center">
-        ${SUBJECT_GROUPS.map((g,i)=>{
-          const saved=S.config.iqa_targets?JSON.parse(S.config.iqa_targets):IQA_DEFAULT_TARGETS;
-          const val=saved[g]!==undefined?saved[g]:IQA_DEFAULT_TARGETS[g]||0;
-          return`<label style="font-size:13px;color:#1d1d1f">${i+1}. ${esc(g)}</label>
-          <input type="number" id="iqa-t-${i}" value="${val}" min="0" max="4" step="0.01" class="fi" style="text-align:center;padding:6px 8px">`;
-        }).join('')}
-      </div>
-      <button class="btn bp" onclick="saveIQATargets()" style="margin-top:14px;width:100%;justify-content:center">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-        บันทึกค่าเป้าหมาย
-      </button>
-    </div>
-  </div>
 
   </div><!-- /stg-academic -->
 
@@ -7565,32 +7541,32 @@ async function saveIQATargets(){
     await q(sb.from('config').upsert([{key:'iqa_targets',value:JSON.stringify(targets)}],{onConflict:'key'}));
     await loadConfig();
     toast('บันทึกค่าเป้าหมายเรียบร้อย');
+    await pgIQA();
   }catch(e){ toast('บันทึกไม่สำเร็จ: '+e.message,'er'); }
 }
 
 // ════ IQA REPORT ══════════════════════════════════════════════════
+// รายงานนี้เป็นข้อมูลระดับทั้งโรงเรียน เข้าถึงได้ผ่านปุ่มในหน้า "รายงานทั้งโรงเรียน" เท่านั้น — ใช้สิทธิ์ school_report เดียวกัน (ครูที่เข้าถึงหน้านี้ได้ แก้ค่าเป้าหมายได้ด้วย)
 async function pgIQA(){
+  if(!canAccessMenu('school_report')){ _denyMenuAccess('รายงานทั้งโรงเรียน'); return; }
   loading(true);
   try{
-    await loadSubjects();
     const cfg=S.config;
     const targets=cfg.iqa_targets?JSON.parse(cfg.iqa_targets):IQA_DEFAULT_TARGETS;
-    const subjIds=S.subjects.map(s=>s.id);
 
-    // ดึงเกรดทุกวิชา
-    const allSumArrays=subjIds.length
-      ? await Promise.all(subjIds.map(id=>q(sb.from('score_summary').select('subject_id,student_id,grade').eq('subject_id',id))))
-      : [[]];
-    const allSum=allSumArrays.flat();
+    // ดึงข้อมูลทั้งโรงเรียนโดยไม่กรอง user_id (รายงานนี้ต้องสรุปทุกวิชาของทุกครู ไม่ใช่แค่วิชาของคนที่กำลังดู)
+    const [allSubjects, allSum] = await Promise.all([
+      q(sb.from('subjects').select('id,subject_group')),
+      qAll(()=>sb.from('score_summary').select('subject_id,grade'))
+    ]);
+    const subjGroupMap={}; allSubjects.forEach(s=>{ subjGroupMap[s.id]=s.subject_group||''; });
 
     // จัดกลุ่ม grade ต่อ subject_group
     const groupGrades={}; // {groupName: [grade,...]}
-    S.subjects.forEach(sub=>{
-      const g=sub.subject_group||''; if(!g) return;
+    allSum.forEach(r=>{
+      const g=subjGroupMap[r.subject_id]; if(!g||r.grade==null||r.grade==='') return;
       if(!groupGrades[g]) groupGrades[g]=[];
-      allSum.filter(r=>r.subject_id===sub.id&&r.grade!=null&&r.grade!=='').forEach(r=>{
-        const gv=parseFloat(r.grade); if(!isNaN(gv)&&gv>0) groupGrades[g].push(gv);
-      });
+      const gv=parseFloat(r.grade); if(!isNaN(gv)&&gv>0) groupGrades[g].push(gv);
     });
 
     const avg=arr=>arr.length?+(arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(2):null;
@@ -7598,7 +7574,7 @@ async function pgIQA(){
 
     // นับวิชาต่อกลุ่ม
     const groupSubjCount={};
-    S.subjects.forEach(sub=>{ const g=sub.subject_group||''; if(g) groupSubjCount[g]=(groupSubjCount[g]||0)+1; });
+    allSubjects.forEach(sub=>{ const g=sub.subject_group||''; if(g) groupSubjCount[g]=(groupSubjCount[g]||0)+1; });
 
     window._iqaMeta={yr,sm,cfg};
     const rows=SUBJECT_GROUPS.map((g,i)=>{
@@ -7670,7 +7646,7 @@ async function pgIQA(){
               return`<tr style="border-bottom:1px solid #f3f4f6;${i%2===1?'background:rgba(0,0,0,.015)':''}">
                 <td style="padding:10px 12px;text-align:center;color:#8e8e93">${i+1}</td>
                 <td style="padding:10px 12px;font-weight:500;white-space:nowrap">${esc(r.g)}</td>
-                <td style="padding:10px 12px;text-align:center">${r.target.toFixed(2)}</td>
+                <td style="padding:6px 12px;text-align:center"><input type="number" id="iqa-t-${i}" value="${r.target}" min="0" max="4" step="0.01" class="fi" style="text-align:center;padding:6px 8px;width:80px"></td>
                 <td style="padding:10px 12px;text-align:center;font-weight:600">${avgStr}</td>
                 <td style="padding:10px 12px;text-align:center;font-weight:700;color:${diffColor}">${diffStr}</td>
                 <td style="padding:10px 12px;text-align:center">${badge}</td>
@@ -7692,9 +7668,15 @@ async function pgIQA(){
             </tr>
           </tbody>
         </table>
+        <div class="no-print" style="padding:12px;display:flex;justify-content:flex-end">
+          <button class="btn bp btn-sm" onclick="saveIQATargets()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            บันทึกค่าเป้าหมาย
+          </button>
+        </div>
       </div>
 
-      ${!S.subjects.filter(s=>s.subject_group).length?`
+      ${!allSubjects.filter(s=>s.subject_group).length?`
       <div class="card" style="margin-top:12px"><div class="empty">
         <svg class="ei" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
         <div style="font-weight:600;margin-bottom:8px">ยังไม่ได้ระบุกลุ่มสาระ</div>
