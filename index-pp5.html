@@ -4744,7 +4744,7 @@ function printScores(){
     if(isLastBef) body+=`<th rowspan="2">รวมก่อนกลาง<br>(/${mBef})</th>`;
     if(isLastAft) body+=`<th rowspan="2">รวมหลังกลาง<br>(/${mAft})</th>`;
     body+=`</tr><tr>`;
-    cols.forEach(u=>{ body+=`<th>${u.unit_number}${u.unit_name?'<br><span style="font-size:9px;font-weight:400">'+esc(u.unit_name.slice(0,12))+'</span>':''}<br><span style="font-size:9px;opacity:.6">/${u.max_score}</span></th>`; });
+    cols.forEach(u=>{ body+=`<th>${u.unit_number}<br><span style="font-size:9px;opacity:.6">/${u.max_score}</span></th>`; });
     body+=`</tr></thead><tbody>`;
     scStus.forEach((s,i)=>{
       body+=`<tr><td>${i+1}</td><td>${esc(s.student_code)}</td><td class="l">${esc(s.student_name)}</td>`;
