@@ -6243,46 +6243,7 @@ ${cvTh('รายการประเมิน','text-align:left;padding-left:6
 </div>
 </div></div>`;
 
-  // ── 2. แผนการวัดและประเมินผล ──────────────────────────────────
-  const evalUnitRows=buildEvalPlanUnitRows();
-  body+=`<div class="sec pb">${ph('แผนการวัดและประเมินผล — '+sub.subject_name+' '+grm(sub.grade_level,sub.room),1,2)}<h3>หน่วยการเรียนรู้ มาตรฐานการเรียนรู้ และสัดส่วนคะแนนประเมินผล</h3><table><thead><tr>`;
-  evalUnitRows[0].forEach(h=>{ body+=`<th>${esc(String(h))}</th>`; });
-  body+='</tr></thead><tbody>';
-  for(let i=1;i<evalUnitRows.length;i++){
-    const isFoot=i>=evalUnitRows.length-4;
-    body+=`<tr${isFoot?' style="font-weight:700;background:#f5f5f5"':''}>`;
-    evalUnitRows[i].forEach((v,j)=>{ body+=`<td class="${j===1||j===2?'l':''}"${j===2?' style="white-space:pre-line"':''}>${esc(String(v))}</td>`; });
-    body+='</tr>';
-  }
-  body+='</tbody></table></div>';
-
-  const evalKpaRows=buildEvalPlanKpaRows();
-  const evalBetween=(+sub.score_before_mid||0)+(+sub.score_mid||0)+(+sub.score_after_mid||0);
-  const evalFinal=+sub.score_final||0;
-  body+=`<div class="sec pb">${ph('แผนการวัดและประเมินผล — '+sub.subject_name+' '+grm(sub.grade_level,sub.room),2,2)}<h3>สัดส่วนคะแนน</h3><div class="m2">ระหว่างภาค : ปลายภาค = ${evalBetween} : ${evalFinal} &nbsp;&nbsp;|&nbsp;&nbsp; ความรู้(K) : ทักษะ(P) : คุณธรรม(A) = ${+sub.knowledge_ratio||0} : ${+sub.skill_ratio||0} : ${+sub.moral_ratio||0}</div><table><thead><tr>`;
-  evalKpaRows[0].forEach(h=>{ body+=`<th>${esc(String(h))}</th>`; });
-  body+='</tr></thead><tbody>';
-  for(let i=1;i<evalKpaRows.length;i++){
-    const isFoot=i===evalKpaRows.length-1;
-    body+=`<tr${isFoot?' style="font-weight:700;background:#f5f5f5"':''}>`;
-    evalKpaRows[i].forEach((v,j)=>{ body+=`<td class="${j===0?'l':''}">${esc(String(v))}</td>`; });
-    body+='</tr>';
-  }
-  body+='</tbody></table>';
-
-  const evalIndRows=buildEvalPlanIndicatorRows();
-  body+='<h3>น้ำหนักคะแนนรายตัวชี้วัด</h3><table><thead><tr>';
-  evalIndRows[0].forEach(h=>{ body+=`<th>${esc(String(h))}</th>`; });
-  body+='</tr></thead><tbody>';
-  for(let i=1;i<evalIndRows.length;i++){
-    const isFoot=i===evalIndRows.length-1;
-    body+=`<tr${isFoot?' style="font-weight:700;background:#f5f5f5"':''}>`;
-    evalIndRows[i].forEach((v,j)=>{ body+=`<td class="${j===0||j===7?'l':''}">${esc(String(v))}</td>`; });
-    body+='</tr>';
-  }
-  body+='</tbody></table></div>';
-
-  // ── 3. บันทึกเวลาเรียน ──────────────────────────────────────
+  // ── 2. บันทึกเวลาเรียน ──────────────────────────────────────
   const mMap={};
   attRows.forEach(a=>{ const ym=String(a.year_month||'').trim(); if(!ym)return; if(!mMap[ym]) mMap[ym]={ym,monthName:a.month_name||'',dayMap:{},cells:{}}; const M=mMap[ym]; M.dayMap[a.date_day]=parseInt(a.periods)||1; if(!M.cells[a.student_id]) M.cells[a.student_id]={}; M.cells[a.student_id][a.date_day]=a.status; });
   const aMon=Object.values(mMap).map(M=>({...M,days:Object.keys(M.dayMap).map(d=>({day:parseInt(d),periods:M.dayMap[d]})).sort((a,b)=>a.day-b.day)})).sort((a,b)=>a.ym.localeCompare(b.ym));
@@ -6307,7 +6268,7 @@ ${cvTh('รายการประเมิน','text-align:left;padding-left:6
     body+=`</div>`;
   });
 
-  // ── 4. บันทึกคะแนน ──────────────────────────────────────────
+  // ── 3. บันทึกคะแนน ──────────────────────────────────────────
   const um={};
   scUnitsAll.forEach(u=>{ const k=`${u.period}_${parseInt(u.unit_number)}`; if(!um[k]) um[k]={period:u.period,unit_number:parseInt(u.unit_number),unit_name:u.unit_name||'',max_score:parseFloat(u.max_score)||20}; });
   const uBef=Object.values(um).filter(u=>u.period==='before').sort((a,b)=>a.unit_number-b.unit_number);
@@ -6346,12 +6307,12 @@ ${cvTh('รายการประเมิน','text-align:left;padding-left:6
   });
   body+=`</tbody></table></div>`;
 
-  // ── 5. การประเมิน: อ่าน คิด เขียน ──────────────────────────
+  // ── 4. การประเมิน: อ่าน คิด เขียน ──────────────────────────
   body+=`<div class="sec pb">${ph('การประเมิน — '+sub.subject_name+' '+grm(sub.grade_level,sub.room),1,2)}<h3>การอ่าน คิดวิเคราะห์ และเขียน</h3><table><thead><tr><th>เลขที่</th><th>รหัส</th><th class="l">ชื่อ-สกุล</th><th>ครั้ง 1</th><th>ครั้ง 2</th><th>ครั้ง 3</th><th>ครั้ง 4</th><th>ครั้ง 5</th><th>ผลสรุป</th></tr></thead><tbody>`;
   stus.forEach((s,i)=>{ const er=erMap[s.id]||{}; body+=`<tr><td>${i+1}</td><td>${esc(s.student_code||'')}</td><td class="l">${esc(s.student_name)}</td><td>${elb(er.t1)}</td><td>${elb(er.t2)}</td><td>${elb(er.t3)}</td><td>${elb(er.t4)}</td><td>${elb(er.t5)}</td><td><strong>${elb(er.result)}</strong></td></tr>`; });
   body+=`</tbody></table></div>`;
 
-  // ── 6. การประเมิน: คุณลักษณะ ──────────────────────────────────
+  // ── 5. การประเมิน: คุณลักษณะ ──────────────────────────────────
   body+=`<div class="sec pb">${ph('การประเมิน — '+sub.subject_name+' '+grm(sub.grade_level,sub.room),2,2)}<h3>คุณลักษณะอันพึงประสงค์</h3><table><thead><tr><th>เลขที่</th><th>รหัส</th><th class="l">ชื่อ-สกุล</th>`;
   CHAR8.forEach((_,i)=>{ body+=`<th>ข้อ ${i+1}</th>`; });
   body+=`<th>ผลสรุป</th></tr></thead><tbody>`;
@@ -6360,11 +6321,50 @@ ${cvTh('รายการประเมิน','text-align:left;padding-left:6
   CHAR8.forEach((item,i)=>{ body+=`ข้อที่ ${i+1} ${item.label}<br>`; });
   body+=`</div></div>`;
 
-  // ── 7. รายงานผลการเรียน ──────────────────────────────────────
+  // ── 6. รายงานผลการเรียน ──────────────────────────────────────
   const gcl=g=>{const n=parseFloat(g);if(n>=3.5)return'#15803d';if(n>=2.5)return'#0284c7';if(n>=1.5)return'#e6940a';if(n>=1)return'#c0392b';return'#922b21';};
   body+=`<div class="sec pb">${ph('รายงานผลการเรียน — '+sub.subject_name+' '+grm(sub.grade_level,sub.room),1,1)}<h3>สรุปผลการเรียนรายบุคคล</h3><table><thead><tr><th>ที่</th><th class="l">ชื่อ-สกุล</th><th>รวมก่อน<br>(/${mBef})</th><th>รวมหลัง<br>(/${mAft})</th><th>กลางภาค<br>(/${mM})</th><th>ปลายภาค<br>(/${mF})</th><th>รวม<br>(100)</th><th>ผลการเรียน</th><th>ผลพิเศษ</th><th>เวลาเรียน</th><th>อ่าน/คิด</th><th>คุณลักษณะ</th></tr></thead><tbody>`;
   stus.forEach((s,i)=>{ const sm=sumMap[s.id]||{},er=erMap[s.id]||{},ec=ecMap[s.id]||{},att=attMap[s.id]||{pct:0,ms:false},g=sm.grade??'-'; body+=`<tr><td>${i+1}</td><td class="l">${esc(s.student_name)}</td><td>${sm.total_before_mid??0}</td><td>${sm.total_after_mid??0}</td><td>${sm.mid_normal??0}</td><td>${sm.final_score??0}</td><td>${sm.total_score??0}</td><td style="color:${gcl(g)}"><strong>${g}</strong></td><td>${sm.special_result||'-'}</td><td>${att.pct}%${att.ms?' (มส)':''}</td><td>${elb(er.result)}</td><td>${elb(ec.overall_result)}</td></tr>`; });
   body+=`</tbody></table></div>`;
+
+  // ── 7. แผนการวัดและประเมินผล ── ไว้ท้ายเล่มเป็นเอกสารอ้างอิงประกอบ ──
+  const evalUnitRows=buildEvalPlanUnitRows();
+  body+=`<div class="sec pb">${ph('แผนการวัดและประเมินผล — '+sub.subject_name+' '+grm(sub.grade_level,sub.room),1,2)}<h3>หน่วยการเรียนรู้ มาตรฐานการเรียนรู้ และสัดส่วนคะแนนประเมินผล</h3><table><thead><tr>`;
+  evalUnitRows[0].forEach(h=>{ body+=`<th>${esc(String(h))}</th>`; });
+  body+='</tr></thead><tbody>';
+  for(let i=1;i<evalUnitRows.length;i++){
+    const isFoot=i>=evalUnitRows.length-4;
+    body+=`<tr${isFoot?' style="font-weight:700;background:#f5f5f5"':''}>`;
+    evalUnitRows[i].forEach((v,j)=>{ body+=`<td class="${j===1||j===2?'l':''}"${j===2?' style="white-space:pre-line"':''}>${esc(String(v))}</td>`; });
+    body+='</tr>';
+  }
+  body+='</tbody></table></div>';
+
+  const evalKpaRows=buildEvalPlanKpaRows();
+  const evalBetween=(+sub.score_before_mid||0)+(+sub.score_mid||0)+(+sub.score_after_mid||0);
+  const evalFinal=+sub.score_final||0;
+  body+=`<div class="sec pb">${ph('แผนการวัดและประเมินผล — '+sub.subject_name+' '+grm(sub.grade_level,sub.room),2,2)}<h3>สัดส่วนคะแนน</h3><div class="m2">ระหว่างภาค : ปลายภาค = ${evalBetween} : ${evalFinal} &nbsp;&nbsp;|&nbsp;&nbsp; ความรู้(K) : ทักษะ(P) : คุณธรรม(A) = ${+sub.knowledge_ratio||0} : ${+sub.skill_ratio||0} : ${+sub.moral_ratio||0}</div><table><thead><tr>`;
+  evalKpaRows[0].forEach(h=>{ body+=`<th>${esc(String(h))}</th>`; });
+  body+='</tr></thead><tbody>';
+  for(let i=1;i<evalKpaRows.length;i++){
+    const isFoot=i===evalKpaRows.length-1;
+    body+=`<tr${isFoot?' style="font-weight:700;background:#f5f5f5"':''}>`;
+    evalKpaRows[i].forEach((v,j)=>{ body+=`<td class="${j===0?'l':''}">${esc(String(v))}</td>`; });
+    body+='</tr>';
+  }
+  body+='</tbody></table>';
+
+  const evalIndRows=buildEvalPlanIndicatorRows();
+  body+='<h3>น้ำหนักคะแนนรายตัวชี้วัด</h3><table><thead><tr>';
+  evalIndRows[0].forEach(h=>{ body+=`<th>${esc(String(h))}</th>`; });
+  body+='</tr></thead><tbody>';
+  for(let i=1;i<evalIndRows.length;i++){
+    const isFoot=i===evalIndRows.length-1;
+    body+=`<tr${isFoot?' style="font-weight:700;background:#f5f5f5"':''}>`;
+    evalIndRows[i].forEach((v,j)=>{ body+=`<td class="${j===0||j===7?'l':''}">${esc(String(v))}</td>`; });
+    body+='</tr>';
+  }
+  body+='</tbody></table></div>';
 
   return body;
 }
