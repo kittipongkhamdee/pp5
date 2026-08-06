@@ -3553,6 +3553,7 @@ function renderAttPage(){
         <button class="btn bs btn-sm" style="height:38px;color:#0071e3" onclick="autoGenDays()" title="สร้างวันสอนจากวันสอนประจำสัปดาห์ที่ตั้งไว้ในหน้ารายวิชา"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14l2 2 4-4"/></svg>สร้างวันอัตโนมัติ</button>
         ${attStus.length>0?`${(S.config.checkin_sync_enabled==='1'&&S.config.checkin_sync_activity_id)?`<button class="btn bs btn-sm" style="height:38px;color:#0071e3" onclick="pullFromCheckin()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>ดึงข้อมูลจากระบบเช็คชื่อ</button>`:''}
         <button class="btn bs btn-sm" style="height:38px" onclick="fillMonth('present')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg>มาทั้งหมด</button>`:''}
+        ${S.subjects.length>1?`<button class="btn bs btn-sm" style="height:38px;color:#5856D6" onclick="bulkGenAndSyncAllSubjects()" title="สร้างวันสอนอัตโนมัติ + ดึงข้อมูลเช็คชื่อ ให้ทุกวิชาที่สอนในเดือนนี้ ในครั้งเดียว"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="2" y="2" width="8" height="8" rx="1.5"/><rect x="14" y="2" width="8" height="8" rx="1.5"/><rect x="2" y="14" width="8" height="8" rx="1.5"/><rect x="14" y="14" width="8" height="8" rx="1.5"/></svg>ทำทุกวิชา (${S.subjects.length})</button>`:''}
         <div style="font-size:11.5px;color:var(--muted);align-self:center">คลิกหัวคอลัมน์เพื่อลบ &nbsp;•&nbsp; คลิกช่องเพื่อเปลี่ยน &nbsp;<span style="display:inline-flex;align-items:center;gap:3px;vertical-align:middle"><span style="background:#f0fdf4;color:#16803d;border:1.5px solid #86efac;border-radius:6px;padding:1px 7px;font-size:13px;font-weight:700">✓</span><span style="font-size:12px;color:#555">มา</span></span> &nbsp;<span style="display:inline-flex;align-items:center;gap:3px;vertical-align:middle"><span style="background:#fff1f2;color:#e11d48;border:1.5px solid #fda4af;border-radius:6px;padding:1px 7px;font-size:13px;font-weight:700">✕</span><span style="font-size:12px;color:#555">ขาด</span></span> &nbsp;<span style="display:inline-flex;align-items:center;gap:3px;vertical-align:middle"><span style="background:#eff6ff;color:#2563eb;border:1.5px solid #93c5fd;border-radius:6px;padding:1px 7px;font-size:13px;font-weight:700">○</span><span style="font-size:12px;color:#555">ลา</span></span></div>
       </div>
     </div></div>
@@ -3739,6 +3740,90 @@ async function pullFromCheckin(){
     alert2({title:'ผลการดึงข้อมูลจากระบบเช็คชื่อ',msg,type:missingDays.length?'warn':'ok',okText:'รับทราบ'});
   }catch(e){toast('ดึงข้อมูลผิดพลาด: '+e.message,'er');}
   finally{loading(false);}
+}
+
+// ── สร้างวันสอนอัตโนมัติ + ดึงข้อมูลจากระบบเช็คชื่อ ให้ทุกวิชาที่สอนในเดือนที่กำลังดูอยู่ ในครั้งเดียว ──
+// เพิ่มเฉพาะวันที่ยังไม่มีข้อมูลในแต่ละวิชา (ไม่แก้ไข/ทับข้อมูลที่บันทึกไว้แล้ว) เขียนตรงลง DB โดยไม่ผ่านหน้าจอทีละวิชา
+async function bulkGenAndSyncAllSubjects(){
+  if(attMonthIdx===null){toast('กรุณาเลือกเดือนก่อน','er');return;}
+  if(S.subjects.length<2){toast('มีวิชาเดียว ใช้ปุ่ม "สร้างวันอัตโนมัติ" ตามปกติได้เลย','er');return;}
+  const mn=MONTHS[attMonthIdx], by=getBuddhistYear();
+  confirm2({
+    title:'สร้างวันสอน + ดึงข้อมูลเช็คชื่อทุกวิชา',
+    msg:`จะสร้างวันสอนอัตโนมัติ (จากวันสอนประจำสัปดาห์ที่ตั้งไว้ในแต่ละวิชา) และดึงข้อมูลจากระบบเช็คชื่อ (ถ้าเปิดใช้งาน) ให้ <strong>ทุกวิชาที่คุณสอน (${S.subjects.length} วิชา)</strong> สำหรับเดือน <strong>${mn} ${by}</strong><br><br>จะเพิ่มเฉพาะวันที่ยังไม่มีข้อมูล — ไม่แก้ไขข้อมูลที่บันทึกไว้แล้ว<br><br><span style="font-size:12px;color:var(--muted)">ถ้ามีข้อมูลที่ยังไม่ได้บันทึกในวิชาที่กำลังดูอยู่ตอนนี้ แนะนำให้กด "บันทึกทั้งเดือน" ก่อน</span>`,
+    type:'warn',confirmText:'เริ่มทำ',cancelText:'ยกเลิก',
+    onConfirm: async ()=>{
+      loading(true);
+      const ym=curYM(), calY=attCalYear();
+      const daysInMonth=new Date(calY,attMonthIdx+1,0).getDate();
+      const syncOn = S.config.checkin_sync_enabled==='1' && S.config.checkin_sync_activity_id;
+      const actId=S.config.checkin_sync_activity_id, session=S.config.checkin_sync_session||'morning';
+      const STAT_MAP={present:'present',late:'leave',absent:'absent'};
+      const results=[];
+      try{
+        await Promise.all(S.subjects.map(async sub=>{
+          let classDays=[];
+          try{ classDays=JSON.parse(S.config['class_days_'+sub.id]||'[]'); }catch(e){ classDays=[]; }
+          if(!classDays.length){ results.push({sub,skip:'no-schedule'}); return; }
+          const dowMap={}; classDays.forEach(d=>{ dowMap[d.weekday]=d.periods; });
+          const [existingRows,stus]=await Promise.all([
+            qAll(()=>sb.from('attendance').select('student_id,date_day').eq('subject_id',sub.id).eq('year_month',ym)),
+            getStudentsBySubject(sub.id)
+          ]);
+          const existingDaySet=new Set(existingRows.map(r=>parseInt(r.date_day)));
+          const newDays=[];
+          for(let day=1;day<=daysInMonth;day++){
+            const dow=new Date(calY,attMonthIdx,day).getDay();
+            if(!(dow in dowMap))continue;
+            if(existingDaySet.has(day))continue;
+            newDays.push({day,periods:dowMap[dow]});
+          }
+          if(!newDays.length||!stus.length){ results.push({sub,skip:'no-new-days'}); return; }
+          let checkinMap={};
+          if(syncOn){
+            const dates=newDays.map(d=>`${ym}-${String(d.day).padStart(2,'0')}`);
+            try{
+              const checkinRows=await q(sb.from('activity_attend').select('student_id,date,status')
+                .eq('activity_id',actId).eq('session',session).in('date',dates).in('student_id',stus.map(s=>s.id)));
+              checkinRows.forEach(r=>{ checkinMap[parseInt(r.date.split('-')[2])+'_'+r.student_id]=STAT_MAP[r.status]||'present'; });
+            }catch(e){}
+          }
+          const rows=[];
+          let filled=0;
+          stus.forEach(s=>{
+            newDays.forEach(d=>{
+              const st=checkinMap[d.day+'_'+s.id];
+              if(st) filled++;
+              rows.push({subject_id:sub.id,student_id:s.id,year_month:ym,month_name:mn,
+                date_day:d.day,periods:d.periods,hour_number:1,week_number:1,status:st||'present',note:''});
+            });
+          });
+          await q(sb.from('attendance').upsert(rows,{onConflict:'subject_id,student_id,year_month,date_day'}));
+          cacheInv('att_'+sub.id); cacheInv('att_sum_'+sub.id);
+          results.push({sub,daysAdded:newDays.length,studentsAffected:stus.length,filled});
+        }));
+      }catch(e){
+        loading(false);
+        toast('เกิดข้อผิดพลาด: '+e.message,'er');
+        return;
+      }
+      cacheInv('ms_att_'+S.user.id); updateMsBadge();
+      // รีเฟรชวิชาที่กำลังดูอยู่ ถ้าถูกอัปเดตด้วย
+      await loadAttData(); syncAttDaysFromData();
+      loading(false);
+      const done=results.filter(r=>r.daysAdded);
+      const noSchedule=results.filter(r=>r.skip==='no-schedule');
+      const upToDate=results.filter(r=>r.skip==='no-new-days');
+      let msg=`ประมวลผลเสร็จสิ้น ${S.subjects.length} วิชา<br><br>`;
+      msg+=`✅ เพิ่มวันสอนสำเร็จ: <strong>${done.length}</strong> วิชา`;
+      if(done.length) msg+=` (รวม ${done.reduce((a,r)=>a+r.daysAdded,0)} วัน${syncOn?`, ดึงข้อมูลเช็คชื่อได้ ${done.reduce((a,r)=>a+r.filled,0)} ช่อง`:''})`;
+      msg+=`<br>⏭️ มีข้อมูลครบแล้ว/ไม่มีวันใหม่: <strong>${upToDate.length}</strong> วิชา`;
+      msg+=`<br>⚠️ ยังไม่ได้ตั้งวันสอนประจำสัปดาห์: <strong>${noSchedule.length}</strong> วิชา${noSchedule.length?' ('+noSchedule.map(r=>esc(r.sub.subject_name)).join(', ')+')':''}`;
+      msg+=`<br><br><span style="font-size:12px;color:var(--muted)">สถานะเริ่มต้นของวันที่เพิ่มใหม่คือ "มา" (ยกเว้นดึงจากระบบเช็คชื่อได้) กรุณาตรวจสอบและแก้ไขแต่ละวิชาตามจริง</span>`;
+      alert2({title:'ผลการสร้างวันสอน + ดึงข้อมูลทุกวิชา',msg,type:'ok',okText:'รับทราบ'});
+      renderAttPage();
+    }
+  });
 }
 
 async function changeAttMonth(idx){
