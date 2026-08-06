@@ -8339,15 +8339,15 @@ async function backupAllData(){
       allScoreUnits, allScoreSummary,
       allEvalRead, allEvalChar, allConfig, allProfiles
     ] = await Promise.all([
-      q(sb.from('subjects').select('*').order('grade_level').order('room').order('subject_name')),
+      qAll(()=>sb.from('subjects').select('*').order('grade_level').order('room').order('subject_name')),
       qAll(()=>sb.from('students').select('*').order('grade_level').order('room').order('student_code')),
       qAll(()=>sb.from('attendance').select('*').order('subject_id').order('student_id').order('year_month').order('date_day')),
       qAll(()=>sb.from('score_units').select('*').order('subject_id').order('student_id').order('period').order('unit_number')),
-      q(sb.from('score_summary').select('*').order('subject_id').order('student_id')),
-      q(sb.from('eval_read').select('*').order('subject_id').order('student_id')),
-      q(sb.from('eval_char').select('*').order('subject_id').order('student_id')),
-      q(sb.from('config').select('*')),
-      q(sb.from('profiles').select('id,full_name,role')),
+      qAll(()=>sb.from('score_summary').select('*').order('subject_id').order('student_id')),
+      qAll(()=>sb.from('eval_read').select('*').order('subject_id').order('student_id')),
+      qAll(()=>sb.from('eval_char').select('*').order('subject_id').order('student_id')),
+      qAll(()=>sb.from('config').select('*').order('key')),
+      qAll(()=>sb.from('profiles').select('id,full_name,role').order('id')),
     ]);
 
     // ── helper: object array → aoa ──
