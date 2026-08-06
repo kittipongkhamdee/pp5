@@ -3878,7 +3878,12 @@ async function saveMonth(){
         date_day:d.day,periods:d.periods,hour_number:1,week_number:1,status:st,note:''});
     });
   });
-  if(!rows.length){toast('ไม่มีข้อมูลให้บันทึก','er');return;}
+  // วันที่เคยมีข้อมูลบันทึกไว้แล้วในเดือนนี้ แต่ถูกลบออกจากตาราง (attDays) ก่อนกดบันทึก — ต้องลบออกจาก DB ด้วย ไม่ใช่แค่เอาออกจากตาราง
+  const keepDaySet=new Set(attDays.map(d=>d.day));
+  const removedDays=[...new Set(attData
+    .filter(a=>String(a.year_month)===String(ym)&&!keepDaySet.has(parseInt(a.date_day)))
+    .map(a=>parseInt(a.date_day)))];
+  if(!rows.length&&!removedDays.length){toast('ไม่มีข้อมูลให้บันทึก','er');return;}
   // ── Optimistic update: อัป attData ทันทีโดยไม่รอ API ──
   rows.forEach(r=>{
     const idx=attData.findIndex(a=>String(a.student_id)===String(r.student_id)
@@ -3886,12 +3891,18 @@ async function saveMonth(){
     if(idx>=0) attData[idx]={...attData[idx],...r};
     else attData.push(r);
   });
+  if(removedDays.length){
+    attData=attData.filter(a=>!(String(a.year_month)===String(ym)&&removedDays.includes(parseInt(a.date_day))));
+  }
   toast('บันทึกเวลาเรียน '+mn+' '+by+' เรียบร้อย');
   // อัปแท็บสรุปทันที (real-time) เพราะ attData ถูก update แล้ว
   _refreshSummaryTab();
-  // บันทึก API เบื้องหลัง — refetch หลัง upsert สำเร็จเท่านั้น (ไม่ใช้ timer กันแข่งกันเขียนทับ optimistic update)
+  // บันทึก API เบื้องหลัง — refetch หลังสำเร็จเท่านั้น (ไม่ใช้ timer กันแข่งกันเขียนทับ optimistic update)
   invalidateAtt(); cacheInv('att_sum_'+S.selSub);
-  q(sb.from('attendance').upsert(rows,{onConflict:'subject_id,student_id,year_month,date_day'}))
+  const ops=[];
+  if(rows.length) ops.push(q(sb.from('attendance').upsert(rows,{onConflict:'subject_id,student_id,year_month,date_day'})));
+  if(removedDays.length) ops.push(q(sb.from('attendance').delete().eq('subject_id',S.selSub).eq('year_month',ym).in('date_day',removedDays)));
+  Promise.all(ops)
     .then(async()=>{
       cacheInv('ms_att_'+S.user.id); updateMsBadge();
       try{
