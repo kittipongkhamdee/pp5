@@ -9307,36 +9307,39 @@ async function buildAIContext(){
   const [allStudents,allSum,allAtt]=await Promise.all([
     qAll(()=>sb.from('students').select('id,student_code,student_name,grade_level,room').order('grade_level').order('room').order('student_code')),
     q(sb.from('score_summary').select('subject_id,student_id,grade,total_score,special_result').in('subject_id',subjIds)),
-    qAll(()=>sb.from('attendance').select('subject_id,student_id,status,periods').in('subject_id',subjIds)),
+    qAll(()=>sb.from('attendance').select('subject_id,student_id,status,periods,year_month,date_day').in('subject_id',subjIds)),
   ]);
   const sumBySubj={}, attBySubj={};
   allSum.forEach(r=>{ (sumBySubj[r.subject_id]||(sumBySubj[r.subject_id]=[])).push(r); });
   allAtt.forEach(r=>{ (attBySubj[r.subject_id]||(attBySubj[r.subject_id]=[])).push(r); });
+  ctx+=`\nคำอธิบายรูปแบบข้อมูล: แต่ละบรรทัดนักเรียนคือ "รหัส ชื่อ เกรด:ผลการเรียนที่บันทึกในระบบแล้ว(ถ้ายังไม่บันทึกจะเป็น —) คะแนนรวม:คะแนนสะสมปัจจุบัน(เต็ม100) เข้าเรียน:%เวลาเรียนสะสม(เทียบกับจำนวนคาบที่ครูเช็คชื่อแล้วจริง ไม่ใช่เต็มภาคเรียน)"\n`;
+  ctx+=`⚠เสี่ยงมส. = เวลาเรียนต่ำกว่า 80% ของที่เช็คชื่อไปแล้ว (ยังไม่ใช่เกรด มส. ที่บันทึกจริง เป็นแค่สัญญาณเตือนล่วงหน้า)\n`;
   ctx+=`\nรายวิชา ${S.subjects.length} วิชา:\n`;
   for(const sub of S.subjects){
     const stuInClass=allStudents.filter(s=>String(s.grade_level)===String(sub.grade_level)&&String(s.room)===String(sub.room));
     const sumRows=sumBySubj[sub.id]||[];
     const attRows=attBySubj[sub.id]||[];
     const passCount=sumRows.filter(r=>parseFloat(r.grade)>0&&!['ร','มส','มผ','ผ'].includes(r.special_result||'')).length;
-    const msCount=sumRows.filter(r=>r.special_result==='มส').length;
+    const gradedMsCount=sumRows.filter(r=>r.special_result==='มส').length;
     const gradeArr=sumRows.map(r=>parseFloat(r.grade)).filter(g=>!isNaN(g)&&g>=0);
     const avg=gradeArr.length?(gradeArr.reduce((a,b)=>a+b,0)/gradeArr.length).toFixed(2):'—';
-    ctx+=`\n[${sub.subject_name} ม.${sub.grade_level}/${sub.room}] ${stuInClass.length}คน ผ่าน${passCount} มส.${msCount} เฉลี่ย${avg}\n`;
-    // รายชื่อนักเรียนทุกคน (format กระชับ)
+    const totalH=attHeldHours(attRows);
+    let riskMsCount=0;
+    const lines=[];
     stuInClass.forEach(stu=>{
       const sr=sumRows.find(r=>String(r.student_id)===String(stu.id));
       const stuAtt=attRows.filter(r=>String(r.student_id)===String(stu.id));
-      const tot=stuAtt.filter(r=>r.status==='present'||r.status==='absent').reduce((a,r)=>a+(r.periods||0),0);
-      const pres=stuAtt.filter(r=>r.status==='present').reduce((a,r)=>a+(r.periods||0),0);
-      const pct=tot>0?Math.round(pres/tot*100):null;
-      let line=`${stu.student_code} ${stu.student_name}`;
-      if(sr){
-        line+=` G:${sr.special_result||sr.grade||'—'}`;
-        if(sr.total_score!=null) line+=` S:${sr.total_score}`;
-      } else { line+=` G:—`; }
-      if(pct!==null) line+=` A:${pct}%`;
-      ctx+=line+'\n';
+      const attended=stuAtt.filter(r=>r.status==='present'||r.status==='leave').reduce((a,r)=>a+(parseInt(r.periods)||1),0);
+      const pct=totalH>0?Math.round(attended/totalH*100):null;
+      const isRisk=totalH>0&&pct<80;
+      if(isRisk) riskMsCount++;
+      let line=`${stu.student_code} ${stu.student_name} เกรด:${sr?(sr.special_result||sr.grade||'—'):'—'}`;
+      if(sr?.total_score!=null) line+=` คะแนนรวม:${sr.total_score}`;
+      if(pct!==null){ line+=` เข้าเรียน:${pct}%`; if(isRisk) line+=` ⚠เสี่ยงมส.`; }
+      lines.push(line);
     });
+    ctx+=`\n[${sub.subject_name} ม.${sub.grade_level}/${sub.room}] ${stuInClass.length}คน ผ่าน:${passCount} มส.ที่บันทึกแล้ว:${gradedMsCount} เสี่ยงมส.(เวลาเรียน):${riskMsCount} คะแนนเฉลี่ย:${avg}\n`;
+    ctx+=lines.join('\n')+'\n';
   }
   return ctx;
 }
