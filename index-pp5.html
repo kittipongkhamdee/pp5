@@ -5475,22 +5475,30 @@ function _eplKpaPeriods(sub){
     {key:'final',label:'ปลายภาค',target:+sub.score_final||0},
   ];
 }
+// แถว K/P/A ในตารางนี้ต้องรวมได้เท่ากับสัดส่วน K:P:A ของการ์ดที่ 2 เสมอ
+function _eplKpaRows(sub){
+  return[
+    {k:'k',label:'ความรู้ (K)',color:'#007AFF',target:+sub.knowledge_ratio||0},
+    {k:'p',label:'ทักษะ/กระบวนการ (P)',color:'#34C759',target:+sub.skill_ratio||0},
+    {k:'a',label:'คุณธรรมฯ (A)',color:'#FF9500',target:+sub.moral_ratio||0},
+  ];
+}
 function renderKpaMatrix(sub){
   const periods=_eplKpaPeriods(sub);
-  const rows=[{k:'k',label:'ความรู้ (K)',color:'#007AFF'},{k:'p',label:'ทักษะ/กระบวนการ (P)',color:'#34C759'},{k:'a',label:'คุณธรรมฯ (A)',color:'#FF9500'}];
+  const rows=_eplKpaRows(sub);
   const val=(pk,rk)=>+sub['kpa_'+pk+'_'+rk]||0;
   const colTotal=pk=>rows.reduce((s,r)=>s+val(pk,r.k),0);
   const rowTotal=rk=>periods.reduce((s,p)=>s+val(p.key,rk),0);
   const grandTarget=periods.reduce((s,p)=>s+p.target,0);
   const grand=periods.reduce((s,p)=>s+colTotal(p.key),0);
-  const allMatch=periods.every(p=>colTotal(p.key)===p.target);
+  const allMatch=periods.every(p=>colTotal(p.key)===p.target)&&rows.every(r=>rowTotal(r.k)===r.target);
   return`<div class="tw"><table>
     <thead><tr><th class="tl">คุณลักษณะ</th>${periods.map(p=>`<th>${p.label}<br><span style="font-size:10px;font-weight:400;opacity:.65">(เต็ม ${p.target})</span></th>`).join('')}<th>รวม</th></tr></thead>
     <tbody>
       ${rows.map(r=>`<tr>
         <td class="tl"><span class="kpa-tag"><span class="kpa-dot" style="background:${r.color}"></span>${r.label}</span></td>
         ${periods.map(p=>`<td><input class="cell-in num" type="number" id="epl-kpa-${p.key}-${r.k}" value="${val(p.key,r.k)}" oninput="_eplKpaMatrixTouch()"></td>`).join('')}
-        <td class="tc" style="font-weight:700" id="epl-kpa-row-${r.k}">${rowTotal(r.k)}</td>
+        <td class="tc" style="font-weight:700;color:${rowTotal(r.k)===r.target?'var(--ok)':'var(--err)'}" id="epl-kpa-row-${r.k}">${rowTotal(r.k)}</td>
       </tr>`).join('')}
       <tr style="font-weight:700;background:var(--card2)">
         <td class="tl">รวม</td>
@@ -5500,7 +5508,7 @@ function renderKpaMatrix(sub){
     </tbody>
   </table></div>
   <div id="epl-kpa-warn" style="margin-top:8px;font-size:12px;color:var(--err);display:${allMatch?'none':'block'}">
-    ${_ico.warning} ผลรวมแต่ละช่วงเวลาต้องเท่ากับคะแนนเต็มของช่วงนั้น (${periods.map(p=>p.label+' '+p.target).join(' / ')} รวม ${grandTarget}) — แก้ให้ตรงก่อนถึงจะบันทึกได้
+    ${_ico.warning} ผลรวมแต่ละช่วงเวลาต้องเท่ากับคะแนนเต็มของช่วงนั้น (${periods.map(p=>p.label+' '+p.target).join(' / ')} รวม ${grandTarget}) และผลรวมแต่ละคุณลักษณะต้องเท่ากับสัดส่วน K:P:A ในข้อ 2 (${rows.map(r=>r.label+' '+r.target).join(' / ')}) — แก้ให้ตรงก่อนถึงจะบันทึกได้
   </div>
   <div style="margin-top:10px;display:flex;justify-content:flex-end">
     <button class="btn bp btn-sm" onclick="saveEplKpaMatrix()">บันทึกตาราง</button>
@@ -5508,14 +5516,15 @@ function renderKpaMatrix(sub){
 }
 function _eplKpaMatrixTouch(){
   const sub=S.subjects.find(s=>s.id===S.selSub)||{};
-  const periods=_eplKpaPeriods(sub), rows=['k','p','a'];
+  const periods=_eplKpaPeriods(sub), rows=_eplKpaRows(sub);
   let grand=0, grandTarget=0, allMatch=true;
-  rows.forEach(rk=>{
-    let rt=0; periods.forEach(p=>{ rt+=+$('epl-kpa-'+p.key+'-'+rk)?.value||0; });
-    const el=$('epl-kpa-row-'+rk); if(el) el.textContent=rt;
+  rows.forEach(r=>{
+    let rt=0; periods.forEach(p=>{ rt+=+$('epl-kpa-'+p.key+'-'+r.k)?.value||0; });
+    if(rt!==r.target) allMatch=false;
+    const el=$('epl-kpa-row-'+r.k); if(el){ el.textContent=rt; el.style.color=rt===r.target?'var(--ok)':'var(--err)'; }
   });
   periods.forEach(p=>{
-    let ct=0; rows.forEach(rk=>{ ct+=+$('epl-kpa-'+p.key+'-'+rk)?.value||0; });
+    let ct=0; rows.forEach(r=>{ ct+=+$('epl-kpa-'+p.key+'-'+r.k)?.value||0; });
     grand+=ct; grandTarget+=p.target;
     if(ct!==p.target) allMatch=false;
     const el=$('epl-kpa-col-'+p.key); if(el){ el.textContent=ct; el.style.color=ct===p.target?'var(--ok)':'var(--err)'; }
@@ -5525,16 +5534,23 @@ function _eplKpaMatrixTouch(){
 }
 async function saveEplKpaMatrix(){
   const sub=S.subjects.find(s=>s.id===S.selSub)||{};
-  const periods=_eplKpaPeriods(sub), rows=['k','p','a'];
-  const patch={}, colTotals={};
-  periods.forEach(p=>{
-    let ct=0;
-    rows.forEach(rk=>{ const v=+$('epl-kpa-'+p.key+'-'+rk)?.value||0; patch['kpa_'+p.key+'_'+rk]=v; ct+=v; });
-    colTotals[p.key]=ct;
-  });
-  const mismatched=periods.filter(p=>colTotals[p.key]!==p.target);
-  if(mismatched.length){
-    toast('ผลรวมคะแนนช่วง '+mismatched.map(p=>p.label+' ('+colTotals[p.key]+'/'+p.target+')').join(', ')+' ไม่ตรงกับคะแนนเต็มของช่วงนั้น','er');
+  const periods=_eplKpaPeriods(sub), rows=_eplKpaRows(sub);
+  const patch={};
+  const colTotals=Object.fromEntries(periods.map(p=>[p.key,0]));
+  const rowTotals=Object.fromEntries(rows.map(r=>[r.k,0]));
+  periods.forEach(p=>rows.forEach(r=>{
+    const v=+$('epl-kpa-'+p.key+'-'+r.k)?.value||0;
+    patch['kpa_'+p.key+'_'+r.k]=v;
+    colTotals[p.key]+=v;
+    rowTotals[r.k]+=v;
+  }));
+  const colMismatch=periods.filter(p=>colTotals[p.key]!==p.target);
+  const rowMismatch=rows.filter(r=>rowTotals[r.k]!==r.target);
+  if(colMismatch.length||rowMismatch.length){
+    const parts=[];
+    if(colMismatch.length) parts.push(colMismatch.map(p=>p.label+' ('+colTotals[p.key]+'/'+p.target+')').join(', '));
+    if(rowMismatch.length) parts.push(rowMismatch.map(r=>r.label+' ('+rowTotals[r.k]+'/'+r.target+')').join(', '));
+    toast('ผลรวมยังไม่ตรง: '+parts.join(' — '),'er');
     return;
   }
   loading(true);
@@ -5546,6 +5562,7 @@ async function saveEplKpaMatrix(){
   finally{ loading(false); }
 }
 function renderIndicatorScoreTable(){
+  const sub=S.subjects.find(s=>s.id===S.selSub)||{};
   const idSet=new Set();
   Object.values(epUnitInd).forEach(arr=>arr.forEach(id=>idSet.add(id)));
   const ids=[...idSet];
@@ -5558,11 +5575,21 @@ function renderIndicatorScoreTable(){
   const fields=['score_k','score_p','score_a','score_mid','score_final'];
   const totals={score_k:0,score_p:0,score_a:0,score_mid:0,score_final:0};
   rows.forEach(r=>fields.forEach(f=>totals[f]+=+r.sc[f]||0));
+  // เป้าหมายอ้างอิงจากตารางแสดงสัดส่วนคะแนน (ข้อ 3): คะแนนเก็บ K/P/A มาจากช่วงก่อนกลาง+หลังกลางภาครวมกัน กลางภาค/ปลายภาคมาจากคอลัมน์นั้นตรงๆ
+  const targets={
+    score_k:(+sub.kpa_before_mid_k||0)+(+sub.kpa_after_mid_k||0),
+    score_p:(+sub.kpa_before_mid_p||0)+(+sub.kpa_after_mid_p||0),
+    score_a:(+sub.kpa_before_mid_a||0)+(+sub.kpa_after_mid_a||0),
+    score_mid:(+sub.kpa_mid_k||0)+(+sub.kpa_mid_p||0)+(+sub.kpa_mid_a||0),
+    score_final:(+sub.kpa_final_k||0)+(+sub.kpa_final_p||0)+(+sub.kpa_final_a||0),
+  };
+  const fieldLabel={score_k:'คะแนนเก็บ (K)',score_p:'คะแนนเก็บ (P)',score_a:'คะแนนเก็บ (A)',score_mid:'กลางภาค',score_final:'ปลายภาค'};
+  const mismatched=fields.filter(f=>totals[f]!==targets[f]);
   return`<div class="tw"><table>
     <thead><tr>
       <th class="tl" style="min-width:170px">ตัวชี้วัด</th>
-      <th>คะแนนเก็บ (K)</th><th>คะแนนเก็บ (P)</th><th>คะแนนเก็บ (A)</th>
-      <th>กลางภาค</th><th>ปลายภาค</th><th>รวม</th><th class="tl" style="min-width:100px">หมายเหตุ</th>
+      ${fields.map(f=>`<th>${fieldLabel[f]}<br><span style="font-size:10px;font-weight:400;opacity:.65">(เต็ม ${targets[f]})</span></th>`).join('')}
+      <th>รวม</th><th class="tl" style="min-width:100px">หมายเหตุ</th>
     </tr></thead>
     <tbody>
     ${rows.map(({ind,sc})=>{
@@ -5576,12 +5603,15 @@ function renderIndicatorScoreTable(){
     }).join('')}
     <tr style="font-weight:700;background:var(--card2)">
       <td class="tl">รวมคะแนน</td>
-      ${fields.map(f=>`<td class="tc">${totals[f]}</td>`).join('')}
+      ${fields.map(f=>`<td class="tc" style="color:${totals[f]===targets[f]?'var(--ok)':'var(--err)'}">${totals[f]}</td>`).join('')}
       <td class="tc">${fields.reduce((s,f)=>s+totals[f],0)}</td>
       <td></td>
     </tr>
     </tbody>
-  </table></div>`;
+  </table></div>
+  <div style="margin-top:8px;font-size:12px;color:var(--err);display:${mismatched.length?'block':'none'}">
+    ${_ico.warning} ผลรวม ${mismatched.map(f=>fieldLabel[f]+' ('+totals[f]+'/'+targets[f]+')').join(', ')} ยังไม่ตรงกับตารางแสดงสัดส่วนคะแนน (ข้อ 3)
+  </div>`;
 }
 async function saveEplIndScore(indId,patch){
   try{
