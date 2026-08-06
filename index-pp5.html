@@ -5902,6 +5902,13 @@ function _stdGradesForGroup(group){
   const set=new Set(stdList.filter(r=>!group||r.subject_group===group).map(r=>r.grade_level));
   return [...set].filter(Boolean).sort((a,b)=>a.localeCompare(b,'th'));
 }
+// ตัวเลือกระดับชั้นสำหรับฟอร์มเพิ่ม/แก้ไขตัวชี้วัด — ใช้ dropdown แทนพิมพ์เองกันพิมพ์ผิด
+function _stdGradeOptions(selected){
+  const opts=GRADE_LEVELS.map(l=>GRADE_PREFIX+l);
+  if(GRADE_PREFIX==='ม.' && ['4','5','6'].every(l=>GRADE_LEVELS.includes(l))) opts.push('ม.4-6');
+  if(selected && !opts.includes(selected)) opts.unshift(selected); // ค่าเดิม (เช่นข้อมูลเก่า) ที่ไม่ตรงตัวเลือกมาตรฐาน — กันข้อมูลเปลี่ยนโดยไม่ตั้งใจตอนแก้ไข
+  return opts.map(o=>`<option value="${esc(o)}" ${o===selected?'selected':''}>${esc(o)}${o==='ม.4-6'?' (รวมช่วงชั้น ม.4-6)':''}</option>`).join('');
+}
 function _stdFiltered(){
   const kw=(stdSearch||'').trim().toLowerCase();
   return stdList.filter(r=>{
@@ -6008,7 +6015,7 @@ function openStdModal(id){
       </div>
       <div class="fg" style="margin-top:14px">
         <div><label class="fl">ระดับชั้น <span class="req">*</span></label>
-          <input class="fi" id="std-f-gr" value="${esc(defGrade)}" placeholder="เช่น ${esc(GRADE_PREFIX)}1 หรือ ${esc(GRADE_PREFIX)}4-6"></div>
+          <select class="fs" id="std-f-gr">${_stdGradeOptions(defGrade)}</select></div>
         <div id="std-f-std-wrap" style="display:${(r?.subject_type||'รายวิชาพื้นฐาน')==='วิชาเพิ่มเติม'?'none':''}"><label class="fl">มาตรฐาน</label>
           <input class="fi" id="std-f-std" value="${esc(r?.standard_code||'')}" placeholder="เช่น ว 1.2"></div>
       </div>
