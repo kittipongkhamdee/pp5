@@ -1058,7 +1058,6 @@ body.dark .subc{
 </div><!-- end #main-app -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4"></script>
-<script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 
@@ -1383,7 +1382,6 @@ function printHTML(title, bodyHTML, orient='portrait'){
       .pass{color:#16803d;}.fail{color:#dc2626;font-weight:700;}.ms{color:#dc2626;font-weight:700;}
       .action-bar{display:flex;gap:10px;justify-content:center;padding:14px;margin-top:20px;background:#f5f5f7;border-radius:10px;position:sticky;bottom:0;}
       .btn-print{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#1d1d1f;color:#fff;font-weight:600;}
-      .btn-export{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#FF3B30;color:#fff;font-weight:600;}
       @media print{.action-bar{display:none!important;}#pbody{width:100%;padding:0;}}
     </style>
     </head><body>
@@ -1397,33 +1395,9 @@ function printHTML(title, bodyHTML, orient='portrait'){
     </div>
     <div class="action-bar">
       <button class="btn-print" onclick="window.print()"><svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> พิมพ์</button>
-      <button class="btn-export" id="ebtn" onclick="doExportPdf('${orient}')"><svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Export PDF</button>
     </div>
     </body></html>`);
   w.document.close();
-  const s1=w.document.createElement('script');
-  s1.src='https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js';
-  w.document.head.appendChild(s1);
-  const s2=w.document.createElement('script');
-  s2.textContent=[
-    'function doExportPdf(orient){',
-    '  const el=document.getElementById("pbody");',
-    '  if(!el||typeof html2pdf==="undefined"){setTimeout(()=>doExportPdf(orient),600);return;}',
-    '  const btn=document.getElementById("ebtn");',
-    '  if(btn){btn.textContent="กำลัง Export...";btn.disabled=true;}',
-    '  html2pdf().set({',
-    '    margin:[12,14,12,14],',
-    '    filename:document.title+".pdf",',
-    '    image:{type:"jpeg",quality:0.97},',
-    '    html2canvas:{scale:2,useCORS:true,backgroundColor:"#fff",logging:false},',
-    '    jsPDF:{unit:"mm",format:"a4",orientation:orient},',
-    '    pagebreak:{mode:["avoid-all","css"]}',
-    '  }).from(el).save()',
-    '  .then(()=>{if(btn){btn.textContent="✓ สำเร็จ";setTimeout(()=>{btn.textContent="Export PDF";btn.disabled=false;},2000);}})',
-    '  .catch(e=>{if(btn){btn.textContent="Export PDF";btn.disabled=false;}alert("ผิดพลาด: "+e.message);});',
-    '}'
-  ].join('\n');
-  w.document.body.appendChild(s2);
 }
 
 // แปลงสถานะเป็นอักษรย่อสำหรับพิมพ์
@@ -4035,40 +4009,15 @@ function printAttendance(){
       .legend{font-size:10.5px;margin-top:5px;color:#555;}
       .action-bar{display:flex;gap:10px;justify-content:center;padding:14px;margin-top:20px;background:#f5f5f7;border-radius:10px;position:sticky;bottom:0;}
       .btn-print{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#1d1d1f;color:#fff;font-weight:600;}
-      .btn-export{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#FF3B30;color:#fff;font-weight:600;}
       @media print{.action-bar{display:none!important;}.att-page{page-break-inside:avoid;}#pbody{width:100%;padding:1cm 1.2cm;}}
       .att-page+.att-page{padding-top:12mm;}
     </style></head><body>
     <div id="pbody">${body}</div>
     <div class="action-bar">
       <button class="btn-print" onclick="window.print()"><svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> พิมพ์</button>
-      <button class="btn-export" id="ebtn" onclick="doExportPdf('portrait')"><svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Export PDF</button>
     </div>
     </body></html>`);
   w.document.close();
-  const s1=w.document.createElement('script');
-  s1.src='https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js';
-  w.document.head.appendChild(s1);
-  const s2=w.document.createElement('script');
-  s2.textContent=[
-    'function doExportPdf(orient){',
-    '  const el=document.getElementById("pbody");',
-    '  if(!el||typeof html2pdf==="undefined"){setTimeout(()=>doExportPdf(orient),600);return;}',
-    '  const btn=document.getElementById("ebtn");',
-    '  if(btn){btn.textContent="กำลัง Export...";btn.disabled=true;}',
-    '  html2pdf().set({',
-    '    margin:[0,0,0,0],',
-    '    filename:document.title+".pdf",',
-    '    image:{type:"jpeg",quality:0.97},',
-    '    html2canvas:{scale:2,useCORS:true,backgroundColor:"#fff",logging:false},',
-    '    jsPDF:{unit:"mm",format:"a4",orientation:orient},',
-    '    pagebreak:{mode:["css"],before:".att-page[style*=page-break]"}',
-    '  }).from(el).save()',
-    '  .then(()=>{if(btn){btn.textContent="✓ สำเร็จ";setTimeout(()=>{btn.textContent="Export PDF";btn.disabled=false;},2000);}})',
-    '  .catch(e=>{if(btn){btn.textContent="Export PDF";btn.disabled=false;}alert("ผิดพลาด: "+e.message);});',
-    '}'
-  ].join('\n');
-  w.document.body.appendChild(s2);
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -4796,38 +4745,14 @@ function printScores(){
       td.l,th.l{text-align:left;padding-left:6px;white-space:nowrap;}
       .action-bar{display:flex;gap:10px;justify-content:center;padding:14px;margin-top:20px;background:#f5f5f7;border-radius:10px;position:sticky;bottom:0;}
       .btn-print{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#1d1d1f;color:#fff;font-weight:600;}
-      .btn-export{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#FF3B30;color:#fff;font-weight:600;}
       @media print{.action-bar{display:none!important;}.sc-page{page-break-inside:avoid;}#pbody{width:100%;padding:1cm 1.2cm;}}
     </style></head><body>
     <div id="pbody">${body}</div>
     <div class="action-bar">
       <button class="btn-print" onclick="window.print()"><svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> พิมพ์</button>
-      <button class="btn-export" id="ebtn" onclick="doExportPdf('portrait')"><svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Export PDF</button>
     </div>
     </body></html>`);
   w.document.close();
-  const s1=w.document.createElement('script');
-  s1.src='https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js';
-  w.document.head.appendChild(s1);
-  const s2=w.document.createElement('script');
-  s2.textContent=[
-    'function doExportPdf(orient){',
-    '  const el=document.getElementById("pbody");',
-    '  if(!el||typeof html2pdf==="undefined"){setTimeout(()=>doExportPdf(orient),600);return;}',
-    '  const btn=document.getElementById("ebtn");',
-    '  if(btn){btn.textContent="กำลัง Export...";btn.disabled=true;}',
-    '  html2pdf().set({',
-    '    margin:[0,0,0,0],filename:document.title+".pdf",',
-    '    image:{type:"jpeg",quality:0.97},',
-    '    html2canvas:{scale:2,useCORS:true,backgroundColor:"#fff",logging:false},',
-    '    jsPDF:{unit:"mm",format:"a4",orientation:orient},',
-    '    pagebreak:{mode:["css"]}',
-    '  }).from(el).save()',
-    '  .then(()=>{if(btn){btn.textContent="✓ สำเร็จ";setTimeout(()=>{btn.textContent="Export PDF";btn.disabled=false;},2000);}})',
-    '  .catch(e=>{if(btn){btn.textContent="Export PDF";btn.disabled=false;}alert("ผิดพลาด: "+e.message);});',
-    '}'
-  ].join('\n');
-  w.document.body.appendChild(s2);
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -6474,11 +6399,7 @@ async function pgCover(){
 
   $('pg').innerHTML=`
   <div class="ph no-print"><div class="ptitle">ปก ปพ.5</div>
-    <button class="btn bs no-print" onclick="exportCoverPdf()" style="background:rgba(255,59,48,.1);color:#FF3B30;border-color:rgba(255,59,48,.2)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 13h6M9 17h6"/></svg>
-        Export PDF ปก
-      </button>
-      <button class="btn bs no-print" onclick="printCover()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>พิมพ์ปก</button>
+    <button class="btn bs no-print" onclick="printCover()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>พิมพ์ปก</button>
       <button class="btn no-print" style="background:linear-gradient(135deg,#1d1d1f,#3a3a3c);color:#fff;border:none;font-weight:600" onclick="printAllPP5()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>พิมพ์ทั้งหมด</button></div>
   <div style="display:flex;gap:10px;margin-bottom:14px" class="no-print">
     <select class="fs" style="max-width:310px" onchange="changeCvrSub(this.value)">
@@ -6645,39 +6566,6 @@ select,.no-print{display:none!important}
 }
 
 // ════ EXPORT COVER PDF ═══════════════════════════════════════════
-function exportCoverPdf(){
-  const covEl = document.getElementById('cov-content');
-  if(!covEl){ toast('ไม่พบเนื้อหาปก','er'); return; }
-  const sub = S.subjects.find(s=>s.id===S.selSub)||S.subjects[0];
-  const fname = 'ปก_ปพ5_'+(sub?.subject_code||'')+'_'+grm(sub?.grade_level||0,sub?.room||0)+'_'+new Date().getFullYear()+'.pdf';
-  const w=window.open('','_blank');
-  if(!w){ toast('เบราว์เซอร์บล็อก popup — กรุณาอนุญาต popup แล้วลองใหม่','er'); return; }
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<style>*{box-sizing:border-box}body{margin:0;padding:0;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}select,.no-print{display:none!important}</style>
-<script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"><\/script>
-</head><body>
-<div id="cv" style="max-width:210mm;margin:auto;padding:10mm">${covEl.innerHTML}</div>
-<div id="ov" style="position:fixed;inset:0;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;font-family:Sarabun,sans-serif;font-size:17px;color:#333">
-  <div style="text-align:center"><div style="font-size:36px;margin-bottom:10px">⏳</div><div>กำลัง Export PDF ปก...</div></div>
-</div>
-<script>
-window.addEventListener('load',function(){
-  html2pdf().set({margin:[0,0,0,0],filename:${JSON.stringify(fname)},image:{type:'jpeg',quality:0.98},
-    html2canvas:{scale:2,useCORS:true,logging:false,backgroundColor:'#ffffff'},
-    jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:'avoid-all'}
-  }).from(document.getElementById('cv')).save().then(function(){
-    document.getElementById('ov').innerHTML='<div style="text-align:center"><div style="font-size:36px;margin-bottom:10px">✅</div><div>Export PDF ปก สำเร็จ!</div></div>';
-    setTimeout(function(){window.close();},1500);
-  }).catch(function(e){
-    document.getElementById('ov').innerHTML='<div style="padding:20px;color:red">Export ผิดพลาด: '+e.message+'<br><br><button onclick="window.close()">ปิด</button></div>';
-  });
-});
-<\/script></body></html>`);
-  w.document.close();
-  toast('กำลัง Export PDF ปก...');
-}
-
 // ════════════════════════════════════════════════════════════════
 // 9. SETTINGS
 // ════════════════════════════════════════════════════════════════
