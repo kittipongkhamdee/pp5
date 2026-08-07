@@ -993,8 +993,9 @@ body.dark .subc{
     <div class="ni" id="nav-report" onclick="nav('report')">
       <span class="ic"></span>รายงานผล
     </div>
-    <div class="ni" id="nav-watchlist" onclick="nav('watchlist')">
-      <span class="ic"></span>นักเรียนที่ต้องติดตาม
+    <div class="ni" id="nav-watchlist" onclick="nav('watchlist')" style="justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:8px"><span class="ic"></span>นักเรียนที่ต้องติดตาม</div>
+      <span id="watchlist-badge" class="ms-badge" style="display:none">0</span>
     </div>
     <div class="ni" id="nav-cover" onclick="nav('cover')">
       <span class="ic"></span>ปก ปพ.5
@@ -1573,6 +1574,7 @@ function showApp(){
   nav('dashboard');
   initPresence();
   updateMsBadge();
+  updateWatchlistBadge();
   const fab=$('ai-fab'); if(fab){fab.style.display='flex'; if(window._initFabDrag) _initFabDrag();}
   if(window._initIdleTimeout) _initIdleTimeout();
 }
@@ -6437,11 +6439,9 @@ function printReport(){
 // นักเรียนที่ต้องติดตาม — รวมนักเรียนผลการเรียนไม่ผ่าน / เสี่ยง มส (เวลาเรียน) ทุกวิชาที่สอน ไว้หน้าเดียว
 // ════════════════════════════════════════════════════════════════
 let _wlFilterSub='', _wlFilterType='', _wlSearch='';
-async function pgWatchlist(){
-  if(!S.subjects.length){$('pg').innerHTML=`<div class="card"><div class="empty"><svg class="ei" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><div>ยังไม่มีรายวิชา</div></div></div>`;return;}
-  loading(true);
-  try{
-    const subjIds=S.subjects.map(s=>s.id);
+async function _computeWatchlistRows(){
+  if(!S.subjects.length){ S._watchlistRows=[]; return S._watchlistRows; }
+  const subjIds=S.subjects.map(s=>s.id);
     const [sumArrays,attArrays,stuArrays]=await Promise.all([
       Promise.all(subjIds.map(id=>q(sb.from('score_summary').select('student_id,grade,special_result,total_score,final_score,total_before_mid,total_after_mid,mid_normal').eq('subject_id',id)))),
       Promise.all(subjIds.map(id=>qAll(()=>sb.from('attendance').select('student_id,status,periods,year_month,date_day').eq('subject_id',id)))),
@@ -6498,9 +6498,27 @@ async function pgWatchlist(){
         if(reasons.length) rows.push({stu,sub,reasons,gradeDisp,totalScore:sr?.total_score,pct});
       });
     });
-    S._watchlistRows=rows;
-  }finally{ loading(false); }
+  S._watchlistRows=rows;
+  return S._watchlistRows;
+}
+async function pgWatchlist(){
+  if(!S.subjects.length){$('pg').innerHTML=`<div class="card"><div class="empty"><svg class="ei" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><div>ยังไม่มีรายวิชา</div></div></div>`;return;}
+  loading(true);
+  try{ await _computeWatchlistRows(); }finally{ loading(false); }
+  _setWatchlistBadge(new Set((S._watchlistRows||[]).map(r=>r.stu.id)).size);
   renderWatchlistPage();
+}
+async function updateWatchlistBadge(){
+  try{
+    await _computeWatchlistRows();
+    _setWatchlistBadge(new Set((S._watchlistRows||[]).map(r=>r.stu.id)).size);
+  }catch(e){ console.warn('updateWatchlistBadge error:', e); }
+}
+function _setWatchlistBadge(count){
+  const badge=document.getElementById('watchlist-badge');
+  if(!badge) return;
+  if(count>0){ badge.style.display='inline-flex'; badge.textContent=count>99?'99+':count; }
+  else badge.style.display='none';
 }
 function _wlFiltered(){
   const kw=(_wlSearch||'').trim().toLowerCase();
