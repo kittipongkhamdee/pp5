@@ -1599,15 +1599,10 @@ async function updateMsBadge(){
   try{
     if(!S.user || !S.subjects.length){ _setMsBadge(0); return; }
 
-    // ดึง attendance ทุกวิชาของครูคนนี้
+    // ดึง attendance ทุกวิชาของครูคนนี้ (คำขอเดียว + ใช้ cache ร่วมกับแดชบอร์ด/หน้าติดตาม)
     const subjIds = S.subjects.map(s=>s.id);
     if(!subjIds.length){ _setMsBadge(0); return; }
-
-    // ดึง attendance ด้วย .eq() ต่อ subject (หลีกเลี่ยง RLS ปัญหากับ .in())
-    const attArrays = await Promise.all(
-      subjIds.map(id=>qAll(()=>sb.from('attendance').select('subject_id,student_id,status,periods,year_month,date_day').eq('subject_id',id)))
-    );
-    const attRows = attArrays.flat();
+    const attRows = await loadTeacherAtt();
 
     // แยกแถวดิบต่อวิชา (เก็บ year_month/date_day ไว้คำนวณเวลาเรียนสะสมที่เช็คชื่อแล้ว)
     const attBySub = {};
@@ -2300,7 +2295,43 @@ async function getStudentsBySubject(subjectId){
     qAll(()=>sb.from('students').select('*').eq('grade_level',sub.grade_level).eq('room',sub.room).order('student_code'))
   );
 }
-function clearStuCache(){ cacheInvPrefix('students_'); S._stuCache={}; }
+function clearStuCache(){ cacheInvPrefix('students_'); cacheInv('all_stu_basic'); S._stuCache={}; }
+
+// ── ข้อมูลรวมทุกวิชาที่ครูสอน — ใช้ร่วมกันระหว่างแดชบอร์ด / ป้าย มส / นักเรียนที่ต้องติดตาม ──
+// เดิมแต่ละจุดวนยิงคำขอแยกทีละวิชา (13 วิชา = 13 คำขอ) และดึงข้อมูลชุดเดียวกันซ้ำกัน 2-3 รอบ
+// รวมเป็น .in() คำขอเดียวต่อตาราง แล้ว cache ให้ทุกจุดใช้ร่วมกัน (ลดจาก ~105 คำขอ เหลือ ~5 ตอนล็อกอิน)
+// แบ่ง chunk กัน URL ยาวเกินเมื่อครูมีวิชาเยอะมาก
+async function qIn(mk, ids, chunk=100){
+  if(!ids || !ids.length) return [];
+  let out=[];
+  for(let i=0;i<ids.length;i+=chunk){
+    const part=ids.slice(i,i+chunk);
+    out=out.concat(await qAll(()=>mk(part)));
+  }
+  return out;
+}
+function _tkey(name){ return 'teach_'+name+'_'+S.user.id; }
+async function loadTeacherAtt(){
+  return qc(_tkey('att'), ()=>qIn(part=>sb.from('attendance')
+    .select('subject_id,student_id,status,periods,year_month,date_day')
+    .in('subject_id',part), S.subjects.map(s=>s.id)));
+}
+async function loadTeacherSum(){
+  return qc(_tkey('sum'), ()=>qIn(part=>sb.from('score_summary')
+    .select('subject_id,student_id,grade,total_score,special_result,final_score,total_before_mid,total_after_mid,mid_normal,mid_retake,mid_repeat')
+    .in('subject_id',part), S.subjects.map(s=>s.id)));
+}
+// รายชื่อนักเรียนทั้งหมด (คอลัมน์ที่หน้าสรุปต้องใช้) — ดึงครั้งเดียวแล้วจัดกลุ่มตามชั้น/ห้องในเครื่อง
+async function loadAllStudentsBasic(){
+  return qc('all_stu_basic', ()=>qAll(()=>sb.from('students')
+    .select('id,student_code,student_name,grade_level,room')
+    .order('grade_level').order('room').order('student_code')));
+}
+function studentsOfSubject(allStu,sub){
+  return allStu.filter(s=>String(s.grade_level)===String(sub.grade_level)&&String(s.room)===String(sub.room));
+}
+// เรียกหลังบันทึกข้อมูลที่กระทบตัวเลขสรุป เพื่อให้รอบถัดไปดึงใหม่
+function invalidateTeacherAgg(){ cacheInv(_tkey('att'), _tkey('sum')); }
 
 // ════════════════════════════════════════════════════════════════
 // 1. DASHBOARD
@@ -2313,26 +2344,16 @@ async function pgDash(){
   try{
     await loadSubjects();
     const subjIds = S.subjects.map(s=>s.id);
-    // ใช้ .eq() ต่อ subject เหมือน Report เพื่อหลีกเลี่ยงปัญหา RLS กับ .in()
-    const [allSumArrays, allStu, allAttArrays, allEvalReadArrays, allEvalCharArrays] = await Promise.all([
-      subjIds.length ?
-        Promise.all(subjIds.map(id=>q(sb.from('score_summary').select('subject_id,student_id,grade,total_score,mid_normal,mid_retake,mid_repeat,final_score').eq('subject_id',id))))
-        : Promise.resolve([[]]),
+    // ยิง .in() คำขอเดียวต่อตาราง (เดิมวนยิงทีละวิชา) และใช้ cache ร่วมกับป้าย มส/หน้าติดตาม
+    const [allSum, allStu, allAtt, allEvalRead, allEvalChar] = await Promise.all([
+      loadTeacherSum(),
       qAll(()=>sb.from('students').select('id,grade_level,room')),
-      subjIds.length ?
-        Promise.all(subjIds.map(id=>qAll(()=>sb.from('attendance').select('subject_id,student_id,status,periods,year_month,date_day').eq('subject_id',id))))
-        : Promise.resolve([[]]),
-      subjIds.length ?
-        Promise.all(subjIds.map(id=>q(sb.from('eval_read').select('subject_id').eq('subject_id',id).limit(1))))
-        : Promise.resolve([[]]),
-      subjIds.length ?
-        Promise.all(subjIds.map(id=>q(sb.from('eval_char').select('subject_id').eq('subject_id',id).limit(1))))
-        : Promise.resolve([[]])
+      loadTeacherAtt(),
+      qIn(part=>sb.from('eval_read').select('subject_id').in('subject_id',part), subjIds),
+      qIn(part=>sb.from('eval_char').select('subject_id').in('subject_id',part), subjIds)
     ]);
-    const allSum = allSumArrays.flat();
-    const allAtt = allAttArrays.flat();
-    const evalReadSubjIds = new Set(allEvalReadArrays.flat().map(r=>r.subject_id));
-    const evalCharSubjIds = new Set(allEvalCharArrays.flat().map(r=>r.subject_id));
+    const evalReadSubjIds = new Set(allEvalRead.map(r=>r.subject_id));
+    const evalCharSubjIds = new Set(allEvalChar.map(r=>r.subject_id));
     const stuCount = {};
     const stuIdsByRoom = {};
     allStu.forEach(s=>{
@@ -3839,7 +3860,7 @@ async function bulkGenAndSyncAllSubjects(){
         toast('เกิดข้อผิดพลาด: '+e.message,'er');
         return;
       }
-      cacheInv('ms_att_'+S.user.id); updateMsBadge(); updateWatchlistBadge();
+      cacheInv('ms_att_'+S.user.id); invalidateTeacherAgg(); updateMsBadge(); updateWatchlistBadge();
       // รีเฟรชวิชาที่กำลังดูอยู่ ถ้าถูกอัปเดตด้วย
       await loadAttData(); syncAttDaysFromData();
       loading(false);
@@ -3936,7 +3957,7 @@ async function saveMonth(){
   if(removedDays.length) ops.push(q(sb.from('attendance').delete().eq('subject_id',S.selSub).eq('year_month',ym).in('date_day',removedDays)));
   Promise.all(ops)
     .then(async()=>{
-      cacheInv('ms_att_'+S.user.id); updateMsBadge(); updateWatchlistBadge();
+      cacheInv('ms_att_'+S.user.id); invalidateTeacherAgg(); updateMsBadge(); updateWatchlistBadge();
       try{
         invalidateAtt();
         attData=await qAll(()=>sb.from('attendance').select('*').eq('subject_id',S.selSub));
@@ -4689,7 +4710,7 @@ async function saveExam(){
     await q(sb.from('score_summary').upsert(rows,{onConflict:'subject_id,student_id'}));
     scSum=await q(sb.from('score_summary').select('*').eq('subject_id',S.selSub));
     toast('บันทึกคะแนนสอบเรียบร้อย');
-    updateWatchlistBadge();
+    invalidateTeacherAgg(); updateWatchlistBadge();
     _clearScDirty();
     // อัปเฉพาะแท็บสรุปผล ไม่ render ทั้งหน้า (กันข้อมูลที่กรอกหาย)
     const smEl=$('sc-sm');
@@ -4781,7 +4802,7 @@ async function saveSpecial(){
     await q(sb.from('score_summary').upsert(rows,{onConflict:'subject_id,student_id'}));
     scSum=await q(sb.from('score_summary').select('*').eq('subject_id',S.selSub));
     toast('บันทึกผลพิเศษเรียบร้อย');
-    updateWatchlistBadge();
+    invalidateTeacherAgg(); updateWatchlistBadge();
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
 }
 async function changeScSub(sid){S.selSub=sid;await loadScData();renderScPage();}
@@ -6444,16 +6465,18 @@ let _wlFilterSub='', _wlFilterType='', _wlSearch='';
 async function _computeWatchlistRows(){
   if(!S.subjects.length){ S._watchlistRows=[]; return S._watchlistRows; }
   const subjIds=S.subjects.map(s=>s.id);
-    const [sumArrays,attArrays,stuArrays]=await Promise.all([
-      Promise.all(subjIds.map(id=>q(sb.from('score_summary').select('student_id,grade,special_result,total_score,final_score,total_before_mid,total_after_mid,mid_normal').eq('subject_id',id)))),
-      Promise.all(subjIds.map(id=>qAll(()=>sb.from('attendance').select('student_id,status,periods,year_month,date_day').eq('subject_id',id)))),
-      Promise.all(S.subjects.map(sub=>getStudentsBySubject(sub.id)))
+    // ใช้ข้อมูลชุดเดียวกับแดชบอร์ด/ป้าย มส (cache ร่วม) แล้วแยกตามวิชาในเครื่อง แทนการยิงทีละวิชา
+    const [allSum,allAtt,allStu]=await Promise.all([
+      loadTeacherSum(), loadTeacherAtt(), loadAllStudentsBasic()
     ]);
+    const sumBySub={}, attBySub={};
+    allSum.forEach(r=>{ (sumBySub[r.subject_id]=sumBySub[r.subject_id]||[]).push(r); });
+    allAtt.forEach(r=>{ (attBySub[r.subject_id]=attBySub[r.subject_id]||[]).push(r); });
     const rows=[];
     S.subjects.forEach((sub,i)=>{
-      const sumRows=sumArrays[i]||[];
+      const sumRows=sumBySub[sub.id]||[];
       const sumMap=Object.fromEntries(sumRows.map(r=>[String(r.student_id),r]));
-      const attRows=attArrays[i]||[];
+      const attRows=attBySub[sub.id]||[];
       const totalH=attHeldHours(attRows);
       const attBySt={};
       attRows.forEach(a=>{
@@ -6473,7 +6496,7 @@ async function _computeWatchlistRows(){
         +(stageStarted.after?(parseFloat(sub.score_after_mid)||0):0)
         +(stageStarted.mid?(parseFloat(sub.score_mid)||0):0)
         +(stageStarted.final?(parseFloat(sub.score_final)||0):0);
-      (stuArrays[i]||[]).forEach(stu=>{
+      studentsOfSubject(allStu,sub).forEach(stu=>{
         const sr=sumMap[String(stu.id)];
         const reasons=[];
         let gradeDisp='—';
