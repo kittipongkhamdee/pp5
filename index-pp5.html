@@ -3839,7 +3839,7 @@ async function bulkGenAndSyncAllSubjects(){
         toast('เกิดข้อผิดพลาด: '+e.message,'er');
         return;
       }
-      cacheInv('ms_att_'+S.user.id); updateMsBadge();
+      cacheInv('ms_att_'+S.user.id); updateMsBadge(); updateWatchlistBadge();
       // รีเฟรชวิชาที่กำลังดูอยู่ ถ้าถูกอัปเดตด้วย
       await loadAttData(); syncAttDaysFromData();
       loading(false);
@@ -3936,7 +3936,7 @@ async function saveMonth(){
   if(removedDays.length) ops.push(q(sb.from('attendance').delete().eq('subject_id',S.selSub).eq('year_month',ym).in('date_day',removedDays)));
   Promise.all(ops)
     .then(async()=>{
-      cacheInv('ms_att_'+S.user.id); updateMsBadge();
+      cacheInv('ms_att_'+S.user.id); updateMsBadge(); updateWatchlistBadge();
       try{
         invalidateAtt();
         attData=await qAll(()=>sb.from('attendance').select('*').eq('subject_id',S.selSub));
@@ -4689,6 +4689,7 @@ async function saveExam(){
     await q(sb.from('score_summary').upsert(rows,{onConflict:'subject_id,student_id'}));
     scSum=await q(sb.from('score_summary').select('*').eq('subject_id',S.selSub));
     toast('บันทึกคะแนนสอบเรียบร้อย');
+    updateWatchlistBadge();
     _clearScDirty();
     // อัปเฉพาะแท็บสรุปผล ไม่ render ทั้งหน้า (กันข้อมูลที่กรอกหาย)
     const smEl=$('sc-sm');
@@ -4780,6 +4781,7 @@ async function saveSpecial(){
     await q(sb.from('score_summary').upsert(rows,{onConflict:'subject_id,student_id'}));
     scSum=await q(sb.from('score_summary').select('*').eq('subject_id',S.selSub));
     toast('บันทึกผลพิเศษเรียบร้อย');
+    updateWatchlistBadge();
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
 }
 async function changeScSub(sid){S.selSub=sid;await loadScData();renderScPage();}
