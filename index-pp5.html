@@ -993,6 +993,9 @@ body.dark .subc{
     <div class="ni" id="nav-report" onclick="nav('report')">
       <span class="ic"></span>รายงานผล
     </div>
+    <div class="ni" id="nav-watchlist" onclick="nav('watchlist')">
+      <span class="ic"></span>นักเรียนที่ต้องติดตาม
+    </div>
     <div class="ni" id="nav-cover" onclick="nav('cover')">
       <span class="ic"></span>ปก ปพ.5
     </div>
@@ -1554,7 +1557,7 @@ function showApp(){
   const _navIcons={
     'nav-dashboard':IC.dash,'nav-subjects':IC.grid,'nav-students':IC.users,
     'nav-evalplan':IC.checklist,'nav-attendance':IC.calendar,'nav-scores':IC.pencil,'nav-eval':IC.star,
-    'nav-report':IC.chart,'nav-cover':IC.pp5,'nav-iqa':IC.iqa,'nav-settings':IC.settings,'nav-manual':IC.book,
+    'nav-report':IC.chart,'nav-watchlist':IC.warn,'nav-cover':IC.pp5,'nav-iqa':IC.iqa,'nav-settings':IC.settings,'nav-manual':IC.book,
     'nav-standards':IC.standard
   };
   Object.entries(_navIcons).forEach(([id,svg])=>{
@@ -2190,7 +2193,7 @@ async function doLogout(){
 // ── NAV ──────────────────────────────────────────────────────────
 const TITLES={dashboard:'แดชบอร์ด',subjects:'รายวิชา',students:'นักเรียน',
   attendance:'เวลาเรียน',scores:'บันทึกคะแนน',eval:'ประเมิน อ่าน/คุณลักษณะ',
-  report:'รายงานผลการเรียน',cover:'ปก ปพ.5',iqa:'รายงาน IQA กลุ่มสาระ',
+  report:'รายงานผลการเรียน',watchlist:'นักเรียนที่ต้องติดตาม',cover:'ปก ปพ.5',iqa:'รายงาน IQA กลุ่มสาระ',
   settings:'ตั้งค่า',manual:'คู่มือการใช้งาน',evalplan:'แผนการวัดและประเมินผล',standards:'มาตรฐานและตัวชี้วัด'};
 let SUBJECT_GROUPS=['ภาษาไทย','คณิตศาสตร์','วิทยาศาสตร์และเทคโนโลยี',
   'สังคมศึกษา ศาสนา และวัฒนธรรม','สุขศึกษาและพลศึกษา','ศิลปะ',
@@ -2262,7 +2265,7 @@ function nav(page,subId){
   $('tbt').textContent=TITLES[page]||page;
   const fn={dashboard:pgDash,subjects:pgSubjects,students:pgStudents,
     attendance:pgAttendance,scores:pgScores,eval:pgEval,evalplan:pgEvalPlan,
-    report:pgReport,cover:pgCover,iqa:pgIQA,settings:pgSettings,manual:pgManual,
+    report:pgReport,watchlist:pgWatchlist,cover:pgCover,iqa:pgIQA,settings:pgSettings,manual:pgManual,
     standards:pgStandards}[page];
   if(fn){
     // wrap ทุก page fn ให้ loadingOff() เสมอเมื่อเสร็จ ไม่ว่าจะ error หรือไม่
@@ -6428,6 +6431,133 @@ function printReport(){
     </div>
     </body></html>`);
   w.document.close();
+}
+
+// ════════════════════════════════════════════════════════════════
+// นักเรียนที่ต้องติดตาม — รวมนักเรียนผลการเรียนไม่ผ่าน / เสี่ยง มส. (เวลาเรียน) ทุกวิชาที่สอน ไว้หน้าเดียว
+// ════════════════════════════════════════════════════════════════
+let _wlFilterSub='', _wlFilterType='', _wlSearch='';
+async function pgWatchlist(){
+  if(!S.subjects.length){$('pg').innerHTML=`<div class="card"><div class="empty"><svg class="ei" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><div>ยังไม่มีรายวิชา</div></div></div>`;return;}
+  loading(true);
+  try{
+    const subjIds=S.subjects.map(s=>s.id);
+    const [sumArrays,attArrays,stuArrays]=await Promise.all([
+      Promise.all(subjIds.map(id=>q(sb.from('score_summary').select('student_id,grade,special_result,total_score').eq('subject_id',id)))),
+      Promise.all(subjIds.map(id=>qAll(()=>sb.from('attendance').select('student_id,status,periods,year_month,date_day').eq('subject_id',id)))),
+      Promise.all(S.subjects.map(sub=>getStudentsBySubject(sub.id)))
+    ]);
+    const rows=[];
+    S.subjects.forEach((sub,i)=>{
+      const sumMap=Object.fromEntries((sumArrays[i]||[]).map(r=>[String(r.student_id),r]));
+      const attRows=attArrays[i]||[];
+      const totalH=attHeldHours(attRows);
+      const attBySt={};
+      attRows.forEach(a=>{
+        const sid=String(a.student_id);
+        if(!(sid in attBySt)) attBySt[sid]=0;
+        if(a.status==='present'||a.status==='leave') attBySt[sid]+=(parseInt(a.periods)||1);
+      });
+      (stuArrays[i]||[]).forEach(stu=>{
+        const sr=sumMap[String(stu.id)];
+        const reasons=[];
+        let gradeDisp='—';
+        if(sr){
+          const g=parseFloat(sr.grade);
+          const isFailSpecial=['ร','มส','มผ','ผ'].includes(sr.special_result||'');
+          if(isFailSpecial||(!isNaN(g)&&g<=0)) reasons.push('fail');
+          gradeDisp=isFailSpecial?sr.special_result:(sr.grade??'—');
+        }
+        const attended=attBySt[String(stu.id)]||0;
+        const pct=totalH>0?Math.round(attended/totalH*100):null;
+        if(totalH>0&&pct<80) reasons.push('ms');
+        if(reasons.length) rows.push({stu,sub,reasons,gradeDisp,totalScore:sr?.total_score,pct});
+      });
+    });
+    S._watchlistRows=rows;
+  }finally{ loading(false); }
+  renderWatchlistPage();
+}
+function _wlFiltered(){
+  const kw=(_wlSearch||'').trim().toLowerCase();
+  return (S._watchlistRows||[]).filter(r=>{
+    if(_wlFilterSub && r.sub.id!==_wlFilterSub) return false;
+    if(_wlFilterType==='fail' && !r.reasons.includes('fail')) return false;
+    if(_wlFilterType==='ms' && !r.reasons.includes('ms')) return false;
+    if(kw && !(r.stu.student_name||'').toLowerCase().includes(kw) && !(r.stu.student_code||'').toLowerCase().includes(kw)) return false;
+    return true;
+  }).sort((a,b)=>
+    (a.sub.subject_name+grm(a.sub.grade_level,a.sub.room)).localeCompare(b.sub.subject_name+grm(b.sub.grade_level,b.sub.room),'th')
+    || (a.stu.student_code||'').localeCompare(b.stu.student_code||'','th'));
+}
+function renderWatchlistPage(){
+  const all=S._watchlistRows||[];
+  const failCount=all.filter(r=>r.reasons.includes('fail')).length;
+  const msCount=all.filter(r=>r.reasons.includes('ms')).length;
+  const uniqueCount=new Set(all.map(r=>r.stu.id)).size;
+  const rows=_wlFiltered();
+  const reasonBadge=r=>{
+    let h='';
+    if(r.reasons.includes('fail')) h+=`<span class="badge bg-r" style="margin-right:4px">ไม่ผ่าน</span>`;
+    if(r.reasons.includes('ms')) h+=`<span class="badge" style="background:rgba(255,149,0,.15);color:#b45309">เสี่ยง มส.</span>`;
+    return h;
+  };
+  $('pg').innerHTML=`
+  <div class="ph"><div class="ptitle">นักเรียนที่ต้องติดตาม</div>
+    <button class="btn bs no-print" onclick="printWatchlist()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>พิมพ์</button>
+  </div>
+  <div class="sg no-print">
+    <div class="sc"><div class="si" style="background:linear-gradient(135deg,#8e8e93,#636366)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div><div class="sv">${uniqueCount}</div><div class="sl">นักเรียน (ไม่ซ้ำคน)</div></div></div>
+    <div class="sc"><div class="si" style="background:linear-gradient(135deg,#ff6b6b,#FF3B30)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div><div><div class="sv">${failCount}</div><div class="sl">ผลการเรียนไม่ผ่าน (รายวิชา)</div></div></div>
+    <div class="sc"><div class="si" style="background:linear-gradient(135deg,#ffb340,#FF9500)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div><div class="sv">${msCount}</div><div class="sl">เสี่ยง มส. (รายวิชา)</div></div></div>
+  </div>
+  <div class="card no-print" style="margin-bottom:14px"><div class="cb">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+      <div style="min-width:220px"><label class="fl">รายวิชา</label>
+        <select class="fs" onchange="_wlFilterSub=this.value;renderWatchlistPage()">
+          <option value="">ทั้งหมด</option>
+          ${S.subjects.map(s=>`<option value="${s.id}" ${s.id===_wlFilterSub?'selected':''}>${esc(s.subject_name)} ${grm(s.grade_level,s.room)}</option>`).join('')}
+        </select></div>
+      <div style="min-width:160px"><label class="fl">ประเภท</label>
+        <select class="fs" onchange="_wlFilterType=this.value;renderWatchlistPage()">
+          <option value="" ${_wlFilterType===''?'selected':''}>ทั้งหมด</option>
+          <option value="fail" ${_wlFilterType==='fail'?'selected':''}>ไม่ผ่าน</option>
+          <option value="ms" ${_wlFilterType==='ms'?'selected':''}>เสี่ยง มส.</option>
+        </select></div>
+      <div style="flex:1;min-width:180px"><label class="fl">ค้นหาชื่อ/รหัสนักเรียน</label>
+        <input class="fi" value="${esc(_wlSearch)}" placeholder="พิมพ์เพื่อค้นหา..." oninput="_wlSearch=this.value;renderWatchlistPage()"></div>
+    </div>
+  </div></div>
+  <div class="card"><div class="cb">
+  ${!rows.length?`<div class="empty"><svg class="ei" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><div>${all.length?'ไม่พบนักเรียนตามเงื่อนไขที่เลือก':'ไม่มีนักเรียนที่ต้องติดตามในขณะนี้'}</div></div>`:`
+  <div class="tw"><table id="wl-table">
+    <thead><tr><th>เลขที่</th><th class="tl">ชื่อ-สกุล</th><th class="tl">วิชา</th><th>ชั้น/ห้อง</th><th>เหตุผล</th><th>เกรด</th><th>% เวลาเรียน</th></tr></thead>
+    <tbody>${rows.map((r,i)=>`<tr>
+      <td class="tc">${i+1}</td>
+      <td style="white-space:nowrap">${esc(r.stu.student_name)}</td>
+      <td class="tl" style="white-space:nowrap">${esc(r.sub.subject_name)}</td>
+      <td class="tc">${grm(r.sub.grade_level,r.sub.room)}</td>
+      <td class="tc">${reasonBadge(r)}</td>
+      <td class="tc">${esc(String(r.gradeDisp))}</td>
+      <td class="tc">${r.pct==null?'—':r.pct+'%'}</td>
+    </tr>`).join('')}</tbody>
+  </table></div>`}
+  </div></div>`;
+}
+function printWatchlist(){
+  const rows=_wlFiltered();
+  if(!rows.length){toast('ไม่มีข้อมูลให้พิมพ์','er');return;}
+  const body=`<table><thead><tr><th>เลขที่</th><th class="l">ชื่อ-สกุล</th><th class="l">วิชา</th><th>ชั้น/ห้อง</th><th>เหตุผล</th><th>เกรด</th><th>% เวลาเรียน</th></tr></thead>
+    <tbody>${rows.map((r,i)=>`<tr>
+      <td>${i+1}</td>
+      <td class="l">${esc(r.stu.student_name)}</td>
+      <td class="l">${esc(r.sub.subject_name)}</td>
+      <td>${grm(r.sub.grade_level,r.sub.room)}</td>
+      <td>${r.reasons.includes('fail')?'ไม่ผ่าน':''}${r.reasons.length>1?' / ':''}${r.reasons.includes('ms')?'เสี่ยง มส.':''}</td>
+      <td>${esc(String(r.gradeDisp))}</td>
+      <td>${r.pct==null?'—':r.pct+'%'}</td>
+    </tr>`).join('')}</tbody></table>`;
+  printHTML('นักเรียนที่ต้องติดตาม',body,'portrait');
 }
 
 function _buildPP5Body(sub,cfg,stus,sumMap,erMap,ecMap,scUnitsAll,attRows,attMap,totH){
