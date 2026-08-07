@@ -978,9 +978,8 @@ body.dark .subc{
     <div class="ni" id="nav-evalplan" onclick="nav('evalplan')">
       <span class="ic"></span>แผนการวัด
     </div>
-    <div class="ni" id="nav-attendance" onclick="nav('attendance')" style="justify-content:space-between">
-      <div style="display:flex;align-items:center;gap:8px"><span class="ic"></span>เวลาเรียน</div>
-      <span id="ms-badge" class="ms-badge" style="display:none">0</span>
+    <div class="ni" id="nav-attendance" onclick="nav('attendance')">
+      <span class="ic"></span>เวลาเรียน
     </div>
     <div class="ni" id="nav-scores" onclick="nav('scores')">
       <span class="ic"></span>คะแนน
@@ -1573,7 +1572,6 @@ function showApp(){
   _applySidebarCollapse();
   nav('dashboard');
   initPresence();
-  updateMsBadge();
   updateWatchlistBadge();
   const fab=$('ai-fab'); if(fab){fab.style.display='flex'; if(window._initFabDrag) _initFabDrag();}
   if(window._initIdleTimeout) _initIdleTimeout();
@@ -1591,54 +1589,6 @@ function attHeldHours(rows){
     if(!(key in dateMap)) dateMap[key]=parseInt(a.periods)||1;
   });
   return Object.values(dateMap).reduce((a,b)=>a+b,0);
-}
-
-// ════ มส BADGE ══════════════════════════════════════════════════
-
-async function updateMsBadge(){
-  try{
-    if(!S.user || !S.subjects.length){ _setMsBadge(0); return; }
-
-    // ดึง attendance ทุกวิชาของครูคนนี้ (คำขอเดียว + ใช้ cache ร่วมกับแดชบอร์ด/หน้าติดตาม)
-    const subjIds = S.subjects.map(s=>s.id);
-    if(!subjIds.length){ _setMsBadge(0); return; }
-    const attRows = await loadTeacherAtt();
-
-    // แยกแถวดิบต่อวิชา (เก็บ year_month/date_day ไว้คำนวณเวลาเรียนสะสมที่เช็คชื่อแล้ว)
-    const attBySub = {};
-    attRows.forEach(a=>{ (attBySub[a.subject_id]=attBySub[a.subject_id]||[]).push(a); });
-
-    // นับนักเรียนที่มี % < 80% โดยใช้เวลาเรียนสะสมที่เช็คชื่อแล้วเป็นตัวหาร (ตรงกับหน้าเวลาเรียน)
-    const msSet = new Set();
-    S.subjects.forEach(sub=>{
-      const rows = attBySub[sub.id]||[];
-      const totalH = attHeldHours(rows);
-      const attMap = {};
-      rows.forEach(a=>{
-        const sid = String(a.student_id);
-        if(!(sid in attMap)) attMap[sid]=0;
-        if(a.status==='present'||a.status==='leave') attMap[sid]+=(parseInt(a.periods)||1);
-      });
-      Object.entries(attMap).forEach(([sid,attended])=>{
-        if(totalH>0 && (attended/totalH*100)<80) msSet.add(sid);
-      });
-    });
-
-    _setMsBadge(msSet.size);
-  }catch(e){
-    console.warn('updateMsBadge error:', e);
-  }
-}
-
-function _setMsBadge(count){
-  const badge = document.getElementById('ms-badge');
-  if(!badge) return;
-  if(count > 0){
-    badge.style.display = 'inline-flex';
-    badge.textContent = count > 99 ? '99+' : count;
-  } else {
-    badge.style.display = 'none';
-  }
 }
 
 // ════ DARK MODE ══════════════════════════════════════════════════
@@ -3860,7 +3810,7 @@ async function bulkGenAndSyncAllSubjects(){
         toast('เกิดข้อผิดพลาด: '+e.message,'er');
         return;
       }
-      cacheInv('ms_att_'+S.user.id); invalidateTeacherAgg(); updateMsBadge(); updateWatchlistBadge();
+      invalidateTeacherAgg(); updateWatchlistBadge();
       // รีเฟรชวิชาที่กำลังดูอยู่ ถ้าถูกอัปเดตด้วย
       await loadAttData(); syncAttDaysFromData();
       loading(false);
@@ -3957,7 +3907,7 @@ async function saveMonth(){
   if(removedDays.length) ops.push(q(sb.from('attendance').delete().eq('subject_id',S.selSub).eq('year_month',ym).in('date_day',removedDays)));
   Promise.all(ops)
     .then(async()=>{
-      cacheInv('ms_att_'+S.user.id); invalidateTeacherAgg(); updateMsBadge(); updateWatchlistBadge();
+      invalidateTeacherAgg(); updateWatchlistBadge();
       try{
         invalidateAtt();
         attData=await qAll(()=>sb.from('attendance').select('*').eq('subject_id',S.selSub));
