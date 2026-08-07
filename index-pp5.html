@@ -5277,6 +5277,101 @@ async function loadEvalPlan(sid){
 }
 function changeEvalPlanSub(id){ S.selSub=id; pgEvalPlan(); }
 
+// ── คัดลอกแผนการวัดฯ + คะแนนหน่วยก่อน/หลังกลางภาค จากวิชาอื่น (เช่น ห้องอื่นที่รหัสวิชาเดียวกัน) ──
+function openCopyEvalPlanModal(){
+  const cur=getSubject(S.selSub);
+  if(!cur){toast('ไม่พบวิชา','er');return;}
+  const candidates=S.subjects.filter(s=>s.id!==cur.id);
+  if(!candidates.length){toast('ไม่มีวิชาอื่นให้คัดลอก','er');return;}
+  const sameCode=candidates.filter(s=>s.subject_code===cur.subject_code);
+  const others=candidates.filter(s=>s.subject_code!==cur.subject_code);
+  const opt=s=>`<option value="${s.id}">${esc(s.subject_name)} ${grm(s.grade_level,s.room)} (${esc(s.subject_code)})</option>`;
+  document.body.insertAdjacentHTML('beforeend',`
+  <div class="mo" id="cepMod"><div class="md">
+    <div class="mh"><div class="mt">คัดลอกแผนการวัดฯ จากวิชาอื่น</div>
+      <button class="mx" onclick="rmModal('cepMod')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="10" height="10"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="mb">
+      <div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">คัดลอกมาให้ "<strong>${esc(cur.subject_name)} ${grm(cur.grade_level,cur.room)}</strong>" — คัดลอกเฉพาะโครงสร้าง (หน่วย/ตัวชี้วัด/น้ำหนักคะแนน) ไม่คัดลอกคะแนนนักเรียนจริง</div>
+      <label class="fl">วิชาต้นทาง</label>
+      <select class="fs" id="cep-src">
+        ${sameCode.length?`<optgroup label="รหัสวิชาเดียวกัน (${esc(cur.subject_code)})">${sameCode.map(opt).join('')}</optgroup>`:''}
+        ${others.length?`<optgroup label="วิชาอื่น">${others.map(opt).join('')}</optgroup>`:''}
+      </select>
+      <div style="margin-top:14px;display:flex;flex-direction:column;gap:10px">
+        <label style="display:flex;align-items:flex-start;gap:8px;font-size:13.5px;cursor:pointer"><input type="checkbox" id="cep-c-plan" checked style="width:16px;height:16px;margin-top:1px">แผนการวัดฯ (หน่วยการเรียนรู้ + ตัวชี้วัด + น้ำหนักคะแนนรายตัวชี้วัด)</label>
+        <label style="display:flex;align-items:flex-start;gap:8px;font-size:13.5px;cursor:pointer"><input type="checkbox" id="cep-c-units" checked style="width:16px;height:16px;margin-top:1px">คะแนนหน่วยก่อน/หลังกลางภาค (หน้าบันทึกคะแนน) — คัดลอกเฉพาะชื่อหน่วยและคะแนนเต็ม คะแนนของนักเรียนแต่ละคนเริ่มที่ 0</label>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn bs" onclick="rmModal('cepMod')">ยกเลิก</button>
+      <button class="btn bp" onclick="doCopyEvalPlan()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>คัดลอก</button>
+    </div>
+  </div></div>`);
+}
+async function doCopyEvalPlan(){
+  const srcId=$('cep-src').value;
+  const copyPlan=$('cep-c-plan').checked;
+  const copyUnits=$('cep-c-units').checked;
+  const destId=S.selSub;
+  if(!srcId){toast('กรุณาเลือกวิชาต้นทาง','er');return;}
+  if(!copyPlan&&!copyUnits){toast('กรุณาเลือกอย่างน้อย 1 รายการ','er');return;}
+  loading(true);
+  try{
+    if(copyPlan){
+      const existingUnits=await q(sb.from('eval_plan_units').select('id').eq('subject_id',destId));
+      if(existingUnits.length) throw new Error('วิชานี้มีแผนการวัดฯ (หน่วยการเรียนรู้) อยู่แล้ว — กรุณาลบหน่วยเดิมออกก่อนคัดลอกทับ เพื่อป้องกันข้อมูลซ้ำ');
+      const units=await q(sb.from('eval_plan_units').select('*').eq('subject_id',srcId).order('seq'));
+      const unitIdMap={};
+      for(const u of units){
+        const nu=await q(sb.from('eval_plan_units').insert({subject_id:destId,seq:u.seq,unit_name:u.unit_name,hours:u.hours,weight:u.weight}).select('id'));
+        unitIdMap[u.id]=nu[0].id;
+      }
+      const oldUnitIds=units.map(u=>u.id);
+      if(oldUnitIds.length){
+        const links=await q(sb.from('eval_plan_unit_indicators').select('*').in('unit_id',oldUnitIds));
+        if(links.length){
+          const newLinks=links.map(l=>({unit_id:unitIdMap[l.unit_id],indicator_id:l.indicator_id}));
+          await q(sb.from('eval_plan_unit_indicators').insert(newLinks));
+        }
+      }
+      const scores=await q(sb.from('eval_plan_indicator_scores').select('*').eq('subject_id',srcId));
+      if(scores.length){
+        const newScores=scores.map(s=>({subject_id:destId,indicator_id:s.indicator_id,
+          score_k:s.score_k,score_p:s.score_p,score_a:s.score_a,score_mid:s.score_mid,score_final:s.score_final,note:s.note}));
+        await q(sb.from('eval_plan_indicator_scores').insert(newScores));
+      }
+    }
+    if(copyUnits){
+      const existingScUnits=await q(sb.from('score_units').select('id').eq('subject_id',destId).limit(1));
+      if(existingScUnits.length) throw new Error('วิชานี้มีคะแนนหน่วยก่อน/หลังกลางภาคอยู่แล้ว — กรุณาลบหน่วยเดิมออกก่อนคัดลอกทับ เพื่อป้องกันข้อมูลซ้ำ');
+      const srcScUnits=await qAll(()=>sb.from('score_units').select('*').eq('subject_id',srcId));
+      const unitDefs={};
+      srcScUnits.forEach(u=>{
+        const k=u.period+'_'+u.unit_number;
+        if(!unitDefs[k]) unitDefs[k]={period:u.period,unit_number:u.unit_number,unit_name:u.unit_name,standard_ref:u.standard_ref,max_score:u.max_score};
+      });
+      const defs=Object.values(unitDefs);
+      if(defs.length){
+        const destStus=await getStudentsBySubject(destId);
+        const rows=[];
+        destStus.forEach(s=>{
+          defs.forEach(d=>{
+            rows.push({subject_id:destId,student_id:s.id,period:d.period,unit_number:d.unit_number,
+              unit_name:d.unit_name,standard_ref:d.standard_ref,max_score:d.max_score,score:0});
+          });
+        });
+        if(rows.length) await q(sb.from('score_units').upsert(rows,{onConflict:'subject_id,student_id,period,unit_number'}));
+      }
+    }
+    rmModal('cepMod');
+    toast('คัดลอกเรียบร้อย');
+    cacheInv('sc_units_'+destId); cacheInv('sc_sum_'+destId);
+    await loadEvalPlan(destId);
+    renderEvalPlanPage();
+  }catch(e){ toast('คัดลอกไม่สำเร็จ: '+e.message,'er'); }
+  finally{ loading(false); }
+}
+
 function renderEvalPlanPage(){
   const sid=S.selSub;
   const sub=S.subjects.find(s=>s.id===sid);
@@ -5287,6 +5382,7 @@ function renderEvalPlanPage(){
       <div style="font-size:13px;color:var(--muted);margin-top:2px">${esc(sub?.subject_name||'')} &nbsp;·&nbsp; ${esc(sub?.subject_code||'')} &nbsp;·&nbsp; ${grm(sub?.grade_level,sub?.room)} &nbsp;·&nbsp; ภาคเรียนที่ ${sub?.semester||1}/${esc(sub?.academic_year||'')}</div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn bs no-print" onclick="openCopyEvalPlanModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>คัดลอกจากวิชาอื่น</button>
       <button class="btn bs no-print" onclick="exportEvalPlan()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>Excel</button>
       <button class="btn bs no-print" onclick="printEvalPlan()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>พิมพ์</button>
     </div>
