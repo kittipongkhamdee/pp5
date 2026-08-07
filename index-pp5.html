@@ -6443,7 +6443,7 @@ async function pgWatchlist(){
   try{
     const subjIds=S.subjects.map(s=>s.id);
     const [sumArrays,attArrays,stuArrays]=await Promise.all([
-      Promise.all(subjIds.map(id=>q(sb.from('score_summary').select('student_id,grade,special_result,total_score').eq('subject_id',id)))),
+      Promise.all(subjIds.map(id=>q(sb.from('score_summary').select('student_id,grade,special_result,total_score,final_score').eq('subject_id',id)))),
       Promise.all(subjIds.map(id=>qAll(()=>sb.from('attendance').select('student_id,status,periods,year_month,date_day').eq('subject_id',id)))),
       Promise.all(S.subjects.map(sub=>getStudentsBySubject(sub.id)))
     ]);
@@ -6465,7 +6465,12 @@ async function pgWatchlist(){
         if(sr){
           const g=parseFloat(sr.grade);
           const isFailSpecial=['ร','มส','มผ','ผ'].includes(sr.special_result||'');
-          if(isFailSpecial||(!isNaN(g)&&g<=0)) reasons.push('fail');
+          const scoringDone=(parseFloat(sr.final_score)||0)>0; // มีคะแนนปลายภาคแล้ว = ให้คะแนนครบเทอมแล้ว
+          if(isFailSpecial||(!isNaN(g)&&g<=0)){
+            // ครูตั้งผลพิเศษเอง (ร/มส/มผ/ผ) ถือเป็นการยืนยันเสมอ ไม่ว่าจะให้คะแนนครบหรือไม่
+            // แต่ถ้าเกรดคำนวณได้ 0 เพราะยังไม่มีคะแนนปลายภาค (สอนไม่จบเทอม) ให้ถือเป็น "แนวโน้ม" ก่อน กันแจ้งเตือนผิดพลาด
+            reasons.push(isFailSpecial||scoringDone?'fail':'fail_risk');
+          }
           gradeDisp=isFailSpecial?sr.special_result:(sr.grade??'—');
         }
         const attended=attBySt[String(stu.id)]||0;
@@ -6482,8 +6487,7 @@ function _wlFiltered(){
   const kw=(_wlSearch||'').trim().toLowerCase();
   return (S._watchlistRows||[]).filter(r=>{
     if(_wlFilterSub && r.sub.id!==_wlFilterSub) return false;
-    if(_wlFilterType==='fail' && !r.reasons.includes('fail')) return false;
-    if(_wlFilterType==='ms' && !r.reasons.includes('ms')) return false;
+    if(_wlFilterType && !r.reasons.includes(_wlFilterType)) return false;
     if(kw && !(r.stu.student_name||'').toLowerCase().includes(kw) && !(r.stu.student_code||'').toLowerCase().includes(kw)) return false;
     return true;
   }).sort((a,b)=>
@@ -6493,12 +6497,14 @@ function _wlFiltered(){
 function renderWatchlistPage(){
   const all=S._watchlistRows||[];
   const failCount=all.filter(r=>r.reasons.includes('fail')).length;
+  const failRiskCount=all.filter(r=>r.reasons.includes('fail_risk')).length;
   const msCount=all.filter(r=>r.reasons.includes('ms')).length;
   const uniqueCount=new Set(all.map(r=>r.stu.id)).size;
   const rows=_wlFiltered();
   const reasonBadge=r=>{
     let h='';
     if(r.reasons.includes('fail')) h+=`<span class="badge bg-r" style="margin-right:4px">ไม่ผ่าน</span>`;
+    if(r.reasons.includes('fail_risk')) h+=`<span class="badge" style="background:rgba(255,204,0,.2);color:#8a6d00;margin-right:4px">แนวโน้มไม่ผ่าน</span>`;
     if(r.reasons.includes('ms')) h+=`<span class="badge" style="background:rgba(255,149,0,.15);color:#b45309">เสี่ยง มส.</span>`;
     return h;
   };
@@ -6508,9 +6514,11 @@ function renderWatchlistPage(){
   </div>
   <div class="sg no-print">
     <div class="sc"><div class="si" style="background:linear-gradient(135deg,#8e8e93,#636366)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div><div class="sv">${uniqueCount}</div><div class="sl">นักเรียน (ไม่ซ้ำคน)</div></div></div>
-    <div class="sc"><div class="si" style="background:linear-gradient(135deg,#ff6b6b,#FF3B30)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div><div><div class="sv">${failCount}</div><div class="sl">ผลการเรียนไม่ผ่าน (รายวิชา)</div></div></div>
+    <div class="sc"><div class="si" style="background:linear-gradient(135deg,#ff6b6b,#FF3B30)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div><div><div class="sv">${failCount}</div><div class="sl">ไม่ผ่าน — ให้คะแนนครบแล้ว (รายวิชา)</div></div></div>
+    <div class="sc"><div class="si" style="background:linear-gradient(135deg,#ffd60a,#e6b800)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div><div class="sv">${failRiskCount}</div><div class="sl">แนวโน้มไม่ผ่าน — คะแนนยังไม่ครบ (รายวิชา)</div></div></div>
     <div class="sc"><div class="si" style="background:linear-gradient(135deg,#ffb340,#FF9500)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div><div class="sv">${msCount}</div><div class="sl">เสี่ยง มส. (รายวิชา)</div></div></div>
   </div>
+  <div style="font-size:11.5px;color:var(--muted);margin:-6px 0 14px" class="no-print">"ไม่ผ่าน" = มีคะแนนปลายภาคแล้วและผลสรุปไม่ผ่าน &nbsp;•&nbsp; "แนวโน้มไม่ผ่าน" = ยังไม่มีคะแนนปลายภาค (สอนยังไม่จบเทอม) แต่คะแนนที่มีอยู่ตอนนี้ต่ำกว่าเกณฑ์ ผลอาจเปลี่ยนแปลงได้เมื่อกรอกคะแนนครบ</div>
   <div class="card no-print" style="margin-bottom:14px"><div class="cb">
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
       <div style="min-width:220px"><label class="fl">รายวิชา</label>
@@ -6518,10 +6526,11 @@ function renderWatchlistPage(){
           <option value="">ทั้งหมด</option>
           ${S.subjects.map(s=>`<option value="${s.id}" ${s.id===_wlFilterSub?'selected':''}>${esc(s.subject_name)} ${grm(s.grade_level,s.room)}</option>`).join('')}
         </select></div>
-      <div style="min-width:160px"><label class="fl">ประเภท</label>
+      <div style="min-width:200px"><label class="fl">ประเภท</label>
         <select class="fs" onchange="_wlFilterType=this.value;renderWatchlistPage()">
           <option value="" ${_wlFilterType===''?'selected':''}>ทั้งหมด</option>
-          <option value="fail" ${_wlFilterType==='fail'?'selected':''}>ไม่ผ่าน</option>
+          <option value="fail" ${_wlFilterType==='fail'?'selected':''}>ไม่ผ่าน (ยืนยันแล้ว)</option>
+          <option value="fail_risk" ${_wlFilterType==='fail_risk'?'selected':''}>แนวโน้มไม่ผ่าน (คะแนนยังไม่ครบ)</option>
           <option value="ms" ${_wlFilterType==='ms'?'selected':''}>เสี่ยง มส.</option>
         </select></div>
       <div style="flex:1;min-width:180px"><label class="fl">ค้นหาชื่อ/รหัสนักเรียน</label>
@@ -6553,7 +6562,7 @@ function printWatchlist(){
       <td class="l">${esc(r.stu.student_name)}</td>
       <td class="l">${esc(r.sub.subject_name)}</td>
       <td>${grm(r.sub.grade_level,r.sub.room)}</td>
-      <td>${r.reasons.includes('fail')?'ไม่ผ่าน':''}${r.reasons.length>1?' / ':''}${r.reasons.includes('ms')?'เสี่ยง มส.':''}</td>
+      <td>${[r.reasons.includes('fail')?'ไม่ผ่าน':'',r.reasons.includes('fail_risk')?'แนวโน้มไม่ผ่าน':'',r.reasons.includes('ms')?'เสี่ยง มส.':''].filter(Boolean).join(' / ')}</td>
       <td>${esc(String(r.gradeDisp))}</td>
       <td>${r.pct==null?'—':r.pct+'%'}</td>
     </tr>`).join('')}</tbody></table>`;
