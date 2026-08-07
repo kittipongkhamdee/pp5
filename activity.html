@@ -2226,6 +2226,9 @@ function toggleRptMoreMenu(e){
   const m=$('rpt-more-menu');if(!m)return;
   const willOpen=!m.classList.contains('open');
   if(willOpen){
+    // ย้ายเมนูไปเป็นลูกตรงของ body ก่อนเปิดทุกครั้ง — กัน iOS Safari บั๊กที่ position:fixed
+    // ในลูกของ #rpt-tabs (overflow-x:auto + -webkit-overflow-scrolling:touch) ถูกวาดค้างอยู่หลังการ์ดอื่น
+    if(m.parentElement!==document.body)document.body.appendChild(m);
     const btn=e.currentTarget||$('rpt-tab-more');
     const r=btn.getBoundingClientRect();
     m.style.left=Math.round(r.left)+'px';
@@ -2241,7 +2244,7 @@ function selectRptMore(tab){
 }
 document.addEventListener('click',(e)=>{
   const m=$('rpt-more-menu');
-  if(m&&m.classList.contains('open')&&!e.target.closest('.rpt-more-wrap'))m.classList.remove('open');
+  if(m&&m.classList.contains('open')&&!e.target.closest('.rpt-more-wrap')&&!e.target.closest('#rpt-more-menu'))m.classList.remove('open');
 });
 
 // ── Report: per activity ──
