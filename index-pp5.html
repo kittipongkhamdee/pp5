@@ -6443,13 +6443,14 @@ async function pgWatchlist(){
   try{
     const subjIds=S.subjects.map(s=>s.id);
     const [sumArrays,attArrays,stuArrays]=await Promise.all([
-      Promise.all(subjIds.map(id=>q(sb.from('score_summary').select('student_id,grade,special_result,total_score,final_score').eq('subject_id',id)))),
+      Promise.all(subjIds.map(id=>q(sb.from('score_summary').select('student_id,grade,special_result,total_score,final_score,total_before_mid,total_after_mid,mid_normal').eq('subject_id',id)))),
       Promise.all(subjIds.map(id=>qAll(()=>sb.from('attendance').select('student_id,status,periods,year_month,date_day').eq('subject_id',id)))),
       Promise.all(S.subjects.map(sub=>getStudentsBySubject(sub.id)))
     ]);
     const rows=[];
     S.subjects.forEach((sub,i)=>{
-      const sumMap=Object.fromEntries((sumArrays[i]||[]).map(r=>[String(r.student_id),r]));
+      const sumRows=sumArrays[i]||[];
+      const sumMap=Object.fromEntries(sumRows.map(r=>[String(r.student_id),r]));
       const attRows=attArrays[i]||[];
       const totalH=attHeldHours(attRows);
       const attBySt={};
@@ -6458,6 +6459,18 @@ async function pgWatchlist(){
         if(!(sid in attBySt)) attBySt[sid]=0;
         if(a.status==='present'||a.status==='leave') attBySt[sid]+=(parseInt(a.periods)||1);
       });
+      // ช่วงคะแนนไหนของวิชานี้เริ่มให้คะแนนแล้วบ้าง (มีนักเรียนอย่างน้อย 1 คนได้คะแนน>0) — ใช้กันไม่ให้เอาคะแนนเต็ม 100
+      // มาเทียบทั้งที่ครูเพิ่งเริ่มเก็บคะแนนบางส่วน (เช่น เก็บแค่ก่อนกลางภาค ยังไม่ถึงกลางภาค/ปลายภาค)
+      const stageStarted={
+        before: sumRows.some(r=>(parseFloat(r.total_before_mid)||0)>0),
+        after:  sumRows.some(r=>(parseFloat(r.total_after_mid)||0)>0),
+        mid:    sumRows.some(r=>(parseFloat(r.mid_normal)||0)>0),
+        final:  sumRows.some(r=>(parseFloat(r.final_score)||0)>0),
+      };
+      const maxSoFar=(stageStarted.before?(parseFloat(sub.score_before_mid)||0):0)
+        +(stageStarted.after?(parseFloat(sub.score_after_mid)||0):0)
+        +(stageStarted.mid?(parseFloat(sub.score_mid)||0):0)
+        +(stageStarted.final?(parseFloat(sub.score_final)||0):0);
       (stuArrays[i]||[]).forEach(stu=>{
         const sr=sumMap[String(stu.id)];
         const reasons=[];
@@ -6468,8 +6481,14 @@ async function pgWatchlist(){
           const scoringDone=(parseFloat(sr.final_score)||0)>0; // มีคะแนนปลายภาคแล้ว = ให้คะแนนครบเทอมแล้ว
           if(isFailSpecial||(!isNaN(g)&&g<=0)){
             // ครูตั้งผลพิเศษเอง (ร/มส/มผ/ผ) ถือเป็นการยืนยันเสมอ ไม่ว่าจะให้คะแนนครบหรือไม่
-            // แต่ถ้าเกรดคำนวณได้ 0 เพราะยังไม่มีคะแนนปลายภาค (สอนไม่จบเทอม) ให้ถือเป็น "แนวโน้ม" ก่อน กันแจ้งเตือนผิดพลาด
-            reasons.push(isFailSpecial||scoringDone?'fail':'fail_risk');
+            if(isFailSpecial||scoringDone){
+              reasons.push('fail');
+            }else{
+              // ยังไม่จบเทอม — เทียบคะแนนที่มีตอนนี้กับคะแนนเต็มเท่าที่เริ่มให้ไปแล้วจริง (ไม่ใช่เต็ม 100)
+              // กันแจ้งเตือนผิดตอนครูเพิ่งเริ่มเก็บคะแนนบางส่วน
+              const cur=parseFloat(sr.total_score)||0;
+              if(maxSoFar>0 && (cur/maxSoFar*100)<50) reasons.push('fail_risk');
+            }
           }
           gradeDisp=isFailSpecial?sr.special_result:(sr.grade??'—');
         }
@@ -6518,7 +6537,7 @@ function renderWatchlistPage(){
     <div class="sc"><div class="si" style="background:linear-gradient(135deg,#ffd60a,#e6b800)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div><div class="sv">${failRiskCount}</div><div class="sl">แนวโน้มไม่ผ่าน — คะแนนยังไม่ครบ (รายวิชา)</div></div></div>
     <div class="sc"><div class="si" style="background:linear-gradient(135deg,#ffb340,#FF9500)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div><div class="sv">${msCount}</div><div class="sl">เสี่ยง มส. (รายวิชา)</div></div></div>
   </div>
-  <div style="font-size:11.5px;color:var(--muted);margin:-6px 0 14px" class="no-print">"ไม่ผ่าน" = มีคะแนนปลายภาคแล้วและผลสรุปไม่ผ่าน &nbsp;•&nbsp; "แนวโน้มไม่ผ่าน" = ยังไม่มีคะแนนปลายภาค (สอนยังไม่จบเทอม) แต่คะแนนที่มีอยู่ตอนนี้ต่ำกว่าเกณฑ์ ผลอาจเปลี่ยนแปลงได้เมื่อกรอกคะแนนครบ</div>
+  <div style="font-size:11.5px;color:var(--muted);margin:-6px 0 14px" class="no-print">"ไม่ผ่าน" = มีคะแนนปลายภาคแล้วและผลสรุปไม่ผ่าน &nbsp;•&nbsp; "แนวโน้มไม่ผ่าน" = ยังไม่มีคะแนนปลายภาค (สอนยังไม่จบเทอม) และคะแนนที่มีตอนนี้ต่ำกว่าครึ่งหนึ่งของคะแนนเต็ม<u>เท่าที่เริ่มให้ไปแล้วจริง</u> (ไม่ใช่เต็ม 100 ทั้งหมด) ผลอาจเปลี่ยนแปลงได้เมื่อกรอกคะแนนครบ</div>
   <div class="card no-print" style="margin-bottom:14px"><div class="cb">
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
       <div style="min-width:220px"><label class="fl">รายวิชา</label>
