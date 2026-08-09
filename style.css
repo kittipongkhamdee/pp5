@@ -635,7 +635,7 @@ body.dark .subc{
 .lov-chip-night{background:#eff6ff;color:#1e40af;}
 
 /* ── Login page styles ── */
-#login-page .lp-wrap{
+#login-page .lp-wrap, #maintenance-screen .lp-wrap{
   min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;
   position:relative;overflow:hidden;
   background:linear-gradient(135deg,#1e1b4b 0%,#4f46e5 100%);
@@ -645,27 +645,27 @@ body.dark .subc{
   pointer-events:none;z-index:0;
 }
 #login-page .lp-wm img{width:520px;height:520px;object-fit:contain;opacity:.06;filter:grayscale(20%) brightness(10);}
-#login-page .lp-deco{position:absolute;border-radius:50%;pointer-events:none;z-index:0;}
-#login-page .lp-d1{width:500px;height:500px;background:radial-gradient(circle,rgba(255,255,255,.08) 0%,transparent 70%);top:-120px;right:-120px;}
-#login-page .lp-d2{width:380px;height:380px;background:radial-gradient(circle,rgba(255,255,255,.06) 0%,transparent 70%);bottom:-80px;left:-80px;}
-#login-page .lp-card{
+#login-page .lp-deco, #maintenance-screen .lp-deco{position:absolute;border-radius:50%;pointer-events:none;z-index:0;}
+#login-page .lp-d1, #maintenance-screen .lp-d1{width:500px;height:500px;background:radial-gradient(circle,rgba(255,255,255,.08) 0%,transparent 70%);top:-120px;right:-120px;}
+#login-page .lp-d2, #maintenance-screen .lp-d2{width:380px;height:380px;background:radial-gradient(circle,rgba(255,255,255,.06) 0%,transparent 70%);bottom:-80px;left:-80px;}
+#login-page .lp-card, #maintenance-screen .lp-card{
   position:relative;z-index:1;width:100%;max-width:400px;
   background:rgba(255,255,255,.97);backdrop-filter:blur(24px) saturate(180%);
   border-radius:28px;padding:38px 34px 30px;
   box-shadow:0 24px 64px rgba(0,0,0,.35),0 4px 20px rgba(0,0,0,.2);
   border:1px solid rgba(255,255,255,.2);
 }
-#login-page .lp-logo{
+#login-page .lp-logo, #maintenance-screen .lp-logo{
   width:82px;height:82px;border-radius:22px;overflow:hidden;background:#fff;
   display:flex;align-items:center;justify-content:center;margin:0 auto 14px;
   box-shadow:0 4px 20px rgba(0,122,255,.14),0 1px 4px rgba(0,0,0,.08);
   border:1.5px solid rgba(0,122,255,.1);
 }
 #login-page .lp-logo img{width:76px;height:76px;object-fit:contain;}
-#login-page .lp-title{text-align:center;margin-bottom:26px;}
-#login-page .lp-sname{font-size:18px;font-weight:800;color:#1d1d1f;margin-bottom:3px;}
+#login-page .lp-title, #maintenance-screen .lp-title{text-align:center;margin-bottom:26px;}
+#login-page .lp-sname, #maintenance-screen .lp-sname{font-size:18px;font-weight:800;color:#1d1d1f;margin-bottom:3px;}
 #login-page .lp-sys{font-size:13px;font-weight:700;color:#007AFF;}
-#login-page .lp-loc{font-size:11.5px;color:#8e8e93;margin-top:2px;}
+#login-page .lp-loc, #maintenance-screen .lp-loc{font-size:11.5px;color:#8e8e93;margin-top:2px;}
 /* input fields */
 #login-page .lp-field{margin-bottom:14px;}
 #login-page .lp-field label{display:block;font-size:12px;font-weight:700;color:#64748b;margin-bottom:6px;letter-spacing:.4px;font-family:'Sarabun',sans-serif;}
@@ -706,7 +706,7 @@ body.dark .subc{
   display:flex;align-items:center;gap:8px;margin-bottom:14px;
 }
 /* button */
-#login-page .lp-btn{
+#login-page .lp-btn, #maintenance-screen .lp-btn{
   width:100%;height:52px;background:#0062cc;color:#fff;
   border:none;border-radius:14px;font-size:16px;font-weight:700;
   font-family:'Sarabun',sans-serif;cursor:pointer;
@@ -714,8 +714,8 @@ body.dark .subc{
   transition:all .18s;box-shadow:0 4px 14px rgba(0,98,204,.3);
   margin-bottom:16px;
 }
-#login-page .lp-btn:hover{background:#004999;transform:translateY(-1.5px);box-shadow:0 6px 22px rgba(0,98,204,.4);}
-#login-page .lp-btn:active{transform:translateY(0);}
+#login-page .lp-btn:hover, #maintenance-screen .lp-btn:hover{background:#004999;transform:translateY(-1.5px);box-shadow:0 6px 22px rgba(0,98,204,.4);}
+#login-page .lp-btn:active, #maintenance-screen .lp-btn:active{transform:translateY(0);}
 /* divider */
 #login-page .lp-div{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
 #login-page .lp-div-line{flex:1;height:1px;background:#f0f0f0;}

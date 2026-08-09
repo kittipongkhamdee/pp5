@@ -171,6 +171,24 @@
   </div><!-- end wrap -->
 </div>
 
+<!-- Maintenance mode screen (ปิดปรับปรุงชั่วคราว) -->
+<div id="maintenance-screen" role="main" style="display:none">
+  <div class="lp-wrap">
+    <div class="lp-deco lp-d1"></div>
+    <div class="lp-deco lp-d2"></div>
+    <div class="lp-card">
+      <div class="lp-logo" style="background:rgba(255,149,0,.12)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#FF9500" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="40" height="40"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+      </div>
+      <div class="lp-title">
+        <div class="lp-sname" id="maint-title">ระบบปิดปรับปรุงชั่วคราว</div>
+        <div class="lp-loc" id="maint-msg" style="margin-top:10px;line-height:1.8;font-size:13px"></div>
+      </div>
+      <button class="lp-btn" style="background:#8e8e93;box-shadow:none" onclick="doLogout()">ออกจากระบบ</button>
+    </div>
+  </div>
+</div>
+
 
 <!-- Register modal -->
 <div id="reg-modal" class="mo" style="display:none">
@@ -901,6 +919,15 @@ function showLogin(){
 }
 
 function showApp(){
+  // โหมดปิดปรับปรุงระบบชั่วคราว — บล็อกทุกคนยกเว้นแอดมิน (ตั้งค่าได้ที่ ตั้งค่า > แอดมิน)
+  if(S.config.maintenance_mode==='1' && !S.profile?.is_admin){
+    $('login-page').style.display='none';
+    $('main-app').style.display='none';
+    const ms=$('maintenance-screen'); if(ms) ms.style.display='block';
+    const mm=$('maint-msg');
+    if(mm) mm.textContent=S.config.maintenance_message||'ขณะนี้ระบบกำลังปิดปรับปรุงชั่วคราว ขออภัยในความไม่สะดวก กรุณาลองเข้าใช้งานใหม่อีกครั้งในภายหลัง';
+    return;
+  }
   $('login-page').style.display='none';
   $('main-app').style.display='block';
   const n=S.profile?.full_name||S.user?.email||'';
@@ -934,6 +961,28 @@ function showApp(){
   updateWatchlistBadge();
   const fab=$('ai-fab'); if(fab){fab.style.display='flex'; if(window._initFabDrag) _initFabDrag();}
   if(window._initIdleTimeout) _initIdleTimeout();
+  _checkAnnouncement();
+}
+
+// ── ประกาศ/ประชาสัมพันธ์ (popup ครั้งแรกที่เจอ ต่อประกาศ 1 ฉบับ ตั้งค่าได้ที่ ตั้งค่า > แอดมิน) ──
+function _checkAnnouncement(){
+  if(S.config.announcement_active!=='1') return;
+  const id=S.config.announcement_id||'';
+  const title=S.config.announcement_title||'';
+  const msg=S.config.announcement_message||'';
+  if(!id||!title) return;
+  let seen=null;
+  try{ seen=localStorage.getItem('dismissed_announcement_id'); }catch(e){}
+  if(seen===id) return;
+  setTimeout(()=>{
+    alert2({
+      title: esc(title),
+      msg: esc(msg).replace(/\n/g,'<br>'),
+      type: 'info',
+      okText: 'รับทราบ',
+      onOk: ()=>{ try{ localStorage.setItem('dismissed_announcement_id', id); }catch(e){} }
+    });
+  }, 400);
 }
 
 

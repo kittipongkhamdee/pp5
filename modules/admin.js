@@ -912,6 +912,60 @@ async function pgSettings(){
       </div>
     </div>
 
+    <!-- การ์ด: ประกาศ/แจ้งเตือนผู้ใช้งาน -->
+    <div class="card" style="margin-bottom:0;border:1.5px solid rgba(175,82,222,.3);">
+      <div class="ch" style="background:rgba(175,82,222,.07);">
+        <div class="ct" style="color:#af52de;display:flex;align-items:center;gap:8px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#af52de" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 0 1-5.8-1.6"/></svg>
+          ประกาศ/แจ้งเตือนผู้ใช้งาน
+        </div>
+        <span class="badge" style="background:rgba(175,82,222,.15);color:#af52de;">Admin</span>
+      </div>
+      <div class="cb">
+        <div style="font-size:12px;color:#6e6e73;margin-bottom:14px;line-height:1.6">
+          ตั้งข้อความให้ทุกคนเห็นเป็น popup ครั้งแรกที่เข้าระบบ (แก้ไขแล้วกดบันทึกใหม่ จะแสดงให้ทุกคนเห็นอีกครั้ง แม้จะเคยกด "รับทราบ" ไปแล้วก็ตาม)
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:14px">
+          <input type="checkbox" id="c-ann-active" ${S.config.announcement_active==='1'?'checked':''} style="width:18px;height:18px;accent-color:var(--ac)">
+          <span style="font-size:14px;font-weight:600">เปิดใช้งานประกาศ</span>
+        </label>
+        <label class="fl">หัวข้อ</label>
+        <input class="fi" id="c-ann-title" value="${esc(S.config.announcement_title||'')}" placeholder="เช่น แจ้งปิดปรับปรุงระบบวันเสาร์นี้" style="margin-bottom:10px">
+        <label class="fl">ข้อความ</label>
+        <textarea class="fi" id="c-ann-msg" rows="3" placeholder="รายละเอียดประกาศ">${esc(S.config.announcement_message||'')}</textarea>
+        <button class="btn bp" onclick="saveAnnouncement()" style="margin-top:12px;width:100%;justify-content:center;background:rgba(175,82,222,.9);border-color:rgba(175,82,222,.9)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          บันทึกประกาศ
+        </button>
+      </div>
+    </div>
+
+    <!-- การ์ด: โหมดปิดปรับปรุงระบบ -->
+    <div class="card" style="margin-bottom:0;border:1.5px solid rgba(255,149,0,.35);">
+      <div class="ch" style="background:rgba(255,149,0,.08);">
+        <div class="ct" style="color:#b45309;display:flex;align-items:center;gap:8px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+          โหมดปิดปรับปรุงระบบ
+        </div>
+        <span class="badge" style="background:rgba(255,149,0,.15);color:#b45309;">Admin</span>
+      </div>
+      <div class="cb">
+        <div style="font-size:12px;color:#6e6e73;margin-bottom:14px;line-height:1.6">
+          เมื่อเปิดไว้ ครูทุกคน (ยกเว้นแอดมิน) จะเข้าระบบไม่ได้ เห็นแค่หน้าจอแจ้งปิดปรับปรุงแทน — ใช้ตอนต้องแก้ไขข้อมูลสำคัญหรืออัปเดตระบบ
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:14px">
+          <input type="checkbox" id="c-maint-on" ${S.config.maintenance_mode==='1'?'checked':''} style="width:18px;height:18px;accent-color:#FF9500">
+          <span style="font-size:14px;font-weight:600;color:#b45309">ปิดระบบชั่วคราว (เฉพาะแอดมินเข้าได้)</span>
+        </label>
+        <label class="fl">ข้อความแจ้งผู้ใช้ (ไม่บังคับ)</label>
+        <textarea class="fi" id="c-maint-msg" rows="2" placeholder="เช่น ระบบปิดปรับปรุงถึงเวลา 20:00 น. ขออภัยในความไม่สะดวก">${esc(S.config.maintenance_message||'')}</textarea>
+        <button class="btn bp" onclick="saveMaintenanceMode()" style="margin-top:12px;width:100%;justify-content:center;background:#FF9500;border-color:#FF9500">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          บันทึก
+        </button>
+      </div>
+    </div>
+
   </div>
   </div><!-- /stg-admin -->`:''}
 
@@ -1318,6 +1372,45 @@ async function toggleCopySubjectsEnabled(cb){
     cb.checked=!cb.checked;
     toast('บันทึกไม่สำเร็จ: '+e.message,'er');
   }finally{ cb.disabled=false; }
+}
+
+async function saveAnnouncement(){
+  const active=$('c-ann-active').checked?'1':'0';
+  const title=$('c-ann-title').value.trim();
+  const msg=$('c-ann-msg').value.trim();
+  if(active==='1'&&!title){ toast('กรุณาใส่หัวข้อประกาศ','er'); return; }
+  loading(true);
+  try{
+    const newId=String(Date.now());
+    await q(sb.from('config').upsert([
+      {key:'announcement_active',value:active},
+      {key:'announcement_title',value:title},
+      {key:'announcement_message',value:msg},
+      {key:'announcement_id',value:newId},
+    ],{onConflict:'key'}));
+    S.config.announcement_active=active;
+    S.config.announcement_title=title;
+    S.config.announcement_message=msg;
+    S.config.announcement_id=newId;
+    toast(active==='1'?'บันทึกประกาศเรียบร้อย — ทุกคนจะเห็น popup นี้เมื่อเข้าระบบครั้งถัดไป':'บันทึกแล้ว (ปิดใช้งานประกาศอยู่)');
+  }catch(e){ toast('บันทึกไม่สำเร็จ: '+e.message,'er'); }
+  finally{ loading(false); }
+}
+
+async function saveMaintenanceMode(){
+  const on=$('c-maint-on').checked?'1':'0';
+  const msg=$('c-maint-msg').value.trim();
+  loading(true);
+  try{
+    await q(sb.from('config').upsert([
+      {key:'maintenance_mode',value:on},
+      {key:'maintenance_message',value:msg},
+    ],{onConflict:'key'}));
+    S.config.maintenance_mode=on;
+    S.config.maintenance_message=msg;
+    toast(on==='1'?'เปิดโหมดปิดปรับปรุงแล้ว — ครูทั่วไปจะเข้าระบบไม่ได้จนกว่าจะปิด':'ปิดโหมดปิดปรับปรุงแล้ว ทุกคนใช้งานได้ตามปกติ');
+  }catch(e){ toast('บันทึกไม่สำเร็จ: '+e.message,'er'); }
+  finally{ loading(false); }
 }
 
 async function uploadLogo(input){
