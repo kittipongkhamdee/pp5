@@ -13,10 +13,8 @@
 <!-- Tailwind v3 Play CDN — scans all classes including JS strings -->
 
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- ฟอนต์ Sarabun เก็บไว้ในโปรเจกต์เอง (assets/fonts/) แล้ว ประกาศ @font-face อยู่ในหัวไฟล์ style.css -->
 <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-bg text-txt antialiased">
@@ -72,7 +70,7 @@
   <div class="lp-wrap">
     <!-- Watermark -->
     <div class="lp-wm">
-      <img src="https://lh5.googleusercontent.com/d/1IjjamxeQ9VaeAao8PtmR7RCwioE4hndi" alt="" onerror="this.style.display='none'">
+      <img src="/assets/logo.webp" alt="" fetchpriority="high" onerror="this.style.display='none'">
     </div>
     <!-- Deco -->
     <div class="lp-deco lp-d1"></div>
@@ -83,7 +81,7 @@
 
       <!-- Logo -->
       <div class="lp-logo">
-        <img src="https://lh5.googleusercontent.com/d/1IjjamxeQ9VaeAao8PtmR7RCwioE4hndi"
+        <img src="/assets/logo.webp"
           alt="โลโก้โรงเรียน"
           onerror="this.style.display='none'">
       </div>
@@ -289,7 +287,7 @@
       <!-- โลโก้โรงเรียน -->
       <div style="width:44px;height:44px;border-radius:12px;overflow:hidden;flex-shrink:0;background:#f5f5f7;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.12);border:1px solid rgba(0,0,0,.06)">
         <img id="sb-logo"
-          src="https://lh5.googleusercontent.com/d/1IjjamxeQ9VaeAao8PtmR7RCwioE4hndi"
+          src="/assets/logo.webp"
           alt="โลโก้โรงเรียน"
           style="width:40px;height:40px;object-fit:contain;display:block"
           onerror="this.style.display='none';document.getElementById('sb-logo-fallback').style.display='flex'">
@@ -423,7 +421,7 @@
 </div><!-- end #main-app -->
 
 <script src="vendor/supabase-js.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<!-- xlsx.js (~270KB) โหลดแบบ lazy ผ่าน ensureXLSX() เฉพาะตอนใช้ Import/Export Excel จริงๆ ดู exportExcel() -->
 <script>
 
 // ════════════════════════════════════════════════════════════════
@@ -715,8 +713,10 @@ function swTab(group,id){
 // EXPORT / PRINT HELPERS
 // ════════════════════════════════════════════════════════════════
 // exportExcel: aoa = array ของ array (แถวแรกคือ header), sheetName, fileName
-function exportExcel(sheets, fileName){
+async function exportExcel(sheets, fileName){
   // sheets = [{name, aoa, merges?, colWidths?}]
+  try{ await ensureXLSX(); }
+  catch(e){ toast('โหลดตัวสร้างไฟล์ Excel ไม่สำเร็จ: '+e.message,'er'); return; }
   const wb = XLSX.utils.book_new();
   sheets.forEach(sh=>{
     const ws = XLSX.utils.aoa_to_sheet(sh.aoa);
@@ -1553,21 +1553,23 @@ function _applySidebarCollapse(){
 }
 window.addEventListener('resize',_applySidebarCollapse);
 
-// ── โหลดโมดูล JS แบบ lazy (แยกไฟล์หน้าที่ใช้ไม่บ่อย เช่น admin.js ออกจากไฟล์หลัก) ──
+// ── โหลด JS แบบ lazy (แยกไฟล์หน้าที่ใช้ไม่บ่อย เช่น admin.js และไลบรารีหนักๆ เช่น xlsx ออกจากไฟล์หลัก) ──
 const _loadedModules={};
-function ensureModule(name){
-  if(_loadedModules[name]===true) return Promise.resolve();
-  if(_loadedModules[name]) return _loadedModules[name];
+function _loadScriptOnce(key, src){
+  if(_loadedModules[key]===true) return Promise.resolve();
+  if(_loadedModules[key]) return _loadedModules[key];
   const p=new Promise((resolve,reject)=>{
     const s=document.createElement('script');
-    s.src='modules/'+name+'.js';
-    s.onload=()=>{ _loadedModules[name]=true; resolve(); };
-    s.onerror=()=>{ delete _loadedModules[name]; reject(new Error('โหลดโมดูล '+name+' ไม่สำเร็จ')); };
+    s.src=src;
+    s.onload=()=>{ _loadedModules[key]=true; resolve(); };
+    s.onerror=()=>{ delete _loadedModules[key]; reject(new Error('โหลด '+key+' ไม่สำเร็จ')); };
     document.body.appendChild(s);
   });
-  _loadedModules[name]=p;
+  _loadedModules[key]=p;
   return p;
 }
+function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js'); }
+function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
 
 // เมนูที่ควบคุมสิทธิ์รายคน (ดู canAccessMenu/_loadMenuPerms) — key ต้องตรงกับ menu_permissions.menu_key
 const GATED_MENUS={settings:'ตั้งค่าระบบ',students:'นักเรียน',standards:'มาตรฐานและตัวชี้วัด'};
@@ -4505,7 +4507,7 @@ function printWatchlist(){
 }
 
 // ════ LOGO UPLOAD ════════════════════════════════════════════════
-const _DEFAULT_LOGO = 'https://lh5.googleusercontent.com/d/1IjjamxeQ9VaeAao8PtmR7RCwioE4hndi';
+const _DEFAULT_LOGO = '/assets/logo.webp';
 
 function updateLogoDisplay(url){
   const src = url || _DEFAULT_LOGO;

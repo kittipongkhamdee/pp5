@@ -298,8 +298,10 @@ function handleIndFileSelect(input){
   const file=input.files[0];
   if(file) readIndExcelFile(file);
 }
-function readIndExcelFile(file){
+async function readIndExcelFile(file){
   $('ind-imp-preview').innerHTML='<div style="color:var(--muted);font-size:13px">⏳ กำลังอ่านไฟล์...</div>';
+  try{ await ensureXLSX(); }
+  catch(e){ $('ind-imp-preview').innerHTML=`<div class="alert al-er">โหลดตัวอ่าน Excel ไม่สำเร็จ: ${e.message}</div>`; return; }
   const reader=new FileReader();
   reader.onload=function(e){
     try{
@@ -444,7 +446,7 @@ async function pgSettings(){
       <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
         <div style="width:72px;height:72px;border-radius:16px;overflow:hidden;background:#f5f5f7;border:1px solid rgba(0,0,0,.08);flex-shrink:0;display:flex;align-items:center;justify-content:center">
           <img id="logo-preview"
-            src="${S.config.logo_url||'https://lh5.googleusercontent.com/d/1IjjamxeQ9VaeAao8PtmR7RCwioE4hndi'}"
+            src="${S.config.logo_url||'/assets/logo.webp'}"
             style="width:72px;height:72px;object-fit:contain"
             onerror="this.style.opacity='.25'">
         </div>
@@ -1454,10 +1456,12 @@ function _triggerRestoreFile(){
   const el=document.getElementById('restore-file-input');
   if(el) el.click();
 }
-function _parseRestoreFile(file){
+async function _parseRestoreFile(file){
   if(!file.name.endsWith('.xlsx')){
     toast('ต้องเป็นไฟล์ .xlsx จาก Backup เท่านั้น','er'); return;
   }
+  try{ await ensureXLSX(); }
+  catch(e){ toast('โหลดตัวอ่าน Excel ไม่สำเร็จ: '+e.message,'er'); return; }
   const reader = new FileReader();
   reader.onload = function(e){
     try{

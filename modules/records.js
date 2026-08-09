@@ -385,8 +385,10 @@ function handleFileSelect(input){
   if(file) readExcelFile(file);
 }
 
-function readExcelFile(file){
+async function readExcelFile(file){
   $('imp-preview').innerHTML='<div style="color:var(--muted);font-size:13px">⏳ กำลังอ่านไฟล์...</div>';
+  try{ await ensureXLSX(); }
+  catch(e){ $('imp-preview').innerHTML=`<div class="alert al-er">โหลดตัวอ่าน Excel ไม่สำเร็จ: ${e.message}</div>`; return; }
   const reader=new FileReader();
   reader.onload=function(e){
     try{
@@ -1482,7 +1484,7 @@ function _buildPP5Body(sub,cfg,stus,sumMap,erMap,ecMap,scUnitsAll,attRows,attMap
   const cvTd=(c,ex='')=>`<td style="border:1px solid #000;padding:4px;text-align:center;font-size:12px;${ex}">${c}</td>`;
   body+=`<div class="cv sec"><div style="border:1.5px solid #333;padding:12px 18px 14px;font-family:'Sarabun','TH SarabunNew',sans-serif;background:#fff;position:relative;min-height:270mm">
 <div style="position:absolute;top:10px;right:16px;font-size:12px;font-weight:700;letter-spacing:.5px">ปพ. 5</div>
-<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;margin:8px 0 10px;text-align:center"><img src="${cfg.logo_url||'https://lh5.googleusercontent.com/d/1IjjamxeQ9VaeAao8PtmR7RCwioE4hndi'}" alt="ตราโรงเรียน" style="height:80px;width:auto;object-fit:contain;display:block;margin:0 auto" onerror="this.style.display='none'"></div>
+<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;margin:8px 0 10px;text-align:center"><img src="${cfg.logo_url||'/assets/logo.webp'}" alt="ตราโรงเรียน" style="height:80px;width:auto;object-fit:contain;display:block;margin:0 auto" onerror="this.style.display='none'"></div>
 <div style="text-align:center;font-size:16px;font-weight:700;margin-bottom:10px">แบบบันทึกผลการเรียนประจำรายวิชา</div>
 <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:10px;table-layout:fixed"><colgroup><col style="width:150px"><col><col style="width:80px"><col></colgroup>
 <tr><td style="padding:4px 6px">โรงเรียน</td><td colspan="3" style="padding:4px 6px;border-bottom:1px solid #666">${esc(cfg.school_name||'')}</td></tr>
@@ -1767,7 +1769,7 @@ async function pgCover(){
 
     <!-- ตราโรงเรียน — กึ่งกลาง -->
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;margin:8px 0 10px;text-align:center">
-      <img src="${S.config.logo_url||'https://lh5.googleusercontent.com/d/1IjjamxeQ9VaeAao8PtmR7RCwioE4hndi'}"
+      <img src="${S.config.logo_url||'/assets/logo.webp'}"
            alt="ตราโรงเรียน"
            style="height:80px;width:auto;object-fit:contain;display:block;margin:0 auto"
            onerror="this.style.display='none'">
