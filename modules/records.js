@@ -1463,7 +1463,7 @@ function printReport(){
 }
 
 function _buildPP5Body(sub,cfg,stus,sumMap,erMap,ecMap,scUnitsAll,attRows,attMap,totH){
-  const schoolName=(cfg.school_name||'').startsWith('โรงเรียน')?cfg.school_name:'โรงเรียน'+(cfg.school_name||'');
+  const schoolName=schoolNameWithPrefix(cfg.school_name);
   const mBef=sub.score_before_mid||25, mAft=sub.score_after_mid||25;
   const mM=sub.score_mid||20, mF=sub.score_final||30;
   const ph=(title,pn,tp)=>`<div class="ph"><h1>${esc(schoolName)}</h1><h2>${esc(title)}</h2><div class="meta">ปีการศึกษา ${esc(cfg.academic_year||'')} ภาคเรียนที่ ${esc(cfg.semester||'')}</div></div><div class="m2">วิชา ${esc(sub.subject_name)} (${esc(sub.subject_code)}) ${grm(sub.grade_level,sub.room)} &nbsp; ครูผู้สอน ${esc(sub.teacher_name||'')}${tp>1?' &nbsp; <strong>(หน้า '+pn+'/'+tp+')</strong>':''}</div>`;
@@ -1487,7 +1487,7 @@ function _buildPP5Body(sub,cfg,stus,sumMap,erMap,ecMap,scUnitsAll,attRows,attMap
 <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;margin:8px 0 10px;text-align:center"><img src="${cfg.logo_url||'/assets/logo.webp'}" alt="ตราโรงเรียน" style="height:80px;width:auto;object-fit:contain;display:block;margin:0 auto" onerror="this.style.display='none'"></div>
 <div style="text-align:center;font-size:16px;font-weight:700;margin-bottom:10px">แบบบันทึกผลการเรียนประจำรายวิชา</div>
 <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:10px;table-layout:fixed"><colgroup><col style="width:150px"><col><col style="width:80px"><col></colgroup>
-<tr><td style="padding:4px 6px">โรงเรียน</td><td colspan="3" style="padding:4px 6px;border-bottom:1px solid #666">${esc(cfg.school_name||'')}</td></tr>
+<tr><td style="padding:4px 6px">โรงเรียน</td><td colspan="3" style="padding:4px 6px;border-bottom:1px solid #666">${esc(schoolNameOnly(cfg.school_name))}</td></tr>
 <tr><td style="padding:4px 6px">อำเภอ/เขต</td><td style="padding:4px 6px;border-bottom:1px solid #666">${esc(cfg.school_district||'')}</td><td style="padding:4px 6px">จังหวัด</td><td style="padding:4px 6px;border-bottom:1px solid #666">${esc(cfg.school_province||'')}</td></tr>
 <tr><td style="padding:4px 6px">ชั้นมัธยมศึกษาปีที่</td><td style="padding:4px 6px;border-bottom:1px solid #666">${sub.grade_level}</td><td style="padding:4px 6px">ห้อง</td><td style="padding:4px 6px;border-bottom:1px solid #666">${+sub.room===0?'':sub.room}</td></tr>
 <tr><td style="padding:4px 6px">ภาคเรียนที่</td><td style="padding:4px 6px;border-bottom:1px solid #666;white-space:nowrap">${cfg.semester||''}</td><td style="padding:4px 6px;white-space:nowrap">ปีการศึกษา</td><td style="padding:4px 6px;border-bottom:1px solid #666;white-space:nowrap">${cfg.academic_year||''}</td></tr>
@@ -1782,7 +1782,7 @@ async function pgCover(){
     <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:10px;table-layout:fixed">
       <colgroup><col style="width:150px"><col><col style="width:80px"><col></colgroup>
       <tr><td style="padding:4px 6px">โรงเรียน</td>
-          <td colspan="3" style="padding:4px 6px;border-bottom:1px solid #666">${esc(cfg.school_name||'')}</td></tr>
+          <td colspan="3" style="padding:4px 6px;border-bottom:1px solid #666">${esc(schoolNameOnly(cfg.school_name))}</td></tr>
       <tr><td style="padding:4px 6px">อำเภอ/เขต</td>
           <td style="padding:4px 6px;border-bottom:1px solid #666">${esc(cfg.school_district||'')}</td>
           <td style="padding:4px 6px">จังหวัด</td>

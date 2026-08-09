@@ -1038,7 +1038,7 @@ async function pgIQA(){
     <div class="ph" style="margin-bottom:0">
       <div>
         <div class="ptitle">รายงาน IQA กลุ่มสาระ</div>
-        <div class="psub">โรงเรียน${esc(cfg.school_name||'')} · ปีการศึกษา ${esc(yr)} ภาค ${esc(sm)}</div>
+        <div class="psub">${esc(schoolNameWithPrefix(cfg.school_name))} · ปีการศึกษา ${esc(yr)} ภาค ${esc(sm)}</div>
       </div>
       <div style="display:flex;gap:8px">
         <button class="btn bs no-print" onclick="exportIQA()">
@@ -1057,7 +1057,7 @@ async function pgIQA(){
       <div class="print-only" style="text-align:center;margin-bottom:16px">
         <div style="font-weight:700;font-size:16px;margin-bottom:4px">รายงานสรุปผลสัมฤทธิ์ทางการเรียนของนักเรียนรายกลุ่มสาระการเรียนรู้</div>
         <div style="font-size:14px">ปีการศึกษา ${esc(yr)} ภาคเรียนที่ ${esc(sm)}</div>
-        <div style="font-size:14px">โรงเรียน${esc(cfg.school_name||'')}</div>
+        <div style="font-size:14px">${esc(schoolNameWithPrefix(cfg.school_name))}</div>
       </div>
 
       <div class="card" style="margin-top:16px;overflow-x:auto">
@@ -1129,7 +1129,7 @@ async function pgIQA(){
         <div class="ch"><div class="ct">สรุปผลการวิเคราะห์</div></div>
         <div class="cb" style="font-size:13.5px;line-height:2;color:#1d1d1f">
           จากการสรุปผลสัมฤทธิ์ทางการเรียนของนักเรียน ปีการศึกษา ${esc(yr)} ภาคเรียนที่ ${esc(sm)}
-          โรงเรียน${esc(cfg.school_name||'')}
+          ${esc(schoolNameWithPrefix(cfg.school_name))}
           พบว่า ค่าเฉลี่ยผลสัมฤทธิ์ทางการเรียนรวมของทุกกลุ่มสาระการเรียนรู้ เท่ากับ
           <strong>${overallAvg!==null?overallAvg.toFixed(2):'—'}</strong>
           ${overallDiff!==null&&overallDiff>=0
@@ -1191,7 +1191,7 @@ function printIQA(){
     <div style="margin-top:14px;padding:10px 14px;border:1px solid #bbb;border-radius:4px;font-size:12px;line-height:2">
       <strong>สรุปผลการวิเคราะห์</strong><br>
       จากการสรุปผลสัมฤทธิ์ทางการเรียนของนักเรียน ปีการศึกษา ${esc(yr)} ภาคเรียนที่ ${esc(sm)}
-      โรงเรียน${esc(cfg.school_name||'')}
+      ${esc(schoolNameWithPrefix(cfg.school_name))}
       พบว่า ค่าเฉลี่ยผลสัมฤทธิ์ทางการเรียนรวมของทุกกลุ่มสาระการเรียนรู้ เท่ากับ
       <strong>${ov.avg!==null?ov.avg.toFixed(2):'—'}</strong>
       ${ov.diff!==null&&ov.diff>=0
@@ -1679,7 +1679,7 @@ async function backupAllData(){
       name:'README',
       aoa:[
         ['ไฟล์ Backup ระบบ ปพ.5 ออนไลน์'],
-        ['โรงเรียน: '+(S.config.school_name||'')],
+        ['โรงเรียน: '+schoolNameOnly(S.config.school_name)],
         ['ปีการศึกษา: '+(S.config.academic_year||'')+' ภาค '+(S.config.semester||'')],
         ['วันที่ Backup: '+dateStr+' เวลา '+timeStr.slice(0,2)+':'+timeStr.slice(2)],
         [],

@@ -481,6 +481,8 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 // ตัดคำว่า "โรงเรียน" ที่ขึ้นต้นชื่อโรงเรียนออก กันข้อความซ้ำเวลาต่อท้ายป้าย "ผู้อำนวยการโรงเรียน..."
 const schoolNameOnly = s => String(s||'').replace(/^โรงเรียน/,'');
+// เติม "โรงเรียน" นำหน้าชื่อ ยกเว้นถ้าชื่อที่บันทึกไว้มีคำว่า "โรงเรียน" อยู่แล้ว (กันซ้ำเป็น "โรงเรียนโรงเรียนตาเบาวิทยา")
+const schoolNameWithPrefix = s => { s=String(s||''); return s.startsWith('โรงเรียน')?s:'โรงเรียน'+s; };
 const escJs = s => String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const grm = (g,r) => +r===0 ? GRADE_PREFIX+g : GRADE_PREFIX+g+'/'+r;
 let _loadTimer=null;
@@ -732,7 +734,7 @@ async function exportExcel(sheets, fileName){
 // printHTML: เปิดหน้าต่างใหม่ พิมพ์ตาราง พร้อม header โรงเรียน
 function printHTML(title, bodyHTML, orient='portrait'){
   const cfg=S.config;
-  const schoolName=(cfg.school_name||'').startsWith('โรงเรียน')?cfg.school_name:'โรงเรียน'+(cfg.school_name||'');
+  const schoolName=schoolNameWithPrefix(cfg.school_name);
   const w=window.open('','_blank');
   if(!w){toast('เบราว์เซอร์บล็อก Popup — กรุณาอนุญาต Popup แล้วลองใหม่','er');return;}
   w.document.write(`<!DOCTYPE html><html lang="th"><head>
@@ -1783,7 +1785,7 @@ async function pgDash(){
   <div class="ph">
     <div>
       <div class="ptitle">ภาพรวม ปพ.5</div>
-      <div class="psub">โรงเรียน${esc(cfg.school_name||'')} ปีการศึกษา ${esc(cfg.academic_year||'')} ภาค ${esc(cfg.semester||'')}</div>
+      <div class="psub">${esc(schoolNameWithPrefix(cfg.school_name))} ปีการศึกษา ${esc(cfg.academic_year||'')} ภาค ${esc(cfg.semester||'')}</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <!-- Toggle แสดงภาคปัจจุบัน/ทั้งหมด -->
@@ -2995,7 +2997,7 @@ function printAttendance(){
   const chunks=[];
   if(!allCols.length){ chunks.push([]); } else { for(let i=0;i<allCols.length;i+=COLS_PER_PAGE) chunks.push(allCols.slice(i,i+COLS_PER_PAGE)); }
 
-  const schoolName=(cfg.school_name||'').startsWith('โรงเรียน')?cfg.school_name:'โรงเรียน'+(cfg.school_name||'');
+  const schoolName=schoolNameWithPrefix(cfg.school_name);
   const pageTitle=`บันทึกเวลาเรียน — ${sub.subject_name} ${grm(sub.grade_level,sub.room)}`;
 
   // สร้าง HTML สำหรับแต่ละ chunk
@@ -3716,7 +3718,7 @@ function printScores(){
   const mBef=sub.score_before_mid||25, mAft=sub.score_after_mid||25;
   const mM=sub.score_mid||20, mF=sub.score_final||30;
   const COLS_PER_PAGE=6;
-  const schoolName=(cfg.school_name||'').startsWith('โรงเรียน')?cfg.school_name:'โรงเรียน'+(cfg.school_name||'');
+  const schoolName=schoolNameWithPrefix(cfg.school_name);
   const pageTitle=`บันทึกคะแนน — ${sub.subject_name} ${grm(sub.grade_level,sub.room)}`;
   const metaStr=`วิชา ${esc(sub.subject_name)} (${esc(sub.subject_code)}) ${grm(sub.grade_level,sub.room)} &nbsp; ครู${esc(sub.teacher_name||'')} &nbsp; ปีการศึกษา ${cfg.academic_year||''} ภาค ${cfg.semester||''}`;
 
@@ -4734,7 +4736,7 @@ async function buildAIContext(){
   await loadSubjects();
   const cfg=S.config;
   const subjIds=S.subjects.map(s=>s.id);
-  let ctx=`ครู:${S.profile?.full_name||''} โรงเรียน:${cfg.school_name||''} ปีการศึกษา:${cfg.academic_year||''}/ภาค${cfg.semester||''}\n`;
+  let ctx=`ครู:${S.profile?.full_name||''} โรงเรียน:${schoolNameOnly(cfg.school_name)} ปีการศึกษา:${cfg.academic_year||''}/ภาค${cfg.semester||''}\n`;
   if(!subjIds.length){ ctx+='ยังไม่มีรายวิชา'; return ctx; }
   const [allStudents,allSum,allAtt]=await Promise.all([
     qAll(()=>sb.from('students').select('id,student_code,student_name,grade_level,room').order('grade_level').order('room').order('student_code')),
