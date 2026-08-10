@@ -407,7 +407,7 @@ async function pgSettings(){
   if(S.profile?.is_admin){
     try{
       const[teachers,permRows,indRows]=await Promise.all([
-        q(sb.from('profiles').select('id,full_name').eq('is_admin',false).order('full_name')),
+        q(sb.from('profiles').select('id,full_name,is_director').eq('is_admin',false).order('full_name')),
         q(sb.from('menu_permissions').select('teacher_id,menu_key')),
         qAll(()=>sb.from('indicators').select('id')),
       ]);
@@ -852,15 +852,17 @@ async function pgSettings(){
       </div>
       ${!_mpTeachers.length?`<div style="font-size:13px;color:var(--muted);text-align:center;padding:16px">ไม่มีครูที่ต้องตั้งค่า (มีแต่บัญชีแอดมิน)</div>`:`
       <div class="tw"><table>
-        <thead><tr><th class="tl">ครู</th><th>ตั้งค่าระบบ</th><th>รายงานทั้งโรงเรียน</th><th>นักเรียน</th><th>มาตรฐานและตัวชี้วัด</th></tr></thead>
+        <thead><tr><th class="tl">ครู</th><th>ตั้งค่าระบบ</th><th>รายงานทั้งโรงเรียน</th><th>นักเรียน</th><th>มาตรฐานและตัวชี้วัด</th><th>ผู้บริหาร</th></tr></thead>
         <tbody>${_mpTeachers.map(t=>`<tr>
           <td class="tl">${esc(t.full_name||'')}</td>
           <td class="tc"><input type="checkbox" class="mp-cb" data-tid="${t.id}" data-key="settings" ${_mpGrants.has(t.id+'_settings')?'checked':''}></td>
           <td class="tc"><input type="checkbox" class="mp-cb" data-tid="${t.id}" data-key="school_report" ${_mpGrants.has(t.id+'_school_report')?'checked':''}></td>
           <td class="tc"><input type="checkbox" class="mp-cb" data-tid="${t.id}" data-key="students" ${_mpGrants.has(t.id+'_students')?'checked':''}></td>
           <td class="tc"><input type="checkbox" class="mp-cb" data-tid="${t.id}" data-key="standards" ${_mpGrants.has(t.id+'_standards')?'checked':''}></td>
+          <td class="tc"><input type="checkbox" class="mp-director-cb" data-tid="${t.id}" ${t.is_director?'checked':''} title="ผู้บริหาร: ล็อกอินแล้วพาไปหน้ารายงานทั้งโรงเรียนทันที ซ่อนเมนูบันทึกข้อมูล/แดชบอร์ดที่ผูกกับวิชา (เพราะไม่มีวิชาของตัวเอง) และเห็นรายงานทั้งโรงเรียนเสมอ"></td>
         </tr>`).join('')}</tbody>
       </table></div>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.6">"ผู้บริหาร" — ล็อกอินแล้วพาไปหน้า "รายงานทั้งโรงเรียน" ทันที และซ่อนเมนูที่ผูกกับวิชา (บันทึกคะแนน/เวลาเรียน/ประเมิน ฯลฯ) เพราะไม่มีวิชาสอนเอง เหมาะสำหรับบัญชีผู้อำนวยการ/รองผู้อำนวยการ</div>
       <button class="btn bp" onclick="saveMenuPerms()" style="margin-top:14px;width:100%;justify-content:center">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
         บันทึกสิทธิ์การเข้าถึง
@@ -987,11 +989,16 @@ async function saveMenuPerms(){
   document.querySelectorAll('.mp-cb:checked').forEach(cb=>{
     rows.push({teacher_id:cb.dataset.tid,menu_key:cb.dataset.key});
   });
+  const directorIds=Array.from(document.querySelectorAll('.mp-director-cb:checked')).map(cb=>cb.dataset.tid);
+  const nonDirectorIds=Array.from(document.querySelectorAll('.mp-director-cb:not(:checked)')).map(cb=>cb.dataset.tid);
   loading(true);
   try{
     await q(sb.from('menu_permissions').delete().in('menu_key',['settings','school_report','students','standards']));
     if(rows.length) await q(sb.from('menu_permissions').insert(rows));
+    if(directorIds.length) await q(sb.from('profiles').update({is_director:true}).in('id',directorIds));
+    if(nonDirectorIds.length) await q(sb.from('profiles').update({is_director:false}).in('id',nonDirectorIds));
     _mpGrants=new Set(rows.map(r=>r.teacher_id+'_'+r.menu_key));
+    _mpTeachers=_mpTeachers.map(t=>({...t,is_director:directorIds.includes(t.id)}));
     toast('บันทึกสิทธิ์การเข้าถึงเรียบร้อย');
   }catch(e){ toast('เกิดข้อผิดพลาด: '+e.message,'er'); }
   finally{ loading(false); }

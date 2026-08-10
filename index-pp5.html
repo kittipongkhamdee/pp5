@@ -328,65 +328,65 @@
 
   <!-- Nav -->
   <nav class="flex-1 p-2 overflow-y-auto" style="scrollbar-width:none">
-    <div class="flex items-center px-2.5" style="gap:7px;padding-top:16px;padding-bottom:8px;margin-bottom:2px">
+    <div class="nav-sec flex items-center px-2.5" data-sec="main" style="gap:7px;padding-top:16px;padding-bottom:8px;margin-bottom:2px">
       <span style="width:3px;height:13px;border-radius:2px;background:var(--ac)"></span>
       <span style="font-weight:800;font-size:12.5px;letter-spacing:.03em;color:var(--txt2)">หลัก</span>
     </div>
-    <div class="ni active" id="nav-dashboard" onclick="nav('dashboard')">
+    <div class="ni active" id="nav-dashboard" data-sec="main" onclick="nav('dashboard')">
       <span class="ic"></span>แดชบอร์ด
     </div>
-    <div class="ni" id="nav-subjects" onclick="nav('subjects')">
+    <div class="ni" id="nav-subjects" data-sec="main" onclick="nav('subjects')">
       <span class="ic"></span>รายวิชา
     </div>
-    <div class="ni" id="nav-students" onclick="nav('students')">
+    <div class="ni" id="nav-students" data-sec="main" onclick="nav('students')">
       <span class="ic"></span>นักเรียน
     </div>
 
-    <div class="flex items-center px-2.5" style="gap:7px;padding-top:16px;padding-bottom:8px;margin-bottom:2px">
+    <div class="nav-sec flex items-center px-2.5" data-sec="record" style="gap:7px;padding-top:16px;padding-bottom:8px;margin-bottom:2px">
       <span style="width:3px;height:13px;border-radius:2px;background:var(--ac)"></span>
       <span style="font-weight:800;font-size:12.5px;letter-spacing:.03em;color:var(--txt2)">บันทึก</span>
     </div>
-    <div class="ni" id="nav-evalplan" onclick="nav('evalplan')">
+    <div class="ni" id="nav-evalplan" data-sec="record" onclick="nav('evalplan')">
       <span class="ic"></span>แผนการวัด
     </div>
-    <div class="ni" id="nav-attendance" onclick="nav('attendance')">
+    <div class="ni" id="nav-attendance" data-sec="record" onclick="nav('attendance')">
       <span class="ic"></span>เวลาเรียน
     </div>
-    <div class="ni" id="nav-scores" onclick="nav('scores')">
+    <div class="ni" id="nav-scores" data-sec="record" onclick="nav('scores')">
       <span class="ic"></span>คะแนน
     </div>
-    <div class="ni" id="nav-eval" onclick="nav('eval')">
+    <div class="ni" id="nav-eval" data-sec="record" onclick="nav('eval')">
       <span class="ic"></span>ประเมิน
     </div>
-    <div class="ni" id="nav-cover" onclick="nav('cover')">
+    <div class="ni" id="nav-cover" data-sec="record" onclick="nav('cover')">
       <span class="ic"></span>ปก ปพ.5
     </div>
 
-    <div class="flex items-center px-2.5" style="gap:7px;padding-top:16px;padding-bottom:8px;margin-bottom:2px">
+    <div class="nav-sec flex items-center px-2.5" data-sec="summary" style="gap:7px;padding-top:16px;padding-bottom:8px;margin-bottom:2px">
       <span style="width:3px;height:13px;border-radius:2px;background:var(--ac)"></span>
       <span style="font-weight:800;font-size:12.5px;letter-spacing:.03em;color:var(--txt2)">สรุปผล</span>
     </div>
-    <div class="ni" id="nav-report" onclick="nav('report')">
+    <div class="ni" id="nav-report" data-sec="summary" onclick="nav('report')">
       <span class="ic"></span>รายงานผล
     </div>
-    <div class="ni" id="nav-watchlist" onclick="nav('watchlist')" style="justify-content:space-between">
+    <div class="ni" id="nav-watchlist" data-sec="summary" onclick="nav('watchlist')" style="justify-content:space-between">
       <div style="display:flex;align-items:center;gap:8px"><span class="ic"></span>นักเรียนที่ต้องติดตาม</div>
       <span id="watchlist-badge" class="ms-badge" style="display:none">0</span>
     </div>
-    <div class="flex items-center px-2.5" style="gap:7px;padding-top:16px;padding-bottom:8px;margin-bottom:2px">
+    <div class="nav-sec flex items-center px-2.5" data-sec="system" style="gap:7px;padding-top:16px;padding-bottom:8px;margin-bottom:2px">
       <span style="width:3px;height:13px;border-radius:2px;background:var(--ac)"></span>
       <span style="font-weight:800;font-size:12.5px;letter-spacing:.03em;color:var(--txt2)">ระบบ</span>
     </div>
-    <div class="ni" id="nav-school" onclick="navSchoolReport()">
+    <div class="ni" id="nav-school" data-sec="system" onclick="navSchoolReport()">
       <span class="ic" id="ic-school"></span>รายงานทั้งโรงเรียน
     </div>
-    <div class="ni" id="nav-standards" onclick="nav('standards')">
+    <div class="ni" id="nav-standards" data-sec="system" onclick="nav('standards')">
       <span class="ic"></span>มาตรฐานและตัวชี้วัด
     </div>
-    <div class="ni" id="nav-settings" onclick="nav('settings')">
+    <div class="ni" id="nav-settings" data-sec="system" onclick="nav('settings')">
       <span class="ic"></span>ตั้งค่า<span style="font-size:9px;color:var(--ac);font-weight:700;margin-left:4px;opacity:.8">Admin</span>
     </div>
-    <div class="ni" id="nav-manual" onclick="nav('manual')">
+    <div class="ni" id="nav-manual" data-sec="system" onclick="nav('manual')">
       <span class="ic"></span>คู่มือการใช้งาน
     </div>
   </nav>
@@ -862,13 +862,26 @@ async function _loadMenuPerms(){
   }catch(e){ S.menuPerms=new Set(); } // โหลดพลาด = ปิดกั้นไว้ก่อนเพื่อความปลอดภัย
 }
 function canAccessMenu(key){
-  return !!S.profile?.is_admin || !!S.menuPerms?.has(key);
+  if(S.profile?.is_admin) return true;
+  // ผู้บริหาร (is_director) เห็น "รายงานทั้งโรงเรียน" เสมอ ไม่ต้องให้แอดมินตั้งสิทธิ์ทีละคน
+  if(S.profile?.is_director && key==='school_report') return true;
+  return !!S.menuPerms?.has(key);
 }
 // ซ่อนรายการเมนูฝั่งซ้ายที่ไม่มีสิทธิ์เข้าถึง (settings/students/school_report) — กันสับสน ไม่ใช่การป้องกันความปลอดภัยหลัก
 function _applyMenuVisibility(){
   const map={'nav-settings':'settings','nav-students':'students','nav-school':'school_report','nav-standards':'standards'};
   Object.entries(map).forEach(([id,key])=>{
     const el=$(id); if(el) el.style.display=canAccessMenu(key)?'':'none';
+  });
+  // ผู้บริหาร (is_director) ไม่มีวิชาของตัวเอง — ซ่อนเมนูที่ผูกกับวิชา ให้ไปดู "รายงานทั้งโรงเรียน" แทน
+  const subjBoundIds=['nav-dashboard','nav-subjects','nav-evalplan','nav-attendance','nav-scores','nav-eval','nav-cover','nav-report','nav-watchlist'];
+  const isDirectorOnly = !!S.profile?.is_director && !S.profile?.is_admin;
+  subjBoundIds.forEach(id=>{ const el=$(id); if(el) el.style.display=isDirectorOnly?'none':''; });
+  // ซ่อนหัวข้อ section ที่ไม่เหลือเมนูย่อยให้เห็นเลย
+  document.querySelectorAll('.nav-sec').forEach(sec=>{
+    const items=document.querySelectorAll(`.ni[data-sec="${sec.dataset.sec}"]`);
+    const anyVisible=Array.from(items).some(it=>it.style.display!=='none');
+    sec.style.display=anyVisible?'':'none';
   });
 }
 function _denyMenuAccess(label){
@@ -957,7 +970,9 @@ function showApp(){
   if(_tbu) _tbu.style.display='none';
   _applyMenuVisibility();
   _applySidebarCollapse();
-  nav('dashboard');
+  // ผู้บริหาร (is_director) ไม่มีวิชาสอนเอง — พาไปหน้ารายงานทั้งโรงเรียนแทนแดชบอร์ดว่างๆ
+  if(S.profile?.is_director && !S.profile?.is_admin){ navSchoolReport(); }
+  else { nav('dashboard'); }
   initPresence();
   updateWatchlistBadge();
   const fab=$('ai-fab'); if(fab){fab.style.display='flex'; if(window._initFabDrag) _initFabDrag();}
@@ -1624,7 +1639,7 @@ function _loadScriptOnce(key, src){
   return p;
 }
 // ?v= กันแคชเก่าค้าง (modules/*.js แคชไว้ 1 วันตาม vercel.json) — แก้ไฟล์ใน modules/ เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย
-const MODULE_V='3';
+const MODULE_V='4';
 function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V); }
 function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
 
