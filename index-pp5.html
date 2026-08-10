@@ -440,15 +440,12 @@
 </div><!-- end #app -->
 </div><!-- end #main-app -->
 
+<script src="config.js"></script>
 <script src="vendor/supabase-js.min.js"></script>
 <!-- xlsx.js (~270KB) โหลดแบบ lazy ผ่าน ensureXLSX() เฉพาะตอนใช้ Import/Export Excel จริงๆ ดู exportExcel() -->
 <script>
 
-// ════════════════════════════════════════════════════════════════
-// !! แก้ค่านี้ก่อนใช้งาน !!
-const SUPABASE_URL = 'https://zwtulepvmlngcrbcrrki.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp3dHVsZXB2bWxuZ2NyYmNycmtpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNTc2NDcsImV4cCI6MjA5NTYzMzY0N30.9nhe0_NF3Fa-4FtmbE2AvQCtJdHS05RbkiyC8WvtvvA';
-// ════════════════════════════════════════════════════════════════
+// SUPABASE_URL / SUPABASE_ANON_KEY มาจาก config.js (โหลดไว้ก่อนหน้านี้แล้ว)
 
 // ใช้ sessionStorage แทน localStorage เพื่อให้ session อยู่รอดตอนรีเฟรชหน้า
 // แต่หายไปเองเมื่อปิดแท็บ/เบราว์เซอร์จริง ๆ (ปลอดภัยสำหรับคอมพิวเตอร์ที่ใช้ร่วมกัน)

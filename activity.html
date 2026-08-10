@@ -9,6 +9,7 @@
 <meta name="theme-color" content="#ffffff">
 <title>ระบบเช็คชื่อกิจกรรม</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
@@ -1123,8 +1124,7 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
 
 <script>
 // ─── Supabase ──────────────────────────────────────────────────────────────
-const SUPABASE_URL='https://zwtulepvmlngcrbcrrki.supabase.co';
-const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp3dHVsZXB2bWxuZ2NyYmNycmtpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNTc2NDcsImV4cCI6MjA5NTYzMzY0N30.9nhe0_NF3Fa-4FtmbE2AvQCtJdHS05RbkiyC8WvtvvA';
+// SUPABASE_URL / SUPABASE_ANON_KEY มาจาก config.js (โหลดไว้ก่อนหน้านี้แล้ว)
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 
 // ─── Login logo ────────────────────────────────────────────────────────────
