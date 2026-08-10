@@ -540,6 +540,17 @@ async function pgSettings(){
             </div>
             <div style="font-size:11.5px;color:var(--muted);margin-top:4px">รับฟรีได้ที่ <strong>aistudio.google.com</strong> → Get API Key</div>
           </div>
+          <div style="grid-column:1/-1">
+            <label class="fl" style="display:flex;align-items:center;gap:6px">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
+              Typhoon OCR API Key <span style="font-weight:400;color:var(--muted)">(สำหรับถ่ายรูปกรอกคะแนน — ทดลอง)</span>
+            </label>
+            <div style="position:relative">
+              <input class="fi" id="c-typhoon-key" type="password" value="${esc(cfg.typhoon_api_key||'')}" placeholder="sk-..." style="padding-right:42px">
+              <button type="button" onclick="const i=$('c-typhoon-key');i.type=i.type==='password'?'text':'password'" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted)">${_ico.eye}</button>
+            </div>
+            <div style="font-size:11.5px;color:var(--muted);margin-top:4px">รับฟรีได้ที่ <strong>opentyphoon.ai</strong> → สมัครและสร้าง API Key</div>
+          </div>
         </div>
         <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--bdr);">
           <button class="btn bp" onclick="saveSettings()">
@@ -1334,6 +1345,7 @@ async function saveSettings(){
     {key:'head_registrar', value:$('c-head-reg')?.value||''},
     {key:'head_academic',  value:$('c-head-acad')?.value||''},
     {key:'gemini_api_key', value:$('c-gemini-key')?.value.trim()||''},
+    {key:'typhoon_api_key', value:$('c-typhoon-key')?.value.trim()||''},
   ];
   loading(true);
   try{
