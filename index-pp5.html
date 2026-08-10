@@ -72,7 +72,7 @@
   <div class="lp-wrap">
     <!-- Watermark -->
     <div class="lp-wm">
-      <img src="/assets/logo.webp" alt="" fetchpriority="high" onerror="this.style.display='none'">
+      <img src="/assets/logo.webp" alt="" fetchpriority="high" id="lp-wm-img" onerror="this.style.display='none'">
     </div>
     <!-- Deco -->
     <div class="lp-deco lp-d1"></div>
@@ -85,12 +85,13 @@
       <div class="lp-logo">
         <img src="/assets/logo.webp"
           alt="โลโก้โรงเรียน"
+          id="lp-logo-img"
           onerror="this.style.display='none'">
       </div>
 
       <!-- Title -->
       <div class="lp-title">
-        <div class="lp-sname">โรงเรียนตาเบาวิทยา</div>
+        <div class="lp-sname" id="lp-sname">โรงเรียนตาเบาวิทยา</div>
         <div class="lp-sys">ปพ.5 — ระบบบันทึกผลการเรียนประจำรายวิชา</div>
         <div class="lp-loc">อ.ปราสาท จ.สุรินทร์</div>
       </div>
@@ -4711,6 +4712,22 @@ function _toggleDashFilter(){
 }
 
 // ── START ────────────────────────────────────────────────────────
+
+// ชื่อโรงเรียน/โลโก้ที่หน้า login — ดึงจาก config ก่อนล็อกอิน (RLS เปิดอ่านเฉพาะ key นี้ให้ anon เท่านั้น)
+// ถ้าดึงไม่สำเร็จ (เช่น ออฟไลน์) จะใช้ค่า fallback ที่ฝังไว้ในโค้ด HTML แทน
+(async()=>{
+  try{
+    const rows=await q(sb.from('config').select('key,value').in('key',['school_name','logo_url']));
+    const cfg={}; rows.forEach(r=>{ cfg[r.key]=r.value; });
+    if(cfg.school_name){
+      const el=$('lp-sname'); if(el) el.textContent=cfg.school_name;
+    }
+    if(cfg.logo_url){
+      const wm=$('lp-wm-img'); if(wm){ wm.src=cfg.logo_url; wm.style.display=''; }
+      const lg=$('lp-logo-img'); if(lg){ lg.src=cfg.logo_url; lg.style.display=''; }
+    }
+  }catch(e){}
+})();
 
 // Fallback: force show login if nothing renders after 15s
 setTimeout(()=>{
