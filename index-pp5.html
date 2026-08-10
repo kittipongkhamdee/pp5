@@ -711,13 +711,15 @@ async function q(fn){
 // หน้าแรกยิงเดี่ยวๆ ก่อน (ยังไม่รู้ว่ามีกี่หน้า) ถ้ามีมากกว่า 1 หน้า ยิงหน้าที่เหลือเป็นชุดขนานแทนรอทีละหน้า
 // เพื่อลดเวลารวมลงมากเมื่อตารางมีข้อมูลหลายพันแถว (เช่น attendance ของทั้งโรงเรียน)
 async function qAll(mk,size=1000){
-  const first=await q(mk().range(0,size-1));
+  // .order('id') กันไม่ให้ลำดับแถวขยับระหว่างยิงหลายหน้าพร้อมกัน (ไม่งั้น range() แต่ละหน้าอาจสลับ/ตกหล่นแถว
+  // เพราะ Postgres ไม่การันตีลำดับแถวคงที่ถ้าไม่มี ORDER BY) — เกิดเฉพาะตอนแถวเกิน 1000 แถว (ข้ามหน้าแรก)
+  const first=await q(mk().order('id').range(0,size-1));
   if(first.length<size) return first;
   let all=first, from=size, done=false;
   const BATCH=8; // จำนวนหน้าที่ยิงพร้อมกันต่อรอบ
   while(!done){
     const froms=Array.from({length:BATCH},(_,i)=>from+i*size);
-    const results=await Promise.all(froms.map(f=>q(mk().range(f,f+size-1))));
+    const results=await Promise.all(froms.map(f=>q(mk().order('id').range(f,f+size-1))));
     for(const rows of results){
       all=all.concat(rows);
       if(rows.length<size){ done=true; break; }
