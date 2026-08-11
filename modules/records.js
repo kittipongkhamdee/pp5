@@ -179,6 +179,7 @@ async function _doPromote(students, toGrade, toRoom, fromG, fromR){
     const detail = skipped>0
       ? `ย้ายสำเร็จ <strong>${toUpdate.length} คน</strong><br>ข้าม <strong>${skipped} คน</strong> ที่มีรหัสซ้ำในห้องปลายทางแล้ว`
       : `ย้ายนักเรียน <strong>${toUpdate.length} คน</strong> เรียบร้อยแล้ว`;
+    logAudit('promote_students', `เลื่อนชั้น ${toUpdate.length} คน จาก ม.${fromG}/${fromR} → ม.${toGrade}/${toRoom}`);
     alert2({
       title: `เลื่อนชั้นสำเร็จ ${grm(fromG,fromR)} → ${grm(toGrade,toRoom)}`,
       msg: detail,
@@ -303,6 +304,7 @@ async function delStu(id,name){
           await q(sb.from('students').delete().eq('id',id));
           clearStuCache();
           allStu=await qAll(()=>sb.from('students').select('*').order('grade_level').order('room').order('student_code'));
+          logAudit('delete_student','ลบนักเรียน "'+name+'"');
           toast('ลบเรียบร้อย');filterStu();
         }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
       }});

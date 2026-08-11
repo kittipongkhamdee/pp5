@@ -850,6 +850,19 @@ async function loadProfile(){
   }catch(e){
     S.profile = {full_name:S.user.email, role:'teacher'};
   }
+  // อัปเดตล็อกอินล่าสุด — ไม่ await เพราะไม่ใช่ path สำคัญ พลาดได้ไม่กระทบการใช้งาน
+  q(sb.from('profiles').update({last_login_at:new Date().toISOString()}).eq('id',S.user.id)).catch(()=>{});
+}
+
+// ── บันทึกเหตุการณ์สำคัญที่ย้อนกลับไม่ได้ (ลบนักเรียน/เลื่อนชั้น/ล้างข้อมูล/Restore) ──
+// เก็บไว้ดูที่ ตั้งค่า > แอดมิน > บันทึกการใช้งานระบบ — ไม่บล็อกการทำงานหลักถ้าบันทึกไม่สำเร็จ
+function logAudit(action, detail){
+  if(!S.user) return;
+  q(sb.from('audit_log').insert({
+    actor_id: S.user.id,
+    actor_name: S.profile?.full_name || S.user?.email || '',
+    action, detail: detail||'',
+  })).catch(()=>{});
 }
 
 // ── สิทธิ์เข้าถึงเมนู (แทนที่ระบบ PIN เดิมสำหรับ 3 เมนู: settings/school_report/students) ──
@@ -1639,7 +1652,7 @@ function _loadScriptOnce(key, src){
   return p;
 }
 // ?v= กันแคชเก่าค้าง (modules/*.js แคชไว้ 1 วันตาม vercel.json) — แก้ไฟล์ใน modules/ เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย
-const MODULE_V='4';
+const MODULE_V='5';
 function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V); }
 function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
 

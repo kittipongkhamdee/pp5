@@ -75,6 +75,7 @@ async function _doClearAll(){
         // reset local state
         cacheInvAll();
         S.subjects=[]; S.selSub=null;
+        logAudit('wipe_data', errors.length ? `ล้างข้อมูลทั้งหมด (มีข้อผิดพลาด ${errors.length} จุด)` : 'ล้างข้อมูลทั้งหมดสำเร็จ');
         if(errors.length){
           toast('ล้างข้อมูลเสร็จ (มีข้อผิดพลาด '+errors.length+' จุด)','in');
         } else {
@@ -393,6 +394,17 @@ async function exportIndicators(){
 let _syncActivities=[];
 let _mpTeachers=[],_mpGrants=new Set(); // menu_permissions grid state (จัดการสิทธิ์การเข้าถึงเมนู)
 let _indicatorCount=0;
+let _allLogins=[],_auditRows=[]; // บันทึกการใช้งานระบบ: ล็อกอินล่าสุด + เหตุการณ์สำคัญ
+function _fmtDT(iso){
+  if(!iso) return '—';
+  const d=new Date(iso);
+  if(isNaN(d)) return '—';
+  const dd=String(d.getDate()).padStart(2,'0'), mm=String(d.getMonth()+1).padStart(2,'0'), yy=d.getFullYear()+543;
+  const hh=String(d.getHours()).padStart(2,'0'), mi=String(d.getMinutes()).padStart(2,'0');
+  return `${dd}/${mm}/${yy} ${hh}:${mi}`;
+}
+const _AUDIT_LABELS={delete_student:'ลบนักเรียน',promote_students:'เลื่อนชั้น',wipe_data:'ล้างข้อมูลทั้งหมด',restore_backup:'Restore จาก backup'};
+function _auditActionLabel(action){ return esc(_AUDIT_LABELS[action]||action); }
 let _settingsActiveTab='stg-general'; // จำแท็บที่เปิดอยู่ ไม่ให้กระโดดกลับแท็บแรกทุกครั้งที่บันทึก/รีเฟรชหน้า
 function _stgTab(id){ _settingsActiveTab=id; swTab('stg',id); }
 async function pgSettings(){
@@ -406,15 +418,19 @@ async function pgSettings(){
   catch(e){ _syncActivities=[]; }
   if(S.profile?.is_admin){
     try{
-      const[teachers,permRows,indRows]=await Promise.all([
+      const[teachers,permRows,indRows,allLogins,auditRows]=await Promise.all([
         q(sb.from('profiles').select('id,full_name,is_director').eq('is_admin',false).order('full_name')),
         q(sb.from('menu_permissions').select('teacher_id,menu_key')),
         qAll(()=>sb.from('indicators').select('id')),
+        q(sb.from('profiles').select('id,full_name,is_admin,last_login_at').order('last_login_at',{ascending:false,nullsFirst:false})),
+        q(sb.from('audit_log').select('*').order('created_at',{ascending:false}).limit(100)),
       ]);
       _mpTeachers=teachers;
       _mpGrants=new Set(permRows.map(r=>r.teacher_id+'_'+r.menu_key));
       _indicatorCount=indRows.length;
-    }catch(e){ _mpTeachers=[]; _mpGrants=new Set(); _indicatorCount=0; }
+      _allLogins=allLogins;
+      _auditRows=auditRows;
+    }catch(e){ _mpTeachers=[]; _mpGrants=new Set(); _indicatorCount=0; _allLogins=[]; _auditRows=[]; }
   }
   loading(false);
   $('pg').innerHTML=`
@@ -867,6 +883,41 @@ async function pgSettings(){
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
         บันทึกสิทธิ์การเข้าถึง
       </button>`}
+    </div>
+  </div>` : ''}
+
+  ${S.profile?.is_admin ? `
+  <!-- ── บันทึกการใช้งานระบบ ── -->
+  <div class="card" style="margin-top:16px">
+    <div class="ch">
+      <div class="ct" style="display:flex;align-items:center;gap:7px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--ac)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        บันทึกการใช้งานระบบ
+      </div>
+    </div>
+    <div class="cb">
+      <div style="font-size:13px;font-weight:700;margin-bottom:10px">ล็อกอินล่าสุดของแต่ละคน</div>
+      ${!_allLogins.length?`<div style="font-size:13px;color:var(--muted);text-align:center;padding:12px">ยังไม่มีข้อมูล</div>`:`
+      <div class="tw"><table>
+        <thead><tr><th class="tl">บัญชี</th><th>สิทธิ์</th><th>ล็อกอินล่าสุด</th></tr></thead>
+        <tbody>${_allLogins.map(p=>`<tr>
+          <td class="tl">${esc(p.full_name||'')}</td>
+          <td class="tc">${p.is_admin?'แอดมิน':'ครู'}</td>
+          <td class="tc">${_fmtDT(p.last_login_at)}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>`}
+
+      <div style="font-size:13px;font-weight:700;margin:20px 0 10px">เหตุการณ์สำคัญ <span style="font-weight:400;color:var(--muted);font-size:11.5px">(ลบนักเรียน / เลื่อนชั้น / ล้างข้อมูล / Restore — 100 รายการล่าสุด)</span></div>
+      ${!_auditRows.length?`<div style="font-size:13px;color:var(--muted);text-align:center;padding:12px">ยังไม่มีเหตุการณ์บันทึกไว้</div>`:`
+      <div class="tw"><table>
+        <thead><tr><th class="tl">เวลา</th><th class="tl">ผู้ทำรายการ</th><th class="tl">เหตุการณ์</th><th class="tl">รายละเอียด</th></tr></thead>
+        <tbody>${_auditRows.map(r=>`<tr>
+          <td class="tl" style="white-space:nowrap">${_fmtDT(r.created_at)}</td>
+          <td class="tl">${esc(r.actor_name||'')}</td>
+          <td class="tl">${_auditActionLabel(r.action)}</td>
+          <td class="tl">${esc(r.detail||'')}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>`}
     </div>
   </div>` : ''}
 
@@ -1710,6 +1761,7 @@ async function _doRestore(){
         cacheInvAll();
         await loadConfig();
 
+        logAudit('restore_backup', errors.length ? `Restore จาก backup (มีข้อผิดพลาด ${errors.length} จุด)` : 'Restore จาก backup สำเร็จ');
         if(errors.length){
           console.warn('Restore errors:', errors);
           toast('Restore เสร็จ (มีข้อผิดพลาดบางส่วน '+errors.length+' จุด — ดูใน console)','in');
