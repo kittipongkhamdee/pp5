@@ -487,6 +487,24 @@ async function pgSettings(){
     </div>
   </div>
 
+  <!-- ── ลิงก์คู่มือการใช้งาน (Google Drive) ── -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="ch">
+      <div class="ct" style="display:flex;align-items:center;gap:7px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--ac)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        คู่มือการใช้งาน
+      </div>
+    </div>
+    <div class="cb">
+      <label class="fl">ลิงก์ไฟล์ Google Drive</label>
+      <input class="fi" id="c-manual-url" value="${esc(cfg.manual_drive_url||'')}" placeholder="วางลิงก์แชร์จาก Google Drive เช่น https://drive.google.com/file/d/XXXXXXXX/view">
+      <div style="font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.7">
+        เปิดไฟล์ใน Google Drive → คลิก "แชร์" → เปลี่ยนสิทธิ์เป็น <strong>"ทุกคนที่มีลิงก์"</strong> (ดูได้) → คัดลอกลิงก์มาวางที่นี่ → กด "บันทึกการตั้งค่า" ด้านล่าง<br>
+        ถ้าเว้นว่างไว้ ระบบจะใช้คู่มือฉบับเริ่มต้นของระบบแทน
+      </div>
+    </div>
+  </div>
+
   <!-- ── แถวบน: ข้อมูลโรงเรียน + ครูผู้สอน ── -->
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;align-items:start;margin-bottom:16px;">
 
@@ -1361,8 +1379,18 @@ function exportIQA(){
 }
 
 // ════ MANUAL ══════════════════════════════════════════════════════
+// ดึง Google Drive file ID จากลิงก์แชร์ที่แอดมินวางไว้ (ตั้งค่า > ทั่วไป) รองรับทั้งวางลิงก์เต็มหรือวาง ID ตรงๆ
+function _extractDriveFileId(input){
+  const s=String(input||'').trim();
+  if(!s) return '';
+  const m = s.match(/\/d\/([a-zA-Z0-9_-]{10,})/) || s.match(/[?&]id=([a-zA-Z0-9_-]{10,})/);
+  if(m) return m[1];
+  if(/^[a-zA-Z0-9_-]{10,}$/.test(s)) return s;
+  return '';
+}
 function pgManual(){
-  const FILE_ID = '1yzReDcGvEDGN9xsDpRuKJFeI9riZDpdN';
+  const DEFAULT_FILE_ID = '1yzReDcGvEDGN9xsDpRuKJFeI9riZDpdN';
+  const FILE_ID = _extractDriveFileId(S.config.manual_drive_url) || DEFAULT_FILE_ID;
   const previewUrl = `https://drive.google.com/file/d/${FILE_ID}/preview`;
   const openUrl    = `https://drive.google.com/file/d/${FILE_ID}/view`;
   $('pg').innerHTML=`
@@ -1404,6 +1432,7 @@ async function saveSettings(){
     {key:'head_academic',  value:$('c-head-acad')?.value||''},
     {key:'gemini_api_key', value:$('c-gemini-key')?.value.trim()||''},
     {key:'typhoon_api_key', value:$('c-typhoon-key')?.value.trim()||''},
+    {key:'manual_drive_url', value:$('c-manual-url')?.value.trim()||''},
   ];
   loading(true);
   try{
