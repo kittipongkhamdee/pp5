@@ -407,11 +407,11 @@ const _AUDIT_LABELS={delete_student:'ลบนักเรียน',promote_stu
 function _auditActionLabel(action){ return esc(_AUDIT_LABELS[action]||action); }
 // เซลล์ในตาราง "สรุปความคืบหน้ารายครู" — เขียว "เรียบร้อย" เมื่อครบ, แดงเมื่อยังไม่เริ่ม (0), ส้มเมื่อทำบางส่วน
 function _progressCell(done,total){
-  if(total>0 && done===total) return '<span class="badge bg-g" style="font-size:11px">เรียบร้อย</span>';
+  if(total>0 && done===total) return '<span class="badge bg-g" style="font-size:13px">เรียบร้อย</span>';
   const txt=done+'/'+total;
   return done===0
-    ? '<span class="badge bg-r" style="font-size:11px">'+txt+'</span>'
-    : '<span class="badge bg-o" style="font-size:11px">'+txt+'</span>';
+    ? '<span class="badge bg-r" style="font-size:13px">'+txt+'</span>'
+    : '<span class="badge bg-o" style="font-size:13px">'+txt+'</span>';
 }
 let _settingsActiveTab='stg-general'; // จำแท็บที่เปิดอยู่ ไม่ให้กระโดดกลับแท็บแรกทุกครั้งที่บันทึก/รีเฟรชหน้า
 function _stgTab(id){ _settingsActiveTab=id; swTab('stg',id); }
