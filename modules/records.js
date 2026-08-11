@@ -702,7 +702,8 @@ function renderEplUnitsTab(){
         </tr>`).join('')}
         <tr style="font-weight:700;background:var(--card2)">
           <td colspan="3" style="text-align:right;padding-right:14px">รวมหน่วยการเรียนรู้</td>
-          <td class="tc">${sumHours}</td><td class="tc">${sumWeight}</td><td></td>
+          <td class="tc" style="color:${sumHours===(+sub.total_hours||0)?'var(--ok-txt)':'var(--err-txt)'}">${sumHours}${sumHours===(+sub.total_hours||0)?' ✓':' (ต้อง = '+(+sub.total_hours||0)+')'}</td>
+          <td class="tc">${sumWeight}</td><td></td>
         </tr>
         <tr>
           <td colspan="3" style="text-align:right;padding-right:14px;color:var(--txt2)">คะแนนประเมินผลกลางภาค</td>
