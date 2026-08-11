@@ -405,10 +405,13 @@ function _fmtDT(iso){
 }
 const _AUDIT_LABELS={delete_student:'ลบนักเรียน',promote_students:'เลื่อนชั้น',wipe_data:'ล้างข้อมูลทั้งหมด',restore_backup:'Restore จาก backup'};
 function _auditActionLabel(action){ return esc(_AUDIT_LABELS[action]||action); }
-// เซลล์ X/Y ในตาราง "สรุปความคืบหน้ารายครู" — ขึ้น badge เขียวเมื่อทำครบ (X===Y และมีวิชาอยู่จริง)
+// เซลล์ในตาราง "สรุปความคืบหน้ารายครู" — เขียว "เรียบร้อย" เมื่อครบ, แดงเมื่อยังไม่เริ่ม (0), ส้มเมื่อทำบางส่วน
 function _progressCell(done,total){
+  if(total>0 && done===total) return '<span class="badge bg-g" style="font-size:11px">เรียบร้อย</span>';
   const txt=done+'/'+total;
-  return (total>0 && done===total) ? '<span class="badge bg-g" style="font-size:11px">'+txt+'</span>' : txt;
+  return done===0
+    ? '<span class="badge bg-r" style="font-size:11px">'+txt+'</span>'
+    : '<span class="badge bg-o" style="font-size:11px">'+txt+'</span>';
 }
 let _settingsActiveTab='stg-general'; // จำแท็บที่เปิดอยู่ ไม่ให้กระโดดกลับแท็บแรกทุกครั้งที่บันทึก/รีเฟรชหน้า
 function _stgTab(id){ _settingsActiveTab=id; swTab('stg',id); }
