@@ -2072,6 +2072,7 @@ async function pgSchoolReport(){
       ...tp,
       pct: tp.total>0?Math.round((tp.collectDone+tp.attDone+tp.evalDone+tp.midDone+tp.finalDone)/(tp.total*5)*100):0,
     })).sort((a,b)=>a.pct-b.pct||a.teacher.localeCompare(b.teacher,'th'));
+    const teacherFullyDoneCount = teacherProgressList.filter(tp=>tp.pct===100).length;
 
     // เก็บไว้ใน state เพื่อให้ exportSchoolReport ใช้ได้
     S._schoolReport = subjectsWithStats;
@@ -2176,13 +2177,20 @@ async function pgSchoolReport(){
       '</div>';
     }
 
+    window._hideCompleteTeachers=false;
     function renderTeacherProgressTable(){
       if(!teacherProgressList.length) return '';
-      const rows=teacherProgressList.map(tp=>{
+      const visibleList = window._hideCompleteTeachers ? teacherProgressList.filter(tp=>tp.pct<100) : teacherProgressList;
+      const rows=visibleList.map(tp=>{
         const barColor=tp.pct>=80?'#16803d':tp.pct>=50?'#b45309':'#dc2626';
         const tEsc=esc(tp.teacher).replace(/'/g,"&#39;");
+        const statusBadge = tp.pct===100
+          ? '<span class="badge bg-g" style="font-size:10px;margin-left:6px">✓ ครบแล้ว</span>'
+          : tp.pct===0
+          ? '<span class="badge bg-r" style="font-size:10px;margin-left:6px">⚠ ยังไม่เริ่ม</span>'
+          : '';
         return '<tr style="cursor:pointer" onclick="_jumpToTeacher(\''+tEsc+'\')">'+
-          '<td class="tl" style="font-weight:600">'+esc(tp.teacher)+'</td>'+
+          '<td class="tl" style="font-weight:600">'+esc(tp.teacher)+statusBadge+'</td>'+
           '<td class="tc">'+tp.total+'</td>'+
           '<td class="tc">'+tp.attDone+'/'+tp.total+'</td>'+
           '<td class="tc">'+tp.collectDone+'/'+tp.total+'</td>'+
@@ -2199,15 +2207,29 @@ async function pgSchoolReport(){
           '</td>'+
         '</tr>';
       }).join('');
-      return '<div class="card" style="margin-bottom:14px">'+
-        '<div class="ch"><div class="ct">สรุปความคืบหน้ารายครู</div><span style="font-size:11px;color:var(--muted);font-weight:400">คลิกชื่อครูเพื่อดูรายวิชา</span></div>'+
+      const fullyDoneCount = teacherProgressList.filter(tp=>tp.pct===100).length;
+      const emptyMsg = window._hideCompleteTeachers && !visibleList.length
+        ? '<div class="empty" style="padding:24px 16px;text-align:center;color:var(--muted)">🎉 ครูทำครบทุกคนแล้ว ('+fullyDoneCount+'/'+teacherProgressList.length+')</div>'
+        : '';
+      return '<div class="card" style="margin-bottom:14px" id="teacher-progress-card">'+
+        '<div class="ch">'+
+          '<div><div class="ct">สรุปความคืบหน้ารายครู</div><span style="font-size:11px;color:var(--muted);font-weight:400">คลิกชื่อครูเพื่อดูรายวิชา</span></div>'+
+          '<button class="btn bs btn-sm" onclick="_toggleHideCompleteTeachers()">'+
+            (window._hideCompleteTeachers?'แสดงทั้งหมด':'แสดงเฉพาะยังไม่เสร็จ')+
+          '</button>'+
+        '</div>'+
         '<div class="cb" style="padding:0">'+
-          '<div class="tw"><table>'+
+          (emptyMsg || '<div class="tw"><table>'+
             '<thead><tr><th class="tl">ครู</th><th>วิชา</th><th>เวลาเรียน</th><th>คะแนนเก็บ</th><th>กลางภาค</th><th>ปลายภาค</th><th>ประเมิน</th><th>ความคืบหน้า</th></tr></thead>'+
             '<tbody>'+rows+'</tbody>'+
-          '</table></div>'+
+          '</table></div>')+
         '</div>'+
       '</div>';
+    }
+    window._toggleHideCompleteTeachers=function(){
+      window._hideCompleteTeachers=!window._hideCompleteTeachers;
+      const el=$('teacher-progress-card');
+      if(el) el.outerHTML=renderTeacherProgressTable();
     }
     window._jumpToTeacher=function(name){
       window._teacherFilter=name;
@@ -2268,6 +2290,7 @@ async function pgSchoolReport(){
         '<div class="sc"><div class="si gr"><svg viewBox="0 0 24 24" fill="none" stroke="#16803d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div><div class="sv">'+schoolTeachers+'</div><div class="sl">ครูผู้สอน</div></div></div>'+
         '<div class="sc"><div class="si gr"><svg viewBox="0 0 24 24" fill="none" stroke="#16803d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg></div><div><div class="sv" style="color:#16803d">'+schoolPassAvg+'%</div><div class="sl">ผ่านเฉลี่ย</div></div></div>'+
         '<div class="sc"><div class="si or"><svg viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div><div><div class="sv">'+schoolScoreAvg+'</div><div class="sl">คะแนนเฉลี่ย</div></div></div>'+
+        '<div class="sc"><div class="si gr"><svg viewBox="0 0 24 24" fill="none" stroke="#16803d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg></div><div><div class="sv" style="color:#16803d">'+teacherFullyDoneCount+'/'+teacherProgressList.length+'</div><div class="sl">ครูทำครบแล้ว</div></div></div>'+
       '</div>'+
       // summary stats — row 2
       '<div class="sg" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-top:0">'+
