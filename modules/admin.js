@@ -405,6 +405,11 @@ function _fmtDT(iso){
 }
 const _AUDIT_LABELS={delete_student:'ลบนักเรียน',promote_students:'เลื่อนชั้น',wipe_data:'ล้างข้อมูลทั้งหมด',restore_backup:'Restore จาก backup'};
 function _auditActionLabel(action){ return esc(_AUDIT_LABELS[action]||action); }
+// เซลล์ X/Y ในตาราง "สรุปความคืบหน้ารายครู" — ขึ้น badge เขียวเมื่อทำครบ (X===Y และมีวิชาอยู่จริง)
+function _progressCell(done,total){
+  const txt=done+'/'+total;
+  return (total>0 && done===total) ? '<span class="badge bg-g" style="font-size:11px">'+txt+'</span>' : txt;
+}
 let _settingsActiveTab='stg-general'; // จำแท็บที่เปิดอยู่ ไม่ให้กระโดดกลับแท็บแรกทุกครั้งที่บันทึก/รีเฟรชหน้า
 function _stgTab(id){ _settingsActiveTab=id; swTab('stg',id); }
 async function pgSettings(){
@@ -2192,11 +2197,11 @@ async function pgSchoolReport(){
         return '<tr style="cursor:pointer" onclick="_jumpToTeacher(\''+tEsc+'\')">'+
           '<td class="tl" style="font-weight:600">'+esc(tp.teacher)+statusBadge+'</td>'+
           '<td class="tc">'+tp.total+'</td>'+
-          '<td class="tc">'+tp.attDone+'/'+tp.total+'</td>'+
-          '<td class="tc">'+tp.collectDone+'/'+tp.total+'</td>'+
-          '<td class="tc">'+tp.midDone+'/'+tp.total+'</td>'+
-          '<td class="tc">'+tp.finalDone+'/'+tp.total+'</td>'+
-          '<td class="tc">'+tp.evalDone+'/'+tp.total+'</td>'+
+          '<td class="tc">'+_progressCell(tp.attDone,tp.total)+'</td>'+
+          '<td class="tc">'+_progressCell(tp.collectDone,tp.total)+'</td>'+
+          '<td class="tc">'+_progressCell(tp.midDone,tp.total)+'</td>'+
+          '<td class="tc">'+_progressCell(tp.finalDone,tp.total)+'</td>'+
+          '<td class="tc">'+_progressCell(tp.evalDone,tp.total)+'</td>'+
           '<td style="min-width:120px">'+
             '<div style="display:flex;align-items:center;gap:8px">'+
               '<div style="flex:1;height:6px;border-radius:10px;background:var(--bg2);overflow:hidden">'+
