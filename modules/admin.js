@@ -407,7 +407,7 @@ const _AUDIT_LABELS={delete_student:'ลบนักเรียน',promote_stu
 function _auditActionLabel(action){ return esc(_AUDIT_LABELS[action]||action); }
 // เซลล์ในตาราง "สรุปความคืบหน้ารายครู" — เขียว "เรียบร้อย" เมื่อครบ, แดงเมื่อยังไม่เริ่ม (0), ส้มเมื่อทำบางส่วน
 function _progressCell(done,total){
-  if(total>0 && done===total) return '<span class="badge bg-g" style="font-size:13px">เรียบร้อย</span>';
+  if(total>0 && done===total) return '<span class="badge bg-g" style="font-size:13px">ครบ</span>';
   const txt=done+'/'+total;
   return done===0
     ? '<span class="badge bg-r" style="font-size:13px">'+txt+'</span>'
