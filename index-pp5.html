@@ -991,6 +991,31 @@ function showApp(){
   const fab=$('ai-fab'); if(fab){fab.style.display='flex'; if(window._initFabDrag) _initFabDrag();}
   if(window._initIdleTimeout) _initIdleTimeout();
   _checkAnnouncement();
+  _checkBackupReminder();
+}
+
+// ── เตือนแอดมินถ้าไม่ได้ Backup ข้อมูลมานาน (เกิน 14 วัน หรือไม่เคยเลย) — เตือนแค่ครั้งเดียวต่อวัน ──
+function _checkBackupReminder(){
+  if(!S.profile?.is_admin) return;
+  const iso=S.config.last_backup_at;
+  const days = iso ? Math.floor((Date.now()-new Date(iso).getTime())/86400000) : null;
+  if(days!==null && days<=14) return; // เพิ่งสำรองมาไม่นาน ไม่ต้องเตือน
+  const today=new Date().toISOString().slice(0,10);
+  let shownDate=null;
+  try{ shownDate=localStorage.getItem('backup_reminder_shown_date'); }catch(e){}
+  if(shownDate===today) return;
+  setTimeout(()=>{
+    alert2({
+      title:'⏰ เตือนสำรองข้อมูล',
+      msg: days===null
+        ? 'ยังไม่เคย Backup ข้อมูลระบบเลย แนะนำให้สำรองข้อมูลไว้เป็นประจำ เผื่อข้อมูลเสียหายกู้คืนไม่ได้'
+        : 'ไม่ได้ Backup ข้อมูลมา <strong>'+days+' วัน</strong>แล้ว แนะนำให้สำรองข้อมูลไว้เป็นประจำ',
+      type:'warn',
+      okText:'ไปที่หน้าตั้งค่า',
+      onOk:()=>{ nav('settings'); setTimeout(()=>{ const btn=document.querySelector('[data-ti="stg-security"]'); if(btn) btn.click(); },600); },
+    });
+    try{ localStorage.setItem('backup_reminder_shown_date', today); }catch(e){}
+  }, 1400); // ให้ประกาศ (ถ้ามี) ขึ้นก่อน
 }
 
 // ── ประกาศ/ประชาสัมพันธ์ (popup ครั้งแรกที่เจอ ต่อประกาศ 1 ฉบับ ตั้งค่าได้ที่ ตั้งค่า > แอดมิน) ──
@@ -1652,7 +1677,7 @@ function _loadScriptOnce(key, src){
   return p;
 }
 // ?v= กันแคชเก่าค้าง (modules/*.js แคชไว้ 1 วันตาม vercel.json) — แก้ไฟล์ใน modules/ เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย
-const MODULE_V='15';
+const MODULE_V='16';
 function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V); }
 function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
 

@@ -403,6 +403,16 @@ function _fmtDT(iso){
   const hh=String(d.getHours()).padStart(2,'0'), mi=String(d.getMinutes()).padStart(2,'0');
   return `${dd}/${mm}/${yy} ${hh}:${mi}`;
 }
+// สถานะการ Backup ล่าสุด — ใช้ทั้งในการ์ด "สำรองและกู้คืนข้อมูล" และตัวเตือนตอนล็อกอิน
+function _backupStatusInfo(){
+  const iso=S.config.last_backup_at;
+  if(!iso) return {days:null,text:'ยังไม่เคย Backup เลย',color:'#dc2626',bg:'rgba(255,59,48,.1)'};
+  const days=Math.floor((Date.now()-new Date(iso).getTime())/86400000);
+  const text='Backup ล่าสุด: '+_fmtDT(iso)+' ('+(days<=0?'วันนี้':days+' วันที่แล้ว')+')';
+  const color = days>30?'#dc2626':days>7?'#b45309':'#16803d';
+  const bg = days>30?'rgba(255,59,48,.1)':days>7?'rgba(255,149,0,.1)':'rgba(52,199,89,.1)';
+  return {days,text,color,bg};
+}
 const _AUDIT_LABELS={delete_student:'ลบนักเรียน',promote_students:'เลื่อนชั้น',wipe_data:'ล้างข้อมูลทั้งหมด',restore_backup:'Restore จาก backup'};
 function _auditActionLabel(action){ return esc(_AUDIT_LABELS[action]||action); }
 // เซลล์ในตาราง "สรุปความคืบหน้ารายครู" — เขียว "เรียบร้อย" เมื่อครบ, แดงเมื่อยังไม่เริ่ม (0), ส้มเมื่อทำบางส่วน
@@ -836,9 +846,12 @@ async function pgSettings(){
         </div>
       </div>
       <div class="cb">
-        <div style="font-size:13px;color:#6e6e73;line-height:1.8;margin-bottom:14px">
+        <div style="font-size:13px;color:#6e6e73;line-height:1.8;margin-bottom:10px">
           <strong style="color:#1d1d1f">Backup</strong> — ดาวน์โหลดข้อมูลทั้งหมดเป็นไฟล์ .xlsx<br>
           <strong style="color:#1d1d1f">Restore</strong> — นำเข้าข้อมูลจากไฟล์ Backup (จะแทนที่ข้อมูลปัจจุบัน)
+        </div>
+        <div style="font-size:12px;font-weight:600;color:${_backupStatusInfo().color};background:${_backupStatusInfo().bg};border-radius:8px;padding:7px 10px;margin-bottom:14px">
+          ${_backupStatusInfo().text}
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn bs" onclick="backupAllData()" style="background:rgba(52,199,89,.12);color:#16803d;flex:1;justify-content:center">
@@ -1900,7 +1913,9 @@ async function backupAllData(){
     const [
       allSubjects, allStudents, allAttendance,
       allScoreUnits, allScoreSummary,
-      allEvalRead, allEvalChar, allConfig, allProfiles
+      allEvalRead, allEvalChar, allConfig, allProfiles,
+      allEvalPlanUnits, allEvalPlanUnitInd, allEvalPlanIndScores,
+      allMenuPerms, allAuditLog
     ] = await Promise.all([
       qAll(()=>sb.from('subjects').select('*').order('grade_level').order('room').order('subject_name')),
       qAll(()=>sb.from('students').select('*').order('grade_level').order('room').order('student_code')),
@@ -1911,6 +1926,11 @@ async function backupAllData(){
       qAll(()=>sb.from('eval_char').select('*').order('subject_id').order('student_id')),
       qAll(()=>sb.from('config').select('*').order('key')),
       qAll(()=>sb.from('profiles').select('id,full_name,role').order('id')),
+      qAll(()=>sb.from('eval_plan_units').select('*').order('subject_id').order('seq')),
+      qAll(()=>sb.from('eval_plan_unit_indicators').select('*')),
+      qAll(()=>sb.from('eval_plan_indicator_scores').select('*').order('subject_id')),
+      qAll(()=>sb.from('menu_permissions').select('*')),
+      qAll(()=>sb.from('audit_log').select('*').order('created_at')),
     ]);
 
     // ── helper: object array → aoa ──
@@ -1951,6 +1971,11 @@ async function backupAllData(){
         ['eval_char','การประเมินคุณลักษณะฯ', allEvalChar.length],
         ['config','ตั้งค่าระบบ', allConfig.length],
         ['profiles','ข้อมูลผู้ใช้', allProfiles.length],
+        ['eval_plan_units','หน่วยการเรียนรู้ (แผนการวัดฯ)', allEvalPlanUnits.length],
+        ['eval_plan_unit_indicators','ตัวชี้วัดที่ผูกกับหน่วย', allEvalPlanUnitInd.length],
+        ['eval_plan_indicator_scores','คะแนนเก็บรายตัวชี้วัด', allEvalPlanIndScores.length],
+        ['menu_permissions','สิทธิ์การเข้าถึงเมนู', allMenuPerms.length],
+        ['audit_log','บันทึกเหตุการณ์สำคัญ', allAuditLog.length],
         [],
         ['หมายเหตุ: ไฟล์นี้มีข้อมูลดิบจาก Supabase ทุก table สามารถนำไป restore ได้'],
       ],
@@ -2013,15 +2038,41 @@ async function backupAllData(){
     ] : [['(ไม่มีข้อมูล)']];
     sheets.push({ name:'eval_char', aoa:ecAoa });
 
-    // Sheet: config (ซ่อน admin_password)
-    const configSafe = allConfig.map(r=>({...r, value: r.key==='admin_password'?'[hidden]':r.value}));
+    // Sheet: config (ซ่อนรหัสผ่าน/API key ที่เป็นความลับ)
+    const SENSITIVE_CONFIG_KEYS = ['admin_password','gemini_api_key','typhoon_api_key'];
+    const configSafe = allConfig.map(r=>({...r, value: SENSITIVE_CONFIG_KEYS.includes(r.key)?'[hidden]':r.value}));
     sheets.push({ name:'config', aoa:toAoa(configSafe), colWidths:[20,30,20] });
 
     // Sheet: profiles
     sheets.push({ name:'profiles', aoa:toAoa(allProfiles), colWidths:[20,24,12] });
 
+    // Sheet: eval_plan_units (หน่วยการเรียนรู้ในแผนการวัดฯ — แสดงชื่อวิชาแทน id ด้วย)
+    const epuAoa = allEvalPlanUnits.length ? [
+      [...Object.keys(allEvalPlanUnits[0]),'ชื่อวิชา'],
+      ...allEvalPlanUnits.map(r=>[...Object.keys(r).map(k=>r[k]??''), subMap[r.subject_id]||''])
+    ] : [['(ไม่มีข้อมูล)']];
+    sheets.push({ name:'eval_plan_units', aoa:epuAoa });
+
+    // Sheet: eval_plan_unit_indicators
+    sheets.push({ name:'eval_plan_unit_indicators', aoa:toAoa(allEvalPlanUnitInd) });
+
+    // Sheet: eval_plan_indicator_scores
+    const episAoa = allEvalPlanIndScores.length ? [
+      [...Object.keys(allEvalPlanIndScores[0]),'ชื่อวิชา'],
+      ...allEvalPlanIndScores.map(r=>[...Object.keys(r).map(k=>r[k]??''), subMap[r.subject_id]||''])
+    ] : [['(ไม่มีข้อมูล)']];
+    sheets.push({ name:'eval_plan_indicator_scores', aoa:episAoa });
+
+    // Sheet: menu_permissions
+    sheets.push({ name:'menu_permissions', aoa:toAoa(allMenuPerms) });
+
+    // Sheet: audit_log
+    sheets.push({ name:'audit_log', aoa:toAoa(allAuditLog) });
+
     const fileName = 'backup_pp5_'+dateStr+'_'+timeStr+'.xlsx';
-    exportExcel(sheets, fileName);
+    await exportExcel(sheets, fileName);
+    await q(sb.from('config').upsert([{key:'last_backup_at',value:now.toISOString()}],{onConflict:'key'}));
+    S.config.last_backup_at = now.toISOString();
     toast('Backup เสร็จแล้ว — '+fileName);
 
   }catch(e){
