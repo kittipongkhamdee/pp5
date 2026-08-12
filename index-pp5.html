@@ -2272,9 +2272,12 @@ async function delSub(id,name){
 }
 
 // ── คัดลอกวิชาไปปีการศึกษาใหม่ ──────────────────────────────────────
+// ครูทั่วไป: คัดลอกได้เฉพาะวิชาของตัวเอง (_cpsSubjects = S.subjects เสมอ)
+// แอดมิน: เลือกครูคนอื่นได้ — _cpsSubjects จะถูกดึงใหม่ตามครูที่เลือก และวิชาที่คัดลอกจะเป็นของครูคนนั้น ไม่ใช่ของแอดมิน
+let _cpsSubjects=[], _cpsTeacherId=null, _cpsTeachers=[];
 function _subYearCombos(){
   const map=new Map();
-  S.subjects.forEach(s=>{
+  _cpsSubjects.forEach(s=>{
     const k=(s.academic_year||'')+'|'+(s.semester||'');
     if(!map.has(k)) map.set(k,{academic_year:s.academic_year,semester:s.semester,count:0});
     map.get(k).count++;
@@ -2282,23 +2285,32 @@ function _subYearCombos(){
   return [...map.values()].sort((a,b)=>
     String(b.academic_year||'').localeCompare(String(a.academic_year||''))||(+b.semester||0)-(+a.semester||0));
 }
-function openCopySubjectsModal(){
+async function openCopySubjectsModal(){
   if(!S.profile?.is_admin&&S.config.copy_subjects_enabled==='0'){ _denyMenuAccess('คัดลอกวิชาไปปีการศึกษาใหม่'); return; }
-  const combos=_subYearCombos();
-  if(!combos.length){ toast('ยังไม่มีรายวิชาให้คัดลอก','er'); return; }
+  _cpsTeacherId=S.user.id;
+  _cpsSubjects=S.subjects;
+  if(S.profile?.is_admin){
+    try{ _cpsTeachers=await q(sb.from('profiles').select('id,full_name').order('full_name')); }
+    catch(e){ _cpsTeachers=[]; }
+  }
   const curY=S.config.academic_year||'2568', curS=parseInt(S.config.semester||1);
-  const defaultSrc=combos.find(c=>String(c.academic_year)!==String(curY)||+c.semester!==curS)||combos[0];
   document.body.insertAdjacentHTML('beforeend',`
   <div class="mo" id="cpsMod"><div class="md md-lg">
     <div class="mh"><div class="mt">คัดลอกวิชาไปปีการศึกษาใหม่</div>
     <button class="mx" onclick="rmModal('cpsMod')">✕</button></div>
     <div class="mb">
+      ${S.profile?.is_admin?`
+      <div style="margin-bottom:14px">
+        <label class="fl">คัดลอกวิชาของครู</label>
+        <select class="fs" id="cps-teacher" onchange="_onCpsTeacherChange(this.value)">
+          ${_cpsTeachers.map(t=>`<option value="${t.id}" ${t.id===S.user.id?'selected':''}>${esc(t.full_name||'')}${t.id===S.user.id?' (ตัวเอง)':''}</option>`).join('')}
+        </select>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:4px">เลือกครูคนอื่นได้ — วิชาที่คัดลอกจะเป็นของครูคนนั้น ไม่ใช่ของแอดมิน</div>
+      </div>`:''}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
         <div>
           <label class="fl">คัดลอกจาก</label>
-          <select class="fs" id="cps-src" onchange="_renderCopySubList()">
-            ${combos.map(c=>`<option value="${esc(c.academic_year)}|${esc(c.semester)}" ${c===defaultSrc?'selected':''}>ภาคเรียนที่ ${esc(c.semester)}/${esc(c.academic_year)} (${c.count} วิชา)</option>`).join('')}
-          </select>
+          <select class="fs" id="cps-src" onchange="_renderCopySubList()"></select>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
           <div><label class="fl">ปีการศึกษาใหม่</label><input class="fi" id="cps-ty" value="${esc(curY)}"></div>
@@ -2326,12 +2338,37 @@ function openCopySubjectsModal(){
       <button class="btn bp" onclick="doCopySubjects()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>คัดลอกวิชา</button>
     </div>
   </div></div>`);
+  _refreshCpsSourceOptions();
+}
+function _refreshCpsSourceOptions(){
+  const combos=_subYearCombos();
+  const sel=$('cps-src');
+  if(!sel) return;
+  if(!combos.length){
+    sel.innerHTML=`<option value="">— ไม่มีรายวิชา —</option>`;
+    const wrap=$('cps-list'); if(wrap) wrap.innerHTML=`<div class="empty" style="padding:20px 0">ครูคนนี้ยังไม่มีรายวิชาให้คัดลอก</div>`;
+    return;
+  }
+  const curY=S.config.academic_year||'2568', curS=parseInt(S.config.semester||1);
+  const defaultSrc=combos.find(c=>String(c.academic_year)!==String(curY)||+c.semester!==curS)||combos[0];
+  sel.innerHTML=combos.map(c=>`<option value="${esc(c.academic_year)}|${esc(c.semester)}" ${c===defaultSrc?'selected':''}>ภาคเรียนที่ ${esc(c.semester)}/${esc(c.academic_year)} (${c.count} วิชา)</option>`).join('');
   _renderCopySubList();
+}
+async function _onCpsTeacherChange(teacherId){
+  _cpsTeacherId=teacherId;
+  loading(true);
+  try{
+    _cpsSubjects = teacherId===S.user.id ? S.subjects : await q(sb.from('subjects').select('*').eq('user_id',teacherId));
+  }catch(e){ _cpsSubjects=[]; toast('โหลดรายวิชาไม่สำเร็จ: '+e.message,'er'); }
+  finally{ loading(false); }
+  _refreshCpsSourceOptions();
 }
 function _renderCopySubList(){
   const wrap=$('cps-list'); if(!wrap) return;
-  const [y,sem]=$('cps-src').value.split('|');
-  const list=S.subjects.filter(x=>String(x.academic_year)===y&&String(x.semester)===sem)
+  const srcVal=$('cps-src')?.value||'';
+  if(!srcVal){ wrap.innerHTML=`<div class="empty" style="padding:20px 0">ไม่มีวิชาในภาคเรียนนี้</div>`; return; }
+  const [y,sem]=srcVal.split('|');
+  const list=_cpsSubjects.filter(x=>String(x.academic_year)===y&&String(x.semester)===sem)
     .sort((a,b)=>String(a.grade_level||'').localeCompare(String(b.grade_level||''))||String(a.room||'').localeCompare(String(b.room||''))||a.subject_name.localeCompare(b.subject_name,'th'));
   if(!list.length){ wrap.innerHTML=`<div class="empty" style="padding:20px 0">ไม่มีวิชาในภาคเรียนนี้</div>`; return; }
   wrap.innerHTML=`<div style="max-height:320px;overflow-y:auto;border:1.5px solid var(--bdr);border-radius:10px">
@@ -2353,8 +2390,9 @@ async function doCopySubjects(){
   if(!targetYear){ toast('กรุณาระบุปีการศึกษาใหม่','er'); return; }
   const targetSem=$('cps-ts').value;
   const copyEval=$('cps-evalplan').checked;
-  const srcSubjects=checked.map(id=>S.subjects.find(s=>s.id===id)).filter(Boolean);
-  const existingCodes=new Set(S.subjects.filter(x=>String(x.academic_year)===targetYear&&String(x.semester)===targetSem).map(x=>x.subject_code));
+  const ownerId=_cpsTeacherId||S.user.id;
+  const srcSubjects=checked.map(id=>_cpsSubjects.find(s=>s.id===id)).filter(Boolean);
+  const existingCodes=new Set(_cpsSubjects.filter(x=>String(x.academic_year)===targetYear&&String(x.semester)===targetSem).map(x=>x.subject_code));
   const skipped=[]; let copiedCount=0;
   loading(true);
   try{
@@ -2369,7 +2407,7 @@ async function doCopySubjects(){
         score_before_mid:sub.score_before_mid,score_mid:sub.score_mid,score_after_mid:sub.score_after_mid,score_final:sub.score_final,
         knowledge_ratio:sub.knowledge_ratio,skill_ratio:sub.skill_ratio,moral_ratio:sub.moral_ratio,
         academic_year:targetYear,semester:parseInt(targetSem),
-        published:false,user_id:S.user.id
+        published:false,user_id:ownerId
       };
       const inserted=await q(sb.from('subjects').insert(payload).select('id'));
       const newId=inserted[0].id;
@@ -2407,7 +2445,9 @@ async function doCopySubjects(){
     await loadConfig();
     invalidateSubjects(); await loadSubjects();
     rmModal('cpsMod');
-    if(copiedCount) toast(`คัดลอกวิชาสำเร็จ ${copiedCount} วิชา`+(skipped.length?` (ข้าม ${skipped.length} วิชาที่มีรหัสซ้ำในปีการศึกษาปลายทาง)`:''));
+    const forOther=ownerId!==S.user.id;
+    const teacherName=forOther?(_cpsTeachers.find(t=>t.id===ownerId)?.full_name||''):'';
+    if(copiedCount) toast(`คัดลอกวิชาสำเร็จ ${copiedCount} วิชา`+(forOther?` ให้ครู ${teacherName}`:'')+(skipped.length?` (ข้าม ${skipped.length} วิชาที่มีรหัสซ้ำในปีการศึกษาปลายทาง)`:''));
     else toast('ไม่มีวิชาที่คัดลอกได้ — รหัสวิชาซ้ำกับที่มีอยู่แล้วในปีการศึกษาปลายทางทั้งหมด','er');
     pgSubjects();
   }catch(e){ toast('เกิดข้อผิดพลาด: '+e.message,'er'); }
