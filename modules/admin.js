@@ -416,7 +416,7 @@ function _progressCell(done,total){
 let _settingsActiveTab='stg-general'; // จำแท็บที่เปิดอยู่ ไม่ให้กระโดดกลับแท็บแรกทุกครั้งที่บันทึก/รีเฟรชหน้า
 function _stgTab(id){ _settingsActiveTab=id; swTab('stg',id); }
 async function pgSettings(){
-  if(_settingsActiveTab==='stg-admin'&&!S.profile?.is_admin) _settingsActiveTab='stg-general';
+  if((_settingsActiveTab==='stg-admin'||_settingsActiveTab==='stg-security')&&!S.profile?.is_admin) _settingsActiveTab='stg-general';
   const cfg=S.config;
   _sgList=[...SUBJECT_GROUPS];
   _rpgList={...ROOMS_PER_GRADE};
@@ -452,7 +452,7 @@ async function pgSettings(){
   <div class="tabs" style="margin-bottom:16px">
     <button class="tab ${_settingsActiveTab==='stg-general'?'active':''}" data-tg="stg" data-ti="stg-general" onclick="_stgTab('stg-general')">ทั่วไป</button>
     <button class="tab ${_settingsActiveTab==='stg-academic'?'active':''}" data-tg="stg" data-ti="stg-academic" onclick="_stgTab('stg-academic')">การเรียนการสอน</button>
-    <button class="tab ${_settingsActiveTab==='stg-security'?'active':''}" data-tg="stg" data-ti="stg-security" onclick="_stgTab('stg-security')">ความปลอดภัยและข้อมูล</button>
+    ${S.profile?.is_admin?`<button class="tab ${_settingsActiveTab==='stg-security'?'active':''}" data-tg="stg" data-ti="stg-security" onclick="_stgTab('stg-security')">ความปลอดภัยและข้อมูล</button>`:''}
     ${S.profile?.is_admin?`<button class="tab ${_settingsActiveTab==='stg-admin'?'active':''}" data-tg="stg" data-ti="stg-admin" onclick="_stgTab('stg-admin')">แอดมิน</button>`:''}
   </div>
 
@@ -786,6 +786,7 @@ async function pgSettings(){
 
   </div><!-- /stg-academic -->
 
+  ${S.profile?.is_admin?`
   <div class="tp ${_settingsActiveTab==='stg-security'?'active':''}" id="stg-security" data-tp="stg">
 
   <!-- ── แถวล่าง: รหัสผ่านแอดมิน + Backup/Restore + โซนอันตราย ── -->
@@ -947,7 +948,7 @@ async function pgSettings(){
     </div>
   </div>` : ''}
 
-  </div><!-- /stg-security -->
+  </div><!-- /stg-security -->` : ''}
 
   ${S.profile?.is_admin?`
   <div class="tp ${_settingsActiveTab==='stg-admin'?'active':''}" id="stg-admin" data-tp="stg">
