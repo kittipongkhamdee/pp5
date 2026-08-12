@@ -1058,6 +1058,35 @@ async function pgSettings(){
     </div>
 
   </div>
+
+  <!-- ── การ์ด: จัดการสิทธิ์แอดมิน ── -->
+  <div class="card" style="margin-top:16px;border:1.5px solid rgba(175,82,222,.3);">
+    <div class="ch" style="background:rgba(175,82,222,.07);">
+      <div class="ct" style="color:#af52de;display:flex;align-items:center;gap:8px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#af52de" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="12" cy="8" r="6"/><path d="M15.5 13.5 21 21l-4-1-1 4-5.5-7.5"/><path d="M8.5 13.5 3 21l4-1 1 4 5.5-7.5"/></svg>
+        จัดการสิทธิ์แอดมิน
+      </div>
+      <span class="badge" style="background:rgba(175,82,222,.15);color:#af52de;">Admin</span>
+    </div>
+    <div class="cb">
+      <div style="font-size:12px;color:#6e6e73;margin-bottom:14px;line-height:1.6">
+        แอดมินเข้าได้ทุกเมนูเสมอ รวมถึงหน้านี้และโซนอันตราย (ล้างข้อมูล/Restore) — แต่งตั้งเฉพาะคนที่ไว้ใจได้จริงๆ เท่านั้น
+      </div>
+      ${!_allLogins.length?`<div style="font-size:13px;color:var(--muted);text-align:center;padding:12px">ยังไม่มีข้อมูล</div>`:`
+      <div class="tw"><table>
+        <thead><tr><th class="tl">บัญชี</th><th>สถานะ</th><th></th></tr></thead>
+        <tbody>${_allLogins.map(p=>`<tr>
+          <td class="tl">${esc(p.full_name||'')}${p.id===S.user.id?' <span style="color:var(--muted);font-weight:400">(ตัวเอง)</span>':''}</td>
+          <td class="tc"><span class="badge ${p.is_admin?'bg-g':'bg-gr'}">${p.is_admin?'แอดมิน':'ครูทั่วไป'}</span></td>
+          <td class="tc">
+            ${p.is_admin
+              ?`<button class="btn bs btn-sm" style="color:#dc2626" ${p.id===S.user.id?'disabled title="ถอดสิทธิ์แอดมินของตัวเองไม่ได้ ให้แอดมินคนอื่นดำเนินการแทน"':''} onclick="_setAdminStatus('${p.id}','${escJs(p.full_name||'')}',false)">ถอดสิทธิ์แอดมิน</button>`
+              :`<button class="btn bs btn-sm" style="color:#af52de" onclick="_setAdminStatus('${p.id}','${escJs(p.full_name||'')}',true)">แต่งตั้งเป็นแอดมิน</button>`}
+          </td>
+        </tr>`).join('')}</tbody>
+      </table></div>`}
+    </div>
+  </div>
   </div><!-- /stg-admin -->`:''}
 
   `;
@@ -1080,6 +1109,33 @@ async function saveMenuPerms(){
     toast('บันทึกสิทธิ์การเข้าถึงเรียบร้อย');
   }catch(e){ toast('เกิดข้อผิดพลาด: '+e.message,'er'); }
   finally{ loading(false); }
+}
+
+// ── แต่งตั้ง/ถอดสิทธิ์แอดมิน — สิทธิ์สูงสุด ต้องยืนยันก่อนทุกครั้ง ห้ามถอดสิทธิ์ตัวเอง ──
+function _setAdminStatus(teacherId,teacherName,makeAdmin){
+  if(!makeAdmin&&teacherId===S.user.id){
+    toast('ถอดสิทธิ์แอดมินของตัวเองไม่ได้ ให้แอดมินคนอื่นดำเนินการแทน','er');
+    return;
+  }
+  confirm2({
+    title: makeAdmin?'ยืนยันแต่งตั้งแอดมิน':'ยืนยันถอดสิทธิ์แอดมิน',
+    msg: makeAdmin
+      ?'ให้ <strong>'+esc(teacherName)+'</strong> เป็นแอดมิน?<br><span style="font-size:12px;color:#dc2626">แอดมินเข้าได้ทุกเมนู รวมถึงล้างข้อมูลทั้งหมด/Restore — แต่งตั้งเฉพาะคนที่ไว้ใจได้จริงๆ</span>'
+      :'ถอดสิทธิ์แอดมินของ <strong>'+esc(teacherName)+'</strong>?<br><span style="font-size:12px;color:#8e8e93">จะกลายเป็นครูทั่วไป เข้าเมนูตั้งค่า/รายงานทั้งโรงเรียนไม่ได้ทันที เว้นแต่ให้สิทธิ์แยกไว้</span>',
+    type: makeAdmin?'warn':'danger',
+    confirmText: makeAdmin?'แต่งตั้งเลย':'ถอดสิทธิ์เลย',
+    cancelText:'ยกเลิก',
+    onConfirm: async()=>{
+      loading(true);
+      try{
+        await q(sb.from('profiles').update({is_admin:makeAdmin}).eq('id',teacherId));
+        _allLogins=_allLogins.map(p=>p.id===teacherId?{...p,is_admin:makeAdmin}:p);
+        toast(makeAdmin?'แต่งตั้ง '+teacherName+' เป็นแอดมินเรียบร้อย':'ถอดสิทธิ์แอดมินของ '+teacherName+' เรียบร้อย');
+        pgSettings();
+      }catch(e){ toast('เกิดข้อผิดพลาด: '+e.message,'er'); }
+      finally{ loading(false); }
+    }
+  });
 }
 
 
