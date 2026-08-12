@@ -2322,7 +2322,7 @@ async function openCopySubjectsModal(){
       </div>
       <div style="margin-top:14px">
         <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
-          <input type="checkbox" id="cps-evalplan" checked> คัดลอกแผนการวัดและประเมินผลด้วย (หน่วยการเรียนรู้ + ตัวชี้วัด + สัดส่วนคะแนน)
+          <input type="checkbox" id="cps-evalplan" checked> คัดลอกแผนการวัดและประเมินผลด้วย (หน่วยการเรียนรู้ + ตัวชี้วัด + สัดส่วนคะแนน + โครงหน่วยในหน้าบันทึกคะแนน)
         </label>
       </div>
       <div style="margin-top:14px;display:flex;align-items:center;justify-content:space-between">
@@ -2440,6 +2440,30 @@ async function doCopySubjects(){
             await q(sb.from('eval_plan_indicator_scores').insert(newScores));
           }
         }catch(e){ console.error('copy eval plan error',e); }
+        // สร้างโครงหน่วยที่หน้า "บันทึกคะแนน" ให้ตรงกับหน่วยการเรียนรู้ — คัดลอกแค่ชื่อหน่วย/คะแนนเต็ม
+        // ไม่คัดลอกคะแนนจริง (score=0 ให้นักเรียนชุดปัจจุบันของชั้น/ห้องนั้นทุกคน)
+        try{
+          const srcScUnits=await q(sb.from('score_units').select('period,unit_number,unit_name,standard_ref,max_score').eq('subject_id',sub.id));
+          const uniqueUnits=Object.values(srcScUnits.reduce((acc,u)=>{
+            const k=u.period+'_'+u.unit_number;
+            if(!acc[k]) acc[k]={period:u.period,unit_number:u.unit_number,unit_name:u.unit_name,standard_ref:u.standard_ref,max_score:u.max_score};
+            return acc;
+          },{}));
+          if(uniqueUnits.length){
+            const newStus=await q(sb.from('students').select('id').eq('grade_level',payload.grade_level).eq('room',payload.room));
+            if(newStus.length){
+              const scRows=[];
+              uniqueUnits.forEach(u=>newStus.forEach(s=>scRows.push({
+                subject_id:newId,student_id:s.id,period:u.period,unit_number:u.unit_number,
+                unit_name:u.unit_name,standard_ref:u.standard_ref,max_score:u.max_score,score:0
+              })));
+              const batchSize=200;
+              for(let i=0;i<scRows.length;i+=batchSize){
+                await q(sb.from('score_units').insert(scRows.slice(i,i+batchSize)));
+              }
+            }
+          }
+        }catch(e){ console.error('copy score_units error',e); }
       }
     }
     await loadConfig();
