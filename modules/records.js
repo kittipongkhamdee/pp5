@@ -698,7 +698,7 @@ function renderEplUnitsTab(){
         ${epUnits.length===0?`<tr><td colspan="7" class="tc" style="padding:20px;color:var(--muted)">ยังไม่มีหน่วยการเรียนรู้ — กด "เพิ่มหน่วยการเรียนรู้" ด้านล่าง</td></tr>`:
         epUnits.map((u,i)=>`<tr>
           <td class="tc">${i+1}</td>
-          <td><input class="cell-in" value="${esc(u.unit_name)}" placeholder="ชื่อหน่วยการเรียนรู้" onchange="saveEplUnit('${u.id}',{unit_name:this.value})"></td>
+          <td><textarea class="cell-in" rows="3" style="resize:vertical;white-space:normal;overflow-wrap:break-word;min-height:36px" placeholder="ชื่อหน่วยการเรียนรู้" onchange="saveEplUnit('${u.id}',{unit_name:this.value})">${esc(u.unit_name)}</textarea></td>
           <td>${renderIndCell(u)}</td>
           <td><input class="cell-in num" type="number" value="${u.hours||0}" min="0" onchange="saveEplUnit('${u.id}',{hours:+this.value||0})"></td>
           <td><input class="cell-in num" type="number" value="${u.weight||0}" min="0" onchange="saveEplUnit('${u.id}',{weight:+this.value||0})"></td>
