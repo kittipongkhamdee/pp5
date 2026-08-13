@@ -713,8 +713,8 @@ function renderEplUnitsTab(){
           <td></td>
         </tr>
         <tr style="font-weight:700;background:var(--card2)">
-          <td colspan="4" style="text-align:right;padding-right:14px">รวมคะแนนประเมินผล</td>
-          <td colspan="2" class="tc" style="font-size:14px;color:${grand===100?'var(--ok-txt)':'var(--err-txt)'}">${grand}${grand===100?' ✓':' (ต้อง = 100)'}</td>
+          <td colspan="3" style="text-align:right;padding-right:14px">รวมคะแนนประเมินผล</td>
+          <td colspan="3" class="tc" style="font-size:14px;color:${grand===100?'var(--ok-txt)':'var(--err-txt)'}">${grand}${grand===100?' ✓':' (ต้อง = 100)'}</td>
           <td></td>
         </tr>
         <tr style="display:${sumWeightFinal!==targetFinal?'table-row':'none'}">
@@ -1136,6 +1136,10 @@ function _evalUnitTheadHTML(headRows){
   h+='</tr>';
   return h;
 }
+// สร้าง <td> ของแถว "รวมคะแนนประเมินผล" (แถวสุดท้ายจาก buildEvalPlanUnitRows) — ผสานช่องคะแนนรวมเป็นช่องเดียวกว้าง 3 คอลัมน์ (เวลา/ระหว่างภาค/ปลายภาค)
+function _evalUnitGrandRowHTML(row){
+  return `<td class="l" colspan="3">${esc(String(row[0]))}</td><td colspan="3">${esc(String(row[3]))}</td>`;
+}
 // headRows: 2 แถวหัวตาราง (แถวบนมี "น้ำหนักคะแนน" ครอบคอลัมน์ ระหว่างภาค/ปลายภาค)
 // rows: ข้อมูลหน่วยการเรียนรู้ ตามด้วย 2 แถวสรุปท้ายตาราง (รวมหน่วยการเรียนรู้ / รวมคะแนนประเมินผล)
 function buildEvalPlanUnitRows(){
@@ -1156,7 +1160,7 @@ function buildEvalPlanUnitRows(){
   });
   const mid=+sub.score_mid||0;
   rows.push(['','รวมหน่วยการเรียนรู้','',sumHours,sumWeight,sumWeightFinal]);
-  rows.push(['','รวมคะแนนประเมินผล','','',sumWeight+mid+sumWeightFinal,'']);
+  rows.push(['รวมคะแนนประเมินผล','','',sumWeight+mid+sumWeightFinal,'','']);
   return {headRows,rows};
 }
 function buildEvalPlanKpaRows(){
@@ -1203,11 +1207,13 @@ function exportEvalPlan(){
   ];
   const unitBuilt=buildEvalPlanUnitRows();
   const hr0=head.length, hr1=head.length+1;
+  const grandRow=head.length+unitBuilt.headRows.length+unitBuilt.rows.length-1;
   exportExcel([
     {name:'หน่วยการเรียนรู้',aoa:[...head,...unitBuilt.headRows,...unitBuilt.rows],colWidths:[6,26,60,10,12,12],
       merges:[
         {s:{r:hr0,c:0},e:{r:hr1,c:0}},{s:{r:hr0,c:1},e:{r:hr1,c:1}},{s:{r:hr0,c:2},e:{r:hr1,c:2}},{s:{r:hr0,c:3},e:{r:hr1,c:3}},
         {s:{r:hr0,c:4},e:{r:hr0,c:5}},
+        {s:{r:grandRow,c:0},e:{r:grandRow,c:2}},{s:{r:grandRow,c:3},e:{r:grandRow,c:5}},
       ]},
     {name:'สัดส่วนคะแนน',aoa:[...head,...buildEvalPlanKpaRows()],colWidths:[22,14,14,14,14,12]},
     {name:'น้ำหนักตัวชี้วัด',aoa:[...head,...buildEvalPlanIndicatorRows()],colWidths:[18,12,12,12,10,10,10,24]},
@@ -1225,8 +1231,10 @@ function printEvalPlan(){
   p1+='<table><thead>'+_evalUnitTheadHTML(unitBuilt.headRows)+'</thead><tbody>';
   unitRows.forEach((row,i)=>{
     const isFoot=i>=unitRows.length-2;
+    const isGrand=i===unitRows.length-1;
     p1+=`<tr${isFoot?' style="font-weight:700;background:#f5f5f5"':''}>`;
-    row.forEach((v,j)=>{p1+=`<td class="${j===1||j===2?'l':''}"${j===2?' style="white-space:pre-line"':''}>${e2(v)}</td>`;});
+    if(isGrand) p1+=_evalUnitGrandRowHTML(row);
+    else row.forEach((v,j)=>{p1+=`<td class="${j===1||j===2?'l':''}"${j===2?' style="white-space:pre-line"':''}>${e2(v)}</td>`;});
     p1+='</tr>';
   });
   p1+='</tbody></table></div>';
@@ -1635,8 +1643,10 @@ ${cvTh('รายการประเมิน','text-align:left;padding-left:6
   body+=`<div class="sec pb">${ph('แผนการวัดและประเมินผล — '+sub.subject_name+' '+grm(sub.grade_level,sub.room),1,2)}<h3>หน่วยการเรียนรู้ มาตรฐานการเรียนรู้ และสัดส่วนคะแนนประเมินผล</h3><table><thead>${_evalUnitTheadHTML(evalUnitBuilt.headRows)}</thead><tbody>`;
   evalUnitRows.forEach((row,i)=>{
     const isFoot=i>=evalUnitRows.length-2;
+    const isGrand=i===evalUnitRows.length-1;
     body+=`<tr${isFoot?' style="font-weight:700;background:#f5f5f5"':''}>`;
-    row.forEach((v,j)=>{ body+=`<td class="${j===1||j===2?'l':''}"${j===2?' style="white-space:pre-line"':''}>${esc(String(v))}</td>`; });
+    if(isGrand) body+=_evalUnitGrandRowHTML(row);
+    else row.forEach((v,j)=>{ body+=`<td class="${j===1||j===2?'l':''}"${j===2?' style="white-space:pre-line"':''}>${esc(String(v))}</td>`; });
     body+='</tr>';
   });
   body+='</tbody></table></div>';
