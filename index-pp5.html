@@ -3346,6 +3346,7 @@ function renderScPage(){
     <div style="display:flex;gap:8px">
       <button class="btn bs no-print" onclick="exportScores()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>Excel</button>
       <button class="btn bs no-print" onclick="printScores()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>พิมพ์</button>
+      <button class="btn bs no-print" onclick="exportForSGS()" title="คัดลอกคะแนนสำหรับสคริปต์ Autofill SGS"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>Autofill SGS</button>
     </div>
   </div>
   <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center">
@@ -4124,6 +4125,41 @@ function exportScores(){
     [{name:'หน่วยการเรียน',aoa:aoa1,colWidths:w1},{name:'สรุปคะแนน',aoa:aoa2,colWidths:w2}],
     `คะแนน_${sub.subject_code}_ม${sub.grade_level}-${sub.room}.xlsx`
   );
+}
+// ── ส่งออกคะแนนเป็น JSON สำหรับสคริปต์ Autofill SGS (Tampermonkey) — คัดลอกเข้าคลิปบอร์ด ──
+// before[]/after[] เรียงตาม unit_number ตรงกับคอลัมน์ S1-S9 / S10-S18 ในหน้า SGS
+// mid/final = คะแนนสอบกลางภาค/ปลายภาคจากแท็บ "สรุปผล" (score_summary.mid_normal / final_score)
+async function exportForSGS(){
+  const sub=scSub;
+  if(!sub){ toast('ไม่พบรายวิชา','er'); return; }
+  if(!scStus.length){ toast('ไม่มีนักเรียนในวิชานี้','er'); return; }
+  const students={};
+  scStus.forEach(s=>{
+    const sm=gsum(s.id);
+    students[s.student_code]={
+      name:s.student_name,
+      before:scU.before.map(u=>gsc(s.id,'before',u.unit_number)??''),
+      after:scU.after.map(u=>gsc(s.id,'after',u.unit_number)??''),
+      mid:sm.mid_normal??'',
+      final:sm.final_score??'',
+    };
+  });
+  const payload={subject_code:sub.subject_code,subject_name:sub.subject_name,generated_at:new Date().toISOString(),students};
+  const json=JSON.stringify(payload);
+  try{
+    await navigator.clipboard.writeText(json);
+    toast('คัดลอกข้อมูลคะแนนสำหรับ Autofill SGS แล้ว — ไปวางที่หน้า SGS ได้เลย');
+  }catch(e){
+    _showSgsExportFallback(json);
+  }
+}
+function _showSgsExportFallback(json){
+  alert2({
+    title:'คัดลอกอัตโนมัติไม่สำเร็จ',
+    msg:'กรุณาเลือกข้อความทั้งหมดในช่องด้านล่างแล้วคัดลอกเอง (Ctrl+C)<br><textarea readonly onclick="this.select()" style="width:100%;height:110px;margin-top:8px;font-size:11px;font-family:monospace;padding:8px;border-radius:8px;border:1px solid #d1d1d6;resize:vertical">'+esc(json)+'</textarea>',
+    type:'warn',
+    okText:'ปิด',
+  });
 }
 function printScores(){
   const sub=scSub;
