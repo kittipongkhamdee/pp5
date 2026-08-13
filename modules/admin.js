@@ -1664,7 +1664,7 @@ async function backupAllData(){
       qAll(()=>sb.from('score_summary').select('*').order('subject_id').order('student_id')),
       qAll(()=>sb.from('eval_read').select('*').order('subject_id').order('student_id')),
       qAll(()=>sb.from('eval_char').select('*').order('subject_id').order('student_id')),
-      qAll(()=>sb.from('config').select('*').order('key')),
+      q(sb.from('config').select('*').order('key')),
       qAll(()=>sb.from('profiles').select('id,full_name,role').order('id')),
       qAll(()=>sb.from('eval_plan_units').select('*').order('subject_id').order('seq')),
       qAll(()=>sb.from('eval_plan_unit_indicators').select('*')),
