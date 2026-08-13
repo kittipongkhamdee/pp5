@@ -719,10 +719,10 @@ function renderEplUnitsTab(){
           <td></td>
         </tr>
         <tr style="display:${sumWeight!==targetBetween?'table-row':'none'}">
-          <td colspan="7" style="padding:8px 14px;font-size:12px;color:var(--err-txt)">${_ico.warning} คะแนนเก็บระหว่างภาครวมจากหน่วยการเรียนรู้ (${sumWeight}) ไม่ตรงกับคะแนนก่อนกลางภาค+หลังกลางภาคที่ตั้งไว้ในแท็บ "สัดส่วนคะแนน" (${targetBetween}) — แก้ไขคะแนนระหว่างภาคของแต่ละหน่วยด้านบน หรือปรับโครงสร้างคะแนนในแท็บสัดส่วนคะแนนให้ตรงกัน</td>
+          <td colspan="7" style="padding:8px 14px;font-size:12px;color:var(--err-txt)">${_ico.warning} คะแนนเก็บระหว่างภาครวมจากหน่วยการเรียนรู้ (${sumWeight}) ไม่ตรงกับคะแนนก่อนกลางภาค+หลังกลางภาคที่ตั้งไว้ในแท็บ <a href="javascript:void(0)" onclick="swTab('epl','epl-ratio')" style="color:inherit;text-decoration:underline;font-weight:600">"สัดส่วนคะแนน"</a> (${targetBetween}) — แก้ไขคะแนนระหว่างภาคของแต่ละหน่วยด้านบน หรือปรับโครงสร้างคะแนนในแท็บสัดส่วนคะแนนให้ตรงกัน</td>
         </tr>
         <tr style="display:${sumWeightFinal!==targetFinal?'table-row':'none'}">
-          <td colspan="7" style="padding:8px 14px;font-size:12px;color:var(--err-txt)">${_ico.warning} คะแนนสอบปลายภาครวมจากหน่วยการเรียนรู้ (${sumWeightFinal}) ไม่ตรงกับคะแนนปลายภาคที่ตั้งไว้ในแท็บ "สัดส่วนคะแนน" (${targetFinal}) — แก้ไขคะแนนปลายภาคของแต่ละหน่วยด้านบน หรือปรับคะแนนปลายภาคในแท็บสัดส่วนคะแนนให้ตรงกัน</td>
+          <td colspan="7" style="padding:8px 14px;font-size:12px;color:var(--err-txt)">${_ico.warning} คะแนนสอบปลายภาครวมจากหน่วยการเรียนรู้ (${sumWeightFinal}) ไม่ตรงกับคะแนนปลายภาคที่ตั้งไว้ในแท็บ <a href="javascript:void(0)" onclick="swTab('epl','epl-ratio')" style="color:inherit;text-decoration:underline;font-weight:600">"สัดส่วนคะแนน"</a> (${targetFinal}) — แก้ไขคะแนนปลายภาคของแต่ละหน่วยด้านบน หรือปรับคะแนนปลายภาคในแท็บสัดส่วนคะแนนให้ตรงกัน</td>
         </tr>
         </tbody>
       </table></div>
