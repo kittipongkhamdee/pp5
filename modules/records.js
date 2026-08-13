@@ -593,7 +593,7 @@ async function doCopyEvalPlan(){
       const units=await q(sb.from('eval_plan_units').select('*').eq('subject_id',srcId).order('seq'));
       const unitIdMap={};
       for(const u of units){
-        const nu=await q(sb.from('eval_plan_units').insert({subject_id:destId,seq:u.seq,unit_name:u.unit_name,hours:u.hours,weight:u.weight}).select('id'));
+        const nu=await q(sb.from('eval_plan_units').insert({subject_id:destId,seq:u.seq,unit_name:u.unit_name,hours:u.hours,weight:u.weight,weight_final:u.weight_final}).select('id'));
         unitIdMap[u.id]=nu[0].id;
       }
       const oldUnitIds=units.map(u=>u.id);
@@ -673,50 +673,58 @@ function renderEvalPlanPage(){
 // ── TAB 1: หน่วยการเรียนรู้ & มาตรฐาน ──────────────────────────────
 function renderEplUnitsTab(){
   const sub=S.subjects.find(s=>s.id===S.selSub)||{};
-  let sumHours=0,sumWeight=0;
-  epUnits.forEach(u=>{ sumHours+=+u.hours||0; sumWeight+=+u.weight||0; });
+  let sumHours=0,sumWeight=0,sumWeightFinal=0;
+  epUnits.forEach(u=>{ sumHours+=+u.hours||0; sumWeight+=+u.weight||0; sumWeightFinal+=+u.weight_final||0; });
   const mid=+sub.score_mid||0, fin=+sub.score_final||0;
-  const grand=sumWeight+mid+fin;
+  const grand=sumWeight+mid+sumWeightFinal;
   return`<div class="card">
     <div class="ch"><div class="ct">หน่วยการเรียนรู้ มาตรฐานการเรียนรู้ ภาระงาน และสัดส่วนคะแนนประเมินผล</div>
       <span style="font-size:11.5px;color:var(--muted)">${epUnits.length} หน่วย</span></div>
     <div class="cb">
       <div class="tw"><table>
         <thead><tr>
-          <th style="width:34px">ที่</th>
-          <th class="tl" style="min-width:150px">ชื่อหน่วยการเรียนรู้</th>
-          <th class="tl" style="min-width:240px">มาตรฐานการเรียนรู้ / ตัวชี้วัด</th>
-          <th style="width:80px">เวลา (ชม.)</th>
-          <th style="width:100px">น้ำหนักคะแนน</th>
-          <th style="width:30px"></th>
+          <th style="width:34px" rowspan="2">ที่</th>
+          <th class="tl" style="min-width:150px" rowspan="2">ชื่อหน่วยการเรียนรู้</th>
+          <th class="tl" style="min-width:240px" rowspan="2">มาตรฐานการเรียนรู้ / ตัวชี้วัด</th>
+          <th style="width:80px" rowspan="2">เวลา (ชม.)</th>
+          <th colspan="2">น้ำหนักคะแนน</th>
+          <th style="width:30px" rowspan="2"></th>
+        </tr><tr>
+          <th style="width:90px">ระหว่างภาค</th>
+          <th style="width:90px">ปลายภาค</th>
         </tr></thead>
         <tbody>
-        ${epUnits.length===0?`<tr><td colspan="6" class="tc" style="padding:20px;color:var(--muted)">ยังไม่มีหน่วยการเรียนรู้ — กด "เพิ่มหน่วยการเรียนรู้" ด้านล่าง</td></tr>`:
+        ${epUnits.length===0?`<tr><td colspan="7" class="tc" style="padding:20px;color:var(--muted)">ยังไม่มีหน่วยการเรียนรู้ — กด "เพิ่มหน่วยการเรียนรู้" ด้านล่าง</td></tr>`:
         epUnits.map((u,i)=>`<tr>
           <td class="tc">${i+1}</td>
           <td><input class="cell-in" value="${esc(u.unit_name)}" placeholder="ชื่อหน่วยการเรียนรู้" onchange="saveEplUnit('${u.id}',{unit_name:this.value})"></td>
           <td>${renderIndCell(u)}</td>
           <td><input class="cell-in num" type="number" value="${u.hours||0}" min="0" onchange="saveEplUnit('${u.id}',{hours:+this.value||0})"></td>
           <td><input class="cell-in num" type="number" value="${u.weight||0}" min="0" onchange="saveEplUnit('${u.id}',{weight:+this.value||0})"></td>
+          <td><input class="cell-in num" type="number" value="${u.weight_final||0}" min="0" onchange="saveEplUnit('${u.id}',{weight_final:+this.value||0})"></td>
           <td class="tc"><button class="rowdel" title="ลบหน่วย" onclick="delEplUnit('${u.id}','${escJs(u.unit_name||'หน่วยที่ '+(i+1))}')">✕</button></td>
         </tr>`).join('')}
         <tr style="font-weight:700;background:var(--card2)">
           <td colspan="3" style="text-align:right;padding-right:14px">รวมหน่วยการเรียนรู้</td>
           <td class="tc" style="color:${sumHours===(+sub.total_hours||0)?'var(--ok-txt)':'var(--err-txt)'}">${sumHours}${sumHours===(+sub.total_hours||0)?' ✓':' (ต้อง = '+(+sub.total_hours||0)+')'}</td>
-          <td class="tc">${sumWeight}</td><td></td>
-        </tr>
-        <tr>
-          <td colspan="3" style="text-align:right;padding-right:14px;color:var(--txt2)">คะแนนประเมินผลกลางภาค</td>
-          <td colspan="2" class="tc"><input class="cell-in num" type="number" value="${mid}" style="max-width:90px;margin:0 auto" onchange="saveSubjectScoreField('score_mid',this.value)"></td>
+          <td class="tc">${sumWeight}</td>
+          <td class="tc">${sumWeightFinal}</td>
           <td></td>
         </tr>
         <tr>
-          <td colspan="3" style="text-align:right;padding-right:14px;color:var(--txt2)">คะแนนประเมินผลปลายภาค</td>
-          <td colspan="2" class="tc"><input class="cell-in num" type="number" value="${fin}" style="max-width:90px;margin:0 auto" onchange="saveSubjectScoreField('score_final',this.value)"></td>
+          <td colspan="4" style="text-align:right;padding-right:14px;color:var(--txt2)">คะแนนประเมินผลกลางภาค</td>
+          <td class="tc"><input class="cell-in num" type="number" value="${mid}" style="max-width:90px;margin:0 auto" onchange="saveSubjectScoreField('score_mid',this.value)"></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td colspan="4" style="text-align:right;padding-right:14px;color:var(--txt2)">คะแนนประเมินผลปลายภาค</td>
+          <td></td>
+          <td class="tc"><input class="cell-in num" type="number" value="${fin}" style="max-width:90px;margin:0 auto" onchange="saveSubjectScoreField('score_final',this.value)"></td>
           <td></td>
         </tr>
         <tr style="font-weight:700;background:var(--card2)">
-          <td colspan="3" style="text-align:right;padding-right:14px">รวมคะแนนประเมินผล</td>
+          <td colspan="4" style="text-align:right;padding-right:14px">รวมคะแนนประเมินผล</td>
           <td colspan="2" class="tc" style="font-size:14px;color:${grand===100?'var(--ok-txt)':'var(--err-txt)'}">${grand}${grand===100?' ✓':' (ต้อง = 100)'}</td>
           <td></td>
         </tr>
@@ -762,7 +770,7 @@ async function addEplUnit(){
   loading(true);
   try{
     const seq=epUnits.length?Math.max(...epUnits.map(u=>u.seq||0))+1:1;
-    const inserted=await q(sb.from('eval_plan_units').insert({subject_id:S.selSub,seq,unit_name:'',hours:0,weight:0}).select('*'));
+    const inserted=await q(sb.from('eval_plan_units').insert({subject_id:S.selSub,seq,unit_name:'',hours:0,weight:0,weight_final:0}).select('*'));
     epUnits.push(inserted[0]);
     const tab=$('epl-units'); if(tab) tab.innerHTML=renderEplUnitsTab();
   }catch(e){ toast('เพิ่มหน่วยไม่สำเร็จ: '+e.message,'er'); }
@@ -1134,25 +1142,41 @@ async function saveEplIndScore(indId,patch){
 }
 
 // ── พิมพ์ / ส่งออก Excel ────────────────────────────────────────
+// สร้าง <thead> แบบ 2 แถว จาก headRows ของ buildEvalPlanUnitRows() — "น้ำหนักคะแนน" ครอบ 2 คอลัมน์ย่อย
+function _evalUnitTheadHTML(headRows){
+  let h='<tr>';
+  headRows[0].forEach((label,j)=>{
+    if(j===5) return; // ถูกรวมเข้ากับ colspan ของคอลัมน์ก่อนหน้าแล้ว
+    if(j===4){ h+=`<th colspan="2">${esc(String(label))}</th>`; return; }
+    h+=`<th rowspan="2">${esc(String(label))}</th>`;
+  });
+  h+='</tr><tr>';
+  headRows[1].slice(4).forEach(label=>{ h+=`<th>${esc(String(label))}</th>`; });
+  h+='</tr>';
+  return h;
+}
+// headRows: 2 แถวหัวตาราง (แถวบนมี "น้ำหนักคะแนน" ครอบคอลัมน์ ระหว่างภาค/ปลายภาค)
+// rows: ข้อมูลหน่วยการเรียนรู้ ตามด้วย 2 แถวสรุปท้ายตาราง (รวมหน่วยการเรียนรู้ / รวมคะแนนประเมินผล)
 function buildEvalPlanUnitRows(){
   const sub=getSubject(S.selSub)||{};
-  const h=['ที่','ชื่อหน่วยการเรียนรู้','มาตรฐานการเรียนรู้ / ตัวชี้วัด','เวลา (ชม.)','น้ำหนักคะแนน'];
-  const rows=[h];
-  let sumHours=0,sumWeight=0;
+  const headRows=[
+    ['ที่','ชื่อหน่วยการเรียนรู้','มาตรฐานการเรียนรู้ / ตัวชี้วัด','เวลา (ชม.)','น้ำหนักคะแนน',''],
+    ['','','','','ระหว่างภาค','ปลายภาค'],
+  ];
+  const rows=[];
+  let sumHours=0,sumWeight=0,sumWeightFinal=0;
   epUnits.forEach((u,i)=>{
     const codes=(epUnitInd[u.id]||[]).map(id=>{
       const ind=(_indicatorsAll||[]).find(x=>x.id===id);
       return ind?`${ind.indicator_code} — ${ind.indicator_text}`:null;
     }).filter(Boolean).join('\n');
-    sumHours+=+u.hours||0; sumWeight+=+u.weight||0;
-    rows.push([i+1,u.unit_name||'',codes,u.hours||0,u.weight||0]);
+    sumHours+=+u.hours||0; sumWeight+=+u.weight||0; sumWeightFinal+=+u.weight_final||0;
+    rows.push([i+1,u.unit_name||'',codes,u.hours||0,u.weight||0,u.weight_final||0]);
   });
-  const mid=+sub.score_mid||0, fin=+sub.score_final||0;
-  rows.push(['','รวมหน่วยการเรียนรู้','',sumHours,sumWeight]);
-  rows.push(['','คะแนนประเมินผลกลางภาค','','',mid]);
-  rows.push(['','คะแนนประเมินผลปลายภาค','','',fin]);
-  rows.push(['','รวมคะแนนประเมินผล','','',sumWeight+mid+fin]);
-  return rows;
+  const mid=+sub.score_mid||0;
+  rows.push(['','รวมหน่วยการเรียนรู้','',sumHours,sumWeight,sumWeightFinal]);
+  rows.push(['','รวมคะแนนประเมินผล','','',sumWeight+mid+sumWeightFinal,'']);
+  return {headRows,rows};
 }
 function buildEvalPlanKpaRows(){
   const sub=getSubject(S.selSub)||{};
@@ -1196,8 +1220,14 @@ function exportEvalPlan(){
     [`ปีการศึกษา ${S.config.academic_year} ภาคเรียนที่ ${S.config.semester}`],
     []
   ];
+  const unitBuilt=buildEvalPlanUnitRows();
+  const hr0=head.length, hr1=head.length+1;
   exportExcel([
-    {name:'หน่วยการเรียนรู้',aoa:[...head,...buildEvalPlanUnitRows()],colWidths:[6,26,60,10,12]},
+    {name:'หน่วยการเรียนรู้',aoa:[...head,...unitBuilt.headRows,...unitBuilt.rows],colWidths:[6,26,60,10,12,12],
+      merges:[
+        {s:{r:hr0,c:0},e:{r:hr1,c:0}},{s:{r:hr0,c:1},e:{r:hr1,c:1}},{s:{r:hr0,c:2},e:{r:hr1,c:2}},{s:{r:hr0,c:3},e:{r:hr1,c:3}},
+        {s:{r:hr0,c:4},e:{r:hr0,c:5}},
+      ]},
     {name:'สัดส่วนคะแนน',aoa:[...head,...buildEvalPlanKpaRows()],colWidths:[22,14,14,14,14,12]},
     {name:'น้ำหนักตัวชี้วัด',aoa:[...head,...buildEvalPlanIndicatorRows()],colWidths:[18,12,12,12,10,10,10,24]},
   ],`แผนการวัดและประเมินผล_${sub.subject_code}_ม${sub.grade_level}-${sub.room}.xlsx`);
@@ -1206,19 +1236,18 @@ function printEvalPlan(){
   const sub=getSubject(S.selSub); if(!sub){ toast('ไม่พบรายวิชา','er'); return; }
   const e2=v=>esc(String(v));
 
-  const unitRows=buildEvalPlanUnitRows();
+  const unitBuilt=buildEvalPlanUnitRows();
+  const unitRows=unitBuilt.rows;
   let p1='<div style="page-break-after:always">';
   p1+='<h3 style="margin-bottom:6px">หน่วยการเรียนรู้ มาตรฐานการเรียนรู้ และสัดส่วนคะแนนประเมินผล</h3>';
   p1+=`<div class="meta" style="margin-bottom:8px">วิชา ${esc(sub.subject_name)} (${esc(sub.subject_code)}) ${grm(sub.grade_level,sub.room)} &nbsp; ครู ${esc(sub.teacher_name||'')}</div>`;
-  p1+='<table><thead><tr>';
-  unitRows[0].forEach(h=>{p1+=`<th>${e2(h)}</th>`;});
-  p1+='</tr></thead><tbody>';
-  for(let i=1;i<unitRows.length;i++){
-    const isFoot=i>=unitRows.length-4;
+  p1+='<table><thead>'+_evalUnitTheadHTML(unitBuilt.headRows)+'</thead><tbody>';
+  unitRows.forEach((row,i)=>{
+    const isFoot=i>=unitRows.length-2;
     p1+=`<tr${isFoot?' style="font-weight:700;background:#f5f5f5"':''}>`;
-    unitRows[i].forEach((v,j)=>{p1+=`<td class="${j===1||j===2?'l':''}"${j===2?' style="white-space:pre-line"':''}>${e2(v)}</td>`;});
+    row.forEach((v,j)=>{p1+=`<td class="${j===1||j===2?'l':''}"${j===2?' style="white-space:pre-line"':''}>${e2(v)}</td>`;});
     p1+='</tr>';
-  }
+  });
   p1+='</tbody></table></div>';
 
   const kpaRows=buildEvalPlanKpaRows();
@@ -1620,16 +1649,15 @@ ${cvTh('รายการประเมิน','text-align:left;padding-left:6
   body+=`</tbody></table></div>`;
 
   // ── 7. แผนการวัดและประเมินผล ── ไว้ท้ายเล่มเป็นเอกสารอ้างอิงประกอบ ──
-  const evalUnitRows=buildEvalPlanUnitRows();
-  body+=`<div class="sec pb">${ph('แผนการวัดและประเมินผล — '+sub.subject_name+' '+grm(sub.grade_level,sub.room),1,2)}<h3>หน่วยการเรียนรู้ มาตรฐานการเรียนรู้ และสัดส่วนคะแนนประเมินผล</h3><table><thead><tr>`;
-  evalUnitRows[0].forEach(h=>{ body+=`<th>${esc(String(h))}</th>`; });
-  body+='</tr></thead><tbody>';
-  for(let i=1;i<evalUnitRows.length;i++){
-    const isFoot=i>=evalUnitRows.length-4;
+  const evalUnitBuilt=buildEvalPlanUnitRows();
+  const evalUnitRows=evalUnitBuilt.rows;
+  body+=`<div class="sec pb">${ph('แผนการวัดและประเมินผล — '+sub.subject_name+' '+grm(sub.grade_level,sub.room),1,2)}<h3>หน่วยการเรียนรู้ มาตรฐานการเรียนรู้ และสัดส่วนคะแนนประเมินผล</h3><table><thead>${_evalUnitTheadHTML(evalUnitBuilt.headRows)}</thead><tbody>`;
+  evalUnitRows.forEach((row,i)=>{
+    const isFoot=i>=evalUnitRows.length-2;
     body+=`<tr${isFoot?' style="font-weight:700;background:#f5f5f5"':''}>`;
-    evalUnitRows[i].forEach((v,j)=>{ body+=`<td class="${j===1||j===2?'l':''}"${j===2?' style="white-space:pre-line"':''}>${esc(String(v))}</td>`; });
+    row.forEach((v,j)=>{ body+=`<td class="${j===1||j===2?'l':''}"${j===2?' style="white-space:pre-line"':''}>${esc(String(v))}</td>`; });
     body+='</tr>';
-  }
+  });
   body+='</tbody></table></div>';
 
   const evalKpaRows=buildEvalPlanKpaRows();
