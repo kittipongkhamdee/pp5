@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autofill SGS จากระบบ ปพ.5
 // @namespace    pp5-sgs-autofill
-// @version      2.2.0
+// @version      2.3.0
 // @description  วางคะแนนที่คัดลอกจากระบบ ปพ.5 ลงหน้ากรอกคะแนน SGS (sgs.bopp-obec.info) ให้อัตโนมัติ
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts1-Table.aspx*
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts2-Table.aspx*
@@ -130,6 +130,33 @@
     return tds[2].textContent.trim();
   }
 
+  // สแกนหน้าเว็บจริงแบบอ่านอย่างเดียว (ไม่แก้ไขอะไร) เพื่อดูว่า id ของช่องกรอกจริงเป็นแบบไหน
+  // ใช้ตอนที่ id ที่สคริปต์เดาไว้ (REPEATER_PREFIX) หาช่องไม่เจอเลยสักช่อง
+  function scanPage() {
+    log('=== ผลสแกนหน้านี้ ===');
+    const allInputs = document.querySelectorAll('input.field_input');
+    log('พบช่องกรอกคะแนนทั้งหมด (class field_input): ' + allInputs.length + ' ช่อง');
+    const sample = Array.from(allInputs).slice(0, 6);
+    sample.forEach((el) => log('  id="' + el.id + '" disabled=' + el.disabled));
+    if (allInputs.length > 6) log('  ... และอีก ' + (allInputs.length - 6) + ' ช่อง');
+
+    // เช็คว่า checkbox คอลัมน์ที่เดาไว้มีจริงไหม
+    FIELD_ORDER.forEach((key) => {
+      const cbId = 'ctl00_PageContent_' + CHECKBOX_MAP[key];
+      const cb = document.getElementById(cbId);
+      log('checkbox ' + key + ' (id=' + cbId + '): ' + (cb ? ('พบ, checked=' + cb.checked) : 'ไม่พบ'));
+    });
+
+    // เช็คว่า element ตาม pattern ที่สคริปต์ใช้จริงมีไหม สำหรับแถว 00-05
+    for (let i = 0; i < 6; i++) {
+      const rowIdx = String(i).padStart(2, '0');
+      const testId = REPEATER_PREFIX + rowIdx + '_' + FIELD_ORDER[0];
+      const el = document.getElementById(testId);
+      log('แถว ' + rowIdx + ' (id=' + testId + '): ' + (el ? 'พบ' : 'ไม่พบ'));
+    }
+    log('=== จบผลสแกน — คัดลอก log ทั้งหมดส่งกลับมาดูได้เลย ===');
+  }
+
   function getValueForKey(data, key) {
     if (key === 'Midterm') return data.mid;
     if (key === 'Final') return data.final;
@@ -150,19 +177,24 @@
     stopRequested = false;
     filledFields.length = 0;
     log('พบคอลัมน์ที่ปลดล็อกแล้ว: ' + activeKeys.join(', '));
+    const MAX_ROWS = 60; // เผื่อตั้งจำนวนต่อหน้า (page size) ไว้มากกว่า 10 แถว
     for (const key of activeKeys) {
       if (stopRequested) break;
       log('กำลังกรอกคอลัมน์ ' + key + ' ...');
-      for (let i = 0; i < 10; i++) {
+      let notFoundCount = 0;
+      for (let i = 0; i < MAX_ROWS; i++) {
         if (stopRequested) break;
         const rowIdx = String(i).padStart(2, '0');
+        const el = document.getElementById(REPEATER_PREFIX + rowIdx + '_' + key);
+        if (!el) { notFoundCount++; continue; } // เกินจำนวนนักเรียนในหน้านี้แล้ว
         const code = getRowStudentCode(rowIdx, key);
-        if (!code) continue; // หน้าสุดท้ายอาจมีนักเรียนไม่ครบ 10 คน
+        if (!code) { log('  [debug] แถว ' + rowIdx + ' คอลัมน์ ' + key + ': เจอช่องกรอกแต่หาเลขประจำตัวไม่เจอ', true); continue; }
         const data = dataStudents[code];
         if (!data) { log('ไม่พบข้อมูลเลขประจำตัว ' + code + ' ในไฟล์ที่วาง — ข้าม', true); continue; }
         const ok = await fillField(rowIdx, key, getValueForKey(data, key), code);
         if (!ok) log('เลขประจำตัว ' + code + ' คอลัมน์ ' + key + ' ยังกรอกไม่ได้ (อาจยังไม่ปลดล็อก)', true);
       }
+      if (notFoundCount === MAX_ROWS) log('  [debug] ไม่พบช่องกรอกคอลัมน์ ' + key + ' เลยสักแถว (id ที่เดาไว้อาจไม่ตรงกับหน้านี้) — ลองกดปุ่ม "สแกนโครงสร้างหน้านี้" ดู', true);
     }
     log(stopRequested ? 'หยุดกลางคัน — ตรวจสอบคะแนนที่กรอกไปแล้วให้ดี' : 'กรอกครบคอลัมน์ที่ติ๊กไว้แล้ว — ตรวจตัวเลขให้ครบก่อนไปขั้นถัดไป');
     await recheckFilledFields();
@@ -180,6 +212,7 @@
       '<button id="pp5-sgs-start" style="flex:1;padding:6px;background:#0066cc;color:#fff;border:none;border-radius:6px;cursor:pointer">เริ่มกรอกคอลัมน์ที่ติ๊กไว้</button>' +
       '<button id="pp5-sgs-stop" style="padding:6px 10px;background:#dc2626;color:#fff;border:none;border-radius:6px;cursor:pointer">หยุด</button>' +
       '</div>' +
+      '<button id="pp5-sgs-scan" style="width:100%;margin-bottom:6px;padding:5px;background:#fff3cd;border:1px solid #ffc107;border-radius:6px;cursor:pointer;font-size:11px">🔍 สแกนโครงสร้างหน้านี้ (ถ้ากรอกแล้วไม่ขึ้นเลย)</button>' +
       '<div id="pp5-sgs-log" style="max-height:160px;overflow-y:auto;background:#f5f5f5;border-radius:6px;padding:6px;font-size:11px;line-height:1.6"></div>' +
       '<button id="pp5-sgs-copylog" style="width:100%;margin-top:6px;padding:5px;background:#eee;border:1px solid #ccc;border-radius:6px;cursor:pointer;font-size:11px">คัดลอก log ทั้งหมด (ส่งให้ผู้พัฒนาช่วยตรวจ)</button>' +
       '<div style="font-size:10px;color:#888;margin-top:6px">⚠️ ทดสอบกับนักเรียน 1 คนก่อน แล้วรีเฟรชหน้าตรวจว่าคะแนนถูกบันทึกจริง ก่อนกรอกทั้งห้อง</div>';
@@ -195,6 +228,7 @@
       runFill(payload.students);
     };
     document.getElementById('pp5-sgs-stop').onclick = () => { stopRequested = true; };
+    document.getElementById('pp5-sgs-scan').onclick = () => scanPage();
     document.getElementById('pp5-sgs-copylog').onclick = async () => {
       const text = document.getElementById('pp5-sgs-log').innerText;
       try { await navigator.clipboard.writeText(text); log('คัดลอก log แล้ว'); }
