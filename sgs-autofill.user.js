@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autofill SGS จากระบบ ปพ.5
 // @namespace    pp5-sgs-autofill
-// @version      2.4.0
+// @version      2.5.0
 // @description  วางคะแนนที่คัดลอกจากระบบ ปพ.5 ลงหน้ากรอกคะแนน SGS (sgs.bopp-obec.info) ให้อัตโนมัติ
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts1-Table.aspx*
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts2-Table.aspx*
@@ -82,17 +82,21 @@
   // ของ SGS โดยตรง ปลอดภัยกว่าเพราะใช้กลไกจริงของ SGS ไม่ใช่การเดาพฤติกรรม JS ของเขา)
   // เก็บทุกช่องที่กรอกไว้ใน filledFields เพื่อเช็คซ้ำอีกทีตอนจบรอบ (ดูว่าค่าที่ตั้งไป "ติด" จริงไหม
   // หรือถูกอะไรบางอย่างล้าง/ซ่อนทิ้งภายหลัง) โดยไม่ต้องให้ครูเปิด DevTools เอง
+  function applyValue(el, value) {
+    el.focus();
+    setNativeValue(el, value === '' || value == null ? '' : String(value));
+    fireEvent(el, 'input');
+    fireEvent(el, 'change');
+    fireEvent(el, 'blur');
+  }
+
   const filledFields = [];
   async function fillField(rowIdx, key, value, code) {
     const id = REPEATER_PREFIX + rowIdx + '_' + key;
     const el = document.getElementById(id);
     if (!el) { log('  [debug] ' + code + ' ' + key + ': ไม่พบ element id=' + id, true); return false; }
     if (el.disabled) { log('  [debug] ' + code + ' ' + key + ': ช่องยัง disabled อยู่ (SGS ยังไม่ปลดล็อกจริงแม้ติ๊กเช็คแล้ว)', true); return false; }
-    el.focus();
-    setNativeValue(el, value === '' || value == null ? '' : String(value));
-    fireEvent(el, 'input');
-    fireEvent(el, 'change');
-    fireEvent(el, 'blur');
+    applyValue(el, value);
     const rightAfter = describeEl(el);
     filledFields.push({ id, code, key, value: String(value) });
     await sleep(150);
@@ -101,21 +105,30 @@
   }
 
   // เรียกหลังกรอกครบทุกช่องในรอบนี้แล้ว รอสักพักแล้วเช็คซ้ำทุกช่องอีกครั้งว่ายัง "ติด" อยู่ไหม
+  // ถ้าเจอช่องไหนค่าหาย จะลองกรอกซ้ำให้อัตโนมัติอีก 1 ครั้ง (เผื่อเป็นจังหวะเวลาแค่ชั่วคราว)
   async function recheckFilledFields() {
     if (!filledFields.length) return;
     log('รอ 2 วินาทีแล้วตรวจสอบซ้ำทุกช่องที่กรอกไป...');
     await sleep(2000);
-    let mismatchCount = 0;
-    filledFields.forEach(({ id, code, key, value }) => {
+    const mismatches = filledFields.filter(({ id, value }) => {
       const el = document.getElementById(id);
-      const desc = describeEl(el);
-      const curVal = el ? el.value : '';
-      if (curVal !== value) {
-        mismatchCount++;
-        log('  [หลัง 2วิ] ' + code + ' ' + key + ' ต้องการ="' + value + '" → ' + desc, true);
-      }
+      return !el || el.value !== value;
     });
-    log(mismatchCount ? ('พบ ' + mismatchCount + ' ช่องที่ค่าหายไปหลังรอ 2 วินาที (ดูรายละเอียดสีแดงด้านบน)') : 'ตรวจซ้ำแล้ว ทุกช่องยังมีค่าติดอยู่ครบ (ถ้าจอยังไม่ขึ้นตัวเลข ให้ส่ง log นี้กลับมาดูเพิ่ม)');
+    if (!mismatches.length) { log('ตรวจซ้ำแล้ว ทุกช่องยังมีค่าติดอยู่ครบ (ถ้าจอยังไม่ขึ้นตัวเลข ให้ส่ง log นี้กลับมาดูเพิ่ม)'); return; }
+    log('พบ ' + mismatches.length + ' ช่องที่ค่าหายไปหลังรอ 2 วินาที — กำลังลองกรอกซ้ำอัตโนมัติ...', true);
+    let fixedCount = 0;
+    for (const { id, code, key, value } of mismatches) {
+      const el = document.getElementById(id);
+      if (!el) { log('  [ลองซ้ำ] ' + code + ' ' + key + ': ไม่พบ element แล้ว', true); continue; }
+      applyValue(el, value);
+      await sleep(200);
+      const ok = el.value === value;
+      log('  [ลองซ้ำ] ' + code + ' ' + key + ' → ' + describeEl(el), !ok);
+      if (ok) fixedCount++;
+    }
+    log(fixedCount === mismatches.length
+      ? 'ลองกรอกซ้ำสำเร็จครบทุกช่องแล้ว — ตรวจตัวเลขให้ครบอีกครั้งก่อนไปขั้นถัดไป'
+      : ('ลองกรอกซ้ำแล้วยังเหลือ ' + (mismatches.length - fixedCount) + ' ช่องที่ยังไม่ติด — กรอกช่องนั้นด้วยมือ หรือคัดลอก log ส่งกลับมาดูเพิ่ม'));
   }
 
   // หาเลขประจำตัวนักเรียนของแถวนั้นจากข้อความในตาราง (ไม่ใช่ช่องกรอก)
