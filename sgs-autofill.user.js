@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autofill SGS จากระบบ ปพ.5
 // @namespace    pp5-sgs-autofill
-// @version      2.0.0
+// @version      2.1.0
 // @description  วางคะแนนที่คัดลอกจากระบบ ปพ.5 ลงหน้ากรอกคะแนน SGS (sgs.bopp-obec.info) ให้อัตโนมัติ
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts1-Table.aspx*
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts2-Table.aspx*
@@ -71,15 +71,25 @@
 
   // เติมค่าลงช่องเดียว — ไม่บังคับปลดล็อก ไม่จำลองกด Enter อีกต่อไป (ครูปลดล็อกคอลัมน์เองผ่านกล่องเช็คบล็อก
   // ของ SGS โดยตรง ปลอดภัยกว่าเพราะใช้กลไกจริงของ SGS ไม่ใช่การเดาพฤติกรรม JS ของเขา)
-  async function fillField(rowIdx, key, value) {
-    const el = document.getElementById(REPEATER_PREFIX + rowIdx + '_' + key);
-    if (!el || el.disabled) return false; // ยังไม่ปลดล็อก (ไม่ได้ติ๊กช่องเช็คคอลัมน์นี้)
+  // โหมด debug: log สถานะช่องก่อน/หลังกรอกและหลังหน่วงเวลา เพื่อดูว่าค่าที่ใส่ไป "ติด" จริงไหม
+  // หรือถูกอะไรบางอย่างล้างทิ้งภายหลัง (ช่วยวินิจฉัยเวลากรอกแล้วช่องยังว่างอยู่)
+  async function fillField(rowIdx, key, value, code) {
+    const id = REPEATER_PREFIX + rowIdx + '_' + key;
+    const el = document.getElementById(id);
+    if (!el) { log('  [debug] ' + code + ' ' + key + ': ไม่พบ element id=' + id, true); return false; }
+    if (el.disabled) { log('  [debug] ' + code + ' ' + key + ': ช่องยัง disabled อยู่ (SGS ยังไม่ปลดล็อกจริงแม้ติ๊กเช็คแล้ว)', true); return false; }
     el.focus();
     setNativeValue(el, value === '' || value == null ? '' : String(value));
     fireEvent(el, 'input');
     fireEvent(el, 'change');
     fireEvent(el, 'blur');
-    await sleep(150); // เผื่อเวลาระบบ SGS บันทึกอัตโนมัติ
+    const rightAfter = el.value;
+    await sleep(400); // เผื่อเวลาระบบ SGS บันทึกอัตโนมัติ / re-render
+    const stillThereEl = document.getElementById(id); // เผื่อ element ถูกแทนที่ด้วยตัวใหม่หลัง re-render
+    const afterDelay = stillThereEl ? stillThereEl.value : '(element หายไปแล้ว)';
+    if (rightAfter !== String(value) || afterDelay !== String(value)) {
+      log('  [debug] ' + code + ' ' + key + ': ตั้งค่า "' + value + '" → ทันที="' + rightAfter + '" หลัง 0.4วิ="' + afterDelay + '"', true);
+    }
     return true;
   }
 
@@ -124,7 +134,7 @@
         if (!code) continue; // หน้าสุดท้ายอาจมีนักเรียนไม่ครบ 10 คน
         const data = dataStudents[code];
         if (!data) { log('ไม่พบข้อมูลเลขประจำตัว ' + code + ' ในไฟล์ที่วาง — ข้าม', true); continue; }
-        const ok = await fillField(rowIdx, key, getValueForKey(data, key));
+        const ok = await fillField(rowIdx, key, getValueForKey(data, key), code);
         if (!ok) log('เลขประจำตัว ' + code + ' คอลัมน์ ' + key + ' ยังกรอกไม่ได้ (อาจยังไม่ปลดล็อก)', true);
       }
     }
@@ -143,7 +153,8 @@
       '<button id="pp5-sgs-start" style="flex:1;padding:6px;background:#0066cc;color:#fff;border:none;border-radius:6px;cursor:pointer">เริ่มกรอกคอลัมน์ที่ติ๊กไว้</button>' +
       '<button id="pp5-sgs-stop" style="padding:6px 10px;background:#dc2626;color:#fff;border:none;border-radius:6px;cursor:pointer">หยุด</button>' +
       '</div>' +
-      '<div id="pp5-sgs-log" style="max-height:120px;overflow-y:auto;background:#f5f5f5;border-radius:6px;padding:6px;font-size:11px;line-height:1.6"></div>' +
+      '<div id="pp5-sgs-log" style="max-height:160px;overflow-y:auto;background:#f5f5f5;border-radius:6px;padding:6px;font-size:11px;line-height:1.6"></div>' +
+      '<button id="pp5-sgs-copylog" style="width:100%;margin-top:6px;padding:5px;background:#eee;border:1px solid #ccc;border-radius:6px;cursor:pointer;font-size:11px">คัดลอก log ทั้งหมด (ส่งให้ผู้พัฒนาช่วยตรวจ)</button>' +
       '<div style="font-size:10px;color:#888;margin-top:6px">⚠️ ทดสอบกับนักเรียน 1 คนก่อน แล้วรีเฟรชหน้าตรวจว่าคะแนนถูกบันทึกจริง ก่อนกรอกทั้งห้อง</div>';
     document.body.appendChild(wrap);
 
@@ -157,6 +168,11 @@
       runFill(payload.students);
     };
     document.getElementById('pp5-sgs-stop').onclick = () => { stopRequested = true; };
+    document.getElementById('pp5-sgs-copylog').onclick = async () => {
+      const text = document.getElementById('pp5-sgs-log').innerText;
+      try { await navigator.clipboard.writeText(text); log('คัดลอก log แล้ว'); }
+      catch (e) { log('คัดลอกไม่สำเร็จ ลองเลือกข้อความใน log แล้วคัดลอกเอง', true); }
+    };
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', buildUI);
