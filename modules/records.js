@@ -676,6 +676,7 @@ function renderEplUnitsTab(){
   let sumHours=0,sumWeight=0,sumWeightFinal=0;
   epUnits.forEach(u=>{ sumHours+=+u.hours||0; sumWeight+=+u.weight||0; sumWeightFinal+=+u.weight_final||0; });
   const mid=+sub.score_mid||0;
+  const targetFinal=+sub.score_final||0;
   const grand=sumWeight+mid+sumWeightFinal;
   return`<div class="card">
     <div class="ch"><div class="ct">หน่วยการเรียนรู้ มาตรฐานการเรียนรู้ ภาระงาน และสัดส่วนคะแนนประเมินผล</div>
@@ -708,13 +709,16 @@ function renderEplUnitsTab(){
           <td colspan="3" style="text-align:right;padding-right:14px">รวมหน่วยการเรียนรู้</td>
           <td class="tc" style="color:${sumHours===(+sub.total_hours||0)?'var(--ok-txt)':'var(--err-txt)'}">${sumHours}${sumHours===(+sub.total_hours||0)?' ✓':' (ต้อง = '+(+sub.total_hours||0)+')'}</td>
           <td class="tc">${sumWeight}</td>
-          <td class="tc">${sumWeightFinal}</td>
+          <td class="tc" style="color:${sumWeightFinal===targetFinal?'var(--ok-txt)':'var(--err-txt)'}" title="คะแนนสอบปลายภาคที่ตั้งไว้ในแท็บ &quot;สัดส่วนคะแนน&quot; = ${targetFinal}">${sumWeightFinal}${sumWeightFinal===targetFinal?' ✓':' (ต้อง = '+targetFinal+')'}</td>
           <td></td>
         </tr>
         <tr style="font-weight:700;background:var(--card2)">
           <td colspan="4" style="text-align:right;padding-right:14px">รวมคะแนนประเมินผล</td>
           <td colspan="2" class="tc" style="font-size:14px;color:${grand===100?'var(--ok-txt)':'var(--err-txt)'}">${grand}${grand===100?' ✓':' (ต้อง = 100)'}</td>
           <td></td>
+        </tr>
+        <tr style="display:${sumWeightFinal!==targetFinal?'table-row':'none'}">
+          <td colspan="7" style="padding:8px 14px;font-size:12px;color:var(--err-txt)">${_ico.warning} คะแนนสอบปลายภาครวมจากหน่วยการเรียนรู้ (${sumWeightFinal}) ไม่ตรงกับคะแนนปลายภาคที่ตั้งไว้ในแท็บ "สัดส่วนคะแนน" (${targetFinal}) — แก้ไขคะแนนปลายภาคของแต่ละหน่วยด้านบน หรือปรับคะแนนปลายภาคในแท็บสัดส่วนคะแนนให้ตรงกัน</td>
         </tr>
         </tbody>
       </table></div>
