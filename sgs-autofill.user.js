@@ -1,12 +1,14 @@
 // ==UserScript==
 // @name         Autofill SGS จากระบบ ปพ.5
 // @namespace    pp5-sgs-autofill
-// @version      2.5.0
+// @version      2.5.1
 // @description  วางคะแนนที่คัดลอกจากระบบ ปพ.5 ลงหน้ากรอกคะแนน SGS (sgs.bopp-obec.info) ให้อัตโนมัติ
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts1-Table.aspx*
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts2-Table.aspx*
 // @run-at       document-idle
 // @grant        none
+// @updateURL    https://pp5-ten.vercel.app/sgs-autofill.user.js
+// @downloadURL  https://pp5-ten.vercel.app/sgs-autofill.user.js
 // ==/UserScript==
 
 // วิธีใช้:
