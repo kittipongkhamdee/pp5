@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autofill SGS จากระบบ ปพ.5
 // @namespace    pp5-sgs-autofill
-// @version      2.3.0
+// @version      2.4.0
 // @description  วางคะแนนที่คัดลอกจากระบบ ปพ.5 ลงหน้ากรอกคะแนน SGS (sgs.bopp-obec.info) ให้อัตโนมัติ
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts1-Table.aspx*
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts2-Table.aspx*
@@ -119,12 +119,18 @@
   }
 
   // หาเลขประจำตัวนักเรียนของแถวนั้นจากข้อความในตาราง (ไม่ใช่ช่องกรอก)
+  // หมายเหตุสำคัญ: ช่องกรอกคะแนนแต่ละช่องถูกห่อด้วย <table> ซ้อนอีกชั้น (คู่กับเครื่องหมาย *
+  // ของตัว validator) ดังนั้น el.closest('tr') เพียงอย่างเดียวจะได้ <tr> ของตารางซ้อนข้างใน
+  // (ที่ไม่มีข้อมูลนักเรียน) ไม่ใช่แถวจริงของตารางหลัก — ต้องไต่ขึ้นไปถึง <td class="ttc"> ที่ห่อ
+  // ตารางซ้อนทั้งก้อนไว้ก่อน แล้วค่อยหา <tr> จากตรงนั้นถึงจะได้แถวจริง
   function getRowStudentCode(rowIdx, key) {
     const el = document.getElementById(REPEATER_PREFIX + rowIdx + '_' + key);
     if (!el) return null;
-    const tr = el.closest('tr');
+    const outerTd = el.closest('td.ttc');
+    if (!outerTd) return null;
+    const tr = outerTd.closest('tr');
     if (!tr) return null;
-    const tds = tr.querySelectorAll('td.ttc');
+    const tds = tr.querySelectorAll(':scope > td.ttc');
     // ลำดับคอลัมน์ใน SGS: ห้อง, เลขที่, เลขประจำตัว, ชื่อ-นามสกุล, ...
     if (tds.length < 3) return null;
     return tds[2].textContent.trim();
