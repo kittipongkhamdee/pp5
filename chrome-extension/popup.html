@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Autofill SGS จาก ปพ.5</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{width:280px;font-family:'Segoe UI',Tahoma,sans-serif;color:#0f172a;background:#fff}
+  .hd{background:linear-gradient(135deg,#4f46e5,#6366f1);color:#fff;padding:16px}
+  .hd h1{font-size:14px;font-weight:700}
+  .hd p{font-size:11px;opacity:.85;margin-top:3px}
+  .body{padding:14px 16px}
+  .status{display:flex;align-items:center;gap:8px;border-radius:10px;padding:10px 12px;font-size:12.5px;margin-bottom:12px}
+  .status.ok{background:#d1fae5;color:#065f46}
+  .status.off{background:#f1f5f9;color:#475569}
+  .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .status.ok .dot{background:#059669}
+  .status.off .dot{background:#94a3b8}
+  ol{margin:0 0 12px 18px}
+  li{font-size:12px;color:#334155;line-height:1.7;margin-bottom:2px}
+  a.btn{display:block;text-align:center;background:#4f46e5;color:#fff;text-decoration:none;font-size:12.5px;font-weight:600;padding:9px;border-radius:8px}
+  .foot{font-size:10.5px;color:#94a3b8;text-align:center;margin-top:10px}
+</style>
+</head>
+<body>
+  <div class="hd">
+    <h1>📋 Autofill SGS จาก ปพ.5</h1>
+    <p>วางคะแนนลงหน้ากรอกคะแนน SGS อัตโนมัติ</p>
+  </div>
+  <div class="body">
+    <div id="status" class="status off"><span class="dot"></span><span id="statusText">กำลังตรวจสอบหน้าปัจจุบัน…</span></div>
+    <ol>
+      <li>ไปที่หน้า "บันทึกคะแนน" ในระบบ ปพ.5 → กด "Autofill SGS"</li>
+      <li>เปิดหน้ากรอกคะแนน SGS (กลางภาค/หลังกลางภาค)</li>
+      <li>ติ๊กเช็คบล็อกคอลัมน์ที่ต้องการ แล้ววางคะแนนในกล่องลอยมุมขวาล่าง</li>
+    </ol>
+    <a class="btn" href="https://pp5-ten.vercel.app/sgs-autofill-guide.html" target="_blank" rel="noopener">ดูวิธีใช้แบบละเอียด</a>
+    <div class="foot">เวอร์ชัน 1.0.0 · ระบบ ปพ.5</div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>นโยบายความเป็นส่วนตัว — Autofill SGS จาก ปพ.5</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --dark:#0f172a;--dark2:#1e293b;--gray:#64748b;--gray2:#94a3b8;
+  --green:#059669;--green-light:#d1fae5;
+  --indigo:#4f46e5;--indigo-light:#e0e7ff;
+  --card:#fff;--bg:#f8fafc;--sep:#e2e8f0;--radius:14px;--font:'Sarabun',sans-serif;
+}
+body{font-family:var(--font);color:var(--dark);background:var(--bg);font-size:14.5px;line-height:1.75}
+.wrap{max-width:640px;margin:0 auto;padding:0 20px 60px}
+.cover{background:linear-gradient(135deg,#1e1b4b 0%,#3730a3 45%,#4f46e5 70%,#6366f1 100%);color:#fff;border-radius:0 0 24px 24px;padding:40px 24px 32px;text-align:center}
+.cover-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:24px;padding:6px 16px;font-size:12px;font-weight:600;margin-bottom:16px}
+.cover h1{font-size:22px;font-weight:800;line-height:1.35}
+.cover p{font-size:13px;opacity:.85;margin-top:8px}
+.section{margin:26px 0}
+.section h2{font-size:15.5px;font-weight:700;color:var(--dark);margin-bottom:10px}
+.card{background:var(--card);border:1px solid var(--sep);border-radius:var(--radius);padding:18px 20px}
+.card p{color:var(--dark2);font-size:13.5px;line-height:1.8;margin-bottom:10px}
+.card p:last-child{margin-bottom:0}
+.card ul{margin:0 0 10px 20px}
+.card li{color:var(--dark2);font-size:13.5px;line-height:1.85;margin-bottom:4px}
+.feature-box{border-radius:var(--radius);padding:16px 18px;margin:14px 0;border-left:4px solid var(--green);background:var(--green-light)}
+.feature-box-title{font-size:13px;font-weight:700;margin-bottom:6px}
+.feature-box-body{font-size:13px;color:var(--dark2);line-height:1.75}
+code{background:#f1f5f9;border-radius:5px;padding:2px 7px;font-size:12.5px;color:var(--indigo);word-break:break-all}
+.footer{text-align:center;font-size:12px;color:var(--gray2);margin-top:36px}
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="cover-badge">🔒 นโยบายความเป็นส่วนตัว</div>
+  <h1>Autofill SGS จากระบบ ปพ.5</h1>
+  <p>ส่วนขยาย Chrome สำหรับกรอกคะแนนลงหน้าเว็บ SGS (สพฐ.) อัตโนมัติ</p>
+</div>
+
+<div class="wrap">
+
+  <div class="feature-box">
+    <div class="feature-box-title">✅ สรุปสั้นๆ</div>
+    <div class="feature-box-body">ส่วนขยายนี้<b>ไม่เก็บ ไม่บันทึก และไม่ส่งข้อมูลใดๆ ออกไปยังเซิร์ฟเวอร์ภายนอก</b> ทุกอย่างทำงานอยู่ในเบราว์เซอร์ของผู้ใช้เท่านั้น</div>
+  </div>
+
+  <div class="section">
+    <h2>1. ข้อมูลที่ส่วนขยายเข้าถึง</h2>
+    <div class="card">
+      <p>ส่วนขยายทำงานเฉพาะบนหน้าเว็บกรอกคะแนนของ SGS (<code>sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts1-Table.aspx</code> และ <code>...TblTranscripts2-Table.aspx</code>) เท่านั้น โดยจะ:</p>
+      <ul>
+        <li>อ่านโครงสร้าง HTML ของหน้าเว็บ (id ของช่องกรอกคะแนน, สถานะเช็คบล็อก) เพื่อทราบว่าจะกรอกคะแนนลงช่องไหน</li>
+        <li>รับข้อมูลคะแนนนักเรียน (เลขประจำตัว, ชื่อ, คะแนนแต่ละหน่วย) ที่ผู้ใช้ <b>วางด้วยตนเอง</b> ลงในกล่องข้อความของส่วนขยาย</li>
+        <li>เขียนค่าคะแนนลงในช่องกรอกที่ผู้ใช้ปลดล็อกไว้แล้วเท่านั้น</li>
+      </ul>
+      <p>ส่วนขยายไม่อ่านหรือเข้าถึงหน้าเว็บอื่นนอกเหนือจาก URL ข้างต้น</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>2. การจัดเก็บและส่งต่อข้อมูล</h2>
+    <div class="card">
+      <ul>
+        <li><b>ไม่มีการส่งข้อมูลออกจากเบราว์เซอร์</b> — ไม่มีเซิร์ฟเวอร์ backend ของส่วนขยาย ไม่มีการเรียก API ภายนอกใดๆ</li>
+        <li><b>ไม่มีการบันทึกข้อมูลถาวร</b> — ไม่ใช้ <code>chrome.storage</code>, cookies, หรือฐานข้อมูลใดๆ ข้อมูลคะแนนที่วางไว้จะหายไปเมื่อปิดหรือรีเฟรชหน้าเว็บ</li>
+        <li><b>ไม่มีการติดตามผู้ใช้ (tracking)</b> — ไม่มี analytics, ไม่มีการเก็บสถิติการใช้งาน</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>3. สิทธิ์การเข้าถึง (Permissions)</h2>
+    <div class="card">
+      <p><code>activeTab</code> — ใช้เพื่อแสดงสถานะในหน้าต่างป๊อปอัปของส่วนขยายว่าแท็บปัจจุบันเป็นหน้ากรอกคะแนน SGS หรือไม่ ไม่ได้ใช้อ่านหรือแก้ไขเนื้อหาหน้าเว็บอื่น</p>
+      <p>สคริปต์เนื้อหา (content script) ทำงานเฉพาะบน URL ของหน้ากรอกคะแนน SGS ที่ระบุไว้ในข้อ 1 เท่านั้น</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>4. การเปลี่ยนแปลงนโยบาย</h2>
+    <div class="card">
+      <p>หากมีการเปลี่ยนแปลงนโยบายนี้ในอนาคต จะปรับปรุงเนื้อหาในหน้านี้ให้เป็นปัจจุบันเสมอ</p>
+    </div>
+  </div>
+
+  <div class="footer">พัฒนาโดยระบบ ปพ.5 — สอบถามปัญหาการใช้งานได้ที่ผู้ดูแลระบบ</div>
+
+</div>
+</body>
+</html>
