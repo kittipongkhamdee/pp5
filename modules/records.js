@@ -675,7 +675,7 @@ function renderEplUnitsTab(){
   const sub=S.subjects.find(s=>s.id===S.selSub)||{};
   let sumHours=0,sumWeight=0,sumWeightFinal=0;
   epUnits.forEach(u=>{ sumHours+=+u.hours||0; sumWeight+=+u.weight||0; sumWeightFinal+=+u.weight_final||0; });
-  const mid=+sub.score_mid||0, fin=+sub.score_final||0;
+  const mid=+sub.score_mid||0;
   const grand=sumWeight+mid+sumWeightFinal;
   return`<div class="card">
     <div class="ch"><div class="ct">หน่วยการเรียนรู้ มาตรฐานการเรียนรู้ ภาระงาน และสัดส่วนคะแนนประเมินผล</div>
@@ -711,18 +711,6 @@ function renderEplUnitsTab(){
           <td class="tc">${sumWeightFinal}</td>
           <td></td>
         </tr>
-        <tr>
-          <td colspan="4" style="text-align:right;padding-right:14px;color:var(--txt2)">คะแนนประเมินผลกลางภาค</td>
-          <td class="tc"><input class="cell-in num" type="number" value="${mid}" style="max-width:90px;margin:0 auto" onchange="saveSubjectScoreField('score_mid',this.value)"></td>
-          <td></td>
-          <td></td>
-        </tr>
-        <tr>
-          <td colspan="4" style="text-align:right;padding-right:14px;color:var(--txt2)">คะแนนประเมินผลปลายภาค</td>
-          <td></td>
-          <td class="tc"><input class="cell-in num" type="number" value="${fin}" style="max-width:90px;margin:0 auto" onchange="saveSubjectScoreField('score_final',this.value)"></td>
-          <td></td>
-        </tr>
         <tr style="font-weight:700;background:var(--card2)">
           <td colspan="4" style="text-align:right;padding-right:14px">รวมคะแนนประเมินผล</td>
           <td colspan="2" class="tc" style="font-size:14px;color:${grand===100?'var(--ok-txt)':'var(--err-txt)'}">${grand}${grand===100?' ✓':' (ต้อง = 100)'}</td>
@@ -754,17 +742,6 @@ async function saveEplUnit(id,patch){
     const u=epUnits.find(x=>x.id===id); if(u) Object.assign(u,patch);
     const tab=$('epl-units'); if(tab) tab.innerHTML=renderEplUnitsTab();
   }catch(e){ toast('บันทึกไม่สำเร็จ: '+e.message,'er'); }
-}
-async function saveSubjectScoreField(field,val){
-  const n=+val||0;
-  loading(true);
-  try{
-    await q(sb.from('subjects').update({[field]:n}).eq('id',S.selSub));
-    invalidateSubjects(); await loadSubjects();
-    const utab=$('epl-units'); if(utab) utab.innerHTML=renderEplUnitsTab();
-    const rtab=$('epl-ratio'); if(rtab) rtab.innerHTML=renderEplRatioTab();
-  }catch(e){ toast('บันทึกไม่สำเร็จ: '+e.message,'er'); }
-  finally{ loading(false); }
 }
 async function addEplUnit(){
   loading(true);
