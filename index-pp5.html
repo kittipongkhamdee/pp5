@@ -740,8 +740,14 @@ async function exportExcel(sheets, fileName){
   try{ await ensureXLSX(); }
   catch(e){ toast('โหลดตัวสร้างไฟล์ Excel ไม่สำเร็จ: '+e.message,'er'); return; }
   const wb = XLSX.utils.book_new();
+  const MAX_CELL_LEN=32000; // Excel/SheetJS จำกัดข้อความต่อเซลล์ไว้ที่ 32767 ตัวอักษร (เช่น logo_url ที่เก็บเป็น base64 อาจยาวเกิน)
   sheets.forEach(sh=>{
-    const ws = XLSX.utils.aoa_to_sheet(sh.aoa);
+    const aoa=sh.aoa.map(row=>row.map(cell=>
+      typeof cell==='string'&&cell.length>MAX_CELL_LEN
+        ? cell.slice(0,MAX_CELL_LEN)+'…(ตัดข้อความ ยาวเกินขีดจำกัดของ Excel)'
+        : cell
+    ));
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
     if(sh.colWidths) ws['!cols']=sh.colWidths.map(w=>({wch:w}));
     if(sh.merges) ws['!merges']=sh.merges;
     XLSX.utils.book_append_sheet(wb, ws, sh.name.slice(0,31));
