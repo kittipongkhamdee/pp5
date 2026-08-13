@@ -994,12 +994,12 @@ function showApp(){
   _checkBackupReminder();
 }
 
-// ── เตือนแอดมินถ้าไม่ได้ Backup ข้อมูลมานาน (เกิน 14 วัน หรือไม่เคยเลย) — เตือนแค่ครั้งเดียวต่อวัน ──
+// ── เตือนแอดมินถ้าไม่ได้ Backup ข้อมูลมานาน (เกิน 30 วัน หรือไม่เคยเลย) — เตือนแค่ครั้งเดียวต่อวัน ──
 function _checkBackupReminder(){
   if(!S.profile?.is_admin) return;
   const iso=S.config.last_backup_at;
   const days = iso ? Math.floor((Date.now()-new Date(iso).getTime())/86400000) : null;
-  if(days!==null && days<=14) return; // เพิ่งสำรองมาไม่นาน ไม่ต้องเตือน
+  if(days!==null && days<=30) return; // เพิ่งสำรองมาไม่นาน ไม่ต้องเตือน
   const today=new Date().toISOString().slice(0,10);
   let shownDate=null;
   try{ shownDate=localStorage.getItem('backup_reminder_shown_date'); }catch(e){}
@@ -1677,7 +1677,7 @@ function _loadScriptOnce(key, src){
   return p;
 }
 // ?v= กันแคชเก่าค้าง (modules/*.js แคชไว้ 1 วันตาม vercel.json) — แก้ไฟล์ใน modules/ เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย
-const MODULE_V='16';
+const MODULE_V='17';
 function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V); }
 function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
 

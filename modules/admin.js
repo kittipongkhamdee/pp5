@@ -799,7 +799,7 @@ async function pgSettings(){
   ${S.profile?.is_admin?`
   <div class="tp ${_settingsActiveTab==='stg-security'?'active':''}" id="stg-security" data-tp="stg">
 
-  <!-- ── แถวล่าง: รหัสผ่านแอดมิน + Backup/Restore + โซนอันตราย ── -->
+  <!-- ── แถวล่าง: รหัสผ่านแอดมิน + Backup + โซนอันตราย ── -->
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start;">
 
     <!-- การ์ด: รหัสผ่านแอดมิน -->
@@ -837,18 +837,17 @@ async function pgSettings(){
       </div>
     </div>
 
-    <!-- การ์ด: สำรองและกู้คืนข้อมูล -->
+    <!-- การ์ด: สำรองข้อมูล -->
     <div class="card" style="margin-bottom:0">
       <div class="ch">
         <div class="ct" style="display:flex;align-items:center;gap:7px;">
           <svg viewBox="0 0 24 24" fill="none" stroke="var(--ac)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          สำรองและกู้คืนข้อมูล
+          สำรองข้อมูล
         </div>
       </div>
       <div class="cb">
         <div style="font-size:13px;color:#6e6e73;line-height:1.8;margin-bottom:10px">
-          <strong style="color:#1d1d1f">Backup</strong> — ดาวน์โหลดข้อมูลทั้งหมดเป็นไฟล์ .xlsx<br>
-          <strong style="color:#1d1d1f">Restore</strong> — นำเข้าข้อมูลจากไฟล์ Backup (จะแทนที่ข้อมูลปัจจุบัน)
+          <strong style="color:#1d1d1f">Backup</strong> — ดาวน์โหลดข้อมูลทั้งหมดเป็นไฟล์ .xlsx เก็บไว้เป็นฐานข้อมูลรายปีการศึกษา
         </div>
         <div style="font-size:12px;font-weight:600;color:${_backupStatusInfo().color};background:${_backupStatusInfo().bg};border-radius:8px;padding:7px 10px;margin-bottom:14px">
           ${_backupStatusInfo().text}
@@ -857,10 +856,6 @@ async function pgSettings(){
           <button class="btn bs" onclick="backupAllData()" style="background:rgba(52,199,89,.12);color:#16803d;flex:1;justify-content:center">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Backup
-          </button>
-          <button class="btn bs" onclick="openRestoreDialog()" style="background:rgba(255,59,48,.1);color:#dc2626;flex:1;justify-content:center">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-            Restore
           </button>
         </div>
       </div>
@@ -947,7 +942,7 @@ async function pgSettings(){
         </tr>`).join('')}</tbody>
       </table></div>`}
 
-      <div style="font-size:13px;font-weight:700;margin:20px 0 10px">เหตุการณ์สำคัญ <span style="font-weight:400;color:var(--muted);font-size:11.5px">(ลบนักเรียน / เลื่อนชั้น / ล้างข้อมูล / Restore — 100 รายการล่าสุด)</span></div>
+      <div style="font-size:13px;font-weight:700;margin:20px 0 10px">เหตุการณ์สำคัญ <span style="font-weight:400;color:var(--muted);font-size:11.5px">(ลบนักเรียน / เลื่อนชั้น / ล้างข้อมูล — 100 รายการล่าสุด)</span></div>
       ${!_auditRows.length?`<div style="font-size:13px;color:var(--muted);text-align:center;padding:12px">ยังไม่มีเหตุการณ์บันทึกไว้</div>`:`
       <div class="tw"><table>
         <thead><tr><th class="tl">เวลา</th><th class="tl">ผู้ทำรายการ</th><th class="tl">เหตุการณ์</th><th class="tl">รายละเอียด</th></tr></thead>
@@ -1083,7 +1078,7 @@ async function pgSettings(){
     </div>
     <div class="cb">
       <div style="font-size:12px;color:#6e6e73;margin-bottom:14px;line-height:1.6">
-        แอดมินเข้าได้ทุกเมนูเสมอ รวมถึงหน้านี้และโซนอันตราย (ล้างข้อมูล/Restore) — แต่งตั้งเฉพาะคนที่ไว้ใจได้จริงๆ เท่านั้น
+        แอดมินเข้าได้ทุกเมนูเสมอ รวมถึงหน้านี้และโซนอันตราย (ล้างข้อมูล) — แต่งตั้งเฉพาะคนที่ไว้ใจได้จริงๆ เท่านั้น
       </div>
       ${!_allLogins.length?`<div style="font-size:13px;color:var(--muted);text-align:center;padding:12px">ยังไม่มีข้อมูล</div>`:`
       <div class="tw"><table>
@@ -1133,7 +1128,7 @@ function _setAdminStatus(teacherId,teacherName,makeAdmin){
   confirm2({
     title: makeAdmin?'ยืนยันแต่งตั้งแอดมิน':'ยืนยันถอดสิทธิ์แอดมิน',
     msg: makeAdmin
-      ?'ให้ <strong>'+esc(teacherName)+'</strong> เป็นแอดมิน?<br><span style="font-size:12px;color:#dc2626">แอดมินเข้าได้ทุกเมนู รวมถึงล้างข้อมูลทั้งหมด/Restore — แต่งตั้งเฉพาะคนที่ไว้ใจได้จริงๆ</span>'
+      ?'ให้ <strong>'+esc(teacherName)+'</strong> เป็นแอดมิน?<br><span style="font-size:12px;color:#dc2626">แอดมินเข้าได้ทุกเมนู รวมถึงล้างข้อมูลทั้งหมด — แต่งตั้งเฉพาะคนที่ไว้ใจได้จริงๆ</span>'
       :'ถอดสิทธิ์แอดมินของ <strong>'+esc(teacherName)+'</strong>?<br><span style="font-size:12px;color:#8e8e93">จะกลายเป็นครูทั่วไป เข้าเมนูตั้งค่า/รายงานทั้งโรงเรียนไม่ได้ทันที เว้นแต่ให้สิทธิ์แยกไว้</span>',
     type: makeAdmin?'warn':'danger',
     confirmText: makeAdmin?'แต่งตั้งเลย':'ถอดสิทธิ์เลย',
@@ -1637,261 +1632,6 @@ async function removeLogo(){
     pgSettings();
   }catch(e){ toast('เกิดข้อผิดพลาด: '+e.message,'er'); }
   finally{ loading(false); }
-}
-
-// ════ RESTORE DATA ═══════════════════════════════════════════
-
-// ลำดับการ restore (child ก่อน parent เพื่อหลีกเลี่ยง FK conflict)
-const RESTORE_ORDER = [
-  'eval_char','eval_read','score_summary','score_units',
-  'attendance','students','subjects'
-  // config ใช้ primary key 'key' (ไม่ใช่ uuid) — จัดการแยกในขั้นตอน delete/insert
-];
-// tables ที่ไม่ restore (profiles = user accounts, ไม่ควรเขียนทับ)
-const RESTORE_SKIP = ['profiles','README'];
-
-// column ที่ auto-generated ใน DB — ต้องไม่ส่งกลับ
-const SKIP_COLS = ['id','created_at','updated_at','user_id'];
-
-let _restoreData = null; // เก็บข้อมูลที่อ่านจาก Excel ไว้ชั่วคราว
-
-function openRestoreDialog(){
-  // สร้าง dialog เลือกไฟล์
-  const wrap = document.createElement('div');
-  wrap.id = 'restore-wrap';
-  wrap.style.cssText = 'position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.25);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);animation:fadeIn .15s ease';
-  wrap.innerHTML =
-    '<div style="background:rgba(255,255,255,.85);backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);border-radius:22px;width:100%;max-width:420px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.2);animation:dlgPop .22s cubic-bezier(.34,1.56,.64,1)">' +
-      '<div style="padding:24px 24px 18px">' +
-        '<div style="width:52px;height:52px;background:#fff1f0;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' +
-        '</div>' +
-        '<div style="font-size:17px;font-weight:700;text-align:center;margin-bottom:8px;">Restore ข้อมูล</div>' +
-        '<div style="font-size:12.5px;color:#8e8e93;text-align:center;line-height:1.6;margin-bottom:16px;">' +
-          'การ Restore จะ<strong style="color:#dc2626;">ลบข้อมูลปัจจุบันทั้งหมด</strong>แล้วแทนที่ด้วยข้อมูลจากไฟล์ Backup<br>' +
-          'แนะนำให้ <strong>Backup ปัจจุบันก่อน</strong> หากยังไม่ได้ทำ' +
-        '</div>' +
-        // drop zone
-        '<div id="restore-drop" ' +
-          'style="border:2px dashed #fecaca;border-radius:12px;padding:20px;text-align:center;background:#fff1f0;cursor:pointer;transition:all .15s;" ' +
-          'onclick="_triggerRestoreFile()" ' +
-          'ondrop="_handleRestoreDrop(event)">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="32" height="32" style="margin-bottom:8px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>' +
-          '<div style="font-size:13px;font-weight:700;color:#dc2626;">เลือกหรือลากไฟล์ Backup</div>' +
-          '<div style="font-size:11.5px;color:#f87171;margin-top:3px;">ไฟล์ .xlsx จาก Backup เท่านั้น</div>' +
-        '</div>' +
-        '<input type="file" id="restore-file-input" accept=".xlsx" style="display:none" onchange="_handleRestoreFile(this)">' +
-        // preview area
-        '<div id="restore-preview" style="display:none;margin-top:12px;background:#f9f9fb;border-radius:10px;padding:10px 12px;font-size:12.5px;"></div>' +
-      '</div>' +
-      '<div style="border-top:0.5px solid rgba(0,0,0,.08);">' +
-        '<button id="restore-confirm-btn" disabled onclick="_doRestore()" ' +
-          'style="width:100%;padding:14px;font-size:15px;font-weight:600;color:#dc2626;background:none;border:none;border-bottom:1px solid #f3f4f6;cursor:not-allowed;opacity:.4;font-family:var(--font);">Restore เลย</button>' +
-        '<button onclick="_closeRestoreDialog()" ' +
-          'style="width:100%;padding:14px;font-size:15px;color:#8e8e93;background:none;border:none;cursor:pointer;font-family:var(--font);">ยกเลิก</button>' +
-      '</div>' +
-    '</div>';
-  document.body.appendChild(wrap);
-  _restoreData = null;
-  // ผูก drag listeners หลัง DOM พร้อม
-  setTimeout(()=>{
-    const dz=document.getElementById('restore-drop');
-    if(!dz) return;
-    dz.addEventListener('dragover',e=>{e.preventDefault();dz.style.borderColor='#dc2626';dz.style.background='#fee2e2';});
-    dz.addEventListener('dragleave',()=>{dz.style.borderColor='#fecaca';dz.style.background='#fff1f0';});
-  },0);
-}
-
-function _closeRestoreDialog(){
-  const w = document.getElementById('restore-wrap');
-  if(w){ w.style.animation='fadeIn .15s ease reverse forwards'; setTimeout(()=>w.remove(),150); }
-  _restoreData = null;
-}
-
-function _handleRestoreDrop(e){
-  e.preventDefault();
-  const drop = document.getElementById('restore-drop');
-  if(drop){ drop.style.borderColor='#fecaca'; drop.style.background='#fff1f0'; }
-  const file = e.dataTransfer?.files?.[0];
-  if(file) _parseRestoreFile(file);
-}
-
-function _handleRestoreFile(input){
-  const file = input.files?.[0];
-  if(file) _parseRestoreFile(file);
-  input.value='';
-}
-
-function _triggerRestoreFile(){
-  const el=document.getElementById('restore-file-input');
-  if(el) el.click();
-}
-async function _parseRestoreFile(file){
-  if(!file.name.endsWith('.xlsx')){
-    toast('ต้องเป็นไฟล์ .xlsx จาก Backup เท่านั้น','er'); return;
-  }
-  try{ await ensureXLSX(); }
-  catch(e){ toast('โหลดตัวอ่าน Excel ไม่สำเร็จ: '+e.message,'er'); return; }
-  const reader = new FileReader();
-  reader.onload = function(e){
-    try{
-      const wb = XLSX.read(e.target.result, {type:'array'});
-      // ตรวจว่าเป็นไฟล์ backup จริง
-      if(!wb.SheetNames.includes('README')||!wb.SheetNames.includes('students')){
-        toast('ไฟล์นี้ไม่ใช่ Backup ของระบบ ปพ.5','er'); return;
-      }
-      // อ่าน README เพื่อแสดง preview
-      const readme = XLSX.utils.sheet_to_json(wb.Sheets['README'],{header:1});
-      const schoolLine = readme.find(r=>r[0]&&String(r[0]).startsWith('โรงเรียน'));
-      const yearLine   = readme.find(r=>r[0]&&String(r[0]).startsWith('ปีการศึกษา'));
-      const dateLine   = readme.find(r=>r[0]&&String(r[0]).startsWith('วันที่'));
-      // นับ records ต่อ table
-      const counts = {};
-      wb.SheetNames.filter(n=>!RESTORE_SKIP.includes(n)).forEach(n=>{
-        const rows = XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1});
-        counts[n] = Math.max(0, rows.length-1); // ลบ header row
-      });
-      // เก็บ workbook ไว้
-      _restoreData = wb;
-      // แสดง preview
-      const preview = document.getElementById('restore-preview');
-      if(preview){
-        preview.style.display='block';
-        preview.innerHTML =
-          '<div style="font-weight:700;color:#dc2626;margin-bottom:6px;">ข้อมูลที่จะ Restore:</div>'+
-          (schoolLine?'<div>'+schoolLine[0]+'</div>':'')+
-          (yearLine?'<div>'+yearLine[0]+'</div>':'')+
-          (dateLine?'<div>'+dateLine[0]+'</div>':'')+
-          '<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px;">'+
-          Object.entries(counts).map(([t,n])=>
-            '<span style="background:#e5e5ea;border-radius:5px;padding:2px 7px;font-size:11.5px;"><strong>'+t+'</strong> '+n+' rows</span>'
-          ).join('')+'</div>'+
-          '<div style="margin-top:8px;color:#dc2626;font-size:12px;font-weight:600;">'+_ico.warning+' ข้อมูลปัจจุบันทั้งหมดจะถูกลบและแทนที่</div>';
-      }
-      // เปิดปุ่ม confirm
-      const btn = document.getElementById('restore-confirm-btn');
-      if(btn){ btn.disabled=false; btn.style.cursor='pointer'; btn.style.opacity='1'; }
-    }catch(err){
-      toast('อ่านไฟล์ไม่ได้: '+err.message,'er');
-    }
-  };
-  reader.readAsArrayBuffer(file);
-}
-
-async function _doRestore(){
-  if(!_restoreData){ toast('ไม่พบข้อมูล Backup','er'); return; }
-  _closeRestoreDialog();
-  // ยืนยันสุดท้าย
-  confirm2({
-    title:'ยืนยันการ Restore',
-    msg:'ข้อมูลปัจจุบัน<strong>ทั้งหมด</strong>จะถูกลบถาวรแล้วแทนที่ด้วยข้อมูลจาก Backup<br><span style="font-size:12px;color:#dc2626;">ไม่สามารถย้อนกลับได้</span>',
-    type:'danger', confirmText:'ลบและ Restore เลย', cancelText:'ยกเลิก',
-    onConfirm: async()=>{
-      loading(true);
-      const errors = [];
-      try{
-        const wb = _restoreData;
-        _restoreData = null;
-
-        // ── Step 1: ลบข้อมูลทุก table ตามลำดับ child→parent ──
-        toast('กำลังลบข้อมูลเดิม...','in');
-        for(const tbl of RESTORE_ORDER){
-          try{
-            await q(sb.from(tbl).delete().neq('id','00000000-0000-0000-0000-000000000000'));
-          }catch(e){ errors.push('ลบ '+tbl+': '+e.message); }
-        }
-        // config ใช้ key ไม่ใช่ uuid id
-        try{
-          await q(sb.from('config').delete().neq('key','__none__'));
-        }catch(e){}
-
-        // ── Step 2: insert ข้อมูลใหม่จาก backup ──
-        toast('กำลัง Restore ข้อมูล...','in');
-        for(const tbl of [...RESTORE_ORDER].reverse()){
-          if(!wb.SheetNames.includes(tbl)) continue;
-          const ws = wb.Sheets[tbl];
-          const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
-          if(rows.length<2) continue;
-          const headers = rows[0].map(h=>String(h));
-          // กรอง column ที่ไม่ส่งกลับ DB
-          const keepIdx = headers
-            .map((h,i)=>SKIP_COLS.includes(h)||h.endsWith('ชื่อวิชา')||h.endsWith('ชื่อนักเรียน')?-1:i)
-            .filter(i=>i>=0);
-          const keepHeaders = keepIdx.map(i=>headers[i]);
-          // แปลง rows เป็น objects
-          const data = rows.slice(1)
-            .filter(r=>r.some(v=>v!==''))  // ข้ามแถวว่าง
-            .map(r=>{
-              const obj={};
-              keepIdx.forEach((ci,ii)=>{
-                let v = r[ci];
-                // แปลง '' → null สำหรับ field ที่ควรเป็น null
-                if(v===''||v===null||v===undefined) v=null;
-                // แปลง number string
-                if(typeof v==='string'&&v!==''&&!isNaN(v)&&!['student_code','year_month','month_name','unit_name','subject_name','subject_code','student_name','note','key','value','full_name','teacher_name','grade_level_str'].includes(keepHeaders[ii])){
-                  v=Number(v);
-                }
-                obj[keepHeaders[ii]]=v;
-              });
-              return obj;
-            });
-          if(!data.length) continue;
-          // insert เป็น batch ขนาด 200 rows
-          const batchSize=200;
-          for(let i=0;i<data.length;i+=batchSize){
-            const batch=data.slice(i,i+batchSize);
-            try{
-              await q(sb.from(tbl).insert(batch));
-            }catch(e){ errors.push('insert '+tbl+' batch '+(i/batchSize+1)+': '+e.message); }
-          }
-        }
-        // insert config แยกต่างหาก (primary key = 'key' ไม่ใช่ 'id')
-        if(wb.SheetNames.includes('config')){
-          const cfgWs=wb.Sheets['config'];
-          const cfgRows=XLSX.utils.sheet_to_json(cfgWs,{header:1,defval:''});
-          if(cfgRows.length>=2){
-            const cfgHeaders=cfgRows[0].map(h=>String(h));
-            const cfgData=cfgRows.slice(1).filter(r=>r.some(v=>v!=='')).map(r=>{
-              const obj={};
-              cfgHeaders.forEach((h,i)=>{ if(h&&!['created_at','updated_at'].includes(h)) obj[h]=r[i]===''?null:r[i]; });
-              return obj;
-            }).filter(o=>o.key);
-            if(cfgData.length){
-              try{
-                await q(sb.from('config').upsert(cfgData,{onConflict:'key'}));
-              }catch(e){ errors.push('insert config: '+e.message); }
-            }
-          }
-        }
-
-        // ── Step 3: รีโหลด config และ clear cache ──
-        cacheInvAll();
-        await loadConfig();
-
-        logAudit('restore_backup', errors.length ? `Restore จาก backup (มีข้อผิดพลาด ${errors.length} จุด)` : 'Restore จาก backup สำเร็จ');
-        if(errors.length){
-          console.warn('Restore errors:', errors);
-          toast('Restore เสร็จ (มีข้อผิดพลาดบางส่วน '+errors.length+' จุด — ดูใน console)','in');
-        } else {
-          toast('Restore สำเร็จ! กรุณา Refresh หน้าเพื่อโหลดข้อมูลใหม่');
-        }
-        // แนะนำ reload
-        setTimeout(()=>{
-          confirm2({
-            title:'Restore สำเร็จ',
-            msg:'ข้อมูลถูก Restore เรียบร้อยแล้ว<br>กรุณากด <strong>Refresh</strong> เพื่อโหลดข้อมูลใหม่',
-            type:'warn', confirmText:'Refresh เลย', cancelText:'ทีหลัง',
-            onConfirm:()=>location.reload()
-          });
-        },600);
-
-      }catch(e){
-        toast('Restore ผิดพลาด: '+e.message,'er');
-      }finally{
-        loading(false);
-      }
-    }
-  });
 }
 
 // cacheInvAll — clear cache ทั้งหมด
