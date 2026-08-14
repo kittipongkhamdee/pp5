@@ -1144,9 +1144,8 @@ function buildEvalPlanUnitRows(){
     sumHours+=+u.hours||0; sumWeight+=+u.weight||0; sumWeightFinal+=+u.weight_final||0;
     rows.push([i+1,u.unit_name||'',codes,u.hours||0,u.weight||0,u.weight_final||0]);
   });
-  const mid=+sub.score_mid||0;
   rows.push(['','รวมหน่วยการเรียนรู้','',sumHours,sumWeight,sumWeightFinal]);
-  rows.push(['รวมคะแนนประเมินผล','','',sumWeight+mid+sumWeightFinal,'','']);
+  rows.push(['รวมคะแนนประเมินผล','','',sumWeight+sumWeightFinal,'','']);
   return {headRows,rows};
 }
 function buildEvalPlanKpaRows(){
