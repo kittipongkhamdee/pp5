@@ -50,6 +50,20 @@ body{font-family:var(--font);color:var(--dark);background:var(--bg);font-size:14
 
 .badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:14px;font-size:11px;font-weight:700;background:var(--indigo-light);color:var(--indigo)}
 
+.method-card{border-radius:var(--radius);padding:20px;margin-bottom:14px}
+.method-card.recommended{background:linear-gradient(135deg,#eef2ff,#e0e7ff);border:1.5px solid var(--indigo)}
+.method-card.alt{background:var(--card);border:1px solid var(--sep)}
+.method-tag{display:inline-flex;align-items:center;gap:5px;background:var(--indigo);color:#fff;padding:3px 12px;border-radius:14px;font-size:11px;font-weight:700;margin-bottom:10px}
+.method-title{font-size:14.5px;font-weight:700;color:var(--dark);margin-bottom:6px}
+.divider-or{display:flex;align-items:center;gap:12px;margin:16px 0;color:var(--gray2);font-size:12px;font-weight:600}
+.divider-or::before,.divider-or::after{content:'';flex:1;height:1px;background:var(--sep)}
+details.alt-steps{margin-top:6px}
+details.alt-steps>summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--indigo);list-style:none;display:flex;align-items:center;gap:6px}
+details.alt-steps>summary::-webkit-details-marker{display:none}
+details.alt-steps>summary::before{content:'▸';transition:transform .15s}
+details.alt-steps[open]>summary::before{transform:rotate(90deg)}
+details.alt-steps>.alt-steps-body{margin-top:12px}
+
 code{background:#f1f5f9;border-radius:5px;padding:2px 7px;font-size:12.5px;color:var(--indigo);word-break:break-all}
 
 .footer{text-align:center;font-size:12px;color:var(--gray2);margin-top:36px}
@@ -66,50 +80,67 @@ code{background:#f1f5f9;border-radius:5px;padding:2px 7px;font-size:12.5px;color
 <div class="wrap">
 
   <div class="section">
-    <div class="section-hd"><div class="section-num">1</div><h2>ติดตั้งส่วนขยาย Tampermonkey</h2></div>
-    <div class="card">
-      <p>Tampermonkey เป็นส่วนขยายฟรีสำหรับ Chrome/Edge ที่ใช้รันสคริปต์ช่วยงานบนเว็บไซต์ต่างๆ (มีคนใช้งานหลายสิบล้านคนทั่วโลก ปลอดภัย เชื่อถือได้) ระบบ Autofill SGS ต้องอาศัยตัวนี้เป็นตัวรันเบื้องหลัง</p>
-      <div class="btn-wrap">
-        <a class="btn" href="https://chromewebstore.google.com/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo" target="_blank" rel="noopener">
-          ⬇️ ติดตั้ง Tampermonkey
-        </a>
-        <div class="btn-note">เปิดหน้า Chrome Web Store → กด "เพิ่มลงใน Chrome"</div>
-      </div>
-      <p style="margin-top:14px">ข้ามขั้นตอนนี้ได้ถ้าติดตั้ง Tampermonkey ไว้แล้ว</p>
-    </div>
-  </div>
+    <div class="section-hd"><div class="section-num">1</div><h2>เลือกวิธีติดตั้ง</h2></div>
 
-  <div class="section">
-    <div class="section-hd"><div class="section-num">2</div><h2>ติดตั้งสคริปต์ Autofill SGS</h2></div>
-    <div class="card">
-      <p>คลิกปุ่มด้านล่าง Tampermonkey จะเปิดหน้าต่างติดตั้งให้อัตโนมัติทันที ไม่ต้องเปิด Dashboard หรือคัดลอกโค้ดเอง</p>
+    <div class="method-card recommended">
+      <div class="method-tag">🌟 แนะนำ — ง่ายสุด</div>
+      <div class="method-title">ติดตั้งผ่าน Chrome Web Store</div>
+      <p style="color:var(--dark2);font-size:13.5px;line-height:1.75;margin-bottom:14px">ผ่านการตรวจสอบจาก Google แล้ว คลิกเดียวติดตั้งเสร็จ ไม่ต้องใช้ Tampermonkey เลย</p>
       <div class="btn-wrap">
-        <a class="btn green" href="https://pp5-ten.vercel.app/sgs-autofill.user.js" target="_blank" rel="noopener">
-          ⬇️ ติดตั้งสคริปต์ Autofill SGS
+        <a class="btn green" href="https://chromewebstore.google.com/detail/bpjplajfbheogbadfecaghnblibkjlld" target="_blank" rel="noopener">
+          ➕ เพิ่มลงใน Chrome
         </a>
-        <div class="btn-note">จะเห็นหน้าต่างของ Tampermonkey เด้งขึ้นมา → กด "Install" / "ติดตั้ง"</div>
+        <div class="btn-note">กด "เพิ่มลงใน Chrome" / "Add to Chrome" — ใช้ได้กับ Chrome, Edge, Brave และเบราว์เซอร์ตระกูล Chromium อื่นๆ</div>
       </div>
-      <div class="feature-box blue" style="margin-top:16px">
-        <div class="feature-box-title">🔄 อัปเดตอัตโนมัติ</div>
-        <div class="feature-box-body">เมื่อมีการแก้ไข/เพิ่มความสามารถใหม่ Tampermonkey จะเช็คและอัปเดตให้เองอัตโนมัติ ไม่ต้องมาโหลดไฟล์ใหม่ทุกรอบ</div>
-      </div>
-      <div class="feature-box orange" style="margin-top:10px">
-        <div class="feature-box-title">🛠️ ถ้าคลิกแล้ว "ดาวน์โหลดไฟล์" แทนที่จะเด้งหน้าต่างติดตั้ง</div>
-        <div class="feature-box-body">
-          บางเครื่อง/เบราว์เซอร์อาจไม่เด้งหน้าต่างติดตั้งอัตโนมัติ (เช่น เพิ่งติดตั้ง Tampermonkey เสร็จใหม่ๆ) — ให้ติดตั้งด้วยไฟล์ที่โหลดมาแทน ไม่ต้องโหลดซ้ำ:
-          <ol style="margin:8px 0 0 20px">
-            <li>คลิกไอคอน Tampermonkey (มุมขวาบนเบราว์เซอร์) → เลือก <b>Dashboard</b></li>
-            <li>ไปแท็บ <b>Utilities</b> → หัวข้อ <b>"Import from file"</b> → กด <b>เลือกไฟล์</b></li>
-            <li>เลือกไฟล์ <code>sgs-autofill.user.js</code> ที่โหลดมา (อยู่ในโฟลเดอร์ Downloads) → กด <b>Import</b></li>
-            <li>ขึ้นหน้ายืนยัน → กด <b>Install</b> เป็นอันเสร็จ</li>
-          </ol>
+    </div>
+
+    <div class="divider-or">หรือ</div>
+
+    <div class="method-card alt">
+      <div class="method-title">ติดตั้งผ่าน Tampermonkey (ทางเลือกสำรอง)</div>
+      <p style="color:var(--dark2);font-size:13.5px;line-height:1.75;margin-bottom:0">เหมาะถ้าไม่สะดวกใช้ Chrome Web Store หรืออยากได้อัปเดตสคริปต์แบบเรียลไทม์ทันทีที่แก้ไข</p>
+      <details class="alt-steps">
+        <summary>ดูขั้นตอนติดตั้งผ่าน Tampermonkey</summary>
+        <div class="alt-steps-body">
+          <p><b>ขั้นที่ 1 — ติดตั้งส่วนขยาย Tampermonkey</b></p>
+          <p>Tampermonkey เป็นส่วนขยายฟรีสำหรับ Chrome/Edge ที่ใช้รันสคริปต์ช่วยงานบนเว็บไซต์ต่างๆ (มีคนใช้งานหลายสิบล้านคนทั่วโลก ปลอดภัย เชื่อถือได้)</p>
+          <div class="btn-wrap">
+            <a class="btn" href="https://chromewebstore.google.com/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo" target="_blank" rel="noopener">
+              ⬇️ ติดตั้ง Tampermonkey
+            </a>
+            <div class="btn-note">เปิดหน้า Chrome Web Store → กด "เพิ่มลงใน Chrome"</div>
+          </div>
+          <p style="margin-top:16px"><b>ขั้นที่ 2 — ติดตั้งสคริปต์ Autofill SGS</b></p>
+          <p>คลิกปุ่มด้านล่าง Tampermonkey จะเปิดหน้าต่างติดตั้งให้อัตโนมัติทันที ไม่ต้องเปิด Dashboard หรือคัดลอกโค้ดเอง</p>
+          <div class="btn-wrap">
+            <a class="btn green" href="https://pp5-ten.vercel.app/sgs-autofill.user.js" target="_blank" rel="noopener">
+              ⬇️ ติดตั้งสคริปต์ Autofill SGS
+            </a>
+            <div class="btn-note">จะเห็นหน้าต่างของ Tampermonkey เด้งขึ้นมา → กด "Install" / "ติดตั้ง"</div>
+          </div>
+          <div class="feature-box blue" style="margin-top:16px">
+            <div class="feature-box-title">🔄 อัปเดตอัตโนมัติ</div>
+            <div class="feature-box-body">เมื่อมีการแก้ไข/เพิ่มความสามารถใหม่ Tampermonkey จะเช็คและอัปเดตให้เองอัตโนมัติ ไม่ต้องมาโหลดไฟล์ใหม่ทุกรอบ</div>
+          </div>
+          <div class="feature-box orange" style="margin-top:10px">
+            <div class="feature-box-title">🛠️ ถ้าคลิกแล้ว "ดาวน์โหลดไฟล์" แทนที่จะเด้งหน้าต่างติดตั้ง</div>
+            <div class="feature-box-body">
+              บางเครื่อง/เบราว์เซอร์อาจไม่เด้งหน้าต่างติดตั้งอัตโนมัติ (เช่น เพิ่งติดตั้ง Tampermonkey เสร็จใหม่ๆ) — ให้ติดตั้งด้วยไฟล์ที่โหลดมาแทน ไม่ต้องโหลดซ้ำ:
+              <ol style="margin:8px 0 0 20px">
+                <li>คลิกไอคอน Tampermonkey (มุมขวาบนเบราว์เซอร์) → เลือก <b>Dashboard</b></li>
+                <li>ไปแท็บ <b>Utilities</b> → หัวข้อ <b>"Import from file"</b> → กด <b>เลือกไฟล์</b></li>
+                <li>เลือกไฟล์ <code>sgs-autofill.user.js</code> ที่โหลดมา (อยู่ในโฟลเดอร์ Downloads) → กด <b>Import</b></li>
+                <li>ขึ้นหน้ายืนยัน → กด <b>Install</b> เป็นอันเสร็จ</li>
+              </ol>
+            </div>
+          </div>
         </div>
-      </div>
+      </details>
     </div>
   </div>
 
   <div class="section">
-    <div class="section-hd"><div class="section-num">3</div><h2>วิธีใช้งาน</h2></div>
+    <div class="section-hd"><div class="section-num">2</div><h2>วิธีใช้งาน</h2></div>
     <div class="card">
       <ol>
         <li>เข้าระบบ <b>ปพ.5</b> → หน้า <b>"บันทึกคะแนน"</b> → เลือกวิชา → กดปุ่ม <span class="badge">Autofill SGS</span> (คัดลอกคะแนนเข้าคลิปบอร์ดอัตโนมัติ)</li>
