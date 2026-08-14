@@ -1035,7 +1035,8 @@ async function saveEplRatioAll(){
   }catch(e){ toast('บันทึกไม่สำเร็จ: '+e.message,'er'); }
   finally{ loading(false); }
 }
-// รวมน้ำหนักคะแนนของทุกหน่วยการเรียนรู้ที่ผูกกับตัวชี้วัดนี้ (ใช้เทียบกับผลรวม K+P+A รายตัวชี้วัด)
+// รวมน้ำหนักคะแนนระหว่างภาคของทุกหน่วยการเรียนรู้ที่ผูกกับตัวชี้วัดนี้ (ก่อนกลาง+กลาง+หลังกลางภาครวมกัน — ดู renderEplUnitsTab)
+// ใช้เทียบกับผลรวม K+P+A+กลางภาค รายตัวชี้วัด (ปลายภาคไม่รวม เพราะน้ำหนักหน่วยฯ ตรงนี้นับเฉพาะคอลัมน์ "ระหว่างภาค")
 function _indicatorUnitWeight(indId){
   return epUnits.reduce((sum,u)=>((epUnitInd[u.id]||[]).includes(indId)?sum+(+u.weight||0):sum),0);
 }
@@ -1072,13 +1073,13 @@ function renderIndicatorScoreTable(){
     <tbody>
     ${rows.map(({ind,sc})=>{
       const rowTot=fields.reduce((s,f)=>s+(+sc[f]||0),0);
-      const kpaSum=(+sc.score_k||0)+(+sc.score_p||0)+(+sc.score_a||0);
+      const kpaSum=(+sc.score_k||0)+(+sc.score_p||0)+(+sc.score_a||0)+(+sc.score_mid||0);
       const unitWeight=_indicatorUnitWeight(ind.id);
       const rowOk=kpaSum===unitWeight;
       return`<tr>
         <td class="tl" title="${esc(ind.indicator_text)}">${esc(ind.indicator_code)}</td>
         ${fields.map(f=>`<td><input class="cell-in num" type="number" value="${sc[f]||0}" onchange="saveEplIndScore(${ind.id},{${f}:+this.value||0})"></td>`).join('')}
-        <td class="tc" style="font-weight:700;color:${rowOk?'var(--ok-txt)':'var(--err-txt)'}" title="น้ำหนักคะแนนจากหน่วยการเรียนรู้ (คะแนนเก็บ K+P+A ต้องรวมได้ ${unitWeight})">${rowTot}${rowOk?' ✓':' (หน่วย='+unitWeight+')'}</td>
+        <td class="tc" style="font-weight:700;color:${rowOk?'var(--ok-txt)':'var(--err-txt)'}" title="น้ำหนักคะแนนระหว่างภาคจากหน่วยการเรียนรู้ (คะแนนเก็บ K+P+A+กลางภาค ต้องรวมได้ ${unitWeight})">${rowTot}${rowOk?' ✓':' (หน่วย='+unitWeight+')'}</td>
       </tr>`;
     }).join('')}
     <tr style="font-weight:700;background:var(--card2)">
@@ -1091,8 +1092,8 @@ function renderIndicatorScoreTable(){
   <div style="margin-top:8px;font-size:12px;color:var(--err);display:${mismatched.length?'block':'none'}">
     ${_ico.warning} ผลรวม ${mismatched.map(f=>fieldLabel[f]+' ('+totals[f]+'/'+targets[f]+')').join(', ')} ยังไม่ตรงกับตารางแสดงสัดส่วนคะแนน (ข้อ 3)
   </div>
-  <div style="margin-top:6px;font-size:12px;color:var(--err);display:${rows.some(({ind,sc})=>((+sc.score_k||0)+(+sc.score_p||0)+(+sc.score_a||0))!==_indicatorUnitWeight(ind.id))?'block':'none'}">
-    ${_ico.warning} คะแนนเก็บ (K+P+A) ของบางตัวชี้วัดยังไม่ตรงกับน้ำหนักคะแนนที่ตั้งไว้ในตารางหน่วยการเรียนรู้ — ดูช่อง "รวม" สีแดงในตารางด้านบน
+  <div style="margin-top:6px;font-size:12px;color:var(--err);display:${rows.some(({ind,sc})=>((+sc.score_k||0)+(+sc.score_p||0)+(+sc.score_a||0)+(+sc.score_mid||0))!==_indicatorUnitWeight(ind.id))?'block':'none'}">
+    ${_ico.warning} คะแนนเก็บ (K+P+A+กลางภาค) ของบางตัวชี้วัดยังไม่ตรงกับน้ำหนักคะแนนระหว่างภาคที่ตั้งไว้ในตารางหน่วยการเรียนรู้ — ดูช่อง "รวม" สีแดงในตารางด้านบน
   </div>`;
 }
 async function saveEplIndScore(indId,patch){
