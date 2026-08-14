@@ -710,7 +710,7 @@ function renderEplUnitsTab(){
         <tr style="font-weight:700;background:var(--card2)">
           <td colspan="3" style="text-align:right;padding-right:14px">รวมหน่วยการเรียนรู้</td>
           <td class="tc" style="color:${sumHours===(+sub.total_hours||0)?'var(--ok-txt)':'var(--err-txt)'}">${sumHours}${sumHours===(+sub.total_hours||0)?' ✓':' (ต้อง = '+(+sub.total_hours||0)+')'}</td>
-          <td class="tc" style="color:${betweenWithMid===targetBetween?'var(--ok-txt)':'var(--err-txt)'}" title="หน่วยฯ ${sumWeight} + คะแนนสอบกลางภาค ${mid} = ${betweenWithMid} เทียบกับคะแนนก่อนกลางภาค+กลางภาค+หลังกลางภาคที่ตั้งไว้ในแท็บ &quot;สัดส่วนคะแนน&quot; = ${targetBetween}">${sumWeight}+${mid}=${betweenWithMid}${betweenWithMid===targetBetween?' ✓':' (ต้อง = '+targetBetween+')'}</td>
+          <td class="tc" style="color:${betweenWithMid===targetBetween?'var(--ok-txt)':'var(--err-txt)'}" title="หน่วยฯ ${sumWeight} + คะแนนสอบกลางภาค ${mid} = ${betweenWithMid}">${betweenWithMid}${betweenWithMid===targetBetween?' ✓':' (ต้อง = '+targetBetween+')'}</td>
           <td class="tc" style="color:${sumWeightFinal===targetFinal?'var(--ok-txt)':'var(--err-txt)'}" title="คะแนนสอบปลายภาคที่ตั้งไว้ในแท็บ &quot;สัดส่วนคะแนน&quot; = ${targetFinal}">${sumWeightFinal}${sumWeightFinal===targetFinal?' ✓':' (ต้อง = '+targetFinal+')'}</td>
           <td></td>
         </tr>
