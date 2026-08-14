@@ -676,7 +676,8 @@ function renderEplUnitsTab(){
   let sumHours=0,sumWeight=0,sumWeightFinal=0;
   epUnits.forEach(u=>{ sumHours+=+u.hours||0; sumWeight+=+u.weight||0; sumWeightFinal+=+u.weight_final||0; });
   const mid=+sub.score_mid||0;
-  const targetBetween=(+sub.score_before_mid||0)+(+sub.score_after_mid||0);
+  const betweenWithMid=sumWeight+mid;
+  const targetBetween=(+sub.score_before_mid||0)+mid+(+sub.score_after_mid||0);
   const targetFinal=+sub.score_final||0;
   const grand=sumWeight+mid+sumWeightFinal;
   return`<div class="card">
@@ -709,7 +710,7 @@ function renderEplUnitsTab(){
         <tr style="font-weight:700;background:var(--card2)">
           <td colspan="3" style="text-align:right;padding-right:14px">รวมหน่วยการเรียนรู้</td>
           <td class="tc" style="color:${sumHours===(+sub.total_hours||0)?'var(--ok-txt)':'var(--err-txt)'}">${sumHours}${sumHours===(+sub.total_hours||0)?' ✓':' (ต้อง = '+(+sub.total_hours||0)+')'}</td>
-          <td class="tc" style="color:${sumWeight===targetBetween?'var(--ok-txt)':'var(--err-txt)'}" title="คะแนนก่อนกลางภาค+หลังกลางภาคที่ตั้งไว้ในแท็บ &quot;สัดส่วนคะแนน&quot; = ${targetBetween}">${sumWeight}${sumWeight===targetBetween?' ✓':' (ต้อง = '+targetBetween+')'}</td>
+          <td class="tc" style="color:${betweenWithMid===targetBetween?'var(--ok-txt)':'var(--err-txt)'}" title="หน่วยฯ ${sumWeight} + คะแนนสอบกลางภาค ${mid} = ${betweenWithMid} เทียบกับคะแนนก่อนกลางภาค+กลางภาค+หลังกลางภาคที่ตั้งไว้ในแท็บ &quot;สัดส่วนคะแนน&quot; = ${targetBetween}">${sumWeight}+${mid}=${betweenWithMid}${betweenWithMid===targetBetween?' ✓':' (ต้อง = '+targetBetween+')'}</td>
           <td class="tc" style="color:${sumWeightFinal===targetFinal?'var(--ok-txt)':'var(--err-txt)'}" title="คะแนนสอบปลายภาคที่ตั้งไว้ในแท็บ &quot;สัดส่วนคะแนน&quot; = ${targetFinal}">${sumWeightFinal}${sumWeightFinal===targetFinal?' ✓':' (ต้อง = '+targetFinal+')'}</td>
           <td></td>
         </tr>
@@ -718,8 +719,8 @@ function renderEplUnitsTab(){
           <td colspan="3" class="tc" style="font-size:14px;color:${grand===100?'var(--ok-txt)':'var(--err-txt)'}">${grand}${grand===100?' ✓':' (ต้อง = 100)'}</td>
           <td></td>
         </tr>
-        <tr style="display:${sumWeight!==targetBetween?'table-row':'none'}">
-          <td colspan="7" style="padding:8px 14px;font-size:12px;color:var(--err-txt)">${_ico.warning} คะแนนเก็บระหว่างภาครวมจากหน่วยการเรียนรู้ (${sumWeight}) ไม่ตรงกับคะแนนก่อนกลางภาค+หลังกลางภาคที่ตั้งไว้ในแท็บ <a href="javascript:void(0)" onclick="swTab('epl','epl-ratio')" style="color:inherit;text-decoration:underline;font-weight:600">"สัดส่วนคะแนน"</a> (${targetBetween}) — แก้ไขคะแนนระหว่างภาคของแต่ละหน่วยด้านบน หรือปรับโครงสร้างคะแนนในแท็บสัดส่วนคะแนนให้ตรงกัน</td>
+        <tr style="display:${betweenWithMid!==targetBetween?'table-row':'none'}">
+          <td colspan="7" style="padding:8px 14px;font-size:12px;color:var(--err-txt)">${_ico.warning} คะแนนระหว่างภาครวม (หน่วยการเรียนรู้ ${sumWeight} + คะแนนสอบกลางภาค ${mid} = ${betweenWithMid}) ไม่ตรงกับคะแนนก่อนกลางภาค+กลางภาค+หลังกลางภาคที่ตั้งไว้ในแท็บ <a href="javascript:void(0)" onclick="swTab('epl','epl-ratio')" style="color:inherit;text-decoration:underline;font-weight:600">"สัดส่วนคะแนน"</a> (${targetBetween}) — แก้ไขคะแนนระหว่างภาคของแต่ละหน่วยด้านบน คะแนนสอบกลางภาคที่หน้าบันทึกคะแนน หรือปรับโครงสร้างคะแนนในแท็บสัดส่วนคะแนนให้ตรงกัน</td>
         </tr>
         <tr style="display:${sumWeightFinal!==targetFinal?'table-row':'none'}">
           <td colspan="7" style="padding:8px 14px;font-size:12px;color:var(--err-txt)">${_ico.warning} คะแนนสอบปลายภาครวมจากหน่วยการเรียนรู้ (${sumWeightFinal}) ไม่ตรงกับคะแนนปลายภาคที่ตั้งไว้ในแท็บ <a href="javascript:void(0)" onclick="swTab('epl','epl-ratio')" style="color:inherit;text-decoration:underline;font-weight:600">"สัดส่วนคะแนน"</a> (${targetFinal}) — แก้ไขคะแนนปลายภาคของแต่ละหน่วยด้านบน หรือปรับคะแนนปลายภาคในแท็บสัดส่วนคะแนนให้ตรงกัน</td>
