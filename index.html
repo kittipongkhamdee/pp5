@@ -138,6 +138,9 @@ main{flex:1;max-width:860px;margin:0 auto;padding:48px 20px 56px;width:100%}
 .sys-card.card-blue:hover{box-shadow:var(--shadow-hover),0 0 36px rgba(0,113,227,.2)}
 .sys-card.card-green:hover{box-shadow:var(--shadow-hover),0 0 36px rgba(48,209,88,.2)}
 .sys-card.card-purple:hover{box-shadow:var(--shadow-hover),0 0 36px rgba(175,82,222,.2)}
+.sys-card.card-orange:hover{box-shadow:var(--shadow-hover),0 0 36px rgba(255,149,0,.2)}
+.sys-card.card-red:hover{box-shadow:var(--shadow-hover),0 0 36px rgba(255,59,48,.2)}
+.sys-card.card-teal:hover{box-shadow:var(--shadow-hover),0 0 36px rgba(48,176,199,.2)}
 .sys-card:active{transform:translateY(0) scale(.99)}
 
 .sys-card::before{
@@ -154,6 +157,9 @@ main{flex:1;max-width:860px;margin:0 auto;padding:48px 20px 56px;width:100%}
 .accent-blue{background:linear-gradient(90deg,#0071e3,#34a8f5)}
 .accent-green{background:linear-gradient(90deg,#30d158,#34c759)}
 .accent-purple{background:linear-gradient(90deg,#af52de,#c86edc)}
+.accent-orange{background:linear-gradient(90deg,#ff9500,#ffb340)}
+.accent-red{background:linear-gradient(90deg,#ff3b30,#ff6961)}
+.accent-teal{background:linear-gradient(90deg,#30b0c7,#5cc9de)}
 
 .sys-header{display:flex;align-items:center;gap:14px;margin-bottom:14px}
 .sys-icon-wrap{
@@ -164,6 +170,9 @@ main{flex:1;max-width:860px;margin:0 auto;padding:48px 20px 56px;width:100%}
 .icon-blue{background:linear-gradient(145deg,#e8f3ff,#cce3ff)}
 .icon-green{background:linear-gradient(145deg,#e3f9e8,#c6f4ce)}
 .icon-purple{background:linear-gradient(145deg,#f5e9fc,#ecd4f9)}
+.icon-orange{background:linear-gradient(145deg,#fff2e0,#ffdfb3)}
+.icon-red{background:linear-gradient(145deg,#ffe9e8,#ffc9c6)}
+.icon-teal{background:linear-gradient(145deg,#e1f6fa,#bfebf2)}
 
 .sys-title{font-size:18px;font-weight:800;color:var(--dark);letter-spacing:-.3px;margin-bottom:2px}
 .sys-caption{font-size:11px;font-weight:600;color:var(--gray2);letter-spacing:.2px}
@@ -177,6 +186,9 @@ main{flex:1;max-width:860px;margin:0 auto;padding:48px 20px 56px;width:100%}
 .tag-blue{background:#e8f3ff;color:#0071e3}
 .tag-green{background:#e3f9e8;color:#1a9e37}
 .tag-purple{background:#f5e9fc;color:#af52de}
+.tag-orange{background:#fff2e0;color:#c96f00}
+.tag-red{background:#ffe9e8;color:#d70015}
+.tag-teal{background:#e1f6fa;color:#1b7d8f}
 
 .sys-footer{
   display:flex;align-items:center;justify-content:space-between;
@@ -186,6 +198,9 @@ main{flex:1;max-width:860px;margin:0 auto;padding:48px 20px 56px;width:100%}
 .cta-blue{color:var(--blue)}
 .cta-green{color:#30d158}
 .cta-purple{color:#af52de}
+.cta-orange{color:#c96f00}
+.cta-red{color:#d70015}
+.cta-teal{color:#1b7d8f}
 .sys-cta svg{transition:transform .15s}
 .sys-card:hover .sys-cta svg{transform:translateX(4px)}
 
@@ -193,6 +208,9 @@ main{flex:1;max-width:860px;margin:0 auto;padding:48px 20px 56px;width:100%}
 .badge-blue{background:#e8f3ff;color:#0071e3}
 .badge-green{background:#e3f9e8;color:#1a9e37}
 .badge-purple{background:#f5e9fc;color:#af52de}
+.badge-orange{background:#fff2e0;color:#c96f00}
+.badge-red{background:#ffe9e8;color:#d70015}
+.badge-teal{background:#e1f6fa;color:#1b7d8f}
 
 /* ── Quick links ── */
 .quick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:48px}
@@ -273,6 +291,9 @@ footer{
 }
 .sys-card.card-green .ripple-el{background:rgba(26,158,55,.3)}
 .sys-card.card-purple .ripple-el{background:rgba(175,82,222,.3)}
+.sys-card.card-orange .ripple-el{background:rgba(255,149,0,.3)}
+.sys-card.card-red .ripple-el{background:rgba(255,59,48,.3)}
+.sys-card.card-teal .ripple-el{background:rgba(48,176,199,.3)}
 
 /* ── Page exit ── */
 @keyframes pageExit{to{opacity:0;transform:scale(.93)}}
@@ -387,17 +408,23 @@ body{animation:pageFadeIn .25s ease}
 <script>
 /* ══════════════════════════════════════════════════════════════
    รายการ "ระบบ" และ "คู่มือ/เอกสาร" ของหน้าแรก
-   ── เพิ่ม/ลบ/แก้ ระบบใหม่: แก้ที่ array SYSTEMS หรือ QUICK_LINKS
-   ด้านล่างนี้เท่านั้น ไม่ต้องไปแตะ HTML/CSS ส่วนอื่น ──
-   color ที่ใช้ได้: 'blue' | 'green' | 'purple'
+   ── ตอนนี้ดึงจากตาราง Supabase `home_links` เป็นหลัก (แก้ผ่านหน้า
+   admin-home.html ได้โดยไม่ต้องแก้โค้ด) ── อาร์เรย์ FALLBACK_* ด้านล่าง
+   นี้ใช้เป็นค่าสำรองกรณี fetch จากฐานข้อมูลล้มเหลว/ออฟไลน์เท่านั้น
+   ยังคงแก้ไขได้ตรงนี้ถ้าต้องการ แต่ปกติให้ไปแก้ที่ admin-home.html แทน
+   color ที่ใช้ได้: 'blue' | 'green' | 'purple' | 'orange' | 'red' | 'teal'
    (ถ้าต้องการสีใหม่ ให้เพิ่ม CSS .card-xxx/.icon-xxx/.tag-xxx/
    .cta-xxx/.badge-xxx/.accent-xxx คู่กับชื่อสีใหม่ใน <style> ด้านบน)
    ══════════════════════════════════════════════════════════════ */
-const COLOR_HEX={blue:'#0071e3',green:'#1a9e37',purple:'#af52de'};
+const COLOR_HEX={blue:'#0071e3',green:'#1a9e37',purple:'#af52de',orange:'#ff9500',red:'#ff3b30',teal:'#30b0c7'};
 const ARROW_ICON='<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>';
 const DEFAULT_TAG_SVG='fill="none" stroke="currentColor" stroke-width="2.5"';
 
-const SYSTEMS=[
+function escHtml(s){
+  return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+let FALLBACK_SYSTEMS=[
   {
     id:'pp5', color:'blue', href:'index-pp5.html',
     icon:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>',
@@ -436,7 +463,7 @@ const SYSTEMS=[
   },
 ];
 
-const QUICK_LINKS=[
+let FALLBACK_QUICK_LINKS=[
   {
     href:'manual.html', stroke:'#0071e3',
     icon:'<path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/>',
@@ -456,52 +483,94 @@ const QUICK_LINKS=[
 
 function renderSystems(){
   const grid=document.getElementById('systems-grid');
-  grid.innerHTML=SYSTEMS.map((s,i)=>`
-    <a class="sys-card card-${s.color} reveal" data-delay="${160+i*140}" href="${s.href}">
-      <div class="sys-card-accent accent-${s.color}"></div>
+  grid.innerHTML=SYSTEMS.map((s,i)=>{
+    const color=COLOR_HEX[s.color]?s.color:'blue';
+    return `
+    <a class="sys-card card-${color} reveal" data-delay="${160+i*140}" href="${escHtml(s.href)}">
+      <div class="sys-card-accent accent-${color}"></div>
       <div class="sys-header">
-        <div class="sys-icon-wrap icon-${s.color}">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="${COLOR_HEX[s.color]}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${s.icon}</svg>
+        <div class="sys-icon-wrap icon-${color}">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="${COLOR_HEX[color]}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${s.icon}</svg>
         </div>
         <div>
-          <div class="sys-title">${s.title}</div>
-          <div class="sys-caption">${s.caption}</div>
+          <div class="sys-title">${escHtml(s.title)}</div>
+          <div class="sys-caption">${escHtml(s.caption)}</div>
         </div>
       </div>
-      <div class="sys-desc">${s.desc}</div>
+      <div class="sys-desc">${escHtml(s.desc)}</div>
       <div class="sys-tags">
-        ${s.tags.map(t=>`
-        <span class="tag tag-${s.color}">
+        ${(s.tags||[]).map(t=>`
+        <span class="tag tag-${color}">
           <svg width="10" height="10" viewBox="0 0 24 24" ${t.svg||DEFAULT_TAG_SVG}>${t.icon}</svg>
-          ${t.text}
+          ${escHtml(t.text)}
         </span>`).join('')}
       </div>
       <div class="sys-footer">
-        <div class="sys-cta cta-${s.color}">
-          ${s.cta}
+        <div class="sys-cta cta-${color}">
+          ${escHtml(s.cta)}
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">${ARROW_ICON}</svg>
         </div>
-        <span class="sys-badge badge-${s.color}">${s.badge}</span>
+        <span class="sys-badge badge-${color}">${escHtml(s.badge)}</span>
       </div>
-    </a>`).join('');
+    </a>`;
+  }).join('');
 }
 
 function renderQuickLinks(){
   const grid=document.getElementById('quick-grid');
-  grid.innerHTML=QUICK_LINKS.map((q,i)=>`
-    <a class="quick-card reveal" data-delay="${200+i*120}" href="${q.href}">
+  grid.innerHTML=QUICK_LINKS.map((q,i)=>{
+    const stroke=/^#[0-9a-fA-F]{3,8}$/.test(q.stroke)?q.stroke:'#6e6e73';
+    return `
+    <a class="quick-card reveal" data-delay="${200+i*120}" href="${escHtml(q.href)}">
       <div class="quick-icon">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${q.stroke}" stroke-width="1.75" stroke-linecap="round">${q.icon}</svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${stroke}" stroke-width="1.75" stroke-linecap="round">${q.icon}</svg>
       </div>
       <div>
-        <div class="quick-text">${q.text}</div>
-        <div class="quick-sub">${q.sub}</div>
+        <div class="quick-text">${escHtml(q.text)}</div>
+        <div class="quick-sub">${escHtml(q.sub)}</div>
       </div>
-    </a>`).join('');
+    </a>`;
+  }).join('');
 }
 
+let SYSTEMS=FALLBACK_SYSTEMS;
+let QUICK_LINKS=FALLBACK_QUICK_LINKS;
 renderSystems();
 renderQuickLinks();
+
+/* ── โหลดรายการจริงจาก Supabase (ตาราง home_links) มาทับค่า fallback ── */
+(async()=>{
+  const SB_URL='https://zwtulepvmlngcrbcrrki.supabase.co';
+  const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp3dHVsZXB2bWxuZ2NyYmNycmtpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNTc2NDcsImV4cCI6MjA5NTYzMzY0N30.9nhe0_NF3Fa-4FtmbE2AvQCtJdHS05RbkiyC8WvtvvA';
+  try{
+    const res=await fetch(
+      `${SB_URL}/rest/v1/home_links?is_active=eq.true&select=*&order=sort_order.asc`,
+      {headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}}
+    );
+    if(!res.ok) throw new Error('bad status '+res.status);
+    const rows=await res.json();
+    if(!Array.isArray(rows)||!rows.length) throw new Error('empty result');
+    const systems=rows.filter(r=>r.section==='system').map(r=>({
+      color:r.color, href:r.href, icon:r.icon_svg,
+      title:r.title, caption:r.subtitle, desc:r.description,
+      tags:Array.isArray(r.tags)?r.tags:[],
+      cta:r.cta_label, badge:r.badge,
+    }));
+    const quicks=rows.filter(r=>r.section==='quick_link').map(r=>({
+      href:r.href, stroke:r.color, icon:r.icon_svg, text:r.title, sub:r.subtitle,
+    }));
+    // ทับเฉพาะ section ที่มีข้อมูลจริงจาก DB เท่านั้น กัน DB ว่างชั่วคราวแล้วหน้าแรกกลายเป็นหน้าเปล่า
+    if(systems.length) SYSTEMS=systems;
+    if(quicks.length) QUICK_LINKS=quicks;
+    if(systems.length||quicks.length){
+      renderSystems();
+      renderQuickLinks();
+      window.__wireHomeCards&&window.__wireHomeCards();
+    }
+  }catch(e){
+    // fetch ล้มเหลว/ออฟไลน์ — ปล่อยให้หน้าแรกใช้ FALLBACK_SYSTEMS/FALLBACK_QUICK_LINKS ที่ render ไปแล้วต่อไป
+  }
+})();
 </script>
 <script>
 /* ── School logo from Supabase (public read policy enabled) ── */
@@ -602,37 +671,42 @@ const io=new IntersectionObserver(entries=>{
     }
   });
 },{threshold:0.08});
-document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
-
 /* ── Ripple + zoom-out exit ── */
+// เรียกซ้ำได้ทุกครั้งที่การ์ดถูก render ใหม่ (เช่น หลัง fetch home_links จาก Supabase สำเร็จ)
 const _cards=[];
-document.querySelectorAll('.sys-card').forEach(card=>{
-  const state={navigating:false};
-  _cards.push(state);
-  card.addEventListener('pointerdown',function(e){
-    const rect=this.getBoundingClientRect();
-    const size=Math.max(rect.width,rect.height)*1.4;
-    const r=document.createElement('span');
-    r.className='ripple-el';
-    r.style.cssText=`width:${size}px;height:${size}px;left:${e.clientX-rect.left-size/2}px;top:${e.clientY-rect.top-size/2}px`;
-    this.appendChild(r);
+function wireHomeCards(){
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+  _cards.length=0;
+  document.querySelectorAll('.sys-card').forEach(card=>{
+    const state={navigating:false};
+    _cards.push(state);
+    card.addEventListener('pointerdown',function(e){
+      const rect=this.getBoundingClientRect();
+      const size=Math.max(rect.width,rect.height)*1.4;
+      const r=document.createElement('span');
+      r.className='ripple-el';
+      r.style.cssText=`width:${size}px;height:${size}px;left:${e.clientX-rect.left-size/2}px;top:${e.clientY-rect.top-size/2}px`;
+      this.appendChild(r);
+    });
+    card.addEventListener('click',function(e){
+      // เปิดแท็บใหม่ด้วย Ctrl/Cmd/Shift/คลิกกลาง ให้เบราว์เซอร์จัดการเอง
+      if(e.metaKey||e.ctrlKey||e.shiftKey||e.button!==0)return;
+      e.preventDefault();
+      if(state.navigating)return;state.navigating=true;
+      const href=this.getAttribute('href');
+      setTimeout(()=>{
+        document.body.classList.add('page-exiting');
+        setTimeout(()=>{window.location.href=href},300);
+      },150);
+    });
   });
-  card.addEventListener('click',function(e){
-    // เปิดแท็บใหม่ด้วย Ctrl/Cmd/Shift/คลิกกลาง ให้เบราว์เซอร์จัดการเอง
-    if(e.metaKey||e.ctrlKey||e.shiftKey||e.button!==0)return;
-    e.preventDefault();
-    if(state.navigating)return;state.navigating=true;
-    const href=this.getAttribute('href');
-    setTimeout(()=>{
-      document.body.classList.add('page-exiting');
-      setTimeout(()=>{window.location.href=href},300);
-    },150);
-  });
-});
+}
 window.addEventListener('pageshow',function(){
   document.body.classList.remove('page-exiting');
   _cards.forEach(s=>s.navigating=false);
 });
+wireHomeCards();
+window.__wireHomeCards=wireHomeCards;
 </script>
 </body>
 </html>

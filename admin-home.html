@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>จัดการหน้าแรก — ระบบบริหารงานโรงเรียน</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+:root{
+  --blue:#0071e3;--blue-dark:#0077ed;--blue-light:#e8f0fe;
+  --dark:#1d1d1f;--dark2:#3d3d3f;--gray:#6e6e73;--gray2:#86868b;--gray3:#d2d2d7;
+  --bg:#f5f5f7;--card:#ffffff;--sep:rgba(0,0,0,.08);
+  --radius:18px;--radius-lg:24px;--font:'Sarabun',sans-serif;
+  --shadow:0 2px 12px rgba(0,0,0,.08),0 8px 32px rgba(0,0,0,.06);
+  --shadow-hover:0 4px 20px rgba(0,0,0,.1),0 16px 48px rgba(0,0,0,.1);
+}
+html,body{min-height:100vh}
+body{font-family:var(--font);color:var(--dark);background:var(--bg)}
+
+/* ── layout ── */
+.topbar{
+  background:#0a0f1e;color:#fff;padding:16px 24px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+.topbar h1{font-size:16px;font-weight:800}
+.topbar a{color:#9fc4ff;font-size:13px;font-weight:600;text-decoration:none}
+.topbar a:hover{text-decoration:underline}
+.topbar-right{display:flex;align-items:center;gap:14px}
+.who{font-size:12px;color:#b8c2d9}
+.btn-logout{
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;
+  padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;
+}
+.btn-logout:hover{background:rgba(255,255,255,.18)}
+
+main{max-width:1100px;margin:0 auto;padding:28px 20px 80px}
+
+.section-hd{display:flex;align-items:center;justify-content:space-between;margin:32px 0 14px}
+.section-hd h2{font-size:16px;font-weight:800;display:flex;align-items:center;gap:8px}
+.section-hd h2::before{content:'';width:4px;height:16px;border-radius:3px;background:linear-gradient(180deg,#0071e3,#34a8f5)}
+.section-hint{font-size:12px;color:var(--gray2);margin-top:2px}
+
+.btn{
+  border:none;border-radius:10px;padding:9px 16px;font-size:13px;font-weight:700;
+  cursor:pointer;font-family:var(--font);display:inline-flex;align-items:center;gap:6px;
+}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:hover{background:var(--blue-dark)}
+.btn-ghost{background:#fff;color:var(--dark2);border:1px solid var(--gray3)}
+.btn-ghost:hover{background:#f0f0f2}
+.btn-danger{background:#ffe9e8;color:#d70015}
+.btn-danger:hover{background:#ffd6d4}
+.btn-sm{padding:5px 10px;font-size:12px;border-radius:8px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* ── row list ── */
+.rowlist{display:flex;flex-direction:column;gap:8px}
+.rowitem{
+  background:var(--card);border:1px solid var(--sep);border-radius:14px;
+  padding:12px 14px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow);
+}
+.rowitem.inactive{opacity:.5}
+.rowitem-order{display:flex;flex-direction:column;gap:2px}
+.rowitem-order button{
+  width:22px;height:18px;border:1px solid var(--gray3);background:#fff;border-radius:5px;
+  cursor:pointer;font-size:10px;color:var(--gray);line-height:1;
+}
+.rowitem-order button:hover{background:#f0f0f2}
+.rowitem-order button:disabled{opacity:.3;cursor:not-allowed}
+.rowitem-swatch{width:34px;height:34px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.rowitem-swatch svg{width:18px;height:18px}
+.rowitem-body{flex:1;min-width:0}
+.rowitem-title{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rowitem-sub{font-size:12px;color:var(--gray2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rowitem-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.toggle{
+  width:36px;height:20px;border-radius:20px;background:var(--gray3);position:relative;
+  cursor:pointer;border:none;flex-shrink:0;transition:background .15s;
+}
+.toggle.on{background:#30d158}
+.toggle::after{
+  content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;
+  background:#fff;transition:transform .15s;box-shadow:0 1px 3px rgba(0,0,0,.3);
+}
+.toggle.on::after{transform:translateX(16px)}
+.empty-hint{font-size:13px;color:var(--gray2);padding:20px;text-align:center;border:1px dashed var(--gray3);border-radius:14px}
+
+/* ── modal ── */
+.overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;
+  align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto;z-index:100;
+}
+.overlay.show{display:flex}
+.modal{
+  background:#fff;border-radius:var(--radius-lg);max-width:960px;width:100%;
+  padding:26px;box-shadow:var(--shadow-hover);margin:auto 0;
+}
+.modal h3{font-size:17px;font-weight:800;margin-bottom:18px}
+.modal-grid{display:grid;grid-template-columns:1fr 320px;gap:24px}
+@media(max-width:760px){.modal-grid{grid-template-columns:1fr}}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12px;font-weight:700;color:var(--gray);margin-bottom:5px}
+.field input[type=text],.field input[type=url],.field textarea{
+  width:100%;border:1px solid var(--gray3);border-radius:10px;padding:9px 11px;
+  font-size:13px;font-family:var(--font);color:var(--dark);
+}
+.field textarea{resize:vertical;font-family:ui-monospace,monospace;font-size:12px}
+.field-row{display:flex;gap:10px}
+.field-row>*{flex:1}
+.color-swatches{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.color-swatch{
+  width:30px;height:30px;border-radius:50%;cursor:pointer;border:2px solid transparent;
+}
+.color-swatch.sel{border-color:var(--dark)}
+.icon-presets{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.icon-preset{
+  width:30px;height:30px;border:1px solid var(--gray3);border-radius:8px;background:#fff;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+}
+.icon-preset:hover{background:#f0f0f2}
+.icon-preset svg{width:15px;height:15px;stroke:var(--dark2)}
+.tag-row{display:flex;gap:6px;align-items:flex-start;margin-bottom:6px}
+.tag-row input{flex:1}
+.tag-row textarea{flex:1.4;height:32px}
+.tag-row .btn{flex-shrink:0}
+.checkbox-row{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;margin-top:14px}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+
+.preview-box{background:var(--bg);border-radius:14px;padding:20px;display:flex;align-items:flex-start}
+.preview-label{font-size:11px;font-weight:700;color:var(--gray2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px}
+
+/* ── auth screens ── */
+.auth-wrap{max-width:360px;margin:80px auto;padding:0 20px}
+.auth-card{background:#fff;border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:32px;text-align:center}
+.auth-card h2{font-size:18px;font-weight:800;margin-bottom:6px}
+.auth-card p{font-size:13px;color:var(--gray);margin-bottom:20px}
+.auth-card input{
+  width:100%;border:1px solid var(--gray3);border-radius:10px;padding:11px 13px;
+  font-size:14px;font-family:var(--font);margin-bottom:10px;
+}
+.auth-err{color:#d70015;font-size:12px;margin-bottom:10px;min-height:16px}
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  background:#1d1d1f;color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:600;
+  box-shadow:var(--shadow-hover);z-index:200;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(-6px)}
+
+/* ── card CSS ที่ก็อปมาจาก index.html เพื่อพรีวิว WYSIWYG ── */
+.sys-card{
+  background:var(--card);border-radius:var(--radius-lg);
+  box-shadow:var(--shadow);border:1px solid var(--sep);
+  padding:22px;text-decoration:none;color:inherit;
+  display:flex;flex-direction:column;position:relative;overflow:hidden;width:280px;pointer-events:none;
+}
+.sys-card-accent{position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--radius-lg) var(--radius-lg) 0 0}
+.accent-blue{background:linear-gradient(90deg,#0071e3,#34a8f5)}
+.accent-green{background:linear-gradient(90deg,#30d158,#34c759)}
+.accent-purple{background:linear-gradient(90deg,#af52de,#c86edc)}
+.accent-orange{background:linear-gradient(90deg,#ff9500,#ffb340)}
+.accent-red{background:linear-gradient(90deg,#ff3b30,#ff6961)}
+.accent-teal{background:linear-gradient(90deg,#30b0c7,#5cc9de)}
+.sys-header{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.sys-icon-wrap{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.icon-blue{background:linear-gradient(145deg,#e8f3ff,#cce3ff)}
+.icon-green{background:linear-gradient(145deg,#e3f9e8,#c6f4ce)}
+.icon-purple{background:linear-gradient(145deg,#f5e9fc,#ecd4f9)}
+.icon-orange{background:linear-gradient(145deg,#fff2e0,#ffdfb3)}
+.icon-red{background:linear-gradient(145deg,#ffe9e8,#ffc9c6)}
+.icon-teal{background:linear-gradient(145deg,#e1f6fa,#bfebf2)}
+.sys-title{font-size:17px;font-weight:800;color:var(--dark);letter-spacing:-.3px;margin-bottom:2px}
+.sys-caption{font-size:11px;font-weight:600;color:var(--gray2);letter-spacing:.2px}
+.sys-desc{font-size:13px;color:var(--gray);line-height:1.7;flex:1}
+.sys-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.tag{display:inline-flex;align-items:center;gap:5px;border-radius:20px;padding:4px 11px;font-size:11px;font-weight:600}
+.tag-blue{background:#e8f3ff;color:#0071e3}
+.tag-green{background:#e3f9e8;color:#1a9e37}
+.tag-purple{background:#f5e9fc;color:#af52de}
+.tag-orange{background:#fff2e0;color:#c96f00}
+.tag-red{background:#ffe9e8;color:#d70015}
+.tag-teal{background:#e1f6fa;color:#1b7d8f}
+.sys-footer{display:flex;align-items:center;justify-content:space-between;margin-top:18px;padding-top:14px;border-top:1px solid var(--sep)}
+.sys-cta{font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px}
+.cta-blue{color:var(--blue)}
+.cta-green{color:#30d158}
+.cta-purple{color:#af52de}
+.cta-orange{color:#c96f00}
+.cta-red{color:#d70015}
+.cta-teal{color:#1b7d8f}
+.sys-badge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px}
+.badge-blue{background:#e8f3ff;color:#0071e3}
+.badge-green{background:#e3f9e8;color:#1a9e37}
+.badge-purple{background:#f5e9fc;color:#af52de}
+.badge-orange{background:#fff2e0;color:#c96f00}
+.badge-red{background:#ffe9e8;color:#d70015}
+.badge-teal{background:#e1f6fa;color:#1b7d8f}
+.quick-card{
+  background:var(--card);border-radius:var(--radius);
+  box-shadow:0 1px 6px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.05);
+  border:1px solid var(--sep);padding:16px 14px;text-decoration:none;color:inherit;
+  display:flex;align-items:center;gap:12px;width:220px;pointer-events:none;
+}
+.quick-icon{width:38px;height:38px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#f5f5f7}
+.quick-text{font-size:13px;font-weight:600;color:var(--dark2)}
+.quick-sub{font-size:11px;color:var(--gray2);margin-top:1px}
+</style>
+</head>
+<body>
+
+<div id="auth-view" class="auth-wrap" style="display:none">
+  <div class="auth-card">
+    <h2>จัดการหน้าแรก</h2>
+    <p>เข้าสู่ระบบด้วยบัญชีแอดมินเพื่อแก้ไขรายการระบบ/คู่มือบนหน้าแรก</p>
+    <input type="text" id="l-email" placeholder="อีเมล" autocomplete="username">
+    <input type="password" id="l-pass" placeholder="รหัสผ่าน" autocomplete="current-password">
+    <div class="auth-err" id="l-err"></div>
+    <button class="btn btn-primary" id="l-btn" style="width:100%;justify-content:center" onclick="doLogin()">เข้าสู่ระบบ</button>
+    <div style="margin-top:16px"><a href="index.html" style="font-size:12px;color:var(--gray2)">← กลับหน้าแรก</a></div>
+  </div>
+</div>
+
+<div id="noaccess-view" class="auth-wrap" style="display:none">
+  <div class="auth-card">
+    <h2>ไม่มีสิทธิ์เข้าถึง</h2>
+    <p>บัญชีนี้ไม่ใช่แอดมิน จึงไม่สามารถจัดการหน้าแรกได้</p>
+    <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="doLogout()">ออกจากระบบ</button>
+  </div>
+</div>
+
+<div id="admin-view" style="display:none">
+  <div class="topbar">
+    <h1>จัดการหน้าแรก · ระบบบริหารงานโรงเรียน</h1>
+    <div class="topbar-right">
+      <a href="index.html" target="_blank">↗ ดูหน้าแรก</a>
+      <span class="who" id="who-lbl"></span>
+      <button class="btn-logout" onclick="doLogout()">ออกจากระบบ</button>
+    </div>
+  </div>
+
+  <main>
+    <div class="section-hd">
+      <div>
+        <h2>ระบบหลัก</h2>
+        <div class="section-hint">การ์ดใหญ่ในหัวข้อ "ระบบหลัก" ของหน้าแรก</div>
+      </div>
+      <button class="btn btn-primary" onclick="openForm('system')">+ เพิ่มระบบ</button>
+    </div>
+    <div class="rowlist" id="list-system"></div>
+
+    <div class="section-hd">
+      <div>
+        <h2>เอกสารและคู่มือ</h2>
+        <div class="section-hint">การ์ดเล็กในหัวข้อ "เอกสารและคู่มือ" ของหน้าแรก</div>
+      </div>
+      <button class="btn btn-primary" onclick="openForm('quick_link')">+ เพิ่มคู่มือ</button>
+    </div>
+    <div class="rowlist" id="list-quick_link"></div>
+  </main>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h3 id="form-title">เพิ่มระบบ</h3>
+    <div class="modal-grid">
+      <div>
+        <div class="field-row">
+          <div class="field">
+            <label>ชื่อ (title) *</label>
+            <input type="text" id="f-title" placeholder="เช่น ระบบ ปพ.5">
+          </div>
+          <div class="field">
+            <label id="f-subtitle-lbl">คำอธิบายสั้น (subtitle)</label>
+            <input type="text" id="f-subtitle" placeholder="เช่น บันทึกผลการเรียน">
+          </div>
+        </div>
+        <div class="field" id="f-desc-wrap">
+          <label>รายละเอียด (description)</label>
+          <textarea id="f-desc" rows="2" style="font-family:var(--font);font-size:13px"></textarea>
+        </div>
+        <div class="field">
+          <label>ลิงก์ปลายทาง (href) *</label>
+          <input type="text" id="f-href" placeholder="เช่น index-pp5.html หรือ https://...">
+        </div>
+        <div class="field-row" id="f-cta-badge-wrap">
+          <div class="field">
+            <label>ข้อความปุ่ม (cta_label)</label>
+            <input type="text" id="f-cta" placeholder="เช่น เข้าสู่ระบบ ปพ.5">
+          </div>
+          <div class="field">
+            <label>ป้าย badge</label>
+            <input type="text" id="f-badge" placeholder="เช่น ปพ.5">
+          </div>
+        </div>
+        <div class="field" id="f-color-system-wrap">
+          <label>สี</label>
+          <div class="color-swatches" id="f-color-swatches"></div>
+        </div>
+        <div class="field" id="f-color-hex-wrap">
+          <label>สีไอคอน (hex)</label>
+          <input type="text" id="f-color-hex" placeholder="#0071e3" style="max-width:140px">
+        </div>
+        <div class="field">
+          <label>ไอคอนหลัก — เลือกพรีเซ็ต หรือวาง SVG markup เอง</label>
+          <div class="icon-presets" id="f-icon-presets"></div>
+          <textarea id="f-icon" rows="2" placeholder='เช่น &lt;path d="..."/&gt;' style="margin-top:6px"></textarea>
+        </div>
+        <div class="field" id="f-tags-wrap">
+          <label>แท็ก (เฉพาะระบบหลัก)</label>
+          <div id="f-tags-list"></div>
+          <button class="btn btn-ghost btn-sm" onclick="addTagRow()">+ เพิ่มแท็ก</button>
+        </div>
+        <label class="checkbox-row"><input type="checkbox" id="f-active" checked> เปิดใช้งาน (แสดงบนหน้าแรก)</label>
+      </div>
+      <div>
+        <div class="preview-label">พรีวิว</div>
+        <div class="preview-box" id="f-preview"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeForm()">ยกเลิก</button>
+      <button class="btn btn-primary" id="f-save-btn" onclick="saveForm()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="config.js"></script>
+<script src="vendor/supabase-js.min.js"></script>
+<script>
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { storage: window.sessionStorage, persistSession: true, autoRefreshToken: true }
+});
+
+const S = { user:null, profile:null, rows:[] };
+let editingRow = null; // null = เพิ่มใหม่, object = กำลังแก้ไข
+let formSection = 'system';
+let formTags = []; // [{icon,text,svg}]
+
+const COLORS = ['blue','green','purple','orange','red','teal'];
+const COLOR_HEX = {blue:'#0071e3',green:'#1a9e37',purple:'#af52de',orange:'#ff9500',red:'#ff3b30',teal:'#30b0c7'};
+const ARROW_ICON = '<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>';
+
+const ICON_PRESETS = {
+  doc:      '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>',
+  checklist:'<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><path d="M9 12l2 2 4-4"/>',
+  calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+  chart:    '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
+  printer:  '<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>',
+  check:    '<polyline points="20 6 9 17 4 12"/>',
+  star:     '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+  bell:     '<path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/>',
+  book:     '<path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>',
+  users:    '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>',
+  folder:   '<path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>',
+  home:     '<path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+  link:     '<path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>',
+  gear:     '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>',
+};
+
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg;
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2200);
+}
+function escHtml(s){
+  return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ── auth ──
+async function init(){
+  const {data:{session}} = await sb.auth.getSession();
+  if(session){ S.user=session.user; await afterLogin(); }
+  else showView('auth');
+}
+function showView(name){
+  document.getElementById('auth-view').style.display = name==='auth' ? 'block':'none';
+  document.getElementById('noaccess-view').style.display = name==='noaccess' ? 'block':'none';
+  document.getElementById('admin-view').style.display = name==='admin' ? 'block':'none';
+}
+async function doLogin(){
+  const email=document.getElementById('l-email').value.trim();
+  const pass=document.getElementById('l-pass').value;
+  const errEl=document.getElementById('l-err');
+  const btn=document.getElementById('l-btn');
+  errEl.textContent='';
+  if(!email||!pass){ errEl.textContent='กรุณากรอกอีเมลและรหัสผ่าน'; return; }
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>';
+  try{
+    const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
+    if(error){
+      errEl.textContent = error.message==='Invalid login credentials' ? 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' : error.message;
+      return;
+    }
+    S.user=data.user;
+    await afterLogin();
+  }catch(e){
+    errEl.textContent='เกิดข้อผิดพลาด ลองใหม่อีกครั้ง';
+  }finally{
+    btn.disabled=false; btn.textContent='เข้าสู่ระบบ';
+  }
+}
+async function afterLogin(){
+  const {data}=await sb.from('profiles').select('*').eq('id',S.user.id).single();
+  S.profile=data;
+  if(!S.profile?.is_admin){ showView('noaccess'); return; }
+  document.getElementById('who-lbl').textContent = S.profile.full_name || S.user.email;
+  showView('admin');
+  await loadRows();
+}
+async function doLogout(){
+  await sb.auth.signOut();
+  S.user=null; S.profile=null;
+  document.getElementById('l-email').value='';
+  document.getElementById('l-pass').value='';
+  showView('auth');
+}
+
+// ── data ──
+async function loadRows(){
+  const {data,error}=await sb.from('home_links').select('*').order('section').order('sort_order');
+  if(error){ toast('โหลดข้อมูลไม่สำเร็จ: '+error.message); return; }
+  S.rows=data||[];
+  renderLists();
+}
+function renderLists(){
+  renderList('system');
+  renderList('quick_link');
+}
+function renderList(section){
+  const rows=S.rows.filter(r=>r.section===section).sort((a,b)=>a.sort_order-b.sort_order);
+  const el=document.getElementById('list-'+section);
+  if(!rows.length){ el.innerHTML='<div class="empty-hint">ยังไม่มีรายการ — กด "+ เพิ่ม' + (section==='system'?'ระบบ':'คู่มือ') + '" ด้านบน</div>'; return; }
+  el.innerHTML=rows.map((r,i)=>{
+    const colorKey = section==='system' ? (COLOR_HEX[r.color]?r.color:'blue') : null;
+    const stroke = section==='system' ? COLOR_HEX[colorKey] : (/^#[0-9a-fA-F]{3,8}$/.test(r.color)?r.color:'#6e6e73');
+    const swatchStyle = section==='system' ? '' : `background:${stroke}22`;
+    const iconCls = section==='system' ? `icon-${colorKey}` : '';
+    return `
+    <div class="rowitem ${r.is_active?'':'inactive'}">
+      <div class="rowitem-order">
+        <button ${i===0?'disabled':''} onclick="moveRow(${r.id},'${section}',-1)">▲</button>
+        <button ${i===rows.length-1?'disabled':''} onclick="moveRow(${r.id},'${section}',1)">▼</button>
+      </div>
+      <div class="rowitem-swatch ${iconCls}" style="${swatchStyle}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="${stroke}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${r.icon_svg||''}</svg>
+      </div>
+      <div class="rowitem-body">
+        <div class="rowitem-title">${escHtml(r.title)}</div>
+        <div class="rowitem-sub">${escHtml(r.subtitle||'')} · ${escHtml(r.href)}</div>
+      </div>
+      <div class="rowitem-actions">
+        <button class="toggle ${r.is_active?'on':''}" title="เปิด/ปิดการแสดงผล" onclick="toggleActive(${r.id})"></button>
+        <button class="btn btn-ghost btn-sm" onclick="openForm('${section}', ${r.id})">แก้ไข</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteRow(${r.id})">ลบ</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function toggleActive(id){
+  const row=S.rows.find(r=>r.id===id); if(!row) return;
+  const {error}=await sb.from('home_links').update({is_active:!row.is_active}).eq('id',id);
+  if(error){ toast('อัปเดตไม่สำเร็จ: '+error.message); return; }
+  row.is_active=!row.is_active;
+  renderLists();
+}
+
+async function moveRow(id,section,dir){
+  const rows=S.rows.filter(r=>r.section===section).sort((a,b)=>a.sort_order-b.sort_order);
+  const idx=rows.findIndex(r=>r.id===id);
+  const swapIdx=idx+dir;
+  if(swapIdx<0||swapIdx>=rows.length) return;
+  const a=rows[idx], b=rows[swapIdx];
+  const [aOrder,bOrder]=[a.sort_order,b.sort_order];
+  const {error}=await sb.from('home_links').update({sort_order:bOrder}).eq('id',a.id);
+  if(error){ toast('จัดลำดับไม่สำเร็จ: '+error.message); return; }
+  await sb.from('home_links').update({sort_order:aOrder}).eq('id',b.id);
+  a.sort_order=bOrder; b.sort_order=aOrder;
+  renderLists();
+}
+
+async function deleteRow(id){
+  const row=S.rows.find(r=>r.id===id); if(!row) return;
+  if(!confirm(`ลบ "${row.title}" ออกจากหน้าแรก?`)) return;
+  const {error}=await sb.from('home_links').delete().eq('id',id);
+  if(error){ toast('ลบไม่สำเร็จ: '+error.message); return; }
+  S.rows=S.rows.filter(r=>r.id!==id);
+  renderLists();
+  toast('ลบแล้ว');
+}
+
+// ── form ──
+function openForm(section, id){
+  formSection=section;
+  editingRow = id ? S.rows.find(r=>r.id===id) : null;
+  document.getElementById('form-title').textContent =
+    (editingRow?'แก้ไข':'เพิ่ม') + (section==='system'?'ระบบ':'คู่มือ');
+
+  const isSystem = section==='system';
+  document.getElementById('f-desc-wrap').style.display = isSystem?'block':'none';
+  document.getElementById('f-cta-badge-wrap').style.display = isSystem?'flex':'none';
+  document.getElementById('f-tags-wrap').style.display = isSystem?'block':'none';
+  document.getElementById('f-color-system-wrap').style.display = isSystem?'block':'none';
+  document.getElementById('f-color-hex-wrap').style.display = isSystem?'none':'block';
+  document.getElementById('f-subtitle-lbl').textContent = isSystem?'คำอธิบายสั้น (subtitle)':'บรรทัดรอง (subtitle)';
+
+  document.getElementById('f-title').value = editingRow?.title || '';
+  document.getElementById('f-subtitle').value = editingRow?.subtitle || '';
+  document.getElementById('f-desc').value = editingRow?.description || '';
+  document.getElementById('f-href').value = editingRow?.href || '';
+  document.getElementById('f-cta').value = editingRow?.cta_label || '';
+  document.getElementById('f-badge').value = editingRow?.badge || '';
+  document.getElementById('f-icon').value = editingRow?.icon_svg || '';
+  document.getElementById('f-color-hex').value = (!isSystem && editingRow?.color) || '#0071e3';
+  document.getElementById('f-active').checked = editingRow ? editingRow.is_active : true;
+
+  formTags = isSystem ? JSON.parse(JSON.stringify(editingRow?.tags||[])) : [];
+
+  renderColorSwatches(editingRow?.color && COLORS.includes(editingRow.color) ? editingRow.color : 'blue');
+  renderIconPresets();
+  renderTagRows();
+  ['f-title','f-subtitle','f-desc','f-href','f-cta','f-badge','f-icon','f-color-hex'].forEach(id=>{
+    document.getElementById(id).oninput = updatePreview;
+  });
+  updatePreview();
+
+  document.getElementById('overlay').classList.add('show');
+}
+function closeForm(){
+  document.getElementById('overlay').classList.remove('show');
+}
+function renderColorSwatches(selected){
+  const wrap=document.getElementById('f-color-swatches');
+  wrap.dataset.selected=selected;
+  wrap.innerHTML=COLORS.map(c=>
+    `<div class="color-swatch ${c===selected?'sel':''}" style="background:${COLOR_HEX[c]}" onclick="selectColor('${c}')"></div>`
+  ).join('');
+}
+function selectColor(c){
+  document.getElementById('f-color-swatches').dataset.selected=c;
+  renderColorSwatches(c);
+  updatePreview();
+}
+function renderIconPresets(){
+  const wrap=document.getElementById('f-icon-presets');
+  wrap.innerHTML=Object.entries(ICON_PRESETS).map(([key,svg])=>
+    `<button type="button" class="icon-preset" title="${key}" onclick="pickIconPreset('${key}')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${svg}</svg>
+    </button>`
+  ).join('');
+}
+function pickIconPreset(key){
+  document.getElementById('f-icon').value=ICON_PRESETS[key];
+  updatePreview();
+}
+function renderTagRows(){
+  const wrap=document.getElementById('f-tags-list');
+  wrap.innerHTML=formTags.map((t,i)=>`
+    <div class="tag-row">
+      <textarea placeholder="SVG ไอคอนแท็ก" oninput="formTags[${i}].icon=this.value;updatePreview()">${escHtml(t.icon||'')}</textarea>
+      <input type="text" placeholder="ข้อความแท็ก" value="${escHtml(t.text||'')}" oninput="formTags[${i}].text=this.value;updatePreview()">
+      <button type="button" class="btn btn-danger btn-sm" onclick="removeTagRow(${i})">ลบ</button>
+    </div>`).join('');
+}
+function addTagRow(){
+  formTags.push({icon:'',text:''});
+  renderTagRows();
+  updatePreview();
+}
+function removeTagRow(i){
+  formTags.splice(i,1);
+  renderTagRows();
+  updatePreview();
+}
+
+function updatePreview(){
+  const isSystem = formSection==='system';
+  const title=document.getElementById('f-title').value||'ชื่อระบบ';
+  const subtitle=document.getElementById('f-subtitle').value||'';
+  const icon=document.getElementById('f-icon').value||'';
+  const box=document.getElementById('f-preview');
+  if(isSystem){
+    const color=document.getElementById('f-color-swatches').dataset.selected||'blue';
+    const desc=document.getElementById('f-desc').value||'';
+    const cta=document.getElementById('f-cta').value||'เข้าสู่ระบบ';
+    const badge=document.getElementById('f-badge').value||'';
+    box.innerHTML=`
+      <a class="sys-card card-${color}">
+        <div class="sys-card-accent accent-${color}"></div>
+        <div class="sys-header">
+          <div class="sys-icon-wrap icon-${color}">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${COLOR_HEX[color]}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${icon}</svg>
+          </div>
+          <div>
+            <div class="sys-title">${escHtml(title)}</div>
+            <div class="sys-caption">${escHtml(subtitle)}</div>
+          </div>
+        </div>
+        <div class="sys-desc">${escHtml(desc)}</div>
+        <div class="sys-tags">
+          ${formTags.map(t=>`
+          <span class="tag tag-${color}">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">${t.icon||''}</svg>
+            ${escHtml(t.text)}
+          </span>`).join('')}
+        </div>
+        <div class="sys-footer">
+          <div class="sys-cta cta-${color}">
+            ${escHtml(cta)}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">${ARROW_ICON}</svg>
+          </div>
+          <span class="sys-badge badge-${color}">${escHtml(badge)}</span>
+        </div>
+      </a>`;
+  }else{
+    const hex=document.getElementById('f-color-hex').value||'#6e6e73';
+    box.innerHTML=`
+      <a class="quick-card">
+        <div class="quick-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${hex}" stroke-width="1.75" stroke-linecap="round">${icon}</svg>
+        </div>
+        <div>
+          <div class="quick-text">${escHtml(title)}</div>
+          <div class="quick-sub">${escHtml(subtitle)}</div>
+        </div>
+      </a>`;
+  }
+}
+
+async function saveForm(){
+  const isSystem = formSection==='system';
+  const title=document.getElementById('f-title').value.trim();
+  const href=document.getElementById('f-href').value.trim();
+  if(!title||!href){ toast('กรุณากรอกชื่อและลิงก์ปลายทาง'); return; }
+  const icon=document.getElementById('f-icon').value.trim();
+  if(!icon){ toast('กรุณาเลือกหรือใส่ไอคอน'); return; }
+
+  const payload = {
+    section: formSection,
+    title,
+    subtitle: document.getElementById('f-subtitle').value.trim(),
+    href,
+    icon_svg: icon,
+    is_active: document.getElementById('f-active').checked,
+  };
+  if(isSystem){
+    payload.color = document.getElementById('f-color-swatches').dataset.selected||'blue';
+    payload.description = document.getElementById('f-desc').value.trim();
+    payload.cta_label = document.getElementById('f-cta').value.trim();
+    payload.badge = document.getElementById('f-badge').value.trim();
+    payload.tags = formTags.filter(t=>t.text||t.icon);
+  }else{
+    payload.color = document.getElementById('f-color-hex').value.trim()||'#6e6e73';
+    payload.description = '';
+    payload.cta_label = null;
+    payload.badge = null;
+    payload.tags = [];
+  }
+
+  const btn=document.getElementById('f-save-btn');
+  btn.disabled=true;
+  try{
+    if(editingRow){
+      const {error}=await sb.from('home_links').update(payload).eq('id',editingRow.id);
+      if(error) throw error;
+      Object.assign(editingRow,payload);
+    }else{
+      const existing=S.rows.filter(r=>r.section===formSection);
+      const nextOrder = existing.length ? Math.max(...existing.map(r=>r.sort_order))+1 : 1;
+      const {data,error}=await sb.from('home_links').insert({...payload,sort_order:nextOrder}).select().single();
+      if(error) throw error;
+      S.rows.push(data);
+    }
+    renderLists();
+    closeForm();
+    toast('บันทึกแล้ว');
+  }catch(e){
+    toast('บันทึกไม่สำเร็จ: '+(e.message||e));
+  }finally{
+    btn.disabled=false;
+  }
+}
+
+document.getElementById('l-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+init();
+</script>
+</body>
+</html>
