@@ -3351,6 +3351,7 @@ function renderScPage(){
       <button class="btn bs no-print" onclick="exportScores()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>Excel</button>
       <button class="btn bs no-print" onclick="printScores()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>พิมพ์</button>
       <button class="btn bs no-print" onclick="exportForSGS()" title="คัดลอกคะแนนสำหรับสคริปต์ Autofill SGS"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>Autofill SGS</button>
+      <button class="btn bs no-print" onclick="openOmrImportModal()" title="นำเข้าคะแนนจากระบบตรวจกระดาษคำตอบ (OMR)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg>นำเข้าจาก OMR</button>
     </div>
   </div>
   <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center">
@@ -3651,6 +3652,116 @@ async function saveUnitSc(){
     rmModal('unMod');
     toast('บันทึกคะแนนหน่วย '+un+' เรียบร้อย');
     // อัปเฉพาะตาราง ไม่ render ทั้งหน้า
+    const tabId='sc-'+(period==='before'?'bf':'af');
+    const tabEl=$(tabId);
+    if(tabEl) tabEl.innerHTML=renderUnitTab(period,period==='before'?scSub?.score_before_mid||25:scSub?.score_after_mid||25);
+    _markScDirty();
+  }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
+}
+// ── นำเข้าคะแนนจากระบบตรวจกระดาษคำตอบ (OMR) ─────────────────
+// ระบบ OMR (kittipongkhamdee/exam) ใช้ Supabase โปรเจกต์เดียวกับ ปพ.5 และอ้างอิง
+// subjects/students ตารางเดียวกันโดยตรง จึงดึง omr_scan_results มาใส่ score_units
+// ได้ทันทีผ่าน student_id ที่ตรงกันอยู่แล้ว ไม่ต้องคัดลอก-วางข้ามระบบแบบ SGS
+let _omrCtx={};
+async function openOmrImportModal(){
+  loading(true);
+  let quizzes;
+  try{
+    quizzes=await q(sb.from('omr_quizzes').select('id,title,num_questions,num_choices,created_at').eq('subject_id',S.selSub).order('created_at',{ascending:false}));
+  }catch(e){ loading(false); toast('ดึงรายชื่อชุดข้อสอบไม่สำเร็จ: '+e.message,'er'); return; }
+  loading(false);
+  if(!quizzes.length){ toast('ไม่พบชุดข้อสอบ OMR ของวิชานี้ — ไปสร้าง/ตรวจข้อสอบที่ระบบตรวจกระดาษคำตอบก่อน','er'); return; }
+  _omrCtx={quizzes};
+  const nextUn=(scU.before.length?Math.max(...scU.before.map(u=>u.unit_number)):0)+1;
+  document.body.insertAdjacentHTML('beforeend',`
+  <div class="mo" id="omrMod"><div class="md" style="max-width:460px">
+    <div class="mh">
+      <div class="mt">นำเข้าคะแนนจากระบบตรวจกระดาษคำตอบ (OMR)</div>
+      <button class="mx" onclick="rmModal('omrMod')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="10" height="10"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="mb">
+      <label class="fl">ชุดข้อสอบ</label>
+      <select class="fs" id="omr-quiz" onchange="_omrQuizChanged()" style="margin-bottom:12px">
+        ${quizzes.map(qz=>`<option value="${qz.id}">${esc(qz.title)} (${qz.num_questions} ข้อ — ${new Date(qz.created_at).toLocaleDateString('th-TH')})</option>`).join('')}
+      </select>
+      <div class="wc">
+        <div><label class="fl">ช่วงเวลา</label>
+          <select class="fs" id="omr-period" onchange="_omrPeriodChanged()" style="width:150px">
+            <option value="before">ก่อนกลางภาค</option>
+            <option value="after">หลังกลางภาค</option>
+          </select></div>
+        <div><label class="fl">หน่วยที่</label>
+          <input type="number" class="fi" id="omr-un" value="${nextUn}" min="1" style="width:72px"></div>
+        <div style="flex:1;min-width:150px"><label class="fl">ชื่อหน่วย</label>
+          <input class="fi" id="omr-unm" value="${esc(quizzes[0].title)}"></div>
+        <div><label class="fl">คะแนนเต็ม</label>
+          <input type="number" class="fi" id="omr-mx" value="0" min="1" style="width:80px"></div>
+      </div>
+      <div id="omr-preview" style="margin-top:12px;font-size:12.5px;color:var(--muted)">กำลังโหลดผลตรวจ...</div>
+    </div>
+    <div class="mf">
+      <button class="btn bs" onclick="rmModal('omrMod')">ยกเลิก</button>
+      <button class="btn bp" id="omrMod-import" onclick="importOmrScores()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>นำเข้าคะแนน</button>
+    </div>
+  </div></div>`);
+  await _omrQuizChanged();
+}
+async function _omrQuizMaxScore(quizId){
+  try{
+    const rows=await q(sb.from('omr_answer_keys').select('points').eq('quiz_id',quizId));
+    return rows.reduce((a,r)=>a+(parseFloat(r.points)||0),0);
+  }catch(e){ return 0; }
+}
+async function _omrQuizChanged(){
+  const quizId=$('omr-quiz')?.value; if(!quizId) return;
+  const quiz=_omrCtx.quizzes.find(qz=>qz.id===quizId);
+  const unmEl=$('omr-unm'); if(unmEl && quiz) unmEl.value=quiz.title;
+  const mx=await _omrQuizMaxScore(quizId);
+  const mxEl=$('omr-mx'); if(mxEl) mxEl.value=mx||quiz?.num_questions||20;
+  await _omrLoadPreview();
+}
+function _omrPeriodChanged(){
+  const period=$('omr-period')?.value;
+  const units=scU[period]||[];
+  const nextUn=(units.length?Math.max(...units.map(u=>u.unit_number)):0)+1;
+  const unEl=$('omr-un'); if(unEl) unEl.value=nextUn;
+}
+async function _omrLoadPreview(){
+  const quizId=$('omr-quiz')?.value; if(!quizId) return;
+  const prevEl=$('omr-preview'); if(prevEl) prevEl.textContent='กำลังโหลดผลตรวจ...';
+  let results;
+  try{
+    results=await q(sb.from('omr_scan_results').select('student_id,score,scanned_at').eq('quiz_id',quizId).order('scanned_at',{ascending:false}));
+  }catch(e){ if(prevEl) prevEl.textContent='โหลดผลตรวจไม่สำเร็จ: '+e.message; return; }
+  const byStudent={};
+  results.forEach(r=>{ if(!(r.student_id in byStudent)) byStudent[r.student_id]=r; }); // แถวแรกคือล่าสุด เพราะ sort desc แล้ว
+  _omrCtx.scoreMap=byStudent;
+  const matched=scStus.filter(s=>byStudent[s.id]).length;
+  const unmatched=scStus.length-matched;
+  if(prevEl) prevEl.innerHTML='พบผลตรวจของนักเรียน <strong style="color:var(--ok-txt)">'+matched+'</strong> คนจากทั้งหมด '+scStus.length+' คน'+
+    (unmatched>0?' — <span style="color:var(--err-txt)">อีก '+unmatched+' คนยังไม่มีผลสแกน (จะไม่ถูกแตะต้อง)</span>':'');
+}
+async function importOmrScores(){
+  const quizId=$('omr-quiz')?.value;
+  const period=$('omr-period')?.value;
+  const un=parseInt($('omr-un')?.value)||1;
+  const unm=($('omr-unm')?.value||'').trim()||'นำเข้าจาก OMR';
+  const mx=parseFloat($('omr-mx')?.value)||20;
+  const byStudent=_omrCtx.scoreMap||{};
+  const rows=scStus.filter(s=>byStudent[s.id]).map(s=>({
+    subject_id:S.selSub, student_id:s.id, period,
+    unit_number:un, unit_name:unm, standard_ref:'', max_score:mx,
+    score:Math.min(mx, parseFloat(byStudent[s.id].score)||0)
+  }));
+  if(!rows.length){ toast('ไม่พบนักเรียนที่มีผลตรวจตรงกันเลย','er'); return; }
+  loading(true);
+  try{
+    invalidateSc();
+    await q(sb.from('score_units').upsert(rows,{onConflict:'subject_id,student_id,period,unit_number'}));
+    scUnits=await qAll(()=>sb.from('score_units').select('*').eq('subject_id',S.selSub));
+    rebuildUnits();
+    rmModal('omrMod');
+    toast('นำเข้าคะแนน '+rows.length+' คนเรียบร้อย');
     const tabId='sc-'+(period==='before'?'bf':'af');
     const tabEl=$(tabId);
     if(tabEl) tabEl.innerHTML=renderUnitTab(period,period==='before'?scSub?.score_before_mid||25:scSub?.score_after_mid||25);
