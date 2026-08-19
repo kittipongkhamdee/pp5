@@ -3684,16 +3684,20 @@ async function openOmrImportModal(){
       <select class="fs" id="omr-quiz" onchange="_omrQuizChanged()" style="margin-bottom:12px">
         ${quizzes.map(qz=>`<option value="${qz.id}">${esc(qz.title)} (${qz.num_questions} ข้อ — ${new Date(qz.created_at).toLocaleDateString('th-TH')})</option>`).join('')}
       </select>
-      <div class="wc">
-        <div><label class="fl">ช่วงเวลา</label>
-          <select class="fs" id="omr-period" onchange="_omrPeriodChanged()" style="width:150px">
-            <option value="before">ก่อนกลางภาค</option>
-            <option value="after">หลังกลางภาค</option>
-          </select></div>
+      <label class="fl">นำเข้าไปที่</label>
+      <select class="fs" id="omr-target" onchange="_omrTargetChanged()" style="margin-bottom:12px">
+        <option value="unit_before">หน่วยการเรียนรู้ (ก่อนกลางภาค)</option>
+        <option value="unit_after">หน่วยการเรียนรู้ (หลังกลางภาค)</option>
+        <option value="mid">คะแนนสอบกลางภาค</option>
+        <option value="final">คะแนนสอบปลายภาค</option>
+      </select>
+      <div class="wc" id="omr-unit-fields">
         <div><label class="fl">หน่วยที่</label>
           <input type="number" class="fi" id="omr-un" value="${nextUn}" min="1" style="width:72px"></div>
         <div style="flex:1;min-width:150px"><label class="fl">ชื่อหน่วย</label>
           <input class="fi" id="omr-unm" value="${esc(quizzes[0].title)}"></div>
+      </div>
+      <div class="wc">
         <div><label class="fl">คะแนนเต็ม</label>
           <input type="number" class="fi" id="omr-mx" value="0" min="1" style="width:80px" oninput="_omrRecomputeOverflow()"></div>
       </div>
@@ -3701,11 +3705,12 @@ async function openOmrImportModal(){
       <div id="omr-overflow-warn" style="display:none;margin-top:10px;padding:10px 12px;background:var(--err-bg);border:1px solid var(--err-bdr);border-radius:10px;font-size:12px">
         <div style="color:var(--err-txt);font-weight:600;margin-bottom:4px">${_ico.warning} มี <span id="omr-overflow-count">0</span> คนที่คะแนนเกินคะแนนเต็มที่ตั้งไว้</div>
         <div id="omr-overflow-names" style="color:var(--muted);margin-bottom:8px"></div>
-        <div style="display:flex;flex-direction:column;gap:5px">
+        <div id="omr-overflow-choice" style="display:flex;flex-direction:column;gap:5px">
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400"><input type="radio" name="omr-overflow-action" value="clamp" checked>ตัดคะแนนให้เท่ากับคะแนนเต็ม</label>
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400"><input type="radio" name="omr-overflow-action" value="raw">นำเข้าตามคะแนนจริง (ไม่ตัด แม้จะเกินคะแนนเต็ม)</label>
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400"><input type="radio" name="omr-overflow-action" value="skip">ข้ามคนที่คะแนนเกิน ไม่นำเข้าคนนั้น</label>
         </div>
+        <div id="omr-overflow-note" style="display:none;color:var(--muted)">จะเติมคะแนนตามจริงลงในช่องกรอกให้ แล้วไฮไลต์สีแดงไว้ให้ตรวจสอบก่อนกด "บันทึกคะแนนสอบ"</div>
       </div>
     </div>
     <div class="mf">
@@ -3724,16 +3729,42 @@ async function _omrQuizMaxScore(quizId){
 async function _omrQuizChanged(){
   const quizId=$('omr-quiz')?.value; if(!quizId) return;
   const quiz=_omrCtx.quizzes.find(qz=>qz.id===quizId);
-  const unmEl=$('omr-unm'); if(unmEl && quiz) unmEl.value=quiz.title;
-  const mx=await _omrQuizMaxScore(quizId);
-  const mxEl=$('omr-mx'); if(mxEl) mxEl.value=mx||quiz?.num_questions||20;
+  const target=$('omr-target')?.value;
+  if((target==='unit_before'||target==='unit_after')){
+    const unmEl=$('omr-unm'); if(unmEl && quiz) unmEl.value=quiz.title;
+  }
+  await _omrUpdateMaxDefault();
   await _omrLoadPreview();
 }
-function _omrPeriodChanged(){
-  const period=$('omr-period')?.value;
-  const units=scU[period]||[];
-  const nextUn=(units.length?Math.max(...units.map(u=>u.unit_number)):0)+1;
-  const unEl=$('omr-un'); if(unEl) unEl.value=nextUn;
+// สลับ "นำเข้าไปที่" — ซ่อน/แสดงช่องหน่วยที่/ชื่อหน่วย (เฉพาะเป้าหมายหน่วยการเรียนรู้)
+// และตัวเลือกจัดการคะแนนเกิน (เฉพาะหน่วยการเรียนรู้เช่นกัน — กลางภาค/ปลายภาคแค่เติมค่าลงช่องกรอก
+// แล้วให้ไปตรวจ+กดบันทึกเองที่แท็บคะแนนสอบ เหมือนฟีเจอร์ถ่ายรูปกรอกคะแนน ไม่ต้องมีตัวเลือกซับซ้อน)
+function _omrTargetChanged(){
+  const target=$('omr-target')?.value;
+  const isUnit=target==='unit_before'||target==='unit_after';
+  const unitFieldsEl=$('omr-unit-fields'); if(unitFieldsEl) unitFieldsEl.style.display=isUnit?'flex':'none';
+  const choiceEl=$('omr-overflow-choice'); if(choiceEl) choiceEl.style.display=isUnit?'flex':'none';
+  const noteEl=$('omr-overflow-note'); if(noteEl) noteEl.style.display=isUnit?'none':'block';
+  if(isUnit){
+    const period=target==='unit_before'?'before':'after';
+    const units=scU[period]||[];
+    const nextUn=(units.length?Math.max(...units.map(u=>u.unit_number)):0)+1;
+    const unEl=$('omr-un'); if(unEl) unEl.value=nextUn;
+  }
+  _omrUpdateMaxDefault();
+}
+async function _omrUpdateMaxDefault(){
+  const target=$('omr-target')?.value;
+  const mxEl=$('omr-mx'); if(!mxEl) return;
+  if(target==='mid'){ mxEl.value=scSub?.score_mid||20; }
+  else if(target==='final'){ mxEl.value=scSub?.score_final||30; }
+  else{
+    const quizId=$('omr-quiz')?.value; if(!quizId) return;
+    const quiz=_omrCtx.quizzes.find(qz=>qz.id===quizId);
+    const mx=await _omrQuizMaxScore(quizId);
+    mxEl.value=mx||quiz?.num_questions||20;
+  }
+  _omrRecomputeOverflow();
 }
 async function _omrLoadPreview(){
   const quizId=$('omr-quiz')?.value; if(!quizId) return;
@@ -3768,13 +3799,32 @@ function _omrRecomputeOverflow(){
   }
 }
 async function importOmrScores(){
-  const quizId=$('omr-quiz')?.value;
-  const period=$('omr-period')?.value;
+  const target=$('omr-target')?.value;
+  const mx=parseFloat($('omr-mx')?.value)||(target==='final'?30:20);
+  const byStudent=_omrCtx.scoreMap||{};
+
+  // คะแนนสอบกลางภาค/ปลายภาค — แค่เติมค่าลงช่องกรอกในแท็บ "คะแนนสอบ" เหมือนฟีเจอร์ถ่ายรูปกรอกคะแนน
+  // ไม่บันทึกลง DB ตรงๆ ครูต้องตรวจแล้วกด "บันทึกคะแนนสอบ" เอง (ช่องที่เกินคะแนนเต็มจะไฮไลต์แดงเตือนอยู่แล้ว)
+  if(target==='mid'||target==='final'){
+    const prefix=target==='mid'?'mid-':'fin-';
+    let count=0;
+    scStus.forEach(s=>{
+      const r=byStudent[s.id]; if(!r) return;
+      const val=parseFloat(r.score)||0;
+      const el=$(prefix+s.id);
+      if(el){ el.value=val; el.classList.toggle('over', val>parseFloat(el.max)); count++; }
+    });
+    if(!count){ toast('ไม่พบนักเรียนที่มีผลตรวจตรงกันเลย','er'); return; }
+    rmModal('omrMod');
+    swTab('sc','sc-ex');
+    toast('เติมคะแนน'+(target==='mid'?'กลางภาค':'ปลายภาค')+'ให้ '+count+' คนแล้ว — ตรวจสอบอีกครั้งแล้วกด "บันทึกคะแนนสอบ" เพื่อบันทึกจริง');
+    return;
+  }
+
+  const period=target==='unit_before'?'before':'after';
   const un=parseInt($('omr-un')?.value)||1;
   const unm=($('omr-unm')?.value||'').trim()||'นำเข้าจาก OMR';
-  const mx=parseFloat($('omr-mx')?.value)||20;
   const overflowAction=document.querySelector('input[name="omr-overflow-action"]:checked')?.value||'clamp';
-  const byStudent=_omrCtx.scoreMap||{};
   let skippedCount=0;
   const rows=[];
   scStus.forEach(s=>{
