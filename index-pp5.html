@@ -3348,10 +3348,10 @@ function renderScPage(){
   $('pg').innerHTML=`
   <div class="ph"><div class="ptitle">บันทึกคะแนน</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn bs no-print" onclick="openOmrImportModal()" title="นำเข้าคะแนนจากระบบตรวจกระดาษคำตอบ (OMR)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg>นำเข้าจาก OMR</button>
+      <button class="btn bs no-print" onclick="exportForSGS()" title="คัดลอกคะแนนสำหรับสคริปต์ Autofill SGS"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>Autofill SGS</button>
       <button class="btn bs no-print" onclick="exportScores()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>Excel</button>
       <button class="btn bs no-print" onclick="printScores()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>พิมพ์</button>
-      <button class="btn bs no-print" onclick="exportForSGS()" title="คัดลอกคะแนนสำหรับสคริปต์ Autofill SGS"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>Autofill SGS</button>
-      <button class="btn bs no-print" onclick="openOmrImportModal()" title="นำเข้าคะแนนจากระบบตรวจกระดาษคำตอบ (OMR)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg>นำเข้าจาก OMR</button>
     </div>
   </div>
   <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center">
@@ -3691,11 +3691,18 @@ async function openOmrImportModal(){
         <option value="mid">คะแนนสอบกลางภาค</option>
         <option value="final">คะแนนสอบปลายภาค</option>
       </select>
-      <div class="wc" id="omr-unit-fields">
-        <div><label class="fl">หน่วยที่</label>
-          <input type="number" class="fi" id="omr-un" value="${nextUn}" min="1" style="width:72px"></div>
-        <div style="flex:1;min-width:150px"><label class="fl">ชื่อหน่วย</label>
-          <input class="fi" id="omr-unm" value="${esc(quizzes[0].title)}"></div>
+      <div id="omr-unit-fields">
+        <label class="fl">เลือกหน่วยที่มีอยู่แล้ว (ถ้ามี)</label>
+        <select class="fs" id="omr-existing-unit" onchange="_omrExistingUnitChanged()" style="margin-bottom:4px">
+          <option value="">— สร้างหน่วยใหม่ —</option>
+        </select>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:10px">เลือกแล้วจะดึงหน่วยที่/ชื่อหน่วย/คะแนนเต็มมาให้ — คะแนน OMR จะทับคะแนนเดิมเฉพาะคนที่มีผลสแกน คนอื่นไม่ถูกแตะต้อง</div>
+        <div class="wc">
+          <div><label class="fl">หน่วยที่</label>
+            <input type="number" class="fi" id="omr-un" value="${nextUn}" min="1" style="width:72px"></div>
+          <div style="flex:1;min-width:150px"><label class="fl">ชื่อหน่วย</label>
+            <input class="fi" id="omr-unm" value="${esc(quizzes[0].title)}"></div>
+        </div>
       </div>
       <div class="wc">
         <div><label class="fl">คะแนนเต็ม</label>
@@ -3718,6 +3725,7 @@ async function openOmrImportModal(){
       <button class="btn bp" id="omrMod-import" onclick="importOmrScores()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>นำเข้าคะแนน</button>
     </div>
   </div></div>`);
+  _omrPopulateExistingUnits('before');
   await _omrQuizChanged();
 }
 async function _omrQuizMaxScore(quizId){
@@ -3730,10 +3738,11 @@ async function _omrQuizChanged(){
   const quizId=$('omr-quiz')?.value; if(!quizId) return;
   const quiz=_omrCtx.quizzes.find(qz=>qz.id===quizId);
   const target=$('omr-target')?.value;
-  if((target==='unit_before'||target==='unit_after')){
+  const existingSelected=$('omr-existing-unit')?.value;
+  if((target==='unit_before'||target==='unit_after')&&!existingSelected){
     const unmEl=$('omr-unm'); if(unmEl && quiz) unmEl.value=quiz.title;
   }
-  await _omrUpdateMaxDefault();
+  if(!existingSelected) await _omrUpdateMaxDefault();
   await _omrLoadPreview();
 }
 // สลับ "นำเข้าไปที่" — ซ่อน/แสดงช่องหน่วยที่/ชื่อหน่วย (เฉพาะเป้าหมายหน่วยการเรียนรู้)
@@ -3742,16 +3751,48 @@ async function _omrQuizChanged(){
 function _omrTargetChanged(){
   const target=$('omr-target')?.value;
   const isUnit=target==='unit_before'||target==='unit_after';
-  const unitFieldsEl=$('omr-unit-fields'); if(unitFieldsEl) unitFieldsEl.style.display=isUnit?'flex':'none';
+  const unitFieldsEl=$('omr-unit-fields'); if(unitFieldsEl) unitFieldsEl.style.display=isUnit?'block':'none';
   const choiceEl=$('omr-overflow-choice'); if(choiceEl) choiceEl.style.display=isUnit?'flex':'none';
   const noteEl=$('omr-overflow-note'); if(noteEl) noteEl.style.display=isUnit?'none':'block';
   if(isUnit){
     const period=target==='unit_before'?'before':'after';
+    _omrPopulateExistingUnits(period);
+    const existSel=$('omr-existing-unit'); if(existSel) existSel.value='';
     const units=scU[period]||[];
     const nextUn=(units.length?Math.max(...units.map(u=>u.unit_number)):0)+1;
     const unEl=$('omr-un'); if(unEl) unEl.value=nextUn;
   }
   _omrUpdateMaxDefault();
+}
+// เติม dropdown "เลือกหน่วยที่มีอยู่แล้ว" จากหน่วยการเรียนรู้ของช่วงเวลานั้นที่มีอยู่แล้วในระบบ
+function _omrPopulateExistingUnits(period){
+  const sel=$('omr-existing-unit'); if(!sel) return;
+  const units=scU[period]||[];
+  sel.innerHTML='<option value="">— สร้างหน่วยใหม่ —</option>'+
+    units.map(u=>`<option value="${period}|${u.unit_number}">หน่วยที่ ${u.unit_number} — ${esc(u.unit_name||'(ไม่มีชื่อ)')} (/${u.max_score})</option>`).join('');
+}
+// เลือกหน่วยที่มีอยู่แล้ว → ดึงหน่วยที่/ชื่อหน่วย/คะแนนเต็มมาเติมให้ (นำเข้าคะแนนไปทับหน่วยเดิม)
+// เลือก "สร้างหน่วยใหม่" → กลับไปใช้ค่าที่แนะนำอัตโนมัติเหมือนเดิม
+function _omrExistingUnitChanged(){
+  const sel=$('omr-existing-unit'); if(!sel) return;
+  if(!sel.value){
+    const target=$('omr-target')?.value;
+    const period=target==='unit_after'?'after':'before';
+    const units=scU[period]||[];
+    const nextUn=(units.length?Math.max(...units.map(u=>u.unit_number)):0)+1;
+    const unEl=$('omr-un'); if(unEl) unEl.value=nextUn;
+    const quiz=_omrCtx.quizzes.find(qz=>qz.id===$('omr-quiz')?.value);
+    const unmEl=$('omr-unm'); if(unmEl && quiz) unmEl.value=quiz.title;
+    _omrUpdateMaxDefault();
+    return;
+  }
+  const [period,un]=sel.value.split('|');
+  const unit=(scU[period]||[]).find(u=>String(u.unit_number)===un);
+  if(!unit) return;
+  const unEl=$('omr-un'); if(unEl) unEl.value=unit.unit_number;
+  const unmEl=$('omr-unm'); if(unmEl) unmEl.value=unit.unit_name||'';
+  const mxEl=$('omr-mx'); if(mxEl) mxEl.value=unit.max_score||20;
+  _omrRecomputeOverflow();
 }
 async function _omrUpdateMaxDefault(){
   const target=$('omr-target')?.value;
