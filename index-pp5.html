@@ -3695,9 +3695,18 @@ async function openOmrImportModal(){
         <div style="flex:1;min-width:150px"><label class="fl">ชื่อหน่วย</label>
           <input class="fi" id="omr-unm" value="${esc(quizzes[0].title)}"></div>
         <div><label class="fl">คะแนนเต็ม</label>
-          <input type="number" class="fi" id="omr-mx" value="0" min="1" style="width:80px"></div>
+          <input type="number" class="fi" id="omr-mx" value="0" min="1" style="width:80px" oninput="_omrRecomputeOverflow()"></div>
       </div>
       <div id="omr-preview" style="margin-top:12px;font-size:12.5px;color:var(--muted)">กำลังโหลดผลตรวจ...</div>
+      <div id="omr-overflow-warn" style="display:none;margin-top:10px;padding:10px 12px;background:var(--err-bg);border:1px solid var(--err-bdr);border-radius:10px;font-size:12px">
+        <div style="color:var(--err-txt);font-weight:600;margin-bottom:4px">${_ico.warning} มี <span id="omr-overflow-count">0</span> คนที่คะแนนเกินคะแนนเต็มที่ตั้งไว้</div>
+        <div id="omr-overflow-names" style="color:var(--muted);margin-bottom:8px"></div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400"><input type="radio" name="omr-overflow-action" value="clamp" checked>ตัดคะแนนให้เท่ากับคะแนนเต็ม</label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400"><input type="radio" name="omr-overflow-action" value="raw">นำเข้าตามคะแนนจริง (ไม่ตัด แม้จะเกินคะแนนเต็ม)</label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400"><input type="radio" name="omr-overflow-action" value="skip">ข้ามคนที่คะแนนเกิน ไม่นำเข้าคนนั้น</label>
+        </div>
+      </div>
     </div>
     <div class="mf">
       <button class="btn bs" onclick="rmModal('omrMod')">ยกเลิก</button>
@@ -3740,6 +3749,23 @@ async function _omrLoadPreview(){
   const unmatched=scStus.length-matched;
   if(prevEl) prevEl.innerHTML='พบผลตรวจของนักเรียน <strong style="color:var(--ok-txt)">'+matched+'</strong> คนจากทั้งหมด '+scStus.length+' คน'+
     (unmatched>0?' — <span style="color:var(--err-txt)">อีก '+unmatched+' คนยังไม่มีผลสแกน (จะไม่ถูกแตะต้อง)</span>':'');
+  _omrRecomputeOverflow();
+}
+// เช็คว่ามีนักเรียนคนไหนคะแนน OMR เกินคะแนนเต็มที่ตั้งไว้ตอนนี้ไหม — เรียกซ้ำได้ทุกครั้งที่แก้ช่อง "คะแนนเต็ม"
+// โดยไม่ต้องยิง query ใหม่ (ใช้ _omrCtx.scoreMap ที่โหลดไว้แล้ว)
+function _omrRecomputeOverflow(){
+  const warnEl=$('omr-overflow-warn'); if(!warnEl) return;
+  const mx=parseFloat($('omr-mx')?.value)||0;
+  const byStudent=_omrCtx.scoreMap||{};
+  const overflow=scStus.filter(s=>byStudent[s.id]&&(parseFloat(byStudent[s.id].score)||0)>mx);
+  if(!overflow.length){ warnEl.style.display='none'; return; }
+  warnEl.style.display='block';
+  const countEl=$('omr-overflow-count'); if(countEl) countEl.textContent=overflow.length;
+  const namesEl=$('omr-overflow-names');
+  if(namesEl){
+    const names=overflow.slice(0,5).map(s=>esc(s.student_name)+' ('+byStudent[s.id].score+')').join(', ');
+    namesEl.innerHTML=names+(overflow.length>5?' และอีก '+(overflow.length-5)+' คน':'');
+  }
 }
 async function importOmrScores(){
   const quizId=$('omr-quiz')?.value;
@@ -3747,13 +3773,22 @@ async function importOmrScores(){
   const un=parseInt($('omr-un')?.value)||1;
   const unm=($('omr-unm')?.value||'').trim()||'นำเข้าจาก OMR';
   const mx=parseFloat($('omr-mx')?.value)||20;
+  const overflowAction=document.querySelector('input[name="omr-overflow-action"]:checked')?.value||'clamp';
   const byStudent=_omrCtx.scoreMap||{};
-  const rows=scStus.filter(s=>byStudent[s.id]).map(s=>({
-    subject_id:S.selSub, student_id:s.id, period,
-    unit_number:un, unit_name:unm, standard_ref:'', max_score:mx,
-    score:Math.min(mx, parseFloat(byStudent[s.id].score)||0)
-  }));
-  if(!rows.length){ toast('ไม่พบนักเรียนที่มีผลตรวจตรงกันเลย','er'); return; }
+  let skippedCount=0;
+  const rows=[];
+  scStus.forEach(s=>{
+    const r=byStudent[s.id]; if(!r) return;
+    const raw=parseFloat(r.score)||0;
+    let score=raw;
+    if(raw>mx){
+      if(overflowAction==='skip'){ skippedCount++; return; }
+      if(overflowAction==='clamp'){ score=mx; }
+      // overflowAction==='raw' → เก็บคะแนนจริงไว้ตามเดิม ไม่ตัด
+    }
+    rows.push({subject_id:S.selSub, student_id:s.id, period, unit_number:un, unit_name:unm, standard_ref:'', max_score:mx, score});
+  });
+  if(!rows.length){ toast(skippedCount?'ทุกคนคะแนนเกินคะแนนเต็ม และเลือกข้ามไว้ — ไม่มีอะไรให้นำเข้า':'ไม่พบนักเรียนที่มีผลตรวจตรงกันเลย','er'); return; }
   loading(true);
   try{
     invalidateSc();
@@ -3761,7 +3796,7 @@ async function importOmrScores(){
     scUnits=await qAll(()=>sb.from('score_units').select('*').eq('subject_id',S.selSub));
     rebuildUnits();
     rmModal('omrMod');
-    toast('นำเข้าคะแนน '+rows.length+' คนเรียบร้อย');
+    toast('นำเข้าคะแนน '+rows.length+' คนเรียบร้อย'+(skippedCount?' (ข้าม '+skippedCount+' คนที่คะแนนเกินคะแนนเต็ม)':''));
     const tabId='sc-'+(period==='before'?'bf':'af');
     const tabEl=$(tabId);
     if(tabEl) tabEl.innerHTML=renderUnitTab(period,period==='before'?scSub?.score_before_mid||25:scSub?.score_after_mid||25);
