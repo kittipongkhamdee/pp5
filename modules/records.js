@@ -1052,17 +1052,22 @@ async function saveEplRatioAll(){
   }catch(e){ toast('บันทึกไม่สำเร็จ: '+e.message,'er'); }
   finally{ loading(false); }
 }
-// รวมน้ำหนักคะแนนระหว่างภาคของทุกหน่วยการเรียนรู้ที่ผูกกับตัวชี้วัดนี้ (ก่อนกลาง+กลาง+หลังกลางภาครวมกัน — ดู renderEplUnitsTab)
-// ใช้เทียบกับผลรวม K+P+A+กลางภาค รายตัวชี้วัด (ปลายภาคไม่รวม เพราะน้ำหนักหน่วยฯ ตรงนี้นับเฉพาะคอลัมน์ "ระหว่างภาค")
-// หน่วยหนึ่งอาจผูกกับหลายตัวชี้วัดพร้อมกัน — ต้องแบ่งน้ำหนักของหน่วยนั้นเฉลี่ยเท่าๆ กันตามจำนวนตัวชี้วัดในหน่วย
-// ไม่ใช่ยกน้ำหนักเต็มของหน่วยให้ทุกตัวชี้วัด (ไม่งั้นรวมกันแล้วจะเกินน้ำหนักจริงของหน่วยไปหลายเท่า)
-function _indicatorUnitWeight(indId){
-  const total=epUnits.reduce((sum,u)=>{
+// หน่วยหนึ่งอาจผูกกับหลายตัวชี้วัดพร้อมกัน แต่ละตัวไม่จำเป็นต้องได้น้ำหนักเท่ากัน (เช่น หน่วยหนัก 40
+// แบ่งเป็นตัวชี้วัดละ 10+30 ก็ได้) — จึงเช็คที่ระดับ "กลุ่ม" แทนแต่ละแถวเดี่ยวๆ: สำหรับตัวชี้วัดนี้
+// หาทุกหน่วยที่ผูกอยู่ แล้วรวมคะแนนเก็บ K+P+A+กลางภาคของ "ทุกตัวชี้วัดในหน่วยเดียวกัน" เข้าด้วยกัน
+// (ปลายภาคไม่รวม เพราะน้ำหนักหน่วยฯ ตรงนี้นับเฉพาะคอลัมน์ "ระหว่างภาค" — ดู renderEplUnitsTab)
+// เทียบผลรวมของกลุ่มกับน้ำหนักคะแนนระหว่างภาคของหน่วยนั้น
+function _indicatorUnitGroups(indId){
+  return epUnits.filter(u=>(epUnitInd[u.id]||[]).includes(indId)).map(u=>{
     const linked=epUnitInd[u.id]||[];
-    if(!linked.includes(indId)) return sum;
-    return sum+(+u.weight||0)/linked.length;
-  },0);
-  return Math.round(total*100)/100; // กันปัญหาจุดทศนิยมเพี้ยนจากการหาร (เช่น 40/3) ก่อนเทียบ === กับ kpaSum
+    const actual=linked.reduce((sum,id)=>{
+      const sc=epIndScores.find(x=>x.indicator_id===id)||{};
+      return sum+(+sc.score_k||0)+(+sc.score_p||0)+(+sc.score_a||0)+(+sc.score_mid||0);
+    },0);
+    const target=Math.round((+u.weight||0)*100)/100;
+    const actualR=Math.round(actual*100)/100; // กันปัญหาจุดทศนิยมเพี้ยนก่อนเทียบ ===
+    return {unitId:u.id,target,actual:actualR,ok:actualR===target};
+  });
 }
 function renderIndicatorScoreTable(){
   const sub=S.subjects.find(s=>s.id===S.selSub)||{};
@@ -1097,13 +1102,13 @@ function renderIndicatorScoreTable(){
     <tbody>
     ${rows.map(({ind,sc})=>{
       const rowTot=fields.reduce((s,f)=>s+(+sc[f]||0),0);
-      const kpaSum=(+sc.score_k||0)+(+sc.score_p||0)+(+sc.score_a||0)+(+sc.score_mid||0);
-      const unitWeight=_indicatorUnitWeight(ind.id);
-      const rowOk=kpaSum===unitWeight;
+      const groups=_indicatorUnitGroups(ind.id);
+      const rowOk=groups.every(g=>g.ok);
+      const detail=groups.map(g=>g.actual+'/'+g.target).join(', ');
       return`<tr>
         <td class="tl" title="${esc(ind.indicator_text)}">${esc(ind.indicator_code)}</td>
         ${fields.map(f=>`<td><input class="cell-in num" type="number" value="${sc[f]||0}" onchange="saveEplIndScore(${ind.id},{${f}:+this.value||0})"></td>`).join('')}
-        <td class="tc" style="font-weight:700;color:${rowOk?'var(--ok-txt)':'var(--err-txt)'}" title="น้ำหนักคะแนนระหว่างภาคจากหน่วยการเรียนรู้ (คะแนนเก็บ K+P+A+กลางภาค ต้องรวมได้ ${unitWeight})">${rowTot}${rowOk?' ✓':' (หน่วย='+unitWeight+')'}</td>
+        <td class="tc" style="font-weight:700;color:${rowOk?'var(--ok-txt)':'var(--err-txt)'}" title="ผลรวมคะแนนเก็บ K+P+A+กลางภาคของทุกตัวชี้วัดในหน่วยเดียวกัน ต้องรวมได้เท่ากับน้ำหนักคะแนนระหว่างภาคของหน่วยนั้น (ตัวชี้วัดในหน่วยเดียวกันแบ่งน้ำหนักไม่เท่ากันได้ ขอแค่รวมกันตรง) — ${detail}">${rowTot}${rowOk?' ✓':' (หน่วยรวม '+detail+')'}</td>
       </tr>`;
     }).join('')}
     <tr style="font-weight:700;background:var(--card2)">
@@ -1116,8 +1121,8 @@ function renderIndicatorScoreTable(){
   <div style="margin-top:8px;font-size:12px;color:var(--err);display:${mismatched.length?'block':'none'}">
     ${_ico.warning} ผลรวม ${mismatched.map(f=>fieldLabel[f]+' ('+totals[f]+'/'+targets[f]+')').join(', ')} ยังไม่ตรงกับตารางแสดงสัดส่วนคะแนน (ข้อ 3)
   </div>
-  <div style="margin-top:6px;font-size:12px;color:var(--err);display:${rows.some(({ind,sc})=>((+sc.score_k||0)+(+sc.score_p||0)+(+sc.score_a||0)+(+sc.score_mid||0))!==_indicatorUnitWeight(ind.id))?'block':'none'}">
-    ${_ico.warning} คะแนนเก็บ (K+P+A+กลางภาค) ของบางตัวชี้วัดยังไม่ตรงกับน้ำหนักคะแนนระหว่างภาคที่ตั้งไว้ในตารางหน่วยการเรียนรู้ — ดูช่อง "รวม" สีแดงในตารางด้านบน
+  <div style="margin-top:6px;font-size:12px;color:var(--err);display:${rows.some(({ind})=>!_indicatorUnitGroups(ind.id).every(g=>g.ok))?'block':'none'}">
+    ${_ico.warning} คะแนนเก็บ (K+P+A+กลางภาค) รวมของตัวชี้วัดในบางหน่วยยังไม่ตรงกับน้ำหนักคะแนนระหว่างภาคที่ตั้งไว้ในตารางหน่วยการเรียนรู้ — ดูช่อง "รวม" สีแดงในตารางด้านบน (ตัวชี้วัดในหน่วยเดียวกันแบ่งน้ำหนักไม่เท่ากันได้ ขอแค่รวมกันในหน่วยตรงกับน้ำหนักหน่วยนั้น)
   </div>`;
 }
 async function saveEplIndScore(indId,patch){
