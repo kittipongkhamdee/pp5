@@ -1054,8 +1054,15 @@ async function saveEplRatioAll(){
 }
 // รวมน้ำหนักคะแนนระหว่างภาคของทุกหน่วยการเรียนรู้ที่ผูกกับตัวชี้วัดนี้ (ก่อนกลาง+กลาง+หลังกลางภาครวมกัน — ดู renderEplUnitsTab)
 // ใช้เทียบกับผลรวม K+P+A+กลางภาค รายตัวชี้วัด (ปลายภาคไม่รวม เพราะน้ำหนักหน่วยฯ ตรงนี้นับเฉพาะคอลัมน์ "ระหว่างภาค")
+// หน่วยหนึ่งอาจผูกกับหลายตัวชี้วัดพร้อมกัน — ต้องแบ่งน้ำหนักของหน่วยนั้นเฉลี่ยเท่าๆ กันตามจำนวนตัวชี้วัดในหน่วย
+// ไม่ใช่ยกน้ำหนักเต็มของหน่วยให้ทุกตัวชี้วัด (ไม่งั้นรวมกันแล้วจะเกินน้ำหนักจริงของหน่วยไปหลายเท่า)
 function _indicatorUnitWeight(indId){
-  return epUnits.reduce((sum,u)=>((epUnitInd[u.id]||[]).includes(indId)?sum+(+u.weight||0):sum),0);
+  const total=epUnits.reduce((sum,u)=>{
+    const linked=epUnitInd[u.id]||[];
+    if(!linked.includes(indId)) return sum;
+    return sum+(+u.weight||0)/linked.length;
+  },0);
+  return Math.round(total*100)/100; // กันปัญหาจุดทศนิยมเพี้ยนจากการหาร (เช่น 40/3) ก่อนเทียบ === กับ kpaSum
 }
 function renderIndicatorScoreTable(){
   const sub=S.subjects.find(s=>s.id===S.selSub)||{};
