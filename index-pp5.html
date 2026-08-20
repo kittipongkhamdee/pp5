@@ -3567,6 +3567,14 @@ function openUnitModalEdit(period,unitNum){
       <button class="mx" onclick="rmModal('unMod')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="10" height="10"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
     <div class="mb">
+      ${scPlanUnits.length?`
+      <div style="margin-bottom:12px">
+        <label class="fl">เลือกจากแผนการวัด (ถ้ามี) <span style="font-weight:400;color:var(--muted)">— เติมชื่อหน่วย/มาตรฐาน/คะแนนเต็มให้อัตโนมัติ แก้ไขได้ก่อนบันทึก</span></label>
+        <select class="fs" onchange="_fillUneditFromPlan(this.value)">
+          <option value="">— พิมพ์เอง —</option>
+          ${scPlanUnits.map(pu=>`<option value="${pu.id}">${esc(pu.unit_name||'(ไม่มีชื่อหน่วย)')}${pu.weight?` (${pu.weight} คะแนน)`:''}</option>`).join('')}
+        </select>
+      </div>`:''}
       <div class="wc" style="margin-bottom:12px">
         <div style="flex:1;min-width:150px"><label class="fl">ชื่อหน่วย</label>
           <input class="fi" id="unedit-unm" value="${esc(u.unit_name||'')}" placeholder="เช่น สิ่งมีชีวิต"></div>
@@ -3604,6 +3612,14 @@ function _uneditMxChanged(){
     el.classList.toggle('over',parseFloat(el.value)>mx);
   });
   const badge=$('unedit-mx-badge'); if(badge) badge.textContent='/'+mx;
+}
+// เลือกหน่วยจากแผนการวัดฯ ในโมดัล "แก้ไข" — เติมชื่อหน่วย/มาตรฐาน/คะแนนเต็มให้ ยังแก้ต่อเองได้ก่อนบันทึก
+function _fillUneditFromPlan(unitId){
+  if(!unitId) return;
+  const u=scPlanUnits.find(x=>String(x.id)===String(unitId)); if(!u) return;
+  const unmEl=$('unedit-unm'); if(unmEl) unmEl.value=u.unit_name;
+  const stdEl=$('unedit-std'); if(stdEl) stdEl.value=u.standard_ref;
+  if(u.weight){ const mxEl=$('unedit-mx'); if(mxEl){ mxEl.value=u.weight; _uneditMxChanged(); } }
 }
 
 // ── ลบหน่วยทั้งหมด (ลบ score_units ของ unit นั้น) ───────────
