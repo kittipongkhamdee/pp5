@@ -3563,20 +3563,25 @@ function openUnitModalEdit(period,unitNum){
   document.body.insertAdjacentHTML('beforeend',`
   <div class="mo" id="unMod"><div class="md md-lg">
     <div class="mh">
-      <div>
-        <div class="mt">แก้ไขคะแนน — หน่วยที่ ${u.unit_number}${u.unit_name?' : '+esc(u.unit_name):''}</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px">คะแนนเต็ม ${u.max_score} คะแนน</div>
-      </div>
+      <div class="mt">แก้ไขหน่วยที่ ${u.unit_number}</div>
       <button class="mx" onclick="rmModal('unMod')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="10" height="10"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
     <div class="mb">
+      <div class="wc" style="margin-bottom:12px">
+        <div style="flex:1;min-width:150px"><label class="fl">ชื่อหน่วย</label>
+          <input class="fi" id="unedit-unm" value="${esc(u.unit_name||'')}" placeholder="เช่น สิ่งมีชีวิต"></div>
+        <div style="min-width:140px"><label class="fl">มาตรฐาน/ตัวชี้วัด</label>
+          <input class="fi" id="unedit-std" value="${esc(u.standard_ref||'')}" placeholder="เช่น ว1.2 ม.1/1"></div>
+        <div><label class="fl">คะแนนเต็ม</label>
+          <input type="number" class="fi" id="unedit-mx" value="${u.max_score}" min="1" style="width:80px" oninput="_uneditMxChanged()"></div>
+      </div>
       <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
-        <span class="badge bg-b">/${u.max_score}</span>
-        <button class="btn bs btn-sm" onclick="fillUnitScore(${u.max_score})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg>ได้เต็มทุกคน</button>
+        <span class="badge bg-b" id="unedit-mx-badge">/${u.max_score}</span>
+        <button class="btn bs btn-sm" onclick="fillUnitScore(parseFloat($('unedit-mx').value)||${u.max_score})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg>ได้เต็มทุกคน</button>
         <button class="btn bs btn-sm" onclick="clearUnitScore()">ล้างทั้งหมด</button>
       </div>
       <div class="tw"><table>
-        <thead><tr><th>เลขที่</th><th class="tl">ชื่อ-สกุล</th><th>คะแนน (/${u.max_score})</th></tr></thead>
+        <thead><tr><th>เลขที่</th><th class="tl">ชื่อ-สกุล</th><th>คะแนน</th></tr></thead>
         <tbody>${scStus.map((s,i)=>`
           <tr><td class="tc">${i+1}</td><td style="white-space:nowrap">${esc(s.student_name)}</td>
           <td class="tc"><input type="number" class="si2" id="usc-${s.id}"
@@ -3589,6 +3594,16 @@ function openUnitModalEdit(period,unitNum){
       <button class="btn bp" onclick="saveUnitSc()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>บันทึก</button>
     </div>
   </div></div>`);
+}
+// คะแนนเต็มในโมดัล "แก้ไข" เปลี่ยนสด — อัปเดต max ของทุกช่องกรอกคะแนน + ป้าย + เช็คคนคะแนนเกินใหม่
+function _uneditMxChanged(){
+  const mx=parseFloat($('unedit-mx')?.value)||0;
+  scStus.forEach(s=>{
+    const el=$('usc-'+s.id); if(!el) return;
+    el.max=mx;
+    el.classList.toggle('over',parseFloat(el.value)>mx);
+  });
+  const badge=$('unedit-mx-badge'); if(badge) badge.textContent='/'+mx;
 }
 
 // ── ลบหน่วยทั้งหมด (ลบ score_units ของ unit นั้น) ───────────
@@ -3633,8 +3648,14 @@ function quickEditScore(period,unitNum,maxScore,studentId,currentScore){
 }
 
 async function saveUnitSc(){
-  const {period,un,unm,std,mx}=_unitCtx;
+  const {period,un}=_unitCtx;
   if(!period){toast('เกิดข้อผิดพลาด: ไม่พบข้อมูลหน่วย','er');return;}
+  // ถ้าเปิดจากปุ่ม "แก้ไข" จะมีช่องแก้ชื่อหน่วย/มาตรฐาน/คะแนนเต็มในโมดัลเอง — อ่านค่าสดจากตรงนั้น
+  // ถ้าเปิดจากฟอร์ม "เพิ่มหน่วยการเรียน" (ไม่มีช่องพวกนี้ในโมดัล) ใช้ค่าที่เก็บไว้ตอนเปิดโมดัลแทน
+  const unmEditEl=$('unedit-unm');
+  const unm=(unmEditEl?unmEditEl.value:_unitCtx.unm||'').trim()||('หน่วยที่ '+un);
+  const std=($('unedit-std')?.value??_unitCtx.std??'').trim();
+  const mx=parseFloat($('unedit-mx')?.value)||_unitCtx.mx||20;
   // ตรวจว่ามีคะแนนเกินกำหนดไหม
   const over=scStus.some(s=>{const v=parseFloat($('usc-'+s.id)?.value);return !isNaN(v)&&v>mx;});
   if(over){toast('มีคะแนนเกินกำหนด ('+mx+') กรุณาตรวจสอบ','er');return;}
