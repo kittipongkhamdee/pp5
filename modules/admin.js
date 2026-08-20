@@ -984,6 +984,27 @@ async function pgSettings(){
       </div>
     </div>
 
+    <!-- การ์ด: จัดการหน้าแรก -->
+    <div class="card" style="margin-bottom:0;border:1.5px solid rgba(175,82,222,.3);">
+      <div class="ch" style="background:rgba(175,82,222,.07);">
+        <div class="ct" style="color:#af52de;display:flex;align-items:center;gap:8px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#af52de" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          จัดการหน้าแรก
+        </div>
+        <span class="badge" style="background:rgba(175,82,222,.15);color:#af52de;">Admin</span>
+      </div>
+      <div class="cb">
+        <div style="font-size:13px;color:#6e6e73;line-height:1.9;margin-bottom:14px;">
+          เพิ่ม/ลบ/แก้ไข การ์ด "ระบบหลัก" และ "เอกสาร/คู่มือ" ที่แสดงบนหน้าแรก (pp5-ten.vercel.app) ได้เอง ไม่ต้องแก้โค้ด
+        </div>
+        <button class="btn bp" onclick="window.open('admin-home.html','_blank')"
+          style="background:rgba(175,82,222,.9);border-color:rgba(175,82,222,.9);width:100%;justify-content:center">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          จัดการหน้าแรก
+        </button>
+      </div>
+    </div>
+
     <!-- การ์ด: จัดการตัวชี้วัด -->
     <div class="card" style="margin-bottom:0;border:1.5px solid rgba(175,82,222,.3);">
       <div class="ch" style="background:rgba(175,82,222,.07);">
