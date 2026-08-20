@@ -570,6 +570,7 @@ function openCopyEvalPlanModal(){
       <div style="margin-top:14px;display:flex;flex-direction:column;gap:10px">
         <label style="display:flex;align-items:flex-start;gap:8px;font-size:13.5px;cursor:pointer"><input type="checkbox" id="cep-c-plan" checked style="width:16px;height:16px;margin-top:1px;flex-shrink:0">แผนการวัดฯ (หน่วยการเรียนรู้ + ตัวชี้วัด + น้ำหนักคะแนนรายตัวชี้วัด)</label>
         <label style="display:flex;align-items:flex-start;gap:8px;font-size:13.5px;cursor:pointer"><input type="checkbox" id="cep-c-units" checked style="width:16px;height:16px;margin-top:1px;flex-shrink:0">คะแนนหน่วยก่อน/หลังกลางภาค (หน้าบันทึกคะแนน) — คัดลอกเฉพาะชื่อหน่วยและคะแนนเต็ม คะแนนของนักเรียนแต่ละคนเริ่มที่ 0</label>
+        <label style="display:flex;align-items:flex-start;gap:8px;font-size:13.5px;cursor:pointer"><input type="checkbox" id="cep-c-ratio" checked style="width:16px;height:16px;margin-top:1px;flex-shrink:0">สัดส่วนคะแนน (โครงสร้างคะแนนก่อนกลาง/กลาง/หลังกลาง/ปลายภาค + อัตราส่วน K:P:A + ตารางแสดงสัดส่วนคะแนน) — ทับค่าเดิมของวิชานี้</label>
       </div>
     </div>
     <div class="mf">
@@ -582,11 +583,26 @@ async function doCopyEvalPlan(){
   const srcId=$('cep-src').value;
   const copyPlan=$('cep-c-plan').checked;
   const copyUnits=$('cep-c-units').checked;
+  const copyRatio=$('cep-c-ratio').checked;
   const destId=S.selSub;
   if(!srcId){toast('กรุณาเลือกวิชาต้นทาง','er');return;}
-  if(!copyPlan&&!copyUnits){toast('กรุณาเลือกอย่างน้อย 1 รายการ','er');return;}
+  if(!copyPlan&&!copyUnits&&!copyRatio){toast('กรุณาเลือกอย่างน้อย 1 รายการ','er');return;}
   loading(true);
   try{
+    if(copyRatio){
+      // "ตารางแสดงสัดส่วนคะแนน" ทั้งชุด — เป็นคอลัมน์บนตาราง subjects เอง ไม่ใช่แถวแยก จึงแค่ก็อปค่ามาทับ
+      // (ไม่มีความเสี่ยงข้อมูลซ้ำเหมือน insert แถวใหม่ ทับได้เลยโดยไม่ต้องเช็คของเดิม)
+      const RATIO_FIELDS=['score_before_mid','score_mid','score_after_mid','score_final',
+        'knowledge_ratio','skill_ratio','moral_ratio',
+        'kpa_before_mid_k','kpa_before_mid_p','kpa_before_mid_a',
+        'kpa_mid_k','kpa_mid_p','kpa_mid_a',
+        'kpa_after_mid_k','kpa_after_mid_p','kpa_after_mid_a',
+        'kpa_final_k','kpa_final_p','kpa_final_a'];
+      const [srcSub]=await q(sb.from('subjects').select(RATIO_FIELDS.join(',')).eq('id',srcId));
+      if(!srcSub) throw new Error('ไม่พบวิชาต้นทาง');
+      const patch={}; RATIO_FIELDS.forEach(f=>{patch[f]=srcSub[f];});
+      await q(sb.from('subjects').update(patch).eq('id',destId));
+    }
     if(copyPlan){
       const existingUnits=await q(sb.from('eval_plan_units').select('id').eq('subject_id',destId));
       if(existingUnits.length) throw new Error('วิชานี้มีแผนการวัดฯ (หน่วยการเรียนรู้) อยู่แล้ว — กรุณาลบหน่วยเดิมออกก่อนคัดลอกทับ เพื่อป้องกันข้อมูลซ้ำ');
@@ -636,6 +652,7 @@ async function doCopyEvalPlan(){
     rmModal('cepMod');
     toast('คัดลอกเรียบร้อย');
     cacheInv('sc_units_'+destId); cacheInv('sc_sum_'+destId);
+    if(copyRatio){ invalidateSubjects(); await loadSubjects(); }
     await loadEvalPlan(destId);
     renderEvalPlanPage();
   }catch(e){ toast('คัดลอกไม่สำเร็จ: '+e.message,'er'); }
