@@ -5005,12 +5005,15 @@ function openStdModal(id){
       </div>
     </div>
     <div class="mf">
-      <button class="btn bs" onclick="rmModal('stdMod')">ยกเลิก</button>
-      <button class="btn bp" onclick="saveStdIndicator(${id||'null'})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>บันทึก</button>
+      <button class="btn bs" onclick="rmModal('stdMod');_stdRefreshTable()">${id?'ยกเลิก':'เสร็จสิ้น'}</button>
+      ${id?'':'<button class="btn bs" onclick="saveStdIndicatorAndNext()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>บันทึกแล้วเพิ่มต่อ</button>'}
+      <button class="btn bp" onclick="saveStdIndicator(${id||'null'})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>บันทึก${id?'':'แล้วปิด'}</button>
     </div>
   </div></div>`);
 }
-async function saveStdIndicator(id){
+// อ่านค่าจากฟอร์ม + validate + insert/update ลง DB — คืนแถวที่บันทึกสำเร็จ หรือ null ถ้าไม่ผ่าน (toast แจ้งเหตุผลไว้ให้แล้ว)
+// แยกออกมาจาก saveStdIndicator เพื่อให้ saveStdIndicatorAndNext เรียกใช้ตรรกะเดียวกันได้โดยไม่ต้องปิดโมดัล/รีโหลดทั้งหน้า
+async function _saveStdIndicatorCore(id){
   const subject_group=$('std-f-sg').value;
   const subject_type=($('std-f-st').value||'').trim()||'รายวิชาพื้นฐาน';
   const grade_level=($('std-f-gr').value||'').trim();
@@ -5020,21 +5023,44 @@ async function saveStdIndicator(id){
   const kind=$('std-f-kind').value;
   if(!grade_level||!indicator_code||!indicator_text){
     toast(subject_type==='วิชาเพิ่มเติม'?'กรุณากรอกระดับชั้น ข้อที่ และผลการเรียนรู้ที่คาดหวังให้ครบ':'กรุณากรอกระดับชั้น รหัสตัวชี้วัด และคำอธิบายให้ครบ','er');
-    return;
+    return null;
   }
   loading(true);
   try{
     const payload={subject_group,subject_type,grade_level,standard_code,indicator_code,indicator_text,kind};
-    if(id){ await q(sb.from('indicators').update(payload).eq('id',id)); }
-    else{ await q(sb.from('indicators').insert(payload)); }
-    rmModal('stdMod');
-    toast(id?'แก้ไขตัวชี้วัดเรียบร้อย':'เพิ่มตัวชี้วัดเรียบร้อย');
-    stdFilterGroup=subject_group;
-    await pgStandards();
+    const saved=id
+      ? await q(sb.from('indicators').update(payload).eq('id',id).select())
+      : await q(sb.from('indicators').insert(payload).select());
+    return saved?.[0]||payload;
   }catch(e){
     const dup=/duplicate|unique/i.test(e.message);
     toast('บันทึกไม่สำเร็จ: '+(dup?'มีตัวชี้วัดรหัสนี้ + ระดับชั้น + ประเภทนี้อยู่แล้ว':e.message),'er');
+    return null;
   }finally{ loading(false); }
+}
+async function saveStdIndicator(id){
+  const saved=await _saveStdIndicatorCore(id);
+  if(!saved) return;
+  rmModal('stdMod');
+  toast(id?'แก้ไขตัวชี้วัดเรียบร้อย':'เพิ่มตัวชี้วัดเรียบร้อย');
+  stdFilterGroup=saved.subject_group;
+  await pgStandards();
+}
+// บันทึกแล้วเปิดฟอร์มค้างไว้เพื่อเพิ่มข้อถัดไปทันที — คงกลุ่มสาระ/ประเภทวิชา/ระดับชั้น/มาตรฐาน/ประเภทไว้
+// (มักไม่เปลี่ยนระหว่างเพิ่มชุดเดียวกัน) ล้างแค่ช่องรหัส/ข้อความ แล้วเลื่อนเลข "ข้อที่" ให้อัตโนมัติถ้าเป็นตัวเลขล้วน
+async function saveStdIndicatorAndNext(){
+  const saved=await _saveStdIndicatorCore(null);
+  if(!saved) return;
+  stdList.push(saved); _indicatorsAll=stdList;
+  toast('เพิ่ม "'+saved.indicator_code+'" เรียบร้อย — กรอกข้อถัดไปได้เลย');
+  const codeEl=$('std-f-code'), textEl=$('std-f-text');
+  if(codeEl){
+    const codeStr=(saved.indicator_code||'').trim();
+    const n=parseInt(codeStr,10);
+    codeEl.value=(!isNaN(n)&&String(n)===codeStr)?String(n+1):'';
+  }
+  if(textEl) textEl.value='';
+  codeEl?.focus();
 }
 async function delStdIndicator(id){
   const ind=stdList.find(x=>x.id===id); if(!ind) return;
