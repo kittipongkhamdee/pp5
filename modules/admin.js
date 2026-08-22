@@ -111,7 +111,7 @@ async function openAdminPanel(){
         </div>
         ${p.id!==S.user.id
           ? `<button class="btn bs" style="color:var(--err);font-size:12px;padding:6px 12px;flex-shrink:0"
-              onclick="deleteTeacherData('${p.id}','${esc(p.full_name||p.id)}')">ลบข้อมูล</button>`
+              onclick="deleteTeacherData('${p.id}','${escJs(p.full_name||p.id)}')">ลบข้อมูล</button>`
           : `<span style="font-size:12px;color:var(--muted);flex-shrink:0">(ตัวเอง)</span>`}
       </div>`).join('');
 

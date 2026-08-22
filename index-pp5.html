@@ -498,12 +498,17 @@ async function qcRevalidate(key, fn, onUpdate){
 
 // ── UTIL ─────────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
-const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+// escape ทั้ง " และ ' ด้วย เพราะ esc() ถูกใช้ใน attribute (value="${esc(...)}") หลายสิบจุด —
+// ถ้าไม่ escape ข้อความที่มีเครื่องหมายคำพูดจะทำให้ attribute ขาดกลางคัน (ข้อความหาย + ฝังโค้ดได้)
+// ใช้ (s ?? '') ไม่ใช่ (s||'') เพื่อไม่ให้เลข 0 กลายเป็นค่าว่าง
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 // ตัดคำว่า "โรงเรียน" ที่ขึ้นต้นชื่อโรงเรียนออก กันข้อความซ้ำเวลาต่อท้ายป้าย "ผู้อำนวยการโรงเรียน..."
 const schoolNameOnly = s => String(s||'').replace(/^โรงเรียน/,'');
 // เติม "โรงเรียน" นำหน้าชื่อ ยกเว้นถ้าชื่อที่บันทึกไว้มีคำว่า "โรงเรียน" อยู่แล้ว (กันซ้ำเป็น "โรงเรียนโรงเรียนตาเบาวิทยา")
 const schoolNameWithPrefix = s => { s=String(s||''); return s.startsWith('โรงเรียน')?s:'โรงเรียน'+s; };
-const escJs = s => String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+// สำหรับข้อความที่ไปอยู่ใน JS string literal ภายใน attribute เช่น onclick="fn('...')"
+// ห้ามใช้ esc() แทน เพราะ &#39; จะถูก HTML decode กลับเป็น ' ก่อน JS อ่าน ทำให้หลุด string ได้
+const escJs = s => String(s ?? '').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const grm = (g,r) => +r===0 ? GRADE_PREFIX+g : GRADE_PREFIX+g+'/'+r;
 let _loadTimer=null;
 let _loadCount=0;
@@ -1687,7 +1692,7 @@ function _loadScriptOnce(key, src){
   return p;
 }
 // ?v= กันแคชเก่าค้าง (modules/*.js แคชไว้ 1 วันตาม vercel.json) — แก้ไฟล์ใน modules/ เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย
-const MODULE_V='35';
+const MODULE_V='36';
 function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V); }
 function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
 

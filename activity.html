@@ -1176,7 +1176,10 @@ function thDateFull(d){return thDate(d)}
 function classLabel(gl,r){
   return S.classLabelMap[`${gl}_${r}`]||`มัธยมศึกษาปีที่ ${gl}/${r}`;
 }
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function esc(s){return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+// สำหรับข้อความที่ไปอยู่ใน JS string literal ภายใน attribute เช่น onclick="fn('...')"
+// ห้ามใช้ esc() แทน เพราะ &#39; จะถูก HTML decode กลับเป็น ' ก่อน JS อ่าน ทำให้หลุด string ได้
+function escJs(s){return String(s ?? '').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function $(id){return document.getElementById(id)}
 function toast(msg,type='ok',dur=2500){const t=$('toast');t.textContent=msg;t.className='toast show '+(type==='er'?'er':'');setTimeout(()=>t.className='toast',dur)}
 function loading(b){$('loader').style.display=b?'flex':'none'}
@@ -1904,7 +1907,7 @@ function _showLeaveAlert(rows,gl,r){
     const name=row.students?.student_name||'';
     const range=(row.start_date===row.end_date?thDate(row.start_date):`${thDate(row.start_date)} – ${thDate(row.end_date)}`)+` (${_leaveDayCount(row.start_date,row.end_date)} วัน)`;
     const photo=row.photo_url
-      ?`<img class="leave-card-photo" src="${esc(row.photo_url)}" onclick="window.open('${esc(row.photo_url)}','_blank')">`
+      ?`<img class="leave-card-photo" src="${esc(row.photo_url)}" onclick="window.open('${escJs(row.photo_url)}','_blank')">`
       :`<div class="leave-card-icon">${row.leave_type==='sick'?'🤒':'📝'}</div>`;
     const mapLink=(row.gps_lat!=null&&row.gps_lng!=null)
       ?`<a class="leave-card-map" href="https://maps.google.com/?q=${row.gps_lat},${row.gps_lng}" target="_blank">📍 ดูตำแหน่งบนแผนที่</a>`:'';
@@ -1953,7 +1956,7 @@ async function renderRptLeave(){
       const cls=row.students?classLabel(row.students.grade_level,row.students.room):'';
       const range=(row.start_date===row.end_date?thDate(row.start_date):`${thDate(row.start_date)} – ${thDate(row.end_date)}`)+` (${_leaveDayCount(row.start_date,row.end_date)} วัน)`;
       const photo=row.photo_url
-        ?`<img class="leave-card-photo" src="${esc(row.photo_url)}" onclick="window.open('${esc(row.photo_url)}','_blank')">`
+        ?`<img class="leave-card-photo" src="${esc(row.photo_url)}" onclick="window.open('${escJs(row.photo_url)}','_blank')">`
         :`<div class="leave-card-icon">${row.leave_type==='sick'?'🤒':'📝'}</div>`;
       const mapLink=(row.gps_lat!=null&&row.gps_lng!=null)
         ?`<a class="leave-card-map" href="https://maps.google.com/?q=${row.gps_lat},${row.gps_lng}" target="_blank">📍 ดูตำแหน่งบนแผนที่</a>`:'';
@@ -2315,7 +2318,7 @@ function _showSuggestions(val){
   if(!hits.length){
     sl.innerHTML='<div class="suggest-empty">ไม่พบนักเรียน</div>';
   }else{
-    sl.innerHTML=hits.map(s=>`<div class="suggest-item" onmousedown="_selectRptStu('${s.id}','${esc(s.student_name).replace(/'/g,"\\'")}')"><div class="suggest-name">${esc(s.student_name)}</div><div class="suggest-meta">${esc(s.student_code||'')} · ${classLabel(s.grade_level,s.room)}</div></div>`).join('');
+    sl.innerHTML=hits.map(s=>`<div class="suggest-item" onmousedown="_selectRptStu('${s.id}','${escJs(s.student_name)}')"><div class="suggest-name">${esc(s.student_name)}</div><div class="suggest-meta">${esc(s.student_code||'')} · ${classLabel(s.grade_level,s.room)}</div></div>`).join('');
   }
   sl.style.display='block';
 }
