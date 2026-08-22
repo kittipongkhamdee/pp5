@@ -3361,8 +3361,8 @@ function renderScPage(){
     ${sub?`<span class="badge bg-b">ก่อนกลาง ${sub.score_before_mid}|กลาง ${sub.score_mid}|หลังกลาง ${sub.score_after_mid}|ปลาย ${sub.score_final}</span>`:''}
   </div>
   <div class="tabs">
-    <button class="tab active" data-tg="sc" data-ti="sc-bf" onclick="swTab('sc','sc-bf')">ก่อนกลางภาค (/${sub?.score_before_mid||25})</button>
-    <button class="tab" data-tg="sc" data-ti="sc-af" onclick="swTab('sc','sc-af')">หลังกลางภาค (/${sub?.score_after_mid||25})</button>
+    <button class="tab active" data-tg="sc" data-ti="sc-bf" onclick="swTab('sc','sc-bf')">ก่อนกลางภาค (/${sub?.score_before_mid??25})</button>
+    <button class="tab" data-tg="sc" data-ti="sc-af" onclick="swTab('sc','sc-af')">หลังกลางภาค (/${sub?.score_after_mid??25})</button>
     <button class="tab" data-tg="sc" data-ti="sc-ex" onclick="swTab('sc','sc-ex')">คะแนนสอบ</button>
     <button class="tab" data-tg="sc" data-ti="sc-sm" onclick="swTab('sc','sc-sm')">สรุปผล</button>
   </div>
@@ -3371,8 +3371,8 @@ function renderScPage(){
     <span style="font-size:13px;color:#c2410c;flex:1">คะแนนหน่วยมีการเปลี่ยนแปลง — กด <strong>"บันทึกคะแนนสอบ"</strong> เพื่ออัปเดตสรุปผล</span>
     <button onclick="saveExam()" style="font-family:var(--font);font-size:12px;font-weight:600;padding:6px 14px;border-radius:8px;border:none;background:#FF9500;color:#fff;cursor:pointer;white-space:nowrap">บันทึกคะแนนสอบ</button>
   </div>
-  <div class="tp active" id="sc-bf" data-tp="sc">${renderUnitTab('before',sub?.score_before_mid||25)}</div>
-  <div class="tp" id="sc-af" data-tp="sc">${renderUnitTab('after',sub?.score_after_mid||25)}</div>
+  <div class="tp active" id="sc-bf" data-tp="sc">${renderUnitTab('before',sub?.score_before_mid??25)}</div>
+  <div class="tp" id="sc-af" data-tp="sc">${renderUnitTab('after',sub?.score_after_mid??25)}</div>
   <div class="tp" id="sc-ex" data-tp="sc">${renderExamTab()}</div>
   <div class="tp" id="sc-sm" data-tp="sc">${renderSumTab()}</div>`;
 }
@@ -3525,7 +3525,7 @@ async function addUnitOnly(period){
     toast('เพิ่มหน่วย '+un+' เรียบร้อย (ยังไม่มีนักเรียน)');
     const tabId='sc-'+(period==='before'?'bf':'af');
     const tabEl=$(tabId);
-    if(tabEl) tabEl.innerHTML=renderUnitTab(period,period==='before'?scSub?.score_before_mid||25:scSub?.score_after_mid||25);
+    if(tabEl) tabEl.innerHTML=renderUnitTab(period,period==='before'?scSub?.score_before_mid??25:scSub?.score_after_mid??25);
     return;
   }
   // มีนักเรียน: บันทึก score=0 เฉพาะนักเรียนที่ยังไม่มีแถวในหน่วยนี้
@@ -3548,7 +3548,7 @@ async function addUnitOnly(period){
     toast('เพิ่มหน่วย '+un+' เรียบร้อย — กดแก้ไขเพื่อกรอกคะแนน');
     const tabId='sc-'+(period==='before'?'bf':'af');
     const tabEl=$(tabId);
-    if(tabEl) tabEl.innerHTML=renderUnitTab(period,period==='before'?scSub?.score_before_mid||25:scSub?.score_after_mid||25);
+    if(tabEl) tabEl.innerHTML=renderUnitTab(period,period==='before'?scSub?.score_before_mid??25:scSub?.score_after_mid??25);
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
 }
 
@@ -3640,7 +3640,7 @@ async function deleteUnit(period,unitNum,unitName){
     toast('ลบหน่วย '+unitNum+' เรียบร้อย');
     const tabId='sc-'+(period==='before'?'bf':'af');
     const tabEl=$(tabId);
-    if(tabEl) tabEl.innerHTML=renderUnitTab(period,period==='before'?scSub?.score_before_mid||25:scSub?.score_after_mid||25);
+    if(tabEl) tabEl.innerHTML=renderUnitTab(period,period==='before'?scSub?.score_before_mid??25:scSub?.score_after_mid??25);
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
 }});
 }
@@ -3691,7 +3691,7 @@ async function saveUnitSc(){
     // อัปเฉพาะตาราง ไม่ render ทั้งหน้า
     const tabId='sc-'+(period==='before'?'bf':'af');
     const tabEl=$(tabId);
-    if(tabEl) tabEl.innerHTML=renderUnitTab(period,period==='before'?scSub?.score_before_mid||25:scSub?.score_after_mid||25);
+    if(tabEl) tabEl.innerHTML=renderUnitTab(period,period==='before'?scSub?.score_before_mid??25:scSub?.score_after_mid??25);
     _markScDirty();
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
 }
@@ -3834,8 +3834,8 @@ function _omrExistingUnitChanged(){
 async function _omrUpdateMaxDefault(){
   const target=$('omr-target')?.value;
   const mxEl=$('omr-mx'); if(!mxEl) return;
-  if(target==='mid'){ mxEl.value=scSub?.score_mid||20; }
-  else if(target==='final'){ mxEl.value=scSub?.score_final||30; }
+  if(target==='mid'){ mxEl.value=scSub?.score_mid??20; }
+  else if(target==='final'){ mxEl.value=scSub?.score_final??30; }
   else{
     const quizId=$('omr-quiz')?.value; if(!quizId) return;
     const quiz=_omrCtx.quizzes.find(qz=>qz.id===quizId);
@@ -3927,25 +3927,25 @@ async function importOmrScores(){
     toast('นำเข้าคะแนน '+rows.length+' คนเรียบร้อย'+(skippedCount?' (ข้าม '+skippedCount+' คนที่คะแนนเกินคะแนนเต็ม)':''));
     const tabId='sc-'+(period==='before'?'bf':'af');
     const tabEl=$(tabId);
-    if(tabEl) tabEl.innerHTML=renderUnitTab(period,period==='before'?scSub?.score_before_mid||25:scSub?.score_after_mid||25);
+    if(tabEl) tabEl.innerHTML=renderUnitTab(period,period==='before'?scSub?.score_before_mid??25:scSub?.score_after_mid??25);
     _markScDirty();
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
 }
 function renderExamTab(){
-  const sub=scSub, mM=sub?.score_mid||20, mF=sub?.score_final||30;
+  const sub=scSub, mM=sub?.score_mid??20, mF=sub?.score_final??30;
   return`<div class="card"><div class="ch"><div class="ct">คะแนนสอบ</div>
     <button class="btn bs btn-sm" onclick="openOcrScoreModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>ถ่ายรูปกรอกคะแนน (ทดลอง)</button>
     </div><div class="cb">
     <div class="tw"><table>
       <thead><tr><th>เลขที่</th><th class="tl">ชื่อ-สกุล</th>
-        <th>กลางภาค (/${mM})</th>
-        <th>ปลายภาค (/${mF})</th>
+        <th>กลางภาค (/${mM})${mM===0?'<br><span style="font-size:10px;font-weight:400;color:var(--muted)">วิชานี้ไม่มีสอบกลางภาค</span>':''}</th>
+        <th>ปลายภาค (/${mF})${mF===0?'<br><span style="font-size:10px;font-weight:400;color:var(--muted)">วิชานี้ไม่มีสอบปลายภาค</span>':''}</th>
       </tr></thead>
       <tbody>${scStus.map((s,i)=>{
         const sm=gsum(s.id);
         return`<tr><td class="tc">${i+1}</td><td style="white-space:nowrap">${esc(s.student_name)}</td>
-          <td class="tc"><input type="number" class="si2 score-nav" id="mid-${s.id}" value="${sm.mid_normal??''}" min="0" max="${mM}" step="0.5" oninput="this.classList.toggle('over',+this.value>+this.max)"></td>
-          <td class="tc"><input type="number" class="si2 score-nav" id="fin-${s.id}" value="${sm.final_score??''}" min="0" max="${mF}" step="0.5" oninput="this.classList.toggle('over',+this.value>+this.max)"></td>
+          <td class="tc"><input type="number" class="si2 score-nav" id="mid-${s.id}" value="${mM===0?'':(sm.mid_normal??'')}" min="0" max="${mM}" step="0.5" ${mM===0?'disabled title="วิชานี้ตั้งคะแนนกลางภาคไว้ 0 — แก้ได้ที่แผนการวัดฯ > สัดส่วนคะแนน"':''} oninput="this.classList.toggle('over',+this.value>+this.max)"></td>
+          <td class="tc"><input type="number" class="si2 score-nav" id="fin-${s.id}" value="${mF===0?'':(sm.final_score??'')}" min="0" max="${mF}" step="0.5" ${mF===0?'disabled title="วิชานี้ตั้งคะแนนปลายภาคไว้ 0 — แก้ได้ที่แผนการวัดฯ > สัดส่วนคะแนน"':''} oninput="this.classList.toggle('over',+this.value>+this.max)"></td>
         </tr>`;
       }).join('')}</tbody>
     </table></div>
@@ -3956,7 +3956,7 @@ function renderExamTab(){
   </div></div>`;
 }
 async function saveExam(){
-  const mM=scSub?.score_mid||20, mF=scSub?.score_final||30;
+  const mM=scSub?.score_mid??20, mF=scSub?.score_final??30;
   // ตรวจคะแนนเกินเต็มก่อนบันทึก
   const over=scStus.some(s=>{
     const mn=parseFloat($('mid-'+s.id)?.value)||0;
@@ -4008,7 +4008,7 @@ function _thaiToArabicDigits(s){
 }
 function openOcrScoreModal(){
   if(!scStus.length){ toast('ยังไม่มีนักเรียนในวิชานี้','er'); return; }
-  const mM=scSub?.score_mid||20, mF=scSub?.score_final||30;
+  const mM=scSub?.score_mid??20, mF=scSub?.score_final??30;
   _ocrCtx={type:'mid'}; _ocrPendingImg=null; _ocrMatched=[];
   document.body.insertAdjacentHTML('beforeend',`
   <div class="mo" id="ocrMod"><div class="md md-lg">
@@ -4188,7 +4188,7 @@ function _ocrRenderReview(rawRows){
     el.innerHTML+=`<div class="alert al-er" style="margin-top:10px">ไม่พบตารางคะแนนในภาพ — ลองถ่ายให้เห็นตารางเต็มๆ ชัดๆ อีกครั้ง</div>`;
     return;
   }
-  const maxScore = _ocrCtx.type==='mid' ? (scSub?.score_mid||20) : (scSub?.score_final||30);
+  const maxScore = _ocrCtx.type==='mid' ? (scSub?.score_mid??20) : (scSub?.score_final??30);
   el.innerHTML+=`
     <div style="margin-top:14px">
       <div style="font-size:13px;font-weight:600;margin-bottom:8px">ผลที่อ่านได้ — ตรวจทานก่อนกดยืนยัน (แก้ตัวเลขในช่องได้ถ้าอ่านผิด)</div>
@@ -4249,10 +4249,10 @@ function renderSumTab(){
     <div class="tw"><table>
       <thead><tr>
         <th>เลขที่</th><th class="tl">ชื่อ-สกุล</th>
-        <th>รวมก่อนกลาง<br><span style="font-size:10px;font-weight:400">/${scSub?.score_before_mid||25}</span></th>
-        <th>รวมหลังกลาง<br><span style="font-size:10px;font-weight:400">/${scSub?.score_after_mid||25}</span></th>
-        <th>กลางภาค<br><span style="font-size:10px;font-weight:400">/${scSub?.score_mid||20}</span></th>
-        <th>ปลายภาค<br><span style="font-size:10px;font-weight:400">/${scSub?.score_final||30}</span></th>
+        <th>รวมก่อนกลาง<br><span style="font-size:10px;font-weight:400">/${scSub?.score_before_mid??25}</span></th>
+        <th>รวมหลังกลาง<br><span style="font-size:10px;font-weight:400">/${scSub?.score_after_mid??25}</span></th>
+        <th>กลางภาค<br><span style="font-size:10px;font-weight:400">/${scSub?.score_mid??20}</span></th>
+        <th>ปลายภาค<br><span style="font-size:10px;font-weight:400">/${scSub?.score_final??30}</span></th>
         <th>รวม</th><th>ผลการเรียน</th><th>ผลพิเศษ</th>
       </tr></thead>
       <tbody>${scStus.map((s,i)=>{
@@ -4348,8 +4348,8 @@ function buildScoreRows(){
 }
 function exportScores(){
   const sub=scSub;
-  const mBef=sub.score_before_mid||25, mAft=sub.score_after_mid||25;
-  const mM=sub.score_mid||20, mF=sub.score_final||30;
+  const mBef=sub.score_before_mid??25, mAft=sub.score_after_mid??25;
+  const mM=sub.score_mid??20, mF=sub.score_final??30;
   const hdr=[
     [`${S.config.school_name||''} — บันทึกคะแนน`],
     [`วิชา ${sub.subject_name} (${sub.subject_code}) ${grm(sub.grade_level,sub.room)}  ครู${sub.teacher_name||''}`],
@@ -4442,8 +4442,8 @@ function _showSgsExportFallback(json){
 function printScores(){
   const sub=scSub;
   const cfg=S.config;
-  const mBef=sub.score_before_mid||25, mAft=sub.score_after_mid||25;
-  const mM=sub.score_mid||20, mF=sub.score_final||30;
+  const mBef=sub.score_before_mid??25, mAft=sub.score_after_mid??25;
+  const mM=sub.score_mid??20, mF=sub.score_final??30;
   const COLS_PER_PAGE=6;
   const schoolName=schoolNameWithPrefix(cfg.school_name);
   const pageTitle=`บันทึกคะแนน — ${sub.subject_name} ${grm(sub.grade_level,sub.room)}`;
