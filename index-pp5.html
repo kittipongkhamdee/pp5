@@ -1699,6 +1699,8 @@ function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/
 // เมนูที่ควบคุมสิทธิ์รายคน (ดู canAccessMenu/_loadMenuPerms) — key ต้องตรงกับ menu_permissions.menu_key
 const GATED_MENUS={settings:'ตั้งค่าระบบ',students:'นักเรียน',standards:'มาตรฐานและตัวชี้วัด'};
 function nav(page,subId){
+  // ถามก่อนถ้ามีคะแนนสอบที่พิมพ์ค้างไว้ยังไม่ได้บันทึก (ออกไปแล้วหายจริง)
+  if(_examDirty && page!==S.page){ _guardUnsavedScores(()=>nav(page,subId)); return; }
   // reset loading ก่อนเสมอ
   loadingOff();
   if(GATED_MENUS[page]&&!canAccessMenu(page)){ _denyMenuAccess(GATED_MENUS[page]); return; }
@@ -3347,8 +3349,25 @@ function _clearScDirty(){
 }
 let _scDirty=false;
 
+// _scDirty = คะแนนหน่วยถูกบันทึกลงฐานข้อมูลแล้ว แต่ยังไม่ได้อัปเดตสรุปผล (ข้อมูลไม่หาย)
+// _examDirty = คะแนนสอบ/ผลพิเศษที่ครูพิมพ์ค้างไว้ในช่องกรอก ยังไม่ได้บันทึกลงฐานข้อมูล (หายได้จริง)
+let _examDirty=false;
+function _markExamDirty(){ _examDirty=true; }
+// เรียกก่อนเปลี่ยนหน้า/เปลี่ยนวิชา — ถ้ามีคะแนนค้างจะถามก่อน ไม่งั้นทำต่อทันที
+function _guardUnsavedScores(proceed){
+  if(!_examDirty){ proceed(); return; }
+  confirm2({
+    title:'ยังไม่ได้บันทึกคะแนนสอบ',
+    msg:'คะแนนสอบที่กรอกไว้ยังไม่ถูกบันทึก<br><span style="color:#dc2626">ถ้าออกจากหน้านี้ คะแนนที่กรอกจะหายไป</span>',
+    type:'danger', confirmText:'ออกโดยไม่บันทึก', cancelText:'อยู่หน้านี้ต่อ',
+    onConfirm:()=>{ _examDirty=false; proceed(); }
+  });
+}
+window.addEventListener('beforeunload',e=>{ if(_examDirty){ e.preventDefault(); e.returnValue=''; } });
+
 function renderScPage(){
   _scDirty=false;
+  _examDirty=false;
   const sub=scSub;
   $('pg').innerHTML=`
   <div class="ph"><div class="ptitle">บันทึกคะแนน</div>
@@ -3949,8 +3968,8 @@ function renderExamTab(){
       <tbody>${scStus.map((s,i)=>{
         const sm=gsum(s.id);
         return`<tr><td class="tc">${i+1}</td><td style="white-space:nowrap">${esc(s.student_name)}</td>
-          <td class="tc"><input type="number" class="si2 score-nav" id="mid-${s.id}" value="${mM===0?'':(sm.mid_normal??'')}" min="0" max="${mM}" step="0.5" ${mM===0?'disabled title="วิชานี้ตั้งคะแนนกลางภาคไว้ 0 — แก้ได้ที่แผนการวัดฯ > สัดส่วนคะแนน"':''} oninput="this.classList.toggle('over',+this.value>+this.max)"></td>
-          <td class="tc"><input type="number" class="si2 score-nav" id="fin-${s.id}" value="${mF===0?'':(sm.final_score??'')}" min="0" max="${mF}" step="0.5" ${mF===0?'disabled title="วิชานี้ตั้งคะแนนปลายภาคไว้ 0 — แก้ได้ที่แผนการวัดฯ > สัดส่วนคะแนน"':''} oninput="this.classList.toggle('over',+this.value>+this.max)"></td>
+          <td class="tc"><input type="number" class="si2 score-nav" id="mid-${s.id}" value="${mM===0?'':(sm.mid_normal??'')}" min="0" max="${mM}" step="0.5" ${mM===0?'disabled title="วิชานี้ตั้งคะแนนกลางภาคไว้ 0 — แก้ได้ที่แผนการวัดฯ > สัดส่วนคะแนน"':''} oninput="this.classList.toggle('over',+this.value>+this.max);_markExamDirty()"></td>
+          <td class="tc"><input type="number" class="si2 score-nav" id="fin-${s.id}" value="${mF===0?'':(sm.final_score??'')}" min="0" max="${mF}" step="0.5" ${mF===0?'disabled title="วิชานี้ตั้งคะแนนปลายภาคไว้ 0 — แก้ได้ที่แผนการวัดฯ > สัดส่วนคะแนน"':''} oninput="this.classList.toggle('over',+this.value>+this.max);_markExamDirty()"></td>
         </tr>`;
       }).join('')}</tbody>
     </table></div>
@@ -3996,7 +4015,7 @@ async function saveExam(){
     scSum=await q(sb.from('score_summary').select('*').eq('subject_id',S.selSub));
     toast('บันทึกคะแนนสอบเรียบร้อย');
     invalidateTeacherAgg(); updateWatchlistBadge();
-    _clearScDirty();
+    _clearScDirty(); _examDirty=false;
     // อัปเฉพาะแท็บสรุปผล ไม่ render ทั้งหน้า (กันข้อมูลที่กรอกหาย)
     const smEl=$('sc-sm');
     if(smEl) smEl.innerHTML=renderSumTab();
@@ -4277,7 +4296,7 @@ function renderSumTab(){
           <td class="tr2"><strong>${tot||'-'}</strong></td>
           <td class="tc" id="grade-cell-${s.id}">${(()=>{const _sr=sm.special_result||'';const _ov=['ร','มส','มผ','ผ'];const _dg=_ov.includes(_sr)?_sr:g;const _c=_ov.includes(_sr)?'color:var(--err)':'';return '<span class="'+(_ov.includes(_sr)?'':gcls(g))+'" style="font-size:15px;font-weight:700;'+_c+'">'+_dg+'</span>';})()}</td>
           <td class="tc">
-            <select class="es" id="res-${s.id}" onchange="updEsColor(this);_updateGradeCell(this,'${s.id}',${tot||0})">
+            <select class="es" id="res-${s.id}" onchange="updEsColor(this);_updateGradeCell(this,'${s.id}',${tot||0});_markExamDirty()">
               ${RESULTS.map(r=>`<option ${sm.special_result===r?'selected':''}>${r}</option>`).join('')}
             </select>
           </td></tr>`;
@@ -4326,7 +4345,10 @@ async function saveSpecial(){
     invalidateTeacherAgg(); updateWatchlistBadge();
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
 }
-async function changeScSub(sid){S.selSub=sid;await loadScData();renderScPage();}
+async function changeScSub(sid){
+  if(_examDirty){ _guardUnsavedScores(()=>changeScSub(sid)); return; }
+  S.selSub=sid;await loadScData();renderScPage();
+}
 
 // ── สร้างข้อมูลคะแนนเต็มรูปแบบ (ทุกหน่วย + สอบ + เกรด) ──
 function buildScoreRows(){
