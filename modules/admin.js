@@ -1171,16 +1171,20 @@ function _setAdminStatus(teacherId,teacherName,makeAdmin){
 async function saveAdminPassword(){
   const oldPw=$('c-admpw-old')?.value||'';
   const newPw=$('c-admpw')?.value.trim()||'';
-  const current=S.config.admin_password||'1234';
   if(!newPw){toast('กรุณาใส่รหัสผ่านใหม่','er');return;}
   if(newPw.length<4){toast('รหัสผ่านต้องมีอย่างน้อย 4 ตัว','er');return;}
-  // ถ้ามีรหัสเดิมอยู่แล้ว ต้องใส่รหัสเดิมให้ถูก
-  if(S.config.admin_password && oldPw!==current){
-    toast('รหัสผ่านเดิมไม่ถูกต้อง','er');
-    const inp=$('c-admpw-old'); if(inp){inp.style.borderColor='var(--err)';inp.focus();}
-    return;
-  }
+  // ตรวจรหัสเดิมฝั่งเซิร์ฟเวอร์ (RPC) แทนการเทียบกับค่าที่โหลดมาไว้ในเบราว์เซอร์
   loading(true);
+  try{
+    const {data:okOld,error:vErr}=await sb.rpc('verify_admin_password',{pw:oldPw});
+    if(vErr) throw new Error(vErr.message);
+    if(!okOld){
+      loading(false);
+      toast('รหัสผ่านเดิมไม่ถูกต้อง','er');
+      const inp=$('c-admpw-old'); if(inp){inp.style.borderColor='var(--err)';inp.focus();}
+      return;
+    }
+  }catch(e){ loading(false); toast('ตรวจสอบรหัสเดิมไม่สำเร็จ: '+e.message,'er'); return; }
   try{
     await q(sb.from('config').upsert([{key:'admin_password',value:newPw}],{onConflict:'key'}));
     await loadConfig();

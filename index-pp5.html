@@ -1692,7 +1692,7 @@ function _loadScriptOnce(key, src){
   return p;
 }
 // ?v= กันแคชเก่าค้าง (modules/*.js แคชไว้ 1 วันตาม vercel.json) — แก้ไฟล์ใน modules/ เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย
-const MODULE_V='36';
+const MODULE_V='37';
 function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V); }
 function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
 
@@ -5368,28 +5368,41 @@ function adminAuth(opts){
   document.body.appendChild(wrap);
   setTimeout(()=>{ pwInput.focus(); }, 100);
 
-  function doCheck(){
+  // ตรวจรหัสที่ฝั่งเซิร์ฟเวอร์ (RPC verify_admin_password) ไม่ใช่เทียบกับค่าที่โหลดมาไว้ในเบราว์เซอร์
+  // เพราะ config.admin_password ถูกซ่อนจากครูทั่วไปแล้ว และการเทียบฝั่งเบราว์เซอร์ข้ามได้อยู่แล้ว
+  async function doCheck(){
     const pw = pwInput.value || '';
-    const correct = S.config.admin_password || '1234';
-    if(pw === correct){
-      doClose(true);
-    } else {
-      errDiv.style.display = 'block';
-      pwInput.style.borderColor = 'var(--err)';
-      pwInput.value = '';
-      pwInput.focus();
-      // shake
-      box.style.animation = 'none';
-      setTimeout(()=>{ box.style.animation = 'shake .3s ease'; }, 10);
-    }
+    if(!pw) { showErr('กรุณาใส่รหัสผ่าน'); return; }
+    okBtn.disabled = true; okBtn.textContent = 'กำลังตรวจสอบ...';
+    let ok = false, failMsg = 'รหัสผ่านไม่ถูกต้อง';
+    try{
+      const { data, error } = await sb.rpc('verify_admin_password', { pw });
+      if(error) throw new Error(error.message);
+      ok = data === true;
+    }catch(e){ failMsg = 'ตรวจสอบรหัสไม่สำเร็จ: ' + (e.message||e); }
+    okBtn.disabled = false; okBtn.textContent = 'ยืนยัน';
+    if(ok) doClose(true, pw);
+    else showErr(failMsg);
   }
 
-  function doClose(confirmed){
+  function showErr(msg){
+    errDiv.textContent = msg;
+    errDiv.style.display = 'block';
+    pwInput.style.borderColor = 'var(--err)';
+    pwInput.value = '';
+    pwInput.focus();
+    box.style.animation = 'none';
+    setTimeout(()=>{ box.style.animation = 'shake .3s ease'; }, 10);
+  }
+
+  // ส่งรหัสที่ยืนยันแล้วให้ onSuccess ด้วย เผื่อผู้เรียกต้องส่งต่อให้ RPC ที่ตรวจซ้ำฝั่งเซิร์ฟเวอร์
+  // (เช่น delete_student_with_password) — ไม่เก็บรหัสไว้ที่ใดนอกจากช่วงเรียกกลับนี้
+  function doClose(confirmed, pw){
     wrap.style.animation = 'fadeIn .15s ease reverse forwards';
     setTimeout(()=>{ if(wrap.parentNode) wrap.remove(); }, 150);
     const cb = _adminAuthCallbacks[id];
     if(cb){
-      if(confirmed && cb.onSuccess) cb.onSuccess();
+      if(confirmed && cb.onSuccess) cb.onSuccess(pw);
       else if(!confirmed && cb.onCancel) cb.onCancel();
       delete _adminAuthCallbacks[id];
     }

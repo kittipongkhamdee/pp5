@@ -297,11 +297,13 @@ async function delStu(id,name){
     title:'ลบนักเรียน',
     msg:'การลบ <strong>'+name+'</strong><br>ต้องใช้รหัสผู้บริหาร<br><span style="font-size:12px;color:#8e8e93">เพราะนักเรียนใช้ร่วมกันทุกวิชา</span>',
     icon:'trash',
-    onSuccess:async()=>{
+    onSuccess:async(pw)=>{
       confirm2({title:'ยืนยันการลบ',msg:'ลบ "<strong>'+name+'</strong>" ออกจากระบบ?<br><span style="font-size:12px;color:#dc2626">ข้อมูลทุกวิชาที่เกี่ยวข้องจะหายด้วย</span>',type:'danger',confirmText:'ลบถาวร',cancelText:'ยกเลิก',onConfirm:async()=>{
         loading(true);
         try{
-          await q(sb.from('students').delete().eq('id',id));
+          // ลบผ่าน RPC ที่ตรวจรหัสผู้บริหารซ้ำฝั่งเซิร์ฟเวอร์ (RLS ปิดการลบตรงๆ ไว้ให้เฉพาะแอดมิน)
+          const {error}=await sb.rpc('delete_student_with_password',{p_student_id:id, pw:pw||''});
+          if(error) throw new Error(error.message);
           clearStuCache();
           allStu=await qAll(()=>sb.from('students').select('*').order('grade_level').order('room').order('student_code'));
           logAudit('delete_student','ลบนักเรียน "'+name+'"');
