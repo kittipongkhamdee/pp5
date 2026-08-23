@@ -2333,7 +2333,12 @@ async function delSub(id,name){
   loading(true);
   try{
     await q(sb.from('subjects').delete().eq('id',id).eq('user_id',S.user.id));
-    try{ await q(sb.from('config').upsert([{key:'class_days_'+id,value:'[]'}],{onConflict:'key'})); }catch(e){}
+    // ลบทิ้งจริง ไม่ใช่เซตเป็น '[]' ค้างไว้ (วิชาถูกลบแล้ว คีย์นี้ไม่มีใครใช้ต่อ)
+    // RLS ที่ไม่อนุญาตจะไม่ throw แต่ลบได้ 0 แถว จึงต้องเช็คจำนวนแถวแล้ว fallback เป็นค่าว่างแทน
+    try{
+      const del=await q(sb.from('config').delete().eq('key','class_days_'+id).select());
+      if(!del||!del.length) await q(sb.from('config').upsert([{key:'class_days_'+id,value:'[]'}],{onConflict:'key'}));
+    }catch(e){}
     await loadConfig();
     _subCat=null;
     invalidateSubjects(); await loadSubjects();toast('ลบเรียบร้อย');pgSubjects();
@@ -3001,7 +3006,10 @@ async function saveMonth(){
         invalidateAtt();
         attData=await qAll(()=>sb.from('attendance').select('*').eq('subject_id',S.selSub));
         _refreshSummaryTab();
-      }catch(e){}
+      }catch(e){
+        // บันทึกสำเร็จแล้ว แต่ดึงข้อมูลกลับมาแสดงไม่ได้ — ต้องบอกครู ไม่งั้นจะเห็นตัวเลขเก่าโดยไม่รู้ตัว
+        toast('บันทึกแล้ว แต่โหลดข้อมูลล่าสุดมาแสดงไม่สำเร็จ — กรุณารีเฟรชหน้าเพื่อดูตัวเลขที่ถูกต้อง','er');
+      }
     })
     .catch(e=>{
       toast('บันทึกผิดพลาด: '+e.message,'er');
