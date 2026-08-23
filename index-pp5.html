@@ -1691,9 +1691,38 @@ function _loadScriptOnce(key, src){
   _loadedModules[key]=p;
   return p;
 }
+// ── กันกดปุ่มบันทึกซ้ำระหว่างที่คำสั่งก่อนหน้ายังไม่เสร็จ ──────────────
+// overlay โหลด (#lov) ถูกบังคับซ่อนที่ 12 วินาที ถ้าเน็ตช้ากว่านั้นจะเปิดทางให้กดซ้ำ
+// ทำให้ฟังก์ชันที่ insert แถวใหม่ (เพิ่มหน่วย/เพิ่มวิชา/เพิ่มตัวชี้วัด) สร้างข้อมูลซ้ำได้
+// จึงล็อกที่ตัวฟังก์ชันแทน ครอบคลุมทุกปุ่มที่เรียกฟังก์ชันนั้นโดยไม่ต้องแก้ทีละปุ่ม
+const _GUARDED_FNS=['saveExam','saveUnitSc','addUnitOnly','deleteUnit','saveSubForm','delSub',
+  'saveSpecial','saveRead','saveChar','saveStdIndicator','saveStdIndicatorAndNext','delStdIndicator',
+  'importOmrScores','saveEplRatioAll','addEplUnit','delEplUnit','doCopyEvalPlan',
+  'saveSettings','saveAdminPassword','saveSgList','saveRoomsPerGrade','saveGradeLevels',
+  'saveMenuPerms','saveIQATargets','saveAnnouncement','saveMaintenanceMode','saveCheckinSync',
+  'saveStu','delStu','backupAllData'];
+function _applyConcurrencyGuards(){
+  _GUARDED_FNS.forEach(n=>{
+    const fn=window[n];
+    if(typeof fn!=='function'||fn.__guarded) return;
+    let busy=false;
+    const wrapped=async function(...args){
+      if(busy){ toast('กำลังบันทึกอยู่ กรุณารอสักครู่','er'); return; }
+      busy=true;
+      try{ return await fn.apply(this,args); }
+      finally{ busy=false; }
+    };
+    wrapped.__guarded=true;
+    window[n]=wrapped;
+  });
+}
+// ฟังก์ชันในไฟล์นี้เป็น function declaration ทั้งหมดจึงถูก hoist แล้ว เรียกห่อได้ทันที
+// (ของโมดูลจะถูกห่อเพิ่มใน ensureModule หลังโหลดเสร็จ)
+_applyConcurrencyGuards();
 // ?v= กันแคชเก่าค้าง (modules/*.js แคชไว้ 1 วันตาม vercel.json) — แก้ไฟล์ใน modules/ เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย
 const MODULE_V='37';
-function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V); }
+// ห่อฟังก์ชันของโมดูลหลังโหลดเสร็จด้วย (ตอนเริ่มระบบยังไม่มีฟังก์ชันเหล่านี้)
+function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V).then(()=>{ _applyConcurrencyGuards(); }); }
 function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
 
 // เมนูที่ควบคุมสิทธิ์รายคน (ดู canAccessMenu/_loadMenuPerms) — key ต้องตรงกับ menu_permissions.menu_key
