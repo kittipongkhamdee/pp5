@@ -1126,6 +1126,32 @@ async function pgSettings(){
       </div>
     </div>
 
+    <!-- การ์ด: ฟังก์ชันนักเรียนที่ต้องติดตาม -->
+    <div class="card" style="margin-bottom:0;border:1.5px solid rgba(88,86,214,.3);">
+      <div class="ch" style="background:rgba(88,86,214,.07);">
+        <div class="ct" style="color:#5856d6;display:flex;align-items:center;gap:8px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#5856d6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          เมนูนักเรียนที่ต้องติดตาม
+        </div>
+        <span class="badge" style="background:rgba(88,86,214,.15);color:#5856d6;">Admin</span>
+      </div>
+      <div class="cb">
+        <div style="font-size:12px;color:#6e6e73;margin-bottom:14px;line-height:1.6">
+          เมนูนี้จะไล่เช็กเวลาเรียนและคะแนนรวมของทุกวิชาที่ครูสอน เพื่อหานักเรียนที่เสี่ยง มส./ติด 0
+          ซึ่งเป็นการดึงข้อมูลก้อนใหญ่ที่สุดของระบบ ถ้าโรงเรียนยังไม่ได้ใช้ ปิดไว้จะช่วยให้ระบบเบาลงมาก
+          — เมื่อปิด ครูจะไม่เห็นเมนูนี้และระบบจะไม่คำนวณส่วนนี้เลย
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="c-wl-on" ${S.config.watchlist_enabled!=='0'?'checked':''} style="width:18px;height:18px;accent-color:#5856d6">
+          <span style="font-size:14px;font-weight:600;color:#5856d6">เปิดใช้งานเมนูนักเรียนที่ต้องติดตาม</span>
+        </label>
+        <button class="btn bp" onclick="saveWatchlistMode()" style="margin-top:14px;width:100%;justify-content:center;background:#5856d6;border-color:#5856d6">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          บันทึก
+        </button>
+      </div>
+    </div>
+
   </div>
 
   <!-- ── การ์ด: จัดการสิทธิ์แอดมิน ── -->
@@ -1646,6 +1672,21 @@ async function saveMaintenanceMode(){
     S.config.maintenance_mode=on;
     S.config.maintenance_message=msg;
     toast(on==='1'?'เปิดโหมดปิดปรับปรุงแล้ว — ครูทั่วไปจะเข้าระบบไม่ได้จนกว่าจะปิด':'ปิดโหมดปิดปรับปรุงแล้ว ทุกคนใช้งานได้ตามปกติ');
+  }catch(e){ toast('บันทึกไม่สำเร็จ: '+e.message,'er'); }
+  finally{ loading(false); }
+}
+
+async function saveWatchlistMode(){
+  const on=$('c-wl-on').checked?'1':'0';
+  loading(true);
+  try{
+    await q(sb.from('config').upsert([{key:'watchlist_enabled',value:on}],{onConflict:'key'}));
+    S.config.watchlist_enabled=on;
+    // สะท้อนผลทันทีในหน้าจอที่เปิดอยู่ ไม่ต้องรีเฟรช
+    _applyMenuVisibility();
+    if(on==='1') updateWatchlistBadge();
+    else if(S.page==='watchlist') nav('dashboard');
+    toast(on==='1'?'เปิดเมนูนักเรียนที่ต้องติดตามแล้ว':'ปิดเมนูนักเรียนที่ต้องติดตามแล้ว — ครูจะไม่เห็นเมนูนี้และระบบจะไม่คำนวณส่วนนี้');
   }catch(e){ toast('บันทึกไม่สำเร็จ: '+e.message,'er'); }
   finally{ loading(false); }
 }

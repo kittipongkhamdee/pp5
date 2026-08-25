@@ -948,6 +948,8 @@ function _applyMenuVisibility(){
   const subjBoundIds=['nav-dashboard','nav-subjects','nav-evalplan','nav-attendance','nav-scores','nav-eval','nav-cover','nav-report','nav-watchlist'];
   const isDirectorOnly = !!S.profile?.is_director && !S.profile?.is_admin;
   subjBoundIds.forEach(id=>{ const el=$(id); if(el) el.style.display=isDirectorOnly?'none':''; });
+  // ปิดฟังก์ชัน "นักเรียนที่ต้องติดตาม" ไว้ = ครูไม่เห็นเมนูนี้เลย (ต้องอยู่หลังลูปข้างบนที่ set display='')
+  const _wlNav=$('nav-watchlist'); if(_wlNav && !watchlistOn()) _wlNav.style.display='none';
   // ซ่อนหัวข้อ section ที่ไม่เหลือเมนูย่อยให้เห็นเลย
   document.querySelectorAll('.nav-sec').forEach(sec=>{
     const items=document.querySelectorAll(`.ni[data-sec="${sec.dataset.sec}"]`);
@@ -1764,7 +1766,7 @@ function _applyConcurrencyGuards(){
 // (ของโมดูลจะถูกห่อเพิ่มใน ensureModule หลังโหลดเสร็จ)
 _applyConcurrencyGuards();
 // ?v= กันแคชเก่าค้าง (modules/*.js แคชไว้ 1 วันตาม vercel.json) — แก้ไฟล์ใน modules/ เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย
-const MODULE_V='37';
+const MODULE_V='38';
 // ห่อฟังก์ชันของโมดูลหลังโหลดเสร็จด้วย (ตอนเริ่มระบบยังไม่มีฟังก์ชันเหล่านี้)
 function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V).then(()=>{ _applyConcurrencyGuards(); }); }
 function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
@@ -1777,6 +1779,7 @@ function nav(page,subId){
   // reset loading ก่อนเสมอ
   loadingOff();
   if(GATED_MENUS[page]&&!canAccessMenu(page)){ _denyMenuAccess(GATED_MENUS[page]); return; }
+  if(page==='watchlist' && !watchlistOn()){ nav('dashboard'); return; }
   S.page=page; if(subId!==undefined) S.selSub=subId;
   closeSidebar();
   document.querySelectorAll('.ni').forEach(e=>e.classList.remove('active'));
@@ -5234,7 +5237,14 @@ async function delStdIndicator(id){
 // นักเรียนที่ต้องติดตาม — รวมนักเรียนผลการเรียนไม่ผ่าน / เสี่ยง มส (เวลาเรียน) ทุกวิชาที่สอน ไว้หน้าเดียว
 // ════════════════════════════════════════════════════════════════
 let _wlFilterSub='', _wlFilterType='', _wlSearch='';
+// ── สวิตช์ปิดฟังก์ชัน "นักเรียนที่ต้องติดตาม" ──────────────────────────────
+// ตั้งได้ที่ ตั้งค่า > แอดมิน (config.watchlist_enabled) ค่าเริ่มต้นคือเปิด
+// ปิดแล้วต้อง "ไม่ทำงานเลย" ไม่ใช่แค่ซ่อนเมนู เพราะการคำนวณรายชื่อนี้ต้องดึง
+// เวลาเรียน+คะแนนรวมของทุกวิชาที่ครูสอน ซึ่งเป็นชุดข้อมูลก้อนใหญ่ที่สุดของระบบ
+function watchlistOn(){ return S.config?.watchlist_enabled!=='0'; }
+
 async function _computeWatchlistRows(){
+  if(!watchlistOn()){ S._watchlistRows=[]; return S._watchlistRows; }
   if(!S.subjects.length){ S._watchlistRows=[]; return S._watchlistRows; }
   const subjIds=S.subjects.map(s=>s.id);
     // ใช้ข้อมูลชุดเดียวกับแดชบอร์ด/ป้าย มส (cache ร่วม) แล้วแยกตามวิชาในเครื่อง แทนการยิงทีละวิชา
@@ -5299,6 +5309,7 @@ async function _computeWatchlistRows(){
   return S._watchlistRows;
 }
 async function pgWatchlist(){
+  if(!watchlistOn()){$('pg').innerHTML=`<div class="card"><div class="empty"><svg class="ei" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg><div>ฟังก์ชันนี้ถูกปิดใช้งานโดยผู้ดูแลระบบ</div></div></div>`;return;}
   if(!S.subjects.length){$('pg').innerHTML=`<div class="card"><div class="empty"><svg class="ei" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><div>ยังไม่มีรายวิชา</div></div></div>`;return;}
   loading(true);
   try{ await _computeWatchlistRows(); }finally{ loading(false); }
@@ -5306,6 +5317,7 @@ async function pgWatchlist(){
   renderWatchlistPage();
 }
 async function updateWatchlistBadge(){
+  if(!watchlistOn()){ _setWatchlistBadge(0); return; }
   try{
     await _computeWatchlistRows();
     _setWatchlistBadge(new Set((S._watchlistRows||[]).map(r=>r.stu.id)).size);
