@@ -8,6 +8,41 @@
 // 9. SETTINGS
 // ════════════════════════════════════════════════════════════════
 
+// ต้องตรงกับ model ที่ตั้งไว้ใน _callGeminiStream (index-pp5.html) — แค่
+// ป้ายแสดงผล ไม่ได้ใช้เรียก Gemini จริง เปลี่ยนโมเดลแล้วอย่าลืมแก้ทั้งสองที่
+const GEMINI_MODEL_ALIAS = 'gemini-flash-latest';
+
+// '-latest' ชี้ไปรุ่นเสถียรล่าสุดของ Google เสมอ วิธีเดียวที่จะรู้ว่าตอนนี้
+// จริงๆ คือรุ่นไหนคือยิง generateContent จริงแล้วอ่าน modelVersion จาก
+// ผลลัพธ์ (models.get บนชื่อ alias จะบอกแค่ชื่อ alias เอง ไม่บอกรุ่นจริง)
+// ใช้ maxOutputTokens:1 + ปิด thinking ให้ต้นทุนต่ำที่สุด เป็นปุ่มกดเช็คเอง
+// ไม่ได้เรียกอัตโนมัติทุกครั้งที่เปิดหน้าตั้งค่า
+async function checkGeminiModel(){
+  const key = $('c-gemini-key')?.value.trim();
+  const btn = $('c-gemini-check-btn');
+  const out = $('c-gemini-check-result');
+  if(!key){ out.innerHTML = '<span style="color:var(--red,#dc2626)">กรอก API Key ก่อน</span>'; return; }
+  btn.disabled = true; btn.textContent = 'กำลังตรวจสอบ...';
+  out.textContent = '';
+  try{
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL_ALIAS}:generateContent?key=${encodeURIComponent(key)}`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        contents:[{parts:[{text:'hi'}]}],
+        generationConfig:{maxOutputTokens:1, thinkingConfig:{thinkingBudget:0}}
+      })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data?.error?.message || `Gemini API ผิดพลาด (${res.status})`);
+    if(!data.modelVersion) throw new Error('ไม่พบเวอร์ชันโมเดลในผลลัพธ์');
+    out.innerHTML = `<span style="color:var(--green,#16a34a)">ขณะนี้คือ <code style="background:var(--bg2,#f3f4f6);padding:1px 5px;border-radius:4px">${esc(data.modelVersion)}</code></span>`;
+  }catch(err){
+    out.innerHTML = `<span style="color:var(--red,#dc2626)">${esc(err.message||'ตรวจสอบไม่สำเร็จ')}</span>`;
+  }finally{
+    btn.disabled = false; btn.textContent = 'ตรวจสอบเวอร์ชันปัจจุบัน';
+  }
+}
+
 // ════ CLEAR ALL DATA ══════════════════════════════════════════
 
 const CLEAR_TABLES = [
@@ -591,6 +626,11 @@ async function pgSettings(){
               <button type="button" onclick="const i=$('c-gemini-key');i.type=i.type==='password'?'text':'password'" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted)">${_ico.eye}</button>
             </div>
             <div style="font-size:11.5px;color:var(--muted);margin-top:4px">รับฟรีได้ที่ <strong>aistudio.google.com</strong> → Get API Key</div>
+            <div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px">
+              <span style="color:var(--muted)">โมเดลที่ตั้งไว้ในระบบ: <code style="background:var(--bg2,#f3f4f6);padding:1px 5px;border-radius:4px">${GEMINI_MODEL_ALIAS}</code></span>
+              <button type="button" class="btn-sm" id="c-gemini-check-btn" onclick="checkGeminiModel()">ตรวจสอบเวอร์ชันปัจจุบัน</button>
+              <span id="c-gemini-check-result"></span>
+            </div>
           </div>
           <div style="grid-column:1/-1">
             <label class="fl" style="display:flex;align-items:center;gap:6px">
