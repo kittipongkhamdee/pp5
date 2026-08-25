@@ -466,9 +466,9 @@ const _cache = {};
 const CACHE_TTL = 300000; // 5 นาที
 
 function cacheGet(key){ const c=_cache[key]; return (c&&Date.now()-c.ts<CACHE_TTL)?c.data:null; }
-function cacheSet(key,data){ _cache[key]={data,ts:Date.now()}; return data; }
-function cacheInv(...keys){ keys.forEach(k=>{ if(k in _cache) _cache[k].ts=0; }); }
-function cacheInvPrefix(prefix){ Object.keys(_cache).filter(k=>k.startsWith(prefix)).forEach(k=>_cache[k].ts=0); }
+function cacheSet(key,data){ _cache[key]={data,ts:Date.now()}; if(_cacheShouldPersist(key)) _cachePersist(); return data; }
+function cacheInv(...keys){ keys.forEach(k=>{ if(k in _cache) _cache[k].ts=0; }); _cachePersist(); }
+function cacheInvPrefix(prefix){ Object.keys(_cache).filter(k=>k.startsWith(prefix)).forEach(k=>_cache[k].ts=0); _cachePersist(); }
 
 // query พร้อม cache
 async function qc(key, fn){
@@ -477,6 +477,49 @@ async function qc(key, fn){
   const data = await fn();
   return cacheSet(key, data);
 }
+
+// ── เก็บแคชข้ามการรีเฟรชหน้า ───────────────────────────────────────────────
+// _cache อยู่ในหน่วยความจำล้วน กด F5 ทีก็หายหมด ครูจึงโหลดข้อมูลชุดเดิมซ้ำทุกครั้งที่เปิดหน้า
+// (teach_att_ ของครู 1 คน = attendance ทุกวิชารวมกัน วัดจริง ~500-600 kB)
+// ใช้ sessionStorage ไม่ใช่ localStorage — หายเองเมื่อปิดแท็บ ตรงกับที่ระบบเก็บ session อยู่แล้ว
+// เพราะเป็นเครื่องที่ใช้ร่วมกันในโรงเรียน และแคชนี้มีชื่อ/คะแนน/เวลาเรียนของนักเรียน
+// เก็บเฉพาะคีย์ที่โหลดทุกครั้งที่เข้าระบบ (คีย์รายหน้าปล่อยให้โหลดตอนเปิดหน้านั้นตามปกติ กันพื้นที่เต็ม)
+const _CACHE_SS_KEY='pp5_cache';
+const _CACHE_PERSIST_PREFIXES=['teach_att_','teach_sum_','all_stu_basic','subjects_'];
+let _cachePersistTimer=null;
+function _cacheShouldPersist(k){ return _CACHE_PERSIST_PREFIXES.some(p=>k.startsWith(p)); }
+function _cachePersist(){
+  if(_cachePersistTimer) return;            // รวบหลายครั้งติดกันให้เขียนรอบเดียว
+  _cachePersistTimer=setTimeout(()=>{
+    _cachePersistTimer=null;
+    try{
+      const uid=S.user?.id; if(!uid) return;
+      const now=Date.now(), out={};
+      Object.keys(_cache).forEach(k=>{
+        const v=_cache[k];
+        if(_cacheShouldPersist(k) && v && now-v.ts<CACHE_TTL) out[k]=v;
+      });
+      sessionStorage.setItem(_CACHE_SS_KEY, JSON.stringify({uid, data:out}));
+    }catch(e){
+      // พื้นที่เต็มหรือเบราว์เซอร์ปิดกั้น — ล้างทิ้งแล้วปล่อยไป เสียแค่ประโยชน์เรื่องแคช ไม่กระทบการทำงาน
+      try{ sessionStorage.removeItem(_CACHE_SS_KEY); }catch(e2){}
+    }
+  },1500);
+}
+function _cacheRestore(){
+  try{
+    const raw=sessionStorage.getItem(_CACHE_SS_KEY); if(!raw) return;
+    const parsed=JSON.parse(raw);
+    // คนละบัญชี = ห้ามใช้แคชเดิมเด็ดขาด
+    if(!parsed || parsed.uid!==S.user?.id){ _cacheClearPersisted(); return; }
+    const now=Date.now();
+    Object.keys(parsed.data||{}).forEach(k=>{
+      const v=parsed.data[k];
+      if(v && typeof v.ts==='number' && now-v.ts<CACHE_TTL) _cache[k]=v;
+    });
+  }catch(e){ _cacheClearPersisted(); }
+}
+function _cacheClearPersisted(){ try{ sessionStorage.removeItem(_CACHE_SS_KEY); }catch(e){} }
 
 // สำหรับ render ทันที แล้ว refresh เบื้องหลัง (stale-while-revalidate)
 async function qcRevalidate(key, fn, onUpdate){
@@ -852,7 +895,7 @@ async function initAuth(){
       return;
     }
     if(!session && S.user){
-      S.user=null; S.profile=null; S.menuPerms=null;
+      S.user=null; S.profile=null; S.menuPerms=null; _cacheClearPersisted();
       loadingOff(); showLogin();
     }
   });
@@ -961,6 +1004,7 @@ function showLogin(){
 }
 
 function showApp(){
+  _cacheRestore();   // กู้แคชจากการเปิดหน้าครั้งก่อนในแท็บเดียวกัน
   // โหมดปิดปรับปรุงระบบชั่วคราว — บล็อกทุกคนยกเว้นแอดมิน (ตั้งค่าได้ที่ ตั้งค่า > แอดมิน)
   if(S.config.maintenance_mode==='1' && !S.profile?.is_admin){
     $('login-page').style.display='none';
@@ -1608,7 +1652,7 @@ async function doLogout(){
   cleanupPresence();
   loading(true);
   try{ await sb.auth.signOut({scope:'local'}); }catch(e){}
-  S.user=null; S.profile=null; S.menuPerms=null;
+  S.user=null; S.profile=null; S.menuPerms=null; _cacheClearPersisted();
   loadingOff();
   showLogin();
   toast('ออกจากระบบเรียบร้อย');
@@ -1832,6 +1876,7 @@ function _patchCache(key, mutate){
   try{ next=mutate(c.data); }catch(e){ return false; }
   if(!Array.isArray(next)) return false;
   _cache[key]={data:next, ts:Date.now()};
+  if(_cacheShouldPersist(key)) _cachePersist();
   return true;
 }
 // เวลาเรียน: แทนที่ทุกแถวของ (วิชา, เดือน) ด้วยชุดใหม่ที่เพิ่งบันทึก (วันที่ถูกลบออกจึงหายไปเองด้วย)
@@ -6363,7 +6408,7 @@ function clearAIChat(){
     if(!S||!S.user) return;
     if(typeof cleanupPresence==='function') cleanupPresence();
     try{ sb.auth.signOut({scope:'local'}); }catch(_){}
-    S.user=null; S.profile=null; S.menuPerms=null;
+    S.user=null; S.profile=null; S.menuPerms=null; _cacheClearPersisted();
     loadingOff();
     showLogin();
     toast('ออกจากระบบอัตโนมัติ เนื่องจากไม่มีการใช้งาน 30 นาที','wa');
