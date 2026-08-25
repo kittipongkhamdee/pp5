@@ -1820,6 +1820,35 @@ function studentsOfSubject(allStu,sub){
 // เรียกหลังบันทึกข้อมูลที่กระทบตัวเลขสรุป เพื่อให้รอบถัดไปดึงใหม่
 function invalidateTeacherAgg(){ cacheInv(_tkey('att'), _tkey('sum')); }
 
+// ── อัปเดตแคชรวมของครู "ในที่" จากข้อมูลที่เพิ่งบันทึก แทนการทิ้งแล้วโหลดใหม่ทั้งก้อน ──────
+// แคช teach_att_/teach_sum_ ถูกใช้โดยแดชบอร์ดและป้าย "นักเรียนที่ต้องติดตาม"
+// เดิม: กดบันทึก 1 ครั้ง = ทิ้งแคช แล้วดึง attendance ของทุกวิชากลับมาใหม่ (วัดจริง ~500-600 kB/ครั้ง)
+// ทั้งที่เรารู้อยู่แล้วว่าแถวไหนเปลี่ยน — จึงแก้ข้อมูลในแคชให้ตรงแทน ไม่ต้องยิงเน็ตเลย
+// คืน true ถ้าแก้แคชสำเร็จ / false ถ้าไม่มีแคชสด (ผู้เรียกควร invalidate ตามปกติ)
+function _patchCache(key, mutate){
+  const c=_cache[key];
+  if(!c || Date.now()-c.ts>=CACHE_TTL) return false;
+  let next;
+  try{ next=mutate(c.data); }catch(e){ return false; }
+  if(!Array.isArray(next)) return false;
+  _cache[key]={data:next, ts:Date.now()};
+  return true;
+}
+// เวลาเรียน: แทนที่ทุกแถวของ (วิชา, เดือน) ด้วยชุดใหม่ที่เพิ่งบันทึก (วันที่ถูกลบออกจึงหายไปเองด้วย)
+function patchTeacherAtt(subjectId, ym, rows){
+  return _patchCache(_tkey('att'), data=>
+    data.filter(a=>!(String(a.subject_id)===String(subjectId)&&String(a.year_month)===String(ym)))
+        .concat(rows.map(r=>({subject_id:r.subject_id, student_id:r.student_id, status:r.status,
+                              periods:r.periods, year_month:r.year_month, date_day:r.date_day})))
+  );
+}
+// สรุปคะแนน: แทนที่ทุกแถวของวิชานั้นด้วยชุดใหม่
+function patchTeacherSum(subjectId, rows){
+  return _patchCache(_tkey('sum'), data=>
+    data.filter(r=>String(r.subject_id)!==String(subjectId)).concat(rows.map(r=>({...r})))
+  );
+}
+
 // ════════════════════════════════════════════════════════════════
 // 1. DASHBOARD
 // ════════════════════════════════════════════════════════════════
@@ -3001,7 +3030,8 @@ async function saveMonth(){
   if(removedDays.length) ops.push(q(sb.from('attendance').delete().eq('subject_id',S.selSub).eq('year_month',ym).in('date_day',removedDays)));
   Promise.all(ops)
     .then(async()=>{
-      invalidateTeacherAgg(); updateWatchlistBadge();
+      if(!patchTeacherAtt(S.selSub, ym, rows)) invalidateTeacherAgg();
+      updateWatchlistBadge();
       try{
         invalidateAtt();
         attData=await qAll(()=>sb.from('attendance').select('*').eq('subject_id',S.selSub));
@@ -4051,7 +4081,8 @@ async function saveExam(){
     await q(sb.from('score_summary').upsert(rows,{onConflict:'subject_id,student_id'}));
     scSum=await q(sb.from('score_summary').select('*').eq('subject_id',S.selSub));
     toast('บันทึกคะแนนสอบเรียบร้อย');
-    invalidateTeacherAgg(); updateWatchlistBadge();
+    if(!patchTeacherSum(S.selSub, rows)) invalidateTeacherAgg();
+    updateWatchlistBadge();
     _clearScDirty(); _examDirty=false;
     // อัปเฉพาะแท็บสรุปผล ไม่ render ทั้งหน้า (กันข้อมูลที่กรอกหาย)
     const smEl=$('sc-sm');
@@ -4379,7 +4410,8 @@ async function saveSpecial(){
     await q(sb.from('score_summary').upsert(rows,{onConflict:'subject_id,student_id'}));
     scSum=await q(sb.from('score_summary').select('*').eq('subject_id',S.selSub));
     toast('บันทึกผลพิเศษเรียบร้อย');
-    invalidateTeacherAgg(); updateWatchlistBadge();
+    if(!patchTeacherSum(S.selSub, rows)) invalidateTeacherAgg();
+    updateWatchlistBadge();
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
 }
 async function changeScSub(sid){
