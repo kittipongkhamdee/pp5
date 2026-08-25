@@ -5830,8 +5830,9 @@ function _aiAddErrMsg(text, showRetry, autoRetryAfterSec=0){
 async function _callGeminiStream(history,context,apiKey,onChunk,retry=0){
   const sys=`คุณเป็นผู้ช่วยวิเคราะห์ข้อมูลนักเรียนสำหรับครูผู้สอน ตอบเป็นภาษาไทย กระชับ ชัดเจน มีประโยชน์กับครู\nใช้ข้อมูลต่อไปนี้ในการตอบ:\n\n${context}\n\nหลังตอบทุกครั้ง ให้ต่อท้ายด้วย [SUGGEST: คำถาม1|คำถาม2] เสมอ (2 คำถามที่ครูน่าจะถามต่อ)`;
   // '-latest' ตามรุ่นเสถียรล่าสุดของ Google อัตโนมัติ แทนที่จะปักหมุดเลขรุ่น
-  // ที่จะค่อยๆ เก่าไปเรื่อยๆ โดยไม่มีอะไรมาคอยแจ้งเตือนให้อัปเดต
-  const model='gemini-flash-lite-latest';
+  // ที่จะค่อยๆ เก่าไปเรื่อยๆ โดยไม่มีอะไรมาคอยแจ้งเตือนให้อัปเดต ระดับ flash
+  // เต็ม ให้ตรงกับระบบสอบวัดผล (คนละ config เดิมที่เคยตั้งไว้ที่ flash-lite)
+  const model='gemini-flash-latest';
   const maxRetry=2; // retry สูงสุด 2 ครั้งสำหรับ transient error (503)
   console.log('[AI] calling', model, 'retry='+retry, 'history='+history.length);
   let res;
