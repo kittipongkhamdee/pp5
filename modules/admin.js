@@ -1152,6 +1152,32 @@ async function pgSettings(){
       </div>
     </div>
 
+    <!-- การ์ด: ผู้ช่วยครู AI -->
+    <div class="card" style="margin-bottom:0;border:1.5px solid rgba(4,102,200,.3);">
+      <div class="ch" style="background:rgba(4,102,200,.07);">
+        <div class="ct" style="color:#0466c8;display:flex;align-items:center;gap:8px;">
+          <svg viewBox="0 0 24 24" fill="#0466c8" width="16" height="16"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
+          ผู้ช่วยครู AI
+        </div>
+        <span class="badge" style="background:rgba(4,102,200,.15);color:#0466c8;">Admin</span>
+      </div>
+      <div class="cb">
+        <div style="font-size:12px;color:#6e6e73;margin-bottom:14px;line-height:1.6">
+          ปุ่มลอยมุมขวาล่างสำหรับถามผู้ช่วย AI — เมื่อปิด ครูจะไม่เห็นปุ่มนี้
+          และระบบจะไม่ส่งข้อมูลไปที่ Gemini เลย ใช้ตอนโควต้า API ใกล้หมด
+          หรือยังไม่พร้อมให้ครูใช้งานส่วนนี้
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="c-ai-on" ${S.config.ai_assistant_enabled!=='0'?'checked':''} style="width:18px;height:18px;accent-color:#0466c8">
+          <span style="font-size:14px;font-weight:600;color:#0466c8">เปิดใช้งานผู้ช่วยครู AI</span>
+        </label>
+        <button class="btn bp" onclick="saveAIAssistantMode()" style="margin-top:14px;width:100%;justify-content:center;background:#0466c8;border-color:#0466c8">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          บันทึก
+        </button>
+      </div>
+    </div>
+
   </div>
 
   <!-- ── การ์ด: จัดการสิทธิ์แอดมิน ── -->
@@ -1687,6 +1713,24 @@ async function saveWatchlistMode(){
     if(on==='1') updateWatchlistBadge();
     else if(S.page==='watchlist') nav('dashboard');
     toast(on==='1'?'เปิดเมนูนักเรียนที่ต้องติดตามแล้ว':'ปิดเมนูนักเรียนที่ต้องติดตามแล้ว — ครูจะไม่เห็นเมนูนี้และระบบจะไม่คำนวณส่วนนี้');
+  }catch(e){ toast('บันทึกไม่สำเร็จ: '+e.message,'er'); }
+  finally{ loading(false); }
+}
+
+async function saveAIAssistantMode(){
+  const on=$('c-ai-on').checked?'1':'0';
+  loading(true);
+  try{
+    await q(sb.from('config').upsert([{key:'ai_assistant_enabled',value:on}],{onConflict:'key'}));
+    S.config.ai_assistant_enabled=on;
+    // สะท้อนผลทันทีในหน้าจอที่เปิดอยู่ ไม่ต้องรีเฟรช
+    const fab=$('ai-fab');
+    if(fab){
+      if(on==='1'){ fab.style.display='flex'; if(window._initFabDrag) _initFabDrag(); }
+      else fab.style.display='none';
+    }
+    if(on!=='1'){ const p=$('ai-panel'); if(p) p.style.display='none'; }
+    toast(on==='1'?'เปิดผู้ช่วยครู AI แล้ว':'ปิดผู้ช่วยครู AI แล้ว — ครูจะไม่เห็นปุ่มนี้และระบบจะไม่ส่งข้อมูลไปที่ Gemini');
   }catch(e){ toast('บันทึกไม่สำเร็จ: '+e.message,'er'); }
   finally{ loading(false); }
 }

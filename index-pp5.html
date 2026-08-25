@@ -1049,7 +1049,11 @@ function showApp(){
   else { nav('dashboard'); }
   initPresence();
   updateWatchlistBadge();
-  const fab=$('ai-fab'); if(fab){fab.style.display='flex'; if(window._initFabDrag) _initFabDrag();}
+  const fab=$('ai-fab');
+  if(fab){
+    if(aiAssistantOn()){ fab.style.display='flex'; if(window._initFabDrag) _initFabDrag(); }
+    else fab.style.display='none';
+  }
   if(window._initIdleTimeout) _initIdleTimeout();
   _checkAnnouncement();
   _checkBackupReminder();
@@ -1766,7 +1770,7 @@ function _applyConcurrencyGuards(){
 // (ของโมดูลจะถูกห่อเพิ่มใน ensureModule หลังโหลดเสร็จ)
 _applyConcurrencyGuards();
 // ?v= กันแคชเก่าค้าง (modules/*.js แคชไว้ 1 วันตาม vercel.json) — แก้ไฟล์ใน modules/ เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย
-const MODULE_V='38';
+const MODULE_V='39';
 // ห่อฟังก์ชันของโมดูลหลังโหลดเสร็จด้วย (ตอนเริ่มระบบยังไม่มีฟังก์ชันเหล่านี้)
 function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V).then(()=>{ _applyConcurrencyGuards(); }); }
 function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
@@ -5649,9 +5653,15 @@ const _ico={
 let _aiOpen=false, _aiCtx=null, _aiLoading=false, _aiLastMsg='', _aiHistory=[];
 let _aiLastCallMs=0, _aiThrottleTimer=null, _aiRetryCount=0;
 
+// ── สวิตช์ปิดผู้ช่วย AI ───────────────────────────────────────────────────
+// ตั้งได้ที่ ตั้งค่า > แอดมิน (config.ai_assistant_enabled) ค่าเริ่มต้นคือเปิด
+// ปิดแล้วต้องไม่ทำงานเลย: ไม่มีปุ่มลอย เปิดแผงไม่ได้ และไม่ยิงไปที่ Gemini
+function aiAssistantOn(){ return S.config?.ai_assistant_enabled!=='0'; }
+
 function toggleAIChat(){
-  _aiOpen=!_aiOpen;
   const panel=$('ai-panel');
+  if(!aiAssistantOn()){ _aiOpen=false; if(panel) panel.style.display='none'; return; }
+  _aiOpen=!_aiOpen;
   if(!panel) return;
   panel.style.display=_aiOpen?'flex':'none';
   if(_aiOpen){
@@ -5736,6 +5746,7 @@ function _aiShowSendCountdown(sec){
 
 async function sendAIMsg(retryMsg){
   const inp=$('ai-input');
+  if(!aiAssistantOn()) return;
   if(_aiLoading) return;
   const msg=retryMsg||(inp?inp.value.trim():'');
   if(!msg) return;
