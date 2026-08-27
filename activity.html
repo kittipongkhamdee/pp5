@@ -586,13 +586,26 @@ html[data-theme="dark"] #confirm-sheet{background:rgba(28,35,50,.78)}
   position:fixed;inset:0;z-index:300;background:#f0f4ff;
   display:flex;align-items:center;justify-content:center;padding:24px;overflow:hidden;
 }
-@keyframes liq-b1{0%,100%{border-radius:60% 40% 70% 30%/60% 30% 70% 40%;transform:translate(0,0)}50%{border-radius:30% 70% 40% 60%/50% 60% 40% 50%;transform:translate(-20px,14px)}}
-@keyframes liq-b2{0%,100%{border-radius:40% 60% 50% 50%/30% 60% 40% 70%;transform:translate(0,0)}50%{border-radius:70% 30% 60% 40%/60% 40% 70% 30%;transform:translate(16px,-14px)}}
-@keyframes liq-b3{0%,100%{border-radius:50% 50% 60% 40%/40% 70% 30% 60%;transform:translate(0,0)}50%{border-radius:40% 60% 30% 70%/70% 40% 60% 30%;transform:translate(-12px,-18px)}}
-.login-blob{position:absolute;pointer-events:none}
-.login-blob1{width:480px;height:480px;background:linear-gradient(135deg,#3b82f6,#6366f1);opacity:.28;filter:blur(70px);top:-140px;left:-120px;animation:liq-b1 9s ease-in-out infinite}
-.login-blob2{width:400px;height:400px;background:linear-gradient(135deg,#8b5cf6,#ec4899);opacity:.22;filter:blur(65px);bottom:-100px;right:-100px;animation:liq-b2 11s ease-in-out infinite}
-.login-blob3{width:340px;height:340px;background:linear-gradient(135deg,#06b6d4,#3b82f6);opacity:.18;filter:blur(60px);bottom:25%;left:5%;animation:liq-b3 13s ease-in-out infinite}
+/* ก้อนสีพื้นหลังหน้าเข้าสู่ระบบ
+   เดิมใช้ filter:blur(60-70px) ทับกับ keyframes ที่ขยับ border-radius ด้วย — border-radius
+   เปลี่ยนค่าไม่ได้ทำบน compositor เบราว์เซอร์จึงต้อง "เบลอใหม่ทั้งก้อน" ทุกเฟรม
+   บนมือถือทำไม่ทันจึงวาดออกมาทีละ tile เห็นเป็นสี่เหลี่ยมกะพริบตรงมุมล่างขวา
+   แก้โดยเลิกใช้ filter (ใช้ radial-gradient ที่จางเป็นโปร่งใสอยู่แล้ว ได้ขอบนุ่มเหมือนกัน)
+   และขยับด้วย transform อย่างเดียว ซึ่ง compositor ทำได้โดยไม่ต้องวาดใหม่ */
+@keyframes liq-b1{0%,100%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(-20px,14px,0) scale(1.06)}}
+@keyframes liq-b2{0%,100%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(16px,-14px,0) scale(1.07)}}
+@keyframes liq-b3{0%,100%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(-12px,-18px,0) scale(1.05)}}
+.login-blob{
+  position:absolute;pointer-events:none;border-radius:50%;
+  will-change:transform;backface-visibility:hidden;transform:translate3d(0,0,0);
+}
+.login-blob1{width:620px;height:620px;top:-210px;left:-190px;animation:liq-b1 9s ease-in-out infinite;
+  background:radial-gradient(circle closest-side,rgba(59,130,246,.34),rgba(99,102,241,.22) 55%,rgba(99,102,241,0) 100%)}
+.login-blob2{width:540px;height:540px;bottom:-170px;right:-165px;animation:liq-b2 11s ease-in-out infinite;
+  background:radial-gradient(circle closest-side,rgba(139,92,246,.27),rgba(236,72,153,.17) 55%,rgba(236,72,153,0) 100%)}
+.login-blob3{width:470px;height:470px;bottom:18%;left:-30px;animation:liq-b3 13s ease-in-out infinite;
+  background:radial-gradient(circle closest-side,rgba(6,182,212,.22),rgba(59,130,246,.13) 55%,rgba(59,130,246,0) 100%)}
+@media(prefers-reduced-motion:reduce){.login-blob{animation:none}}
 .login-card{
   position:relative;z-index:1;
   background:rgba(255,255,255,.78);backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px);
