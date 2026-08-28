@@ -1286,10 +1286,14 @@ async function loadUniformChecks(date,classKey){
 // ─── PIN ───────────────────────────────────────────────────────────────────
 let _pinBuf='';
 let _adminUnlocked=false;
-let _adminPin='1234';
 
-async function loadAdminPin(){
-  try{const r=await q(sb.from('config').select('value').eq('key','admin_password').limit(1));if(r&&r[0])_adminPin=r[0].value}catch(e){}
+// ตรวจรหัสผ่าน Admin ที่ฝั่งเซิร์ฟเวอร์ (RPC verify_admin_password) ไม่ใช่โหลดค่ารหัส
+// มาเทียบในเบราว์เซอร์ เพราะ config.admin_password ถูกซ่อนจากครูทั่วไปแล้ว (RLS)
+// ถ้ายังโหลดมาเทียบเอง ครูทั่วไปจะอ่านไม่ได้แล้วตกไปใช้ค่าเริ่มต้น ทำให้รหัสจริงใช้ไม่ได้
+async function verifyAdminPin(pw){
+  const {data,error}=await sb.rpc('verify_admin_password',{pw});
+  if(error) throw new Error(error.message);
+  return data===true;
 }
 
 // _pinCallback: ถ้ามีค่า แปลว่าเรียก showPinModal มาเพื่อขอสิทธิ์ admin ทำอย่างอื่น
@@ -1304,10 +1308,23 @@ function showPinModal(cb){
 }
 function closePinModal(){$('pin-modal').classList.remove('open');_pinCallback=null}
 
-function checkPin(){
+let _pinChecking=false;
+async function checkPin(){
+  if(_pinChecking) return;                       // กันกดยืนยันรัวระหว่างรอเซิร์ฟเวอร์ตอบ
   const entered=$('pin-input').value;
   if(!entered){$('pin-err').textContent='กรุณากรอกรหัสผ่าน';return}
-  if(entered===_adminPin){
+  const btn=document.querySelector('.pin-submit');
+  _pinChecking=true;
+  if(btn){btn.disabled=true;btn.textContent='กำลังตรวจสอบ...';}
+  $('pin-err').textContent='';
+  let ok=false, failMsg='รหัสผ่านไม่ถูกต้อง';
+  try{ ok=await verifyAdminPin(entered); }
+  catch(e){ failMsg='ตรวจสอบรหัสผ่านไม่สำเร็จ กรุณาลองใหม่'; }
+  finally{
+    _pinChecking=false;
+    if(btn){btn.disabled=false;btn.textContent='ยืนยัน';}
+  }
+  if(ok){
     _adminUnlocked=true;
     const cb=_pinCallback;_pinCallback=null;
     closePinModal();
@@ -1319,7 +1336,7 @@ function checkPin(){
     $('topbar-title').textContent='จัดการกิจกรรม';
     renderAdmin();
   }else{
-    $('pin-err').textContent='รหัสผ่านไม่ถูกต้อง';
+    $('pin-err').textContent=failMsg;
     $('pin-input').value='';$('pin-input').focus();
     const card=document.querySelector('.pin-card');
     card.style.animation='none';setTimeout(()=>{card.style.animation='shake .4s';},10);
@@ -3692,7 +3709,7 @@ async function deleteViolation(id){
 async function loadAppData(){
   loading(true);
   try{
-    const[actR,stuR,nameR,pinR]=await Promise.allSettled([loadActivities(),loadStudents(),loadSchoolName(),loadAdminPin(),loadViolations(),loadUnifCheckSetting()]);
+    const[actR,stuR,nameR]=await Promise.allSettled([loadActivities(),loadStudents(),loadSchoolName(),loadViolations(),loadUnifCheckSetting()]);
     if(actR.status==='rejected')throw actR.reason;
     if(stuR.status==='rejected')throw stuR.reason;
     const sn=$('side-school-name');if(sn)sn.textContent=S.schoolName;
