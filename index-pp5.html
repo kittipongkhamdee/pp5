@@ -1770,7 +1770,7 @@ function _applyConcurrencyGuards(){
 // (ของโมดูลจะถูกห่อเพิ่มใน ensureModule หลังโหลดเสร็จ)
 _applyConcurrencyGuards();
 // ?v= กันแคชเก่าค้าง (modules/*.js แคชไว้ 1 วันตาม vercel.json) — แก้ไฟล์ใน modules/ เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย
-const MODULE_V='39';
+const MODULE_V='40';
 // ห่อฟังก์ชันของโมดูลหลังโหลดเสร็จด้วย (ตอนเริ่มระบบยังไม่มีฟังก์ชันเหล่านี้)
 function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V).then(()=>{ _applyConcurrencyGuards(); }); }
 function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
@@ -3454,8 +3454,8 @@ async function printAttendanceMsReport(){
             <th style="width:30px;padding:5px 6px;border:1px solid #ccc;text-align:center">ที่</th>
             <th style="width:90px;padding:5px 8px;border:1px solid #ccc;text-align:center">เลขประจำตัว</th>
             <th style="padding:5px 8px;border:1px solid #ccc;text-align:left">ชื่อ-นามสกุล</th>
-            <th style="width:62px;padding:5px 6px;border:1px solid #ccc;text-align:center">ชม.ที่มา</th>
-            <th style="width:62px;padding:5px 6px;border:1px solid #ccc;text-align:center">ชม.ที่เช็คชื่อ</th>
+            <th style="width:76px;padding:5px 6px;border:1px solid #ccc;text-align:center">ชั่วโมงที่มา</th>
+            <th style="width:88px;padding:5px 6px;border:1px solid #ccc;text-align:center">ชั่วโมงที่เช็คชื่อ</th>
             <th style="width:62px;padding:5px 6px;border:1px solid #ccc;text-align:center;color:#dc2626">%เวลา</th>
           </tr>
         </thead>
