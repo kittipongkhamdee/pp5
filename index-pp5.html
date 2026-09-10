@@ -3587,7 +3587,7 @@ async function printAttendanceMsReportCombined(){
   const body=`
     <div style="text-align:center;margin-bottom:12px;border-bottom:2px solid #000;padding-bottom:8px">
       <div style="font-size:18px;font-weight:800">แจ้งรายชื่อนักเรียนไม่มีสิทธิ์สอบ</div>
-      <div style="font-size:15px;font-weight:600;margin-top:4px">ภาคเรียนที่ ${esc(cfg.semester||'')} ปีการศึกษา ${esc(cfg.academic_year||'')}</div>
+      <div style="font-size:15px;font-weight:600;margin-top:4px">${esc(cfg.school_name||'')} &nbsp;&nbsp;&nbsp; ปีการศึกษา ${esc(cfg.academic_year||'')} ภาคเรียนที่ ${esc(cfg.semester||'')}</div>
     </div>
     <table style="width:100%;border-collapse:collapse;font-size:13px">
       <thead>
