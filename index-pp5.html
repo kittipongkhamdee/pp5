@@ -809,7 +809,7 @@ async function exportExcel(sheets, fileName){
 }
 
 // printHTML: เปิดหน้าต่างใหม่ พิมพ์ตาราง พร้อม header โรงเรียน
-function printHTML(title, bodyHTML, orient='portrait'){
+function printHTML(title, bodyHTML, orient='portrait', hideHeader=false){
   const cfg=S.config;
   const schoolName=schoolNameWithPrefix(cfg.school_name);
   const w=window.open('','_blank');
@@ -839,11 +839,12 @@ function printHTML(title, bodyHTML, orient='portrait'){
     </style>
     </head><body>
     <div id="pbody">
+      ${hideHeader?'':`
       <div class="ph">
         <h1>${esc(schoolName)}</h1>
         <h2>${esc(title)}</h2>
         <div class="meta">ปีการศึกษา ${esc(cfg.academic_year||'')} ภาคเรียนที่ ${esc(cfg.semester||'')}</div>
-      </div>
+      </div>`}
       ${bodyHTML}
     </div>
     <div class="action-bar">
@@ -2691,7 +2692,7 @@ function renderAttPage(){
   $('pg').innerHTML=`
   <div class="ph"><div class="ptitle">บันทึกเวลาเรียน</div>
     <div style="display:flex;gap:8px">
-      <button class="btn bs no-print" onclick="printAttendanceMsReport()" style="color:#dc2626;border-color:rgba(220,38,38,.3)" title="พิมพ์รายชื่อนักเรียนที่มีเวลาเรียนไม่ถึง 80% ทุกวิชาที่คุณสอน"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>พิมพ์ มส</button>
+      <button class="btn bs no-print" onclick="printAttendanceMsChoice()" style="color:#dc2626;border-color:rgba(220,38,38,.3)" title="พิมพ์รายชื่อนักเรียนที่มีเวลาเรียนไม่ถึง 80% ทุกวิชาที่คุณสอน"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>พิมพ์ มส</button>
       <button class="btn bs no-print" onclick="exportAttendance()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>Excel</button>
       <button class="btn bs no-print" onclick="printAttendance()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>พิมพ์</button>
     </div>
@@ -3394,20 +3395,44 @@ function printAttendance(){
   w.document.close();
 }
 
-// รายงานนักเรียน มส (เวลาเรียนไม่ถึง 80%) เฉพาะวิชาของครูคนนี้ — รูปแบบเดียวกับ
-// "พิมพ์ มส" ในหน้ารายงานทั้งโรงเรียน (ดู printMsReport ใน modules/admin.js)
-// แต่กรองแค่ S.subjects (วิชาของครูที่ล็อกอินอยู่) และเพิ่มช่องลงชื่อครูผู้สอนท้ายหน้า
-async function printAttendanceMsReport(){
+// เลือกรูปแบบรายงาน มส ก่อนพิมพ์ — "แยกหน้าตามวิชา" (ของเดิม) หรือ "รวมทุกวิชาในตารางเดียว"
+// (แบบฟอร์ม "แจ้งรายชื่อนักเรียนไม่มีสิทธิ์สอบ" ที่ครูใช้อยู่เดิม) — ทำเป็น dialog เอง
+// (ไม่ใช้ confirm2 เพราะ confirm2 ตีความคลิก backdrop เป็น "ยกเลิก" ซึ่งจะไปสั่งพิมพ์
+// แบบแยกหน้าโดยไม่ตั้งใจถ้าเอาไปใช้แทนตัวเลือกที่สอง จึงต้องมีปุ่ม "ยกเลิก" แยกจริงๆ)
+function printAttendanceMsChoice(){
   if(!S.subjects.length){toast('ยังไม่มีรายวิชา','er');return;}
-  loading(true);
-  let allAtt=[], allStu=[];
-  try{
-    [allAtt, allStu]=await Promise.all([loadTeacherAtt(), loadAllStudentsBasic()]);
-  }catch(e){
-    loading(false); toast('โหลดข้อมูลไม่สำเร็จ: '+e.message,'er'); return;
+  const id='msdlg_'+Date.now();
+  const wrap=document.createElement('div');
+  wrap.id=id;
+  wrap.className='fixed inset-0 z-[2000] flex items-center justify-center p-5';
+  wrap.style.cssText='background:rgba(0,0,0,.25);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);animation:fadeIn .15s ease';
+  wrap.onclick=function(e){ if(e.target===wrap) close(); };
+  wrap.innerHTML=
+    '<div style="background:rgba(255,255,255,.82);backdrop-filter:blur(40px) saturate(200%);-webkit-backdrop-filter:blur(40px) saturate(200%);border-radius:22px;width:100%;max-width:320px;overflow:hidden;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.12),0 0 0 0.5px rgba(255,255,255,.6);animation:dlgPop .22s cubic-bezier(.34,1.56,.64,1)">'+
+      '<div style="padding:26px 24px 18px">'+
+        '<div style="font-size:17px;font-weight:700;color:#1d1d1f;margin-bottom:6px">พิมพ์รายงาน มส</div>'+
+        '<div style="font-size:13.5px;color:#6e6e73;line-height:1.6">เลือกรูปแบบรายงานนักเรียนที่มีเวลาเรียนไม่ถึง 80%</div>'+
+      '</div>'+
+      '<div style="border-top:0.5px solid rgba(0,0,0,.1)">'+
+        '<button id="'+id+'-combined" style="width:100%;padding:15px;font-size:15px;font-weight:700;color:#007AFF;background:none;border:none;border-bottom:0.5px solid rgba(0,0,0,.1);cursor:pointer;font-family:var(--font)">รวมทุกวิชาในตารางเดียว</button>'+
+        '<button id="'+id+'-bysubject" style="width:100%;padding:15px;font-size:15px;font-weight:600;color:#1d1d1f;background:none;border:none;border-bottom:0.5px solid rgba(0,0,0,.1);cursor:pointer;font-family:var(--font)">แยกหน้าตามวิชา</button>'+
+        '<button id="'+id+'-cancel" style="width:100%;padding:15px;font-size:15px;font-weight:400;color:#8e8e93;background:none;border:none;cursor:pointer;font-family:var(--font)">ยกเลิก</button>'+
+      '</div>'+
+    '</div>';
+  document.body.appendChild(wrap);
+  function close(){
+    wrap.style.animation='fadeIn .12s ease reverse forwards';
+    setTimeout(()=>{if(wrap.parentNode)wrap.remove();},120);
   }
-  loading(false);
+  document.getElementById(id+'-combined').onclick=()=>{close();printAttendanceMsReportCombined();};
+  document.getElementById(id+'-bysubject').onclick=()=>{close();printAttendanceMsReport();};
+  document.getElementById(id+'-cancel').onclick=close;
+}
 
+// โหลด+คำนวณ มส (เวลาเรียนไม่ถึง 80%) ของทุกวิชาที่ครูคนนี้สอน — ใช้ร่วมกันระหว่าง
+// รายงานแบบแยกหน้าตามวิชา และแบบรวมทุกวิชาในตารางเดียว
+async function _loadMsBySubject(){
+  const [allAtt, allStu]=await Promise.all([loadTeacherAtt(), loadAllStudentsBasic()]);
   const stuMap=Object.fromEntries(allStu.map(s=>[String(s.id),s]));
   const subjectsWithMs=[];
   S.subjects.forEach(sub=>{
@@ -3424,6 +3449,23 @@ async function printAttendanceMsReport(){
     const msIds=Object.keys(attMap).filter(sid=>totalH>0 && (attMap[sid].attended/totalH*100)<80);
     if(msIds.length) subjectsWithMs.push({sub,totalH,msIds,attMap});
   });
+  return {subjectsWithMs, stuMap};
+}
+
+// รายงานนักเรียน มส (เวลาเรียนไม่ถึง 80%) เฉพาะวิชาของครูคนนี้ — รูปแบบเดียวกับ
+// "พิมพ์ มส" ในหน้ารายงานทั้งโรงเรียน (ดู printMsReport ใน modules/admin.js)
+// แต่กรองแค่ S.subjects (วิชาของครูที่ล็อกอินอยู่) และเพิ่มช่องลงชื่อครูผู้สอนท้ายหน้า
+// แยกหน้าเอกสารตามวิชา — เรียกจาก printAttendanceMsChoice()
+async function printAttendanceMsReport(){
+  if(!S.subjects.length){toast('ยังไม่มีรายวิชา','er');return;}
+  loading(true);
+  let subjectsWithMs=[], stuMap={};
+  try{
+    ({subjectsWithMs, stuMap}=await _loadMsBySubject());
+  }catch(e){
+    loading(false); toast('โหลดข้อมูลไม่สำเร็จ: '+e.message,'er'); return;
+  }
+  loading(false);
 
   if(!subjectsWithMs.length){toast('ไม่พบนักเรียน มส ในวิชาที่คุณสอน','in');return;}
 
@@ -3483,6 +3525,94 @@ async function printAttendanceMsReport(){
   });
 
   printHTML('รายงานนักเรียน มส',pages,'portrait');
+}
+
+// รายงานนักเรียน มส แบบรวมทุกวิชาของครูคนนี้ไว้ในตารางเดียว — ตามแบบฟอร์ม
+// "แจ้งรายชื่อนักเรียนไม่มีสิทธิ์สอบ" ที่ครูใช้อยู่เดิม (1 แถวต่อ 1 นักเรียน 1 วิชา
+// เรียงตามนักเรียนก่อน แล้วค่อยเรียงตามวิชาของนักเรียนคนนั้น) ลงชื่อครูผู้สอนครั้งเดียวท้ายตาราง
+// เรียกจาก printAttendanceMsChoice()
+async function printAttendanceMsReportCombined(){
+  if(!S.subjects.length){toast('ยังไม่มีรายวิชา','er');return;}
+  loading(true);
+  let subjectsWithMs=[], stuMap={};
+  try{
+    ({subjectsWithMs, stuMap}=await _loadMsBySubject());
+  }catch(e){
+    loading(false); toast('โหลดข้อมูลไม่สำเร็จ: '+e.message,'er'); return;
+  }
+  loading(false);
+
+  if(!subjectsWithMs.length){toast('ไม่พบนักเรียน มส ในวิชาที่คุณสอน','in');return;}
+
+  // จัดกลุ่มเป็นรายนักเรียน → รายวิชาที่ มส (นักเรียนคนเดียวอาจ มส หลายวิชา)
+  const bySid={};
+  subjectsWithMs.forEach(({sub,totalH,msIds,attMap})=>{
+    msIds.forEach(sid=>{
+      (bySid[sid]=bySid[sid]||[]).push({sub,totalH,attended:attMap[sid]?.attended||0});
+    });
+  });
+  const sidList=Object.keys(bySid).sort((a,b)=>{
+    const sa=stuMap[a]||{}, sb2=stuMap[b]||{};
+    if(String(sa.grade_level)!==String(sb2.grade_level))
+      return String(sa.grade_level).localeCompare(String(sb2.grade_level),'th',{numeric:true});
+    if(String(sa.room)!==String(sb2.room))
+      return String(sa.room).localeCompare(String(sb2.room),'th',{numeric:true});
+    return (sa.student_code||'').localeCompare(sb2.student_code||'','th');
+  });
+
+  const cfg=S.config;
+  const teacherName=S.profile?.full_name||S.user?.email||'';
+  let no=0, rowsHTML='';
+  sidList.forEach(sid=>{
+    const stu=stuMap[sid];
+    const entries=[...bySid[sid]].sort((a,b)=>(a.sub.subject_code||'').localeCompare(b.sub.subject_code||'','th'));
+    entries.forEach(e=>{
+      no++;
+      const absent=e.totalH-e.attended;
+      const pct=e.totalH>0?(e.attended/e.totalH*100).toFixed(0):0;
+      rowsHTML+=`<tr>
+        <td style="text-align:center;padding:5px 6px;border:1px solid #999">${no}</td>
+        <td style="text-align:left;padding:5px 8px;border:1px solid #999;white-space:nowrap">${esc(stu?.student_name||'(ไม่พบชื่อ)')}</td>
+        <td style="text-align:center;padding:5px 6px;border:1px solid #999">${grm(stu?.grade_level,stu?.room)}</td>
+        <td style="text-align:left;padding:5px 8px;border:1px solid #999">${esc(e.sub.subject_name)}<br>${esc(e.sub.subject_code)}</td>
+        <td style="text-align:center;padding:5px 6px;border:1px solid #999">${e.totalH}</td>
+        <td style="text-align:center;padding:5px 6px;border:1px solid #999">${e.attended}</td>
+        <td style="text-align:center;padding:5px 6px;border:1px solid #999">${absent}</td>
+        <td style="text-align:center;padding:5px 6px;border:1px solid #999">${pct}%</td>
+        <td style="padding:5px 6px;border:1px solid #999">&nbsp;</td>
+      </tr>`;
+    });
+  });
+
+  const body=`
+    <div style="text-align:center;margin-bottom:12px;border-bottom:2px solid #000;padding-bottom:8px">
+      <div style="font-size:18px;font-weight:800">แจ้งรายชื่อนักเรียนไม่มีสิทธิ์สอบ</div>
+      <div style="font-size:15px;font-weight:600;margin-top:4px">ภาคเรียนที่ ${esc(cfg.semester||'')} ปีการศึกษา ${esc(cfg.academic_year||'')}</div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead>
+        <tr style="background:#f5f5f7">
+          <th style="width:32px;padding:5px 6px;border:1px solid #999">ที่</th>
+          <th style="padding:5px 8px;border:1px solid #999;text-align:left">ชื่อ-สกุล</th>
+          <th style="width:56px;padding:5px 6px;border:1px solid #999">ชั้น</th>
+          <th style="width:150px;padding:5px 8px;border:1px solid #999">รายวิชา/รหัสวิชา</th>
+          <th style="width:58px;padding:5px 6px;border:1px solid #999">จำนวนคาบเต็ม</th>
+          <th style="width:58px;padding:5px 6px;border:1px solid #999">จำนวนที่มาเรียน</th>
+          <th style="width:58px;padding:5px 6px;border:1px solid #999">จำนวนที่ขาดเรียน</th>
+          <th style="width:58px;padding:5px 6px;border:1px solid #999">คิดเป็นร้อยละ</th>
+          <th style="width:70px;padding:5px 6px;border:1px solid #999">หมายเหตุ</th>
+        </tr>
+      </thead>
+      <tbody>${rowsHTML}</tbody>
+    </table>
+    <div style="text-align:center;font-size:13px;margin-top:60px">
+      <div style="margin-bottom:2px">ลงชื่อ …………………………………………………</div>
+      <div style="margin-bottom:2px">(${esc(teacherName)})</div>
+      <div style="font-size:12px">ครูผู้สอน</div>
+    </div>
+  `;
+
+  printHTML('แจ้งรายชื่อนักเรียนไม่มีสิทธิ์สอบ', body, 'portrait', true);
 }
 
 // ════════════════════════════════════════════════════════════════
