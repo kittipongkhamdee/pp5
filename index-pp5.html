@@ -2691,6 +2691,7 @@ function renderAttPage(){
   $('pg').innerHTML=`
   <div class="ph"><div class="ptitle">บันทึกเวลาเรียน</div>
     <div style="display:flex;gap:8px">
+      <button class="btn bs no-print" onclick="printAttendanceMsReport()" style="color:#dc2626;border-color:rgba(220,38,38,.3)" title="พิมพ์รายชื่อนักเรียนที่มีเวลาเรียนไม่ถึง 80% ทุกวิชาที่คุณสอน"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>พิมพ์ มส</button>
       <button class="btn bs no-print" onclick="exportAttendance()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>Excel</button>
       <button class="btn bs no-print" onclick="printAttendance()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>พิมพ์</button>
     </div>
@@ -3391,6 +3392,97 @@ function printAttendance(){
     </div>
     </body></html>`);
   w.document.close();
+}
+
+// รายงานนักเรียน มส (เวลาเรียนไม่ถึง 80%) เฉพาะวิชาของครูคนนี้ — รูปแบบเดียวกับ
+// "พิมพ์ มส" ในหน้ารายงานทั้งโรงเรียน (ดู printMsReport ใน modules/admin.js)
+// แต่กรองแค่ S.subjects (วิชาของครูที่ล็อกอินอยู่) และเพิ่มช่องลงชื่อครูผู้สอนท้ายหน้า
+async function printAttendanceMsReport(){
+  if(!S.subjects.length){toast('ยังไม่มีรายวิชา','er');return;}
+  loading(true);
+  let allAtt=[], allStu=[];
+  try{
+    [allAtt, allStu]=await Promise.all([loadTeacherAtt(), loadAllStudentsBasic()]);
+  }catch(e){
+    loading(false); toast('โหลดข้อมูลไม่สำเร็จ: '+e.message,'er'); return;
+  }
+  loading(false);
+
+  const stuMap=Object.fromEntries(allStu.map(s=>[String(s.id),s]));
+  const subjectsWithMs=[];
+  S.subjects.forEach(sub=>{
+    const stuOfSub=studentsOfSubject(allStu,sub);
+    const attForSubj=allAtt.filter(a=>String(a.subject_id)===String(sub.id));
+    const totalH=attHeldHours(attForSubj);
+    const attMap={};
+    stuOfSub.forEach(s=>{ attMap[s.id]={attended:0}; });
+    attForSubj.forEach(a=>{
+      const m=attMap[a.student_id]; if(!m) return;
+      const p=parseInt(a.periods)||1;
+      if(a.status==='present'||a.status==='leave') m.attended+=p;
+    });
+    const msIds=Object.keys(attMap).filter(sid=>totalH>0 && (attMap[sid].attended/totalH*100)<80);
+    if(msIds.length) subjectsWithMs.push({sub,totalH,msIds,attMap});
+  });
+
+  if(!subjectsWithMs.length){toast('ไม่พบนักเรียน มส ในวิชาที่คุณสอน','in');return;}
+
+  const cfg=S.config;
+  const schoolLine=`<div style="text-align:center;margin-bottom:12px;border-bottom:2px solid #000;padding-bottom:8px">
+    <div style="font-size:16px;font-weight:800">รายงานนักเรียนที่มีเวลาเรียนไม่ผ่านเกณฑ์ (มส)</div>
+    <div style="font-size:14px;font-weight:600;margin-top:4px">${esc(cfg.school_name||'')} &nbsp;&nbsp;&nbsp; ปีการศึกษา ${esc(cfg.academic_year||'')} ภาคเรียนที่ ${esc(cfg.semester||'')}</div>
+  </div>`;
+
+  let pages='';
+  subjectsWithMs.forEach((item,i)=>{
+    const {sub,totalH,msIds,attMap}=item;
+    const sorted=[...msIds].sort((a,b)=>{
+      const sa=stuMap[String(a)]?.student_code||'';
+      const sb2=stuMap[String(b)]?.student_code||'';
+      return sa.localeCompare(sb2,'th');
+    });
+    const isFirst=i===0, isLast=i===subjectsWithMs.length-1;
+    pages+=`<div style="page-break-after:${isLast?'auto':'always'};${isFirst?'':'padding-top:12mm'}">
+      ${schoolLine}
+      <div style="background:#fef2f2;border-left:4px solid #dc2626;padding:7px 12px;font-weight:700;font-size:14px;margin-bottom:8px;border-radius:0 6px 6px 0">
+        วิชา ${esc(sub.subject_name)} (${esc(sub.subject_code)}) ${grm(sub.grade_level,sub.room)}
+        &nbsp;—&nbsp; ครูผู้สอน ${esc(sub.teacher_name||'')} &nbsp;|&nbsp; มส ${sorted.length} คน
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead>
+          <tr style="background:#f5f5f7">
+            <th style="width:30px;padding:5px 6px;border:1px solid #ccc;text-align:center">ที่</th>
+            <th style="width:90px;padding:5px 8px;border:1px solid #ccc;text-align:center">เลขประจำตัว</th>
+            <th style="padding:5px 8px;border:1px solid #ccc;text-align:left">ชื่อ-นามสกุล</th>
+            <th style="width:62px;padding:5px 6px;border:1px solid #ccc;text-align:center">ชม.ที่มา</th>
+            <th style="width:62px;padding:5px 6px;border:1px solid #ccc;text-align:center">ชม.ที่เช็คชื่อ</th>
+            <th style="width:62px;padding:5px 6px;border:1px solid #ccc;text-align:center;color:#dc2626">%เวลา</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${sorted.map((sid,j)=>{
+            const attended=attMap[sid]?.attended||0;
+            const pct=totalH>0?(attended/totalH*100).toFixed(0):0;
+            return `<tr style="border-bottom:1px solid #eee">
+              <td style="text-align:center;padding:4px 6px;border:1px solid #ddd">${j+1}</td>
+              <td style="text-align:center;padding:4px 8px;border:1px solid #ddd">${esc(stuMap[sid]?.student_code||'')}</td>
+              <td style="text-align:left;padding:4px 8px;border:1px solid #ddd;white-space:nowrap">${esc(stuMap[sid]?.student_name||'(ไม่พบชื่อ)')}</td>
+              <td style="text-align:center;padding:4px 6px;border:1px solid #ddd">${attended}</td>
+              <td style="text-align:center;padding:4px 6px;border:1px solid #ddd">${totalH}</td>
+              <td style="text-align:center;padding:4px 6px;border:1px solid #ddd;color:#dc2626;font-weight:700">${pct}%</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+      <div style="text-align:center;font-size:13px;margin-top:40px">
+        <div style="margin-bottom:2px">ลงชื่อ …………………………………………………</div>
+        <div style="margin-bottom:2px">(${esc(sub.teacher_name||'…………………………………………………')})</div>
+        <div style="font-size:12px">ครูผู้สอน</div>
+      </div>
+    </div>`;
+  });
+
+  printHTML('รายงานนักเรียน มส',pages,'portrait');
 }
 
 // ════════════════════════════════════════════════════════════════
