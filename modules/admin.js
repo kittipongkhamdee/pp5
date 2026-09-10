@@ -2456,8 +2456,8 @@ function printMsReport(){
             <th style="width:30px;padding:5px 6px;border:1px solid #ccc;text-align:center">ที่</th>
             <th style="width:90px;padding:5px 8px;border:1px solid #ccc;text-align:center">เลขประจำตัว</th>
             <th style="padding:5px 8px;border:1px solid #ccc;text-align:left">ชื่อ-นามสกุล</th>
-            <th style="width:62px;padding:5px 6px;border:1px solid #ccc;text-align:center">ชม.ที่มา</th>
-            <th style="width:62px;padding:5px 6px;border:1px solid #ccc;text-align:center">ชม.ที่เช็คชื่อ</th>
+            <th style="width:76px;padding:5px 6px;border:1px solid #ccc;text-align:center">ชั่วโมงที่มา</th>
+            <th style="width:88px;padding:5px 6px;border:1px solid #ccc;text-align:center">ชั่วโมงที่เช็คชื่อ</th>
             <th style="width:62px;padding:5px 6px;border:1px solid #ccc;text-align:center;color:#dc2626">%เวลา</th>
           </tr>
         </thead>
