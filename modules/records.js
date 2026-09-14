@@ -6,12 +6,18 @@
 // ════════════════════════════════════════════════════════════════
 // 3. STUDENTS
 // ════════════════════════════════════════════════════════════════
-let allStu=[];
+let stuRows=[]; // แถวหน้าปัจจุบัน (จาก pagination) — ใช้แค่แสดง/แก้ไข/ลบแถวที่เห็นอยู่
+let stuPage=0, stuPageSize=50, stuTotal=0;
+let _stuFilterTimer=null;
+let _promoteRoster=[]; // รายชื่อทั้งโรงเรียน โหลดสดเฉพาะตอนเปิดกล่องเลื่อนชั้น (ไม่ผูกกับ pagination)
 
 // ════ เลื่อนชั้น ══════════════════════════════════════════════
-function openPromoteDialog(){
-  // สร้าง unique ชั้น/ห้อง จาก allStu
-  const rooms = [...new Set(allStu.map(s=>s.grade_level+'_'+s.room))]
+async function openPromoteDialog(){
+  loading(true);
+  _promoteRoster=await qAll(()=>sb.from('students').select('id,student_code,student_name,grade_level,room').order('grade_level').order('room').order('student_code'));
+  loading(false);
+  // สร้าง unique ชั้น/ห้อง จากรายชื่อทั้งโรงเรียน
+  const rooms = [...new Set(_promoteRoster.map(s=>s.grade_level+'_'+s.room))]
     .sort()
     .map(k=>{ const [g,r]=k.split('_'); return {grade:+g,room:+r,label:grm(g,r)}; });
   if(!rooms.length){ toast('ยังไม่มีนักเรียนในระบบ','er'); return; }
@@ -89,7 +95,7 @@ function _updatePromotePreview(){
   if(!prev||!fromVal) return;
 
   const [fromG,fromR] = fromVal.split('_');
-  const students = allStu.filter(s=>String(s.grade_level)===fromG&&String(s.room)===fromR);
+  const students = _promoteRoster.filter(s=>String(s.grade_level)===fromG&&String(s.room)===fromR);
 
   if(!students.length){
     prev.innerHTML = '<span style="color:#8e8e93">ไม่พบนักเรียนในห้องนี้</span>';
@@ -123,7 +129,7 @@ function _confirmPromote(){
   if(!fromVal || !toGradeStr || toRoomStr===''){ toast('กรุณาเลือกข้อมูลให้ครบ','er'); return; }
 
   const [fromG,fromR] = fromVal.split('_');
-  const students = allStu.filter(s=>String(s.grade_level)===fromG&&String(s.room)===fromR);
+  const students = _promoteRoster.filter(s=>String(s.grade_level)===fromG&&String(s.room)===fromR);
   if(!students.length){ toast('ไม่พบนักเรียนในห้องนี้','er'); return; }
   if(String(fromG)===String(toGrade)&&String(fromR)===String(toRoom)){
     toast('ชั้น/ห้องใหม่เหมือนเดิม กรุณาเลือกใหม่','er'); return;
@@ -174,7 +180,6 @@ async function _doPromote(students, toGrade, toRoom, fromG, fromR){
       const batch = ids.slice(i, i+batchSize);
       await q(sb.from('students').update({grade_level:toGrade, room:toRoom}).in('id', batch));
     }
-    allStu = allStu.map(s=>ids.includes(s.id)?{...s,grade_level:toGrade,room:toRoom}:s);
     clearStuCache();
     const detail = skipped>0
       ? `ย้ายสำเร็จ <strong>${toUpdate.length} คน</strong><br>ข้าม <strong>${skipped} คน</strong> ที่มีรหัสซ้ำในห้องปลายทางแล้ว`
@@ -184,7 +189,7 @@ async function _doPromote(students, toGrade, toRoom, fromG, fromR){
       title: `เลื่อนชั้นสำเร็จ ${grm(fromG,fromR)} → ${grm(toGrade,toRoom)}`,
       msg: detail,
       type: skipped>0?'warn':'ok',
-      onOk: filterStu
+      onOk: loadStuPage
     });
   }catch(e){
     toast('เกิดข้อผิดพลาด: '+e.message,'er');
@@ -194,13 +199,19 @@ async function _doPromote(students, toGrade, toRoom, fromG, fromR){
 }
 
 async function pgStudents(){
+  stuPage=0;
   loading(true);
-  allStu=await qAll(()=>sb.from('students').select('*').order('grade_level').order('room').order('student_code'));
+  // เบาๆ แค่ 2 คอลัมน์ ไว้สร้าง dropdown กรองชั้น/ห้อง + นับจำนวนรวม (ไม่ดึงข้อมูลเต็มทั้งโรงเรียน)
+  const [grRows, cntRes] = await Promise.all([
+    qAll(()=>sb.from('students').select('grade_level,room')),
+    sb.from('students').select('id',{count:'exact',head:true})
+  ]);
   loading(false);
-  const grs=[...new Set(allStu.map(s=>`${grm(s.grade_level,s.room)}`))].sort();
+  const grs=[...new Set(grRows.map(r=>`${r.grade_level}|${r.room}`))]
+    .sort((a,b)=>{const [ag,ar]=a.split('|').map(Number),[bg,br]=b.split('|').map(Number);return ag-bg||ar-br;});
   $('pg').innerHTML=`
   <div class="ph">
-    <div><div class="ptitle">จัดการนักเรียน</div><div class="psub" id="stu-cnt">รวม ${allStu.length} คน</div></div>
+    <div><div class="ptitle">จัดการนักเรียน</div><div class="psub" id="stu-cnt">รวม ${cntRes.count||0} คน</div></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn bs" onclick="openPromoteDialog()" style="background:rgba(255,149,0,.1);color:#c2410c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="17 11 12 6 7 11"/><polyline points="17 18 12 13 7 18"/></svg>เลื่อนชั้น</button>
       <button class="btn bs" onclick="openImport()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>นำเข้ารายชื่อ</button>
@@ -209,22 +220,71 @@ async function pgStudents(){
   </div>
   <div class="card" style="margin-bottom:14px"><div class="cb" style="padding:10px 16px">
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-      <input class="fi" id="stu-q" placeholder="ค้นหาชื่อ/รหัส..." style="max-width:220px" oninput="filterStu()">
+      <input class="fi" id="stu-q" placeholder="ค้นหาชื่อ/รหัส..." style="max-width:220px" oninput="_stuFilterDebounced()">
       <select class="fs" id="stu-gr" style="max-width:140px" onchange="filterStu()">
         <option value="">ทุกชั้น/ห้อง</option>
-        ${grs.map(g=>`<option>${g}</option>`).join('')}
+        ${grs.map(k=>{const [g,r]=k.split('|');return `<option value="${k}">${esc(grm(g,r))}</option>`;}).join('')}
       </select>
+      <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
+        <span style="font-size:12px;color:var(--muted)">แสดง</span>
+        <select class="fs" id="stu-size" style="max-width:80px" onchange="changeStuPageSize(this.value)">
+          <option value="25">25</option><option value="50" selected>50</option><option value="100">100</option>
+        </select>
+        <span style="font-size:12px;color:var(--muted)">คน/หน้า</span>
+      </div>
     </div>
   </div></div>
-  <div class="card"><div class="cb" id="stu-tb">${renderStuTbl(allStu)}</div></div>`;
+  <div class="card"><div class="cb" id="stu-tb"></div></div>
+  ${renderFlexCard()}`;
+  await loadStuPage();
+  loadFlexList();
 }
+async function loadStuPage(){
+  const qv=$('stu-q')?.value.trim()||'';
+  const grv=$('stu-gr')?.value||'';
+  let query=sb.from('students').select('*',{count:'exact'})
+    .order('grade_level').order('room').order('student_code');
+  if(qv) query=query.or(`student_name.ilike.%${qv}%,student_code.ilike.%${qv}%`);
+  if(grv){ const [g,r]=grv.split('|'); query=query.eq('grade_level',g).eq('room',r); }
+  const from=stuPage*stuPageSize, to=from+stuPageSize-1;
+  loading(true);
+  const {data,count,error}=await query.range(from,to);
+  loading(false);
+  if(error){ toast('โหลดรายชื่อนักเรียนไม่สำเร็จ: '+error.message,'er'); return; }
+  stuRows=data||[]; stuTotal=count||0;
+  $('stu-tb').innerHTML=renderStuTbl(stuRows)+renderStuPager();
+  const cntEl=$('stu-cnt'); if(cntEl) cntEl.textContent=stuTotal?`รวม ${stuTotal} คน`:'ไม่พบนักเรียน';
+}
+function renderStuPager(){
+  const totalPages=Math.max(1,Math.ceil(stuTotal/stuPageSize));
+  const cur=stuPage;
+  const from=stuTotal?cur*stuPageSize+1:0, to=Math.min(stuTotal,(cur+1)*stuPageSize);
+  let pages=[];
+  for(let i=0;i<totalPages;i++){
+    if(i===0||i===totalPages-1||Math.abs(i-cur)<=1) pages.push(i);
+    else if(pages[pages.length-1]!=='...') pages.push('...');
+  }
+  return `<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:12px 4px 4px">
+    <div style="font-size:12.5px;color:var(--muted)">แสดง ${from}–${to} จาก ${stuTotal} คน</div>
+    <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">
+      <button class="btn bs btn-sm" ${cur===0?'disabled':''} onclick="stuGoPage(${cur-1})">‹ ก่อนหน้า</button>
+      ${pages.map(p=>p==='...'?`<span style="color:var(--muted);font-size:12px;padding:0 4px">…</span>`:
+        `<button class="btn ${p===cur?'bp':'bs'} btn-sm" onclick="stuGoPage(${p})">${p+1}</button>`).join('')}
+      <button class="btn bs btn-sm" ${cur>=totalPages-1?'disabled':''} onclick="stuGoPage(${cur+1})">ถัดไป ›</button>
+    </div>
+  </div>`;
+}
+function stuGoPage(p){ stuPage=p; loadStuPage(); }
+function changeStuPageSize(v){ stuPageSize=+v; stuPage=0; loadStuPage(); }
+function filterStu(){ stuPage=0; loadStuPage(); }
+function _stuFilterDebounced(){ clearTimeout(_stuFilterTimer); _stuFilterTimer=setTimeout(filterStu,350); }
 function renderStuTbl(list){
   if(!list.length)return`<div class="empty"><svg class="ei" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg><div>ไม่พบนักเรียน</div></div>`;
   return`<div class="tw tw-cards"><table>
     <thead><tr><th>ลำดับ</th><th>รหัส</th><th class="tl">ชื่อ-สกุล</th><th>ชั้น/ห้อง</th><th>เพศ</th><th>จัดการ</th></tr></thead>
     <tbody>${list.map((s,i)=>`<tr>
-      <td class="tc" data-label="ลำดับ" data-hide-mobile>${i+1}</td><td class="tc" data-label="รหัส">${esc(s.student_code)}</td>
-      <td data-label="ชื่อ-สกุล" data-head style="white-space:nowrap">${esc(s.student_name)}</td>
+      <td class="tc" data-label="ลำดับ" data-hide-mobile>${stuPage*stuPageSize+i+1}</td><td class="tc" data-label="รหัส">${esc(s.student_code)}</td>
+      <td data-label="ชื่อ-สกุล" data-head style="white-space:nowrap">${esc(s.student_name)}${flexBadge(s.id)}</td>
       <td class="tc" data-label="ชั้น/ห้อง">${grm(s.grade_level,s.room)}</td>
       <td class="tc" data-label="เพศ">${s.gender==='ช'?'ชาย':s.gender==='ญ'?'หญิง':esc(s.gender||'-')}</td>
       <td class="tc" data-label="จัดการ" data-actions>
@@ -233,16 +293,8 @@ function renderStuTbl(list){
       </td></tr>`).join('')}
     </tbody></table></div>`;
 }
-function filterStu(){
-  const qv=$('stu-q').value.toLowerCase(),gr=$('stu-gr').value;
-  $('stu-tb').innerHTML=renderStuTbl(allStu.filter(s=>{
-    const mq=!qv||s.student_name.toLowerCase().includes(qv)||s.student_code.toLowerCase().includes(qv);
-    const mg=!gr||`${grm(s.grade_level,s.room)}`===gr;
-    return mq&&mg;
-  }));
-}
 function openStuModal(id){
-  const s=id?allStu.find(x=>x.id===id):null;
+  const s=id?stuRows.find(x=>x.id===id):null;
   if(s){
     // แจ้งเตือนก่อนแก้ไข
     confirm2({title:'แก้ไขข้อมูลนักเรียน',
@@ -254,7 +306,7 @@ function openStuModal(id){
   _doOpenStuModal(id);
 }
 function _doOpenStuModal(id){
-  const s=id?allStu.find(x=>x.id===id):null;
+  const s=id?stuRows.find(x=>x.id===id):null;
   const pfx=['เด็กชาย','เด็กหญิง','นาย','นางสาว','นาง'];
   document.body.insertAdjacentHTML('beforeend',`
   <div class="mo" id="stuMod"><div class="md">
@@ -287,9 +339,8 @@ async function saveStu(id){
     if(id){ await q(sb.from('students').update(payload).eq('id',id)); }
     else   { await q(sb.from('students').insert(payload)); }
     clearStuCache();
-    allStu=await qAll(()=>sb.from('students').select('*').order('grade_level').order('room').order('student_code'));
     rmModal('stuMod');toast(id?'แก้ไขเรียบร้อย':'เพิ่มนักเรียนเรียบร้อย');
-    filterStu();$('stu-cnt').textContent='รวม '+allStu.length+' คน';
+    await loadStuPage();
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
 }
 async function delStu(id,name){
@@ -305,9 +356,8 @@ async function delStu(id,name){
           const {error}=await sb.rpc('delete_student_with_password',{p_student_id:id, pw:pw||''});
           if(error) throw new Error(error.message);
           clearStuCache();
-          allStu=await qAll(()=>sb.from('students').select('*').order('grade_level').order('room').order('student_code'));
           logAudit('delete_student','ลบนักเรียน "'+name+'"');
-          toast('ลบเรียบร้อย');filterStu();
+          toast('ลบเรียบร้อย');await loadStuPage();
         }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
       }});
     }
@@ -486,11 +536,10 @@ async function doImport(){
         total+=batch.length;
       }
       clearStuCache();
-      allStu=await qAll(()=>sb.from('students').select('*').order('grade_level').order('room').order('student_code'));
       _excelData=[];
       rmModal('impMod');
       toast('นำเข้า '+total+' คนเรียบร้อย');
-      filterStu();$('stu-cnt').textContent='รวม '+allStu.length+' คน';
+      await loadStuPage();
     }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
   } else {
     // นำเข้าจากการวางข้อความ (เดิม)
@@ -513,11 +562,224 @@ async function doImport(){
     try{
       await q(sb.from('students').upsert(arr,{onConflict:'student_code,grade_level,room',ignoreDuplicates:false}));
       clearStuCache();
-      allStu=await qAll(()=>sb.from('students').select('*').order('grade_level').order('room').order('student_code'));
       rmModal('impMod');toast('นำเข้า '+arr.length+' คนเรียบร้อย');
-      filterStu();$('stu-cnt').textContent='รวม '+allStu.length+' คน';
+      await loadStuPage();
     }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
   }
+}
+
+// ════════════════════════════════════════════════════════════════
+// 3.5 นักเรียนยืดหยุ่น (สพฐ. 3 รูปแบบการจัดการเรียนรู้) + เพดานเกรดสูงสุดรายบุคคล/รายกลุ่มสาระ
+// ════════════════════════════════════════════════════════════════
+let flexList=[];       // สมาชิกกลุ่มยืดหยุ่นทั้งหมด (ปกติมีไม่กี่สิบคน ไม่ต้องแบ่งหน้า)
+let flexCapMap={};     // student_id -> [{subject_group,max_grade}]
+let _flexCandTimer=null;
+
+const _alertIcSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+
+function renderFlexCard(){
+  return `
+  <div class="card" style="margin:14px 0"><div class="ch"><div class="ct">
+    <svg viewBox="0 0 24 24" fill="none" stroke="var(--ac)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+    นักเรียนยืดหยุ่น
+  </div></div><div class="cb">
+    <div class="alert al-in"><div class="alert-ic">${_alertIcSvg}</div>
+      <div>สำหรับนักเรียนที่จัดการเรียนรู้แบบยืดหยุ่นตามแนวทาง สพฐ. — เลือกจากนักเรียนที่มีอยู่แล้ว พร้อมระบุรูปแบบการจัดการเรียนรู้ แถวของนักเรียนกลุ่มนี้จะถูกไฮไลต์ในหน้าเช็คเวลาเรียน/บันทึกคะแนน</div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+      <input class="fi" id="flex-q" placeholder="ค้นหาชื่อ/รหัส..." style="max-width:200px" oninput="_flexCandDebounced()">
+      <select class="fs" id="flex-gr" style="max-width:130px" onchange="loadFlexCandidates()"><option value="">ทุกชั้น/ห้อง</option></select>
+      <select class="fs" id="flex-fmt" style="max-width:150px">
+        <option value="ในระบบ">รูปแบบ: ในระบบ</option>
+        <option value="นอกระบบ">รูปแบบ: นอกระบบ</option>
+        <option value="ตามอัธยาศัย">รูปแบบ: ตามอัธยาศัย</option>
+      </select>
+    </div>
+    <div id="flex-cand-list" style="border:1px solid var(--sep);border-radius:10px;max-height:220px;overflow:auto;margin-bottom:10px">
+      <div style="padding:14px;text-align:center;color:var(--muted);font-size:12.5px">กำลังโหลด...</div>
+    </div>
+    <div style="text-align:right;margin-bottom:20px">
+      <button class="btn bp" onclick="addFlexSelected()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>เพิ่มเข้ากลุ่มยืดหยุ่น</button>
+    </div>
+    <div style="font-size:13px;font-weight:700;margin-bottom:8px" id="flex-mem-title">สมาชิกกลุ่มยืดหยุ่น</div>
+    <div id="flex-mem-list"><div class="empty" style="padding:22px">กำลังโหลด...</div></div>
+  </div></div>
+
+  <div class="card" style="margin:14px 0"><div class="ch"><div class="ct">
+    <svg viewBox="0 0 24 24" fill="none" stroke="var(--ac)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg>
+    กำหนดเกรดสูงสุด (นักเรียนยืดหยุ่น)
+  </div></div><div class="cb">
+    <div class="alert al-wa"><div class="alert-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg></div>
+      <div>ตั้งเพดานเกรดสูงสุด<strong>รายบุคคล แยกตามกลุ่มสาระการเรียนรู้</strong> — ถ้าคำนวณได้เกรดสูงกว่านี้ ระบบจะแจ้งเตือนและ<strong>ต้องแก้ไขคะแนนก่อนจึงจะกด "บันทึกคะแนนสอบ" ได้</strong></div>
+    </div>
+    <div id="flex-cap-list"><div class="empty" style="padding:22px">กำลังโหลด...</div></div>
+  </div></div>`;
+}
+
+async function loadFlexList(){
+  try{
+    const rows=await q(sb.from('flexible_students').select('id,student_id,learning_format,students(student_name,grade_level,room)'));
+    flexList=rows.sort((a,b)=>{
+      const ga=a.students?.grade_level||'', gb=b.students?.grade_level||'';
+      return String(ga).localeCompare(String(gb),'th',{numeric:true})
+        || String(a.students?.room||'').localeCompare(String(b.students?.room||''),'th',{numeric:true})
+        || String(a.students?.student_name||'').localeCompare(String(b.students?.student_name||''),'th');
+    });
+    const ids=flexList.map(f=>f.student_id);
+    flexCapMap={};
+    if(ids.length){
+      const caps=await q(sb.from('flexible_grade_caps').select('student_id,subject_group,max_grade').in('student_id',ids));
+      caps.forEach(c=>{ (flexCapMap[c.student_id]=flexCapMap[c.student_id]||[]).push(c); });
+    }
+  }catch(e){ flexList=[]; flexCapMap={}; toast('โหลดรายชื่อนักเรียนยืดหยุ่นไม่สำเร็จ: '+e.message,'er'); }
+  renderFlexMemList();
+  renderFlexCapList();
+  loadFlexCandidates();
+}
+function renderFlexMemList(){
+  const title=$('flex-mem-title'); if(title) title.textContent=`สมาชิกกลุ่มยืดหยุ่น (${flexList.length} คน)`;
+  const el=$('flex-mem-list'); if(!el) return;
+  if(!flexList.length){ el.innerHTML='<div class="empty" style="padding:22px">ยังไม่มีนักเรียนในกลุ่มยืดหยุ่น</div>'; return; }
+  el.innerHTML=`<div class="tw tw-cards"><table>
+    <thead><tr><th>ที่</th><th class="tl">ชื่อ-สกุล</th><th>ชั้น/ห้อง</th><th>รูปแบบ</th><th>จัดการ</th></tr></thead>
+    <tbody>${flexList.map((f,i)=>`<tr>
+      <td class="tc" data-label="ที่" data-hide-mobile>${i+1}</td>
+      <td data-label="ชื่อ-สกุล" data-head style="white-space:nowrap">${esc(f.students?.student_name||'-')}</td>
+      <td class="tc" data-label="ชั้น/ห้อง">${grm(f.students?.grade_level,f.students?.room)}</td>
+      <td class="tc" data-label="รูปแบบ">
+        <select class="fs" style="max-width:150px" onchange="changeFlexFormat('${f.id}',this.value)">
+          ${['ในระบบ','นอกระบบ','ตามอัธยาศัย'].map(o=>`<option value="${o}" ${f.learning_format===o?'selected':''}>${o}</option>`).join('')}
+        </select>
+      </td>
+      <td class="tc" data-label="จัดการ" data-actions>
+        <button class="btn bd btn-sm" onclick="removeFlexStudent('${f.id}','${escJs(f.students?.student_name||'')}')" style="padding:5px 8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </td></tr>`).join('')}
+    </tbody></table></div>`;
+}
+function renderFlexCapList(){
+  const el=$('flex-cap-list'); if(!el) return;
+  if(!flexList.length){ el.innerHTML='<div class="empty" style="padding:22px">ยังไม่มีนักเรียนในกลุ่มยืดหยุ่น</div>'; return; }
+  el.innerHTML=`<div class="tw tw-cards"><table>
+    <thead><tr><th>ที่</th><th class="tl">ชื่อ-สกุล</th><th>ชั้น/ห้อง</th><th class="tl">เพดานเกรดที่ตั้งไว้</th><th>จัดการ</th></tr></thead>
+    <tbody>${flexList.map((f,i)=>{
+      const caps=flexCapMap[f.student_id]||[];
+      const summary=caps.length
+        ? caps.map(c=>`<span class="badge bg-b" style="margin:1px 3px 1px 0">${esc(c.subject_group)}: ${c.max_grade}</span>`).join('')
+        : `<span style="color:var(--muted);font-size:12.5px">ไม่จำกัด</span>`;
+      return`<tr>
+      <td class="tc" data-label="ที่" data-hide-mobile>${i+1}</td>
+      <td data-label="ชื่อ-สกุล" data-head style="white-space:nowrap">${esc(f.students?.student_name||'-')}</td>
+      <td class="tc" data-label="ชั้น/ห้อง">${grm(f.students?.grade_level,f.students?.room)}</td>
+      <td data-label="เพดานเกรดที่ตั้งไว้">${summary}</td>
+      <td class="tc" data-label="จัดการ" data-actions>
+        <button class="btn bs btn-sm" onclick="openCapModal('${f.student_id}','${escJs(f.students?.student_name||'')}')">ตั้งค่าเพดาน</button>
+      </td></tr>`;
+    }).join('')}
+    </tbody></table></div>`;
+}
+function _flexCandDebounced(){ clearTimeout(_flexCandTimer); _flexCandTimer=setTimeout(loadFlexCandidates,350); }
+async function loadFlexCandidates(){
+  const el=$('flex-cand-list'); if(!el) return;
+  const qv=$('flex-q')?.value.trim()||'';
+  const grv=$('flex-gr')?.value||'';
+  // เติม dropdown ชั้น/ห้องครั้งแรก (จากรายชื่อทั้งโรงเรียนเบาๆ)
+  const grSel=$('flex-gr');
+  if(grSel && grSel.children.length<=1){
+    const grRows=await qAll(()=>sb.from('students').select('grade_level,room'));
+    const grs=[...new Set(grRows.map(r=>`${r.grade_level}|${r.room}`))]
+      .sort((a,b)=>{const [ag,ar]=a.split('|').map(Number),[bg,br]=b.split('|').map(Number);return ag-bg||ar-br;});
+    grSel.insertAdjacentHTML('beforeend',grs.map(k=>{const [g,r]=k.split('|');return `<option value="${k}">${esc(grm(g,r))}</option>`;}).join(''));
+    if(grv) grSel.value=grv;
+  }
+  const excludeIds=flexList.map(f=>f.student_id);
+  let query=sb.from('students').select('id,student_code,student_name,grade_level,room')
+    .order('grade_level').order('room').order('student_code').limit(100);
+  if(qv) query=query.or(`student_name.ilike.%${qv}%,student_code.ilike.%${qv}%`);
+  if(grv){ const [g,r]=grv.split('|'); query=query.eq('grade_level',g).eq('room',r); }
+  const {data,error}=await query;
+  if(error){ el.innerHTML=`<div class="empty" style="padding:14px">โหลดไม่สำเร็จ: ${esc(error.message)}</div>`; return; }
+  const cand=(data||[]).filter(s=>!excludeIds.includes(s.id));
+  if(!cand.length){ el.innerHTML='<div class="empty" style="padding:14px">ไม่พบนักเรียน (หรืออยู่ในกลุ่มยืดหยุ่นแล้วทั้งหมด)</div>'; return; }
+  el.innerHTML=cand.map(s=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid var(--sep)">
+      <input type="checkbox" class="flex-cand-chk" value="${s.id}">
+      <span style="flex:1">${esc(s.student_name)}</span>
+      <span style="font-size:11.5px;color:var(--muted)">${grm(s.grade_level,s.room)}</span>
+    </div>`).join('');
+}
+async function addFlexSelected(){
+  const ids=[...document.querySelectorAll('.flex-cand-chk:checked')].map(c=>c.value);
+  if(!ids.length){ toast('กรุณาติ๊กเลือกนักเรียนอย่างน้อย 1 คนก่อน','er'); return; }
+  const fmt=$('flex-fmt').value;
+  loading(true);
+  try{
+    await q(sb.from('flexible_students').upsert(ids.map(id=>({student_id:id,learning_format:fmt})),{onConflict:'student_id'}));
+    cacheInv('flex_map'); await loadFlexMap();
+    toast(`เพิ่มนักเรียน ${ids.length} คนเข้ากลุ่มยืดหยุ่นเรียบร้อย`);
+    await loadFlexList();
+  }catch(e){ toast('เกิดข้อผิดพลาด: '+e.message,'er'); }finally{ loading(false); }
+}
+function changeFlexFormat(id,val){
+  q(sb.from('flexible_students').update({learning_format:val}).eq('id',id))
+    .then(async()=>{ cacheInv('flex_map'); await loadFlexMap(); toast('เปลี่ยนรูปแบบเรียบร้อย'); await loadFlexList(); })
+    .catch(e=>toast('เกิดข้อผิดพลาด: '+e.message,'er'));
+}
+function removeFlexStudent(id,name){
+  confirm2({title:'นำออกจากกลุ่มยืดหยุ่น',
+    msg:'นำ "<strong>'+esc(name)+'</strong>" ออกจากกลุ่มยืดหยุ่น?<br><span style="font-size:12px;color:var(--muted)">เพดานเกรดที่เคยตั้งไว้ให้คนนี้จะถูกลบไปด้วย</span>',
+    type:'warn',confirmText:'นำออก',cancelText:'ยกเลิก',
+    onConfirm:async()=>{
+      loading(true);
+      try{
+        await q(sb.from('flexible_students').delete().eq('id',id));
+        cacheInv('flex_map'); await loadFlexMap();
+        toast('นำออกจากกลุ่มยืดหยุ่นเรียบร้อย');
+        await loadFlexList();
+      }catch(e){ toast('เกิดข้อผิดพลาด: '+e.message,'er'); }finally{ loading(false); }
+    }});
+}
+async function openCapModal(studentId,studentName){
+  loading(true);
+  let caps=[];
+  try{ caps=await q(sb.from('flexible_grade_caps').select('subject_group,max_grade').eq('student_id',studentId)); }
+  catch(e){ toast('โหลดเพดานเดิมไม่สำเร็จ: '+e.message,'er'); }
+  loading(false);
+  const capMap=Object.fromEntries(caps.map(c=>[c.subject_group,c.max_grade]));
+  const GRADE_OPTS=['ไม่จำกัด','4','3.5','3','2.5','2','1.5','1','0'];
+  document.body.insertAdjacentHTML('beforeend',`
+  <div class="mo" id="capMod"><div class="md">
+    <div class="mh"><div class="mt">กำหนดเกรดสูงสุด — ${esc(studentName)}</div>
+    <button class="mx" onclick="rmModal('capMod')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="10" height="10"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="mb">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">กำหนดแยกตามกลุ่มสาระการเรียนรู้ — ไม่จำกัด = ไม่มีเพดาน คำนวณเกรดตามปกติ</div>
+      <div class="tw"><table>
+        <thead><tr><th class="tl">กลุ่มสาระการเรียนรู้</th><th>เกรดสูงสุด</th></tr></thead>
+        <tbody>${SUBJECT_GROUPS.map(g=>`<tr>
+          <td>${esc(g)}</td>
+          <td class="tc"><select class="fs cap-sel" data-group="${esc(g)}" style="max-width:110px">
+            ${GRADE_OPTS.map(o=>`<option value="${o}" ${(capMap[g]!=null?String(capMap[g]):'ไม่จำกัด')===o?'selected':''}>${o}</option>`).join('')}
+          </select></td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+    </div>
+    <div class="mf">
+      <button class="btn bs" onclick="rmModal('capMod')">ยกเลิก</button>
+      <button class="btn bp" onclick="saveCapModal('${studentId}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>บันทึกเพดาน</button>
+    </div>
+  </div></div>`);
+}
+async function saveCapModal(studentId){
+  const sels=[...document.querySelectorAll('.cap-sel')];
+  const toSet=sels.filter(s=>s.value!=='ไม่จำกัด').map(s=>({student_id:studentId,subject_group:s.dataset.group,max_grade:parseFloat(s.value)}));
+  loading(true);
+  try{
+    // ล้างของเดิมทั้งหมดของนักเรียนคนนี้ แล้วค่อยตั้งใหม่ตามที่เลือก (ง่ายกว่าไล่ upsert/delete ทีละกลุ่มสาระ)
+    await q(sb.from('flexible_grade_caps').delete().eq('student_id',studentId));
+    if(toSet.length) await q(sb.from('flexible_grade_caps').insert(toSet));
+    rmModal('capMod');
+    toast('บันทึกเพดานเกรดเรียบร้อย');
+    await loadFlexList();
+  }catch(e){ toast('เกิดข้อผิดพลาด: '+e.message,'er'); }finally{ loading(false); }
 }
 
 // ════════════════════════════════════════════════════════════════
