@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <!-- ฟอนต์ Sarabun เก็บไว้ในโปรเจกต์เอง (assets/fonts/) แล้ว ประกาศ @font-face อยู่ในหัวไฟล์ style.css -->
 <!-- ?v= กันแคชเก่าค้าง (style.css แคชไว้ 1 วันตาม vercel.json) — แก้ style.css เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย -->
-<link rel="stylesheet" href="style.css?v=6">
+<link rel="stylesheet" href="style.css?v=7">
 </head>
 <body class="bg-bg text-txt antialiased">
 
@@ -868,7 +868,7 @@ async function initAuth(){
     if(session){
       S.user = session.user;
       await loadProfile();
-      await Promise.all([loadConfig(), _loadMenuPerms()]);
+      await Promise.all([loadConfig(), _loadMenuPerms(), loadFlexMap()]);
       if(window._lovWelcomeUpdateName) _lovWelcomeUpdateName();
       // Ensure welcome shows at least 1.8s so animations play fully
       const _elapsed=Date.now()-_t0;
@@ -1556,7 +1556,7 @@ async function doLogin(){
     if($('lp-remember')?.checked) localStorage.setItem('pp5-saved-email',email);
     else localStorage.removeItem('pp5-saved-email');
     await loadProfile();
-    await Promise.all([loadConfig(), _loadMenuPerms()]);
+    await Promise.all([loadConfig(), _loadMenuPerms(), loadFlexMap()]);
     if(window._lovWelcomeUpdateName) _lovWelcomeUpdateName();
     const _elapsed=Date.now()-_t0;
     if(_elapsed<1800) await new Promise(r=>setTimeout(r,1800-_elapsed));
@@ -1673,6 +1673,20 @@ const TITLES={dashboard:'แดชบอร์ด',subjects:'รายวิช�
 let SUBJECT_GROUPS=['ภาษาไทย','คณิตศาสตร์','วิทยาศาสตร์และเทคโนโลยี',
   'สังคมศึกษา ศาสนา และวัฒนธรรม','สุขศึกษาและพลศึกษา','ศิลปะ',
   'การงานอาชีพ','ภาษาต่างประเทศ','การศึกษาค้นคว้าด้วยตนเอง (IS)'];
+
+// ── นักเรียนยืดหยุ่น (สพฐ. 3 รูปแบบ) — โหลดครั้งเดียวตอน login เพื่อไฮไลต์แถวในหน้าเวลาเรียน/คะแนน
+let flexMap={}; // student_id -> learning_format
+async function loadFlexMap(){
+  try{
+    const rows=await qc('flex_map', ()=>q(sb.from('flexible_students').select('student_id,learning_format')));
+    flexMap={}; rows.forEach(r=>flexMap[r.student_id]=r.learning_format);
+  }catch(e){ flexMap={}; }
+}
+function flexBadge(sid){
+  const fmt=flexMap[sid];
+  return fmt?` <span class="badge bg-b" style="font-size:10px;margin-left:4px" title="นักเรียนกลุ่มยืดหยุ่น">ยืดหยุ่น·${esc(fmt)}</span>`:'';
+}
+function flexRowCls(sid){ return flexMap[sid]?' flex-stu-row':''; }
 let _sgList=[];
 // ระดับชั้นที่ใช้ในระบบ — เก็บ grade_level เป็นเลขเปล่าเหมือนเดิมทุกจุด (ไม่กระทบข้อมูลเดิม)
 // คำนำหน้า (GRADE_PREFIX) และรายการระดับ (GRADE_LEVELS) ตั้งค่าได้จากหน้าตั้งค่าเท่านั้น
@@ -1771,7 +1785,7 @@ function _applyConcurrencyGuards(){
 // (ของโมดูลจะถูกห่อเพิ่มใน ensureModule หลังโหลดเสร็จ)
 _applyConcurrencyGuards();
 // ?v= กันแคชเก่าค้าง (modules/*.js แคชไว้ 1 วันตาม vercel.json) — แก้ไฟล์ใน modules/ เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย
-const MODULE_V='43';
+const MODULE_V='44';
 // ห่อฟังก์ชันของโมดูลหลังโหลดเสร็จด้วย (ตอนเริ่มระบบยังไม่มีฟังก์ชันเหล่านี้)
 function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V).then(()=>{ _applyConcurrencyGuards(); }); }
 function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
@@ -3034,8 +3048,8 @@ function renderMonthGrid(){
       </tr>
       <tr>${attDays.map(d=>`<th style="cursor:pointer;min-width:36px" onclick="removeAttDay(${d.day})" title="คาบ: ${d.periods} • คลิกเพื่อลบ">${d.day}<br><span style="font-size:9px;font-weight:400;opacity:.7">${d.periods}คาบ</span></th>`).join('')}</tr>
     </thead>
-    <tbody>${attStus.map((s,i)=>`<tr>
-      <td class="tc" data-freeze="a">${i+1}</td><td data-freeze="b" style="white-space:nowrap">${esc(s.student_name)}</td>
+    <tbody>${attStus.map((s,i)=>`<tr class="${flexRowCls(s.id)}">
+      <td class="tc" data-freeze="a">${i+1}</td><td data-freeze="b" style="white-space:nowrap">${esc(s.student_name)}${flexBadge(s.id)}</td>
       ${attDays.map(d=>{
         const st=getCell(s.id,d.day);
         return `<td class="tc"><div class="${ATT_K[st]}" data-sid="${s.id}" data-day="${d.day}" onclick="cycleAtt(this)" style="width:28px;height:28px;margin:auto">${ATT_I[st]}</div></td>`;
@@ -4308,7 +4322,7 @@ function renderExamTab(){
       </tr></thead>
       <tbody>${scStus.map((s,i)=>{
         const sm=gsum(s.id);
-        return`<tr><td class="tc" data-freeze="a">${i+1}</td><td data-freeze="b" style="white-space:nowrap">${esc(s.student_name)}</td>
+        return`<tr class="${flexRowCls(s.id)}"><td class="tc" data-freeze="a">${i+1}</td><td data-freeze="b" style="white-space:nowrap">${esc(s.student_name)}${flexBadge(s.id)}</td>
           <td class="tc"><input type="number" class="si2 score-nav" id="mid-${s.id}" value="${mM===0?'':(sm.mid_normal??'')}" min="0" max="${mM}" step="0.5" ${mM===0?'disabled title="วิชานี้ตั้งคะแนนกลางภาคไว้ 0 — แก้ได้ที่แผนการวัดฯ > สัดส่วนคะแนน"':''} oninput="this.classList.toggle('over',+this.value>+this.max);_markExamDirty()"></td>
           <td class="tc"><input type="number" class="si2 score-nav" id="fin-${s.id}" value="${mF===0?'':(sm.final_score??'')}" min="0" max="${mF}" step="0.5" ${mF===0?'disabled title="วิชานี้ตั้งคะแนนปลายภาคไว้ 0 — แก้ได้ที่แผนการวัดฯ > สัดส่วนคะแนน"':''} oninput="this.classList.toggle('over',+this.value>+this.max);_markExamDirty()"></td>
         </tr>`;
@@ -4351,6 +4365,29 @@ async function saveExam(){
         mid_normal:mn,mid_retake:0,mid_repeat:0,final_score:fn,
         total_score:total,grade,special_result:sr_dom,note:sm.note||''};
     });
+
+    // ── ตรวจเพดานเกรดสูงสุด (นักเรียนยืดหยุ่น) — เฉพาะกลุ่มสาระของวิชานี้ ก่อนบันทึกจริง ──
+    if(scSub?.subject_group){
+      const capRows=await q(sb.from('flexible_grade_caps').select('student_id,max_grade')
+        .eq('subject_group',scSub.subject_group).in('student_id',scStus.map(s=>s.id)));
+      if(capRows.length){
+        const capMap=Object.fromEntries(capRows.map(c=>[c.student_id,parseFloat(c.max_grade)]));
+        const ZERO_GRADE=['ร','มส','มผ','ผ'];
+        const over_cap=rows.filter(r=>capMap[r.student_id]!=null && !ZERO_GRADE.includes(r.special_result) && parseFloat(r.grade)>capMap[r.student_id]);
+        if(over_cap.length){
+          loading(false);
+          const nameOf=id=>scStus.find(s=>s.id===id)?.student_name||id;
+          alert2({
+            title:'มีคะแนนเกินเพดานเกรดสูงสุด (นักเรียนยืดหยุ่น)',
+            msg: over_cap.map(v=>`<strong>${esc(nameOf(v.student_id))}</strong> คำนวณได้เกรด <strong>${v.grade}</strong> แต่กำหนดเพดานไว้ที่ <strong>${capMap[v.student_id]}</strong> (กลุ่มสาระ ${esc(scSub.subject_group)})`).join('<br>')
+              + '<br><span style="font-size:12px;color:var(--muted)">กรุณาปรับคะแนนของนักเรียนที่ระบุก่อน จึงจะบันทึกได้</span>',
+            type:'warn'
+          });
+          return;
+        }
+      }
+    }
+
     invalidateSc(); invalidateSubjects();
     await q(sb.from('score_summary').upsert(rows,{onConflict:'subject_id,student_id'}));
     scSum=await q(sb.from('score_summary').select('*').eq('subject_id',S.selSub));

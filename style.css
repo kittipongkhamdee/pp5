@@ -326,6 +326,9 @@ tbody tr:hover td{background:rgba(0,122,255,.04);}
 .tw-freeze [data-freeze="a"]{left:0;}
 .tw-freeze [data-freeze="b"]{left:40px;box-shadow:2px 0 4px rgba(0,0,0,.06);}
 .tw-freeze thead [data-freeze]{z-index:3;background:var(--card2);}
+/* ไฮไลต์แถวนักเรียนกลุ่มยืดหยุ่น (flexMap) ในหน้าเช็คเวลาเรียน/บันทึกคะแนน */
+tr.flex-stu-row td{background:rgba(99,102,241,.07);}
+tr.flex-stu-row [data-freeze]{background:rgba(99,102,241,.12)!important;}
 /* ปุ่มย่อตาราง (หน้าแผนการวัดและประเมินผล): ลด font/padding ให้เห็นคอลัมน์พร้อมกันได้มากขึ้นก่อนต้อง scroll */
 #epl-wrap.epl-compact .tw table{font-size:11px;}
 #epl-wrap.epl-compact .tw th,#epl-wrap.epl-compact .tw td{padding:3px 5px;}
