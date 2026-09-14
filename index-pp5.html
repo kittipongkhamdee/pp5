@@ -3587,7 +3587,7 @@ async function printAttendanceMsReportCombined(){
         <td style="text-align:center;padding:5px 6px;border:1px solid #999">${no}</td>
         <td style="text-align:left;padding:5px 8px;border:1px solid #999;white-space:nowrap">${esc(stu?.student_name||'(ไม่พบชื่อ)')}</td>
         <td style="text-align:center;padding:5px 6px;border:1px solid #999">${grm(stu?.grade_level,stu?.room)}</td>
-        <td style="text-align:left;padding:5px 8px;border:1px solid #999">${esc(e.sub.subject_name)}<br>${esc(e.sub.subject_code)}</td>
+        <td style="text-align:left;padding:5px 8px;border:1px solid #999">${esc(e.sub.subject_name)} <span style="white-space:nowrap">(${esc(e.sub.subject_code)})</span></td>
         <td style="text-align:center;padding:5px 6px;border:1px solid #999">${e.totalH}</td>
         <td style="text-align:center;padding:5px 6px;border:1px solid #999">${e.attended}</td>
         <td style="text-align:center;padding:5px 6px;border:1px solid #999">${absent}</td>
