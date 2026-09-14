@@ -1785,7 +1785,7 @@ function _applyConcurrencyGuards(){
 // (ของโมดูลจะถูกห่อเพิ่มใน ensureModule หลังโหลดเสร็จ)
 _applyConcurrencyGuards();
 // ?v= กันแคชเก่าค้าง (modules/*.js แคชไว้ 1 วันตาม vercel.json) — แก้ไฟล์ใน modules/ เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย
-const MODULE_V='44';
+const MODULE_V='45';
 // ห่อฟังก์ชันของโมดูลหลังโหลดเสร็จด้วย (ตอนเริ่มระบบยังไม่มีฟังก์ชันเหล่านี้)
 function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V).then(()=>{ _applyConcurrencyGuards(); }); }
 function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
@@ -4366,20 +4366,19 @@ async function saveExam(){
         total_score:total,grade,special_result:sr_dom,note:sm.note||''};
     });
 
-    // ── ตรวจเพดานเกรดสูงสุด (นักเรียนยืดหยุ่น) — เฉพาะกลุ่มสาระของวิชานี้ ก่อนบันทึกจริง ──
+    // ── ตรวจเพดานเกรดสูงสุด (นักเรียนยืดหยุ่น) — ค่าเดียวใช้กับนักเรียนกลุ่มยืดหยุ่นทุกคน แยกตามกลุ่มสาระของวิชานี้ ก่อนบันทึกจริง ──
     if(scSub?.subject_group){
-      const capRows=await q(sb.from('flexible_grade_caps').select('student_id,max_grade')
-        .eq('subject_group',scSub.subject_group).in('student_id',scStus.map(s=>s.id)));
-      if(capRows.length){
-        const capMap=Object.fromEntries(capRows.map(c=>[c.student_id,parseFloat(c.max_grade)]));
+      const capSetRows=await q(sb.from('flexible_grade_cap_settings').select('max_grade').eq('subject_group',scSub.subject_group));
+      const capVal=capSetRows.length?parseFloat(capSetRows[0].max_grade):null;
+      if(capVal!=null){
         const ZERO_GRADE=['ร','มส','มผ','ผ'];
-        const over_cap=rows.filter(r=>capMap[r.student_id]!=null && !ZERO_GRADE.includes(r.special_result) && parseFloat(r.grade)>capMap[r.student_id]);
+        const over_cap=rows.filter(r=>flexMap[r.student_id] && !ZERO_GRADE.includes(r.special_result) && parseFloat(r.grade)>capVal);
         if(over_cap.length){
           loading(false);
           const nameOf=id=>scStus.find(s=>s.id===id)?.student_name||id;
           alert2({
             title:'มีคะแนนเกินเพดานเกรดสูงสุด (นักเรียนยืดหยุ่น)',
-            msg: over_cap.map(v=>`<strong>${esc(nameOf(v.student_id))}</strong> คำนวณได้เกรด <strong>${v.grade}</strong> แต่กำหนดเพดานไว้ที่ <strong>${capMap[v.student_id]}</strong> (กลุ่มสาระ ${esc(scSub.subject_group)})`).join('<br>')
+            msg: over_cap.map(v=>`<strong>${esc(nameOf(v.student_id))}</strong> คำนวณได้เกรด <strong>${v.grade}</strong> แต่กลุ่มสาระ ${esc(scSub.subject_group)} กำหนดเพดานไว้ที่ <strong>${capVal}</strong> สำหรับนักเรียนกลุ่มยืดหยุ่นทุกคน`).join('<br>')
               + '<br><span style="font-size:12px;color:var(--muted)">กรุณาปรับคะแนนของนักเรียนที่ระบุก่อน จึงจะบันทึกได้</span>',
             type:'warn'
           });
