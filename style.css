@@ -317,6 +317,20 @@ tr:last-child td{border-bottom:none;}
 tbody tr{transition:background .1s;}
 tbody tr:hover td{background:rgba(0,122,255,.04);}
 .tc{text-align:center!important;}
+/* ── ตารางกรอกข้อมูล (แผนการวัดฯ ฯลฯ) ที่คอลัมน์เยอะจน scroll แนวนอน ──
+   freeze คอลัมน์แรก (หรือ 2 คอลัมน์แรก): ใส่ class "tw-freeze" ที่ div ครอบตาราง
+   แล้วกำกับ th/td ที่ต้องการ freeze ด้วย data-freeze="a" (ซ้ายสุด) หรือ "b" (คอลัมน์ถัดมา)
+   ใช้ attribute แทน :first-child เพราะตารางที่มี rowspan/colspan ในหัวตาราง
+   (เช่นแผนการวัดฯ) ทำให้ :first-child ของแต่ละแถวไม่ตรงกับคอลัมน์ข้อมูลเดียวกัน */
+.tw-freeze [data-freeze]{position:sticky;background:var(--card);z-index:1;}
+.tw-freeze [data-freeze="a"]{left:0;}
+.tw-freeze [data-freeze="b"]{left:34px;box-shadow:2px 0 4px rgba(0,0,0,.06);}
+.tw-freeze thead [data-freeze]{z-index:3;background:var(--card2);}
+/* ปุ่มย่อตาราง (หน้าแผนการวัดและประเมินผล): ลด font/padding ให้เห็นคอลัมน์พร้อมกันได้มากขึ้นก่อนต้อง scroll */
+#epl-wrap.epl-compact .tw table{font-size:11px;}
+#epl-wrap.epl-compact .tw th,#epl-wrap.epl-compact .tw td{padding:3px 5px;}
+#epl-wrap.epl-compact .tw .cell-in{padding:3px 4px;font-size:11px;}
+#epl-wrap.epl-compact .tw textarea.cell-in{min-height:28px;}
 .tr2{text-align:right!important;font-variant-numeric:tabular-nums;}
 .tl{text-align:left;}
 /* Tabs */
