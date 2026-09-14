@@ -2196,14 +2196,14 @@ async function pgSchoolReport(){
           ? '<span class="badge bg-r" style="font-size:10px;margin-left:6px">⚠ ยังไม่เริ่ม</span>'
           : '';
         return '<tr style="cursor:pointer" onclick="_jumpToTeacher(\''+tEsc+'\')">'+
-          '<td class="tl" style="font-weight:600">'+esc(tp.teacher)+statusBadge+'</td>'+
-          '<td class="tc">'+tp.total+'</td>'+
-          '<td class="tc">'+_progressCell(tp.attDone,tp.total)+'</td>'+
-          '<td class="tc">'+_progressCell(tp.collectDone,tp.total)+'</td>'+
-          '<td class="tc">'+_progressCell(tp.midDone,tp.total)+'</td>'+
-          '<td class="tc">'+_progressCell(tp.finalDone,tp.total)+'</td>'+
-          '<td class="tc">'+_progressCell(tp.evalDone,tp.total)+'</td>'+
-          '<td style="min-width:120px">'+
+          '<td class="tl" data-label="ครู" data-head style="font-weight:600">'+esc(tp.teacher)+statusBadge+'</td>'+
+          '<td class="tc" data-label="วิชา">'+tp.total+'</td>'+
+          '<td class="tc" data-label="เวลาเรียน">'+_progressCell(tp.attDone,tp.total)+'</td>'+
+          '<td class="tc" data-label="คะแนนเก็บ">'+_progressCell(tp.collectDone,tp.total)+'</td>'+
+          '<td class="tc" data-label="กลางภาค">'+_progressCell(tp.midDone,tp.total)+'</td>'+
+          '<td class="tc" data-label="ปลายภาค">'+_progressCell(tp.finalDone,tp.total)+'</td>'+
+          '<td class="tc" data-label="ประเมิน">'+_progressCell(tp.evalDone,tp.total)+'</td>'+
+          '<td data-label="ความคืบหน้า" style="min-width:120px">'+
             '<div style="display:flex;align-items:center;gap:8px">'+
               '<div style="flex:1;height:6px;border-radius:10px;background:var(--bg2);overflow:hidden">'+
                 '<div style="height:100%;border-radius:10px;background:'+barColor+';width:'+tp.pct+'%"></div>'+
@@ -2225,7 +2225,7 @@ async function pgSchoolReport(){
           '</button>'+
         '</div>'+
         '<div class="cb" style="padding:0">'+
-          (emptyMsg || '<div class="tw"><table>'+
+          (emptyMsg || '<div class="tw tw-cards"><table>'+
             '<thead><tr><th class="tl">ครู</th><th>วิชา</th><th>เวลาเรียน</th><th>คะแนนเก็บ</th><th>กลางภาค</th><th>ปลายภาค</th><th>ประเมิน</th><th>ความคืบหน้า</th></tr></thead>'+
             '<tbody>'+rows+'</tbody>'+
           '</table></div>')+
