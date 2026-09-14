@@ -238,6 +238,7 @@ async function pgStudents(){
   ${renderFlexCard()}`;
   await loadStuPage();
   loadFlexList();
+  loadFlexCapSettings();
 }
 async function loadStuPage(){
   const qv=$('stu-q')?.value.trim()||'';
@@ -569,10 +570,10 @@ async function doImport(){
 }
 
 // ════════════════════════════════════════════════════════════════
-// 3.5 นักเรียนยืดหยุ่น (สพฐ. 3 รูปแบบการจัดการเรียนรู้) + เพดานเกรดสูงสุดรายบุคคล/รายกลุ่มสาระ
+// 3.5 นักเรียนยืดหยุ่น (สพฐ. 3 รูปแบบการจัดการเรียนรู้) + เพดานเกรดสูงสุด (ตั้งครั้งเดียว ใช้กับทั้งกลุ่ม แยกตามกลุ่มสาระ)
 // ════════════════════════════════════════════════════════════════
-let flexList=[];       // สมาชิกกลุ่มยืดหยุ่นทั้งหมด (ปกติมีไม่กี่สิบคน ไม่ต้องแบ่งหน้า)
-let flexCapMap={};     // student_id -> [{subject_group,max_grade}]
+let flexList=[];        // สมาชิกกลุ่มยืดหยุ่นทั้งหมด (ปกติมีไม่กี่สิบคน ไม่ต้องแบ่งหน้า)
+let flexCapSettings={}; // subject_group -> max_grade — ตั้งครั้งเดียว มีผลกับนักเรียนกลุ่มยืดหยุ่นทั้งหมด (ไม่แยกรายคน)
 let _flexCandTimer=null;
 
 const _alertIcSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
@@ -610,7 +611,7 @@ function renderFlexCard(){
     กำหนดเกรดสูงสุด (นักเรียนยืดหยุ่น)
   </div></div><div class="cb">
     <div class="alert al-wa"><div class="alert-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg></div>
-      <div>ตั้งเพดานเกรดสูงสุด<strong>รายบุคคล แยกตามกลุ่มสาระการเรียนรู้</strong> — ถ้าคำนวณได้เกรดสูงกว่านี้ ระบบจะแจ้งเตือนและ<strong>ต้องแก้ไขคะแนนก่อนจึงจะกด "บันทึกคะแนนสอบ" ได้</strong></div>
+      <div>ตั้งเพดานเกรดสูงสุด<strong>ครั้งเดียว ใช้กับนักเรียนกลุ่มยืดหยุ่นทั้งหมด</strong> แยกตามกลุ่มสาระการเรียนรู้ — ถ้าคำนวณได้เกรดสูงกว่านี้ ระบบจะแจ้งเตือนและ<strong>ต้องแก้ไขคะแนนก่อนจึงจะกด "บันทึกคะแนนสอบ" ได้</strong></div>
     </div>
     <div id="flex-cap-list"><div class="empty" style="padding:22px">กำลังโหลด...</div></div>
   </div></div>`;
@@ -625,16 +626,17 @@ async function loadFlexList(){
         || String(a.students?.room||'').localeCompare(String(b.students?.room||''),'th',{numeric:true})
         || String(a.students?.student_name||'').localeCompare(String(b.students?.student_name||''),'th');
     });
-    const ids=flexList.map(f=>f.student_id);
-    flexCapMap={};
-    if(ids.length){
-      const caps=await q(sb.from('flexible_grade_caps').select('student_id,subject_group,max_grade').in('student_id',ids));
-      caps.forEach(c=>{ (flexCapMap[c.student_id]=flexCapMap[c.student_id]||[]).push(c); });
-    }
-  }catch(e){ flexList=[]; flexCapMap={}; toast('โหลดรายชื่อนักเรียนยืดหยุ่นไม่สำเร็จ: '+e.message,'er'); }
+  }catch(e){ flexList=[]; toast('โหลดรายชื่อนักเรียนยืดหยุ่นไม่สำเร็จ: '+e.message,'er'); }
   renderFlexMemList();
   renderFlexCapList();
   loadFlexCandidates();
+}
+async function loadFlexCapSettings(){
+  try{
+    const rows=await q(sb.from('flexible_grade_cap_settings').select('subject_group,max_grade'));
+    flexCapSettings=Object.fromEntries(rows.map(r=>[r.subject_group,r.max_grade]));
+  }catch(e){ flexCapSettings={}; toast('โหลดเพดานเกรดไม่สำเร็จ: '+e.message,'er'); }
+  renderFlexCapList();
 }
 function renderFlexMemList(){
   const title=$('flex-mem-title'); if(title) title.textContent=`สมาชิกกลุ่มยืดหยุ่น (${flexList.length} คน)`;
@@ -658,24 +660,33 @@ function renderFlexMemList(){
 }
 function renderFlexCapList(){
   const el=$('flex-cap-list'); if(!el) return;
-  if(!flexList.length){ el.innerHTML='<div class="empty" style="padding:22px">ยังไม่มีนักเรียนในกลุ่มยืดหยุ่น</div>'; return; }
-  el.innerHTML=`<div class="tw tw-cards"><table>
-    <thead><tr><th>ที่</th><th class="tl">ชื่อ-สกุล</th><th>ชั้น/ห้อง</th><th class="tl">เพดานเกรดที่ตั้งไว้</th><th>จัดการ</th></tr></thead>
-    <tbody>${flexList.map((f,i)=>{
-      const caps=flexCapMap[f.student_id]||[];
-      const summary=caps.length
-        ? caps.map(c=>`<span class="badge bg-b" style="margin:1px 3px 1px 0">${esc(c.subject_group)}: ${c.max_grade}</span>`).join('')
-        : `<span style="color:var(--muted);font-size:12.5px">ไม่จำกัด</span>`;
-      return`<tr>
-      <td class="tc" data-label="ที่" data-hide-mobile>${i+1}</td>
-      <td data-label="ชื่อ-สกุล" data-head style="white-space:nowrap">${esc(f.students?.student_name||'-')}</td>
-      <td class="tc" data-label="ชั้น/ห้อง">${grm(f.students?.grade_level,f.students?.room)}</td>
-      <td data-label="เพดานเกรดที่ตั้งไว้">${summary}</td>
-      <td class="tc" data-label="จัดการ" data-actions>
-        <button class="btn bs btn-sm" onclick="openCapModal('${f.student_id}','${escJs(f.students?.student_name||'')}')">ตั้งค่าเพดาน</button>
-      </td></tr>`;
-    }).join('')}
-    </tbody></table></div>`;
+  const GRADE_OPTS=['ไม่จำกัด','4','3.5','3','2.5','2','1.5','1','0'];
+  el.innerHTML=`
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">มีผลกับนักเรียนกลุ่มยืดหยุ่นทั้งหมด (${flexList.length} คน) — ไม่จำกัด = ไม่มีเพดาน คำนวณเกรดตามปกติ</div>
+    <div class="tw"><table>
+      <thead><tr><th class="tl">กลุ่มสาระการเรียนรู้</th><th>เกรดสูงสุด</th></tr></thead>
+      <tbody>${SUBJECT_GROUPS.map(g=>`<tr>
+        <td>${esc(g)}</td>
+        <td class="tc"><select class="fs cap-set-sel" data-group="${esc(g)}" style="max-width:110px">
+          ${GRADE_OPTS.map(o=>`<option value="${o}" ${(flexCapSettings[g]!=null?String(flexCapSettings[g]):'ไม่จำกัด')===o?'selected':''}>${o}</option>`).join('')}
+        </select></td>
+      </tr>`).join('')}</tbody>
+    </table></div>
+    <div style="text-align:right;margin-top:12px">
+      <button class="btn bp" onclick="saveFlexCapSettings()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>บันทึกเพดานเกรด</button>
+    </div>`;
+}
+async function saveFlexCapSettings(){
+  const sels=[...document.querySelectorAll('.cap-set-sel')];
+  const toSet=sels.filter(s=>s.value!=='ไม่จำกัด').map(s=>({subject_group:s.dataset.group,max_grade:parseFloat(s.value)}));
+  loading(true);
+  try{
+    // ล้างของเดิมทั้งหมดแล้วค่อยตั้งใหม่ตามที่เลือก (ง่ายกว่าไล่ upsert/delete ทีละกลุ่มสาระ)
+    await q(sb.from('flexible_grade_cap_settings').delete().gt('id',0));
+    if(toSet.length) await q(sb.from('flexible_grade_cap_settings').insert(toSet));
+    toast('บันทึกเพดานเกรดเรียบร้อย — มีผลกับนักเรียนกลุ่มยืดหยุ่นทั้งหมด');
+    await loadFlexCapSettings();
+  }catch(e){ toast('เกิดข้อผิดพลาด: '+e.message,'er'); }finally{ loading(false); }
 }
 function _flexCandDebounced(){ clearTimeout(_flexCandTimer); _flexCandTimer=setTimeout(loadFlexCandidates,350); }
 async function loadFlexCandidates(){
@@ -726,7 +737,7 @@ function changeFlexFormat(id,val){
 }
 function removeFlexStudent(id,name){
   confirm2({title:'นำออกจากกลุ่มยืดหยุ่น',
-    msg:'นำ "<strong>'+esc(name)+'</strong>" ออกจากกลุ่มยืดหยุ่น?<br><span style="font-size:12px;color:var(--muted)">เพดานเกรดที่เคยตั้งไว้ให้คนนี้จะถูกลบไปด้วย</span>',
+    msg:'นำ "<strong>'+esc(name)+'</strong>" ออกจากกลุ่มยืดหยุ่น?<br><span style="font-size:12px;color:var(--muted)">คนนี้จะไม่ถูกไฮไลต์และไม่ถูกตรวจเพดานเกรดอีกต่อไป</span>',
     type:'warn',confirmText:'นำออก',cancelText:'ยกเลิก',
     onConfirm:async()=>{
       loading(true);
@@ -738,50 +749,6 @@ function removeFlexStudent(id,name){
       }catch(e){ toast('เกิดข้อผิดพลาด: '+e.message,'er'); }finally{ loading(false); }
     }});
 }
-async function openCapModal(studentId,studentName){
-  loading(true);
-  let caps=[];
-  try{ caps=await q(sb.from('flexible_grade_caps').select('subject_group,max_grade').eq('student_id',studentId)); }
-  catch(e){ toast('โหลดเพดานเดิมไม่สำเร็จ: '+e.message,'er'); }
-  loading(false);
-  const capMap=Object.fromEntries(caps.map(c=>[c.subject_group,c.max_grade]));
-  const GRADE_OPTS=['ไม่จำกัด','4','3.5','3','2.5','2','1.5','1','0'];
-  document.body.insertAdjacentHTML('beforeend',`
-  <div class="mo" id="capMod"><div class="md">
-    <div class="mh"><div class="mt">กำหนดเกรดสูงสุด — ${esc(studentName)}</div>
-    <button class="mx" onclick="rmModal('capMod')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="10" height="10"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
-    <div class="mb">
-      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">กำหนดแยกตามกลุ่มสาระการเรียนรู้ — ไม่จำกัด = ไม่มีเพดาน คำนวณเกรดตามปกติ</div>
-      <div class="tw"><table>
-        <thead><tr><th class="tl">กลุ่มสาระการเรียนรู้</th><th>เกรดสูงสุด</th></tr></thead>
-        <tbody>${SUBJECT_GROUPS.map(g=>`<tr>
-          <td>${esc(g)}</td>
-          <td class="tc"><select class="fs cap-sel" data-group="${esc(g)}" style="max-width:110px">
-            ${GRADE_OPTS.map(o=>`<option value="${o}" ${(capMap[g]!=null?String(capMap[g]):'ไม่จำกัด')===o?'selected':''}>${o}</option>`).join('')}
-          </select></td>
-        </tr>`).join('')}</tbody>
-      </table></div>
-    </div>
-    <div class="mf">
-      <button class="btn bs" onclick="rmModal('capMod')">ยกเลิก</button>
-      <button class="btn bp" onclick="saveCapModal('${studentId}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>บันทึกเพดาน</button>
-    </div>
-  </div></div>`);
-}
-async function saveCapModal(studentId){
-  const sels=[...document.querySelectorAll('.cap-sel')];
-  const toSet=sels.filter(s=>s.value!=='ไม่จำกัด').map(s=>({student_id:studentId,subject_group:s.dataset.group,max_grade:parseFloat(s.value)}));
-  loading(true);
-  try{
-    // ล้างของเดิมทั้งหมดของนักเรียนคนนี้ แล้วค่อยตั้งใหม่ตามที่เลือก (ง่ายกว่าไล่ upsert/delete ทีละกลุ่มสาระ)
-    await q(sb.from('flexible_grade_caps').delete().eq('student_id',studentId));
-    if(toSet.length) await q(sb.from('flexible_grade_caps').insert(toSet));
-    rmModal('capMod');
-    toast('บันทึกเพดานเกรดเรียบร้อย');
-    await loadFlexList();
-  }catch(e){ toast('เกิดข้อผิดพลาด: '+e.message,'er'); }finally{ loading(false); }
-}
-
 // ════════════════════════════════════════════════════════════════
 // 6.5 EVAL PLAN (แผนการวัดและประเมินผล)
 // ════════════════════════════════════════════════════════════════
