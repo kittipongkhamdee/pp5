@@ -4948,15 +4948,50 @@ async function pgEval(){
   renderEvPage();
 }
 function invalidateEv(){ cacheInv('ev_read_'+S.selSub,'ev_char_'+S.selSub); }
-function evSel(id,val){
+function evSel(id,val,onExtra){
   const v=val===null||val===undefined?'':String(val);
   const cls={'3':'ev3','2':'ev2','1':'ev1','0':'ev0'}[v]||'';
-  return`<select class="es ${cls}" id="${id}" onchange="updEvCls(this)">
+  return`<select class="es ${cls}" id="${id}" onchange="updEvCls(this);${onExtra||''}">
     ${EV_OPTS.map(o=>`<option value="${o}" ${v===o?'selected':''}>${EV_LBL[o]}</option>`).join('')}
   </select>`;
 }
 
 function updEvCls(el){el.className='es '+({'3':'ev3','2':'ev2','1':'ev1','0':'ev0'}[el.value]||'');}
+
+// ── ผลสรุป คำนวณอัตโนมัติจากผลประเมินรายครั้ง/รายข้อ ตามแนวปฏิบัติของ สพฐ.
+// (การอ่าน คิดวิเคราะห์และเขียน / คุณลักษณะอันพึงประสงค์): ใช้ค่าที่ปรากฏบ่อยที่สุด
+// (ฐานนิยม) เป็นผลสรุป — ถ้ามีฐานนิยมเท่ากันมากกว่า 1 ระดับ ให้ใช้ระดับที่ต่ำกว่า
+// (ระมัดระวังไว้ก่อน) ครูแก้ไขเองไม่ได้โดยตรง เปลี่ยนได้ทางเดียวคือแก้รายครั้ง/รายข้อ
+function _evMode(values){
+  const nums=values.map(v=>v===''||v==null?null:parseInt(v)).filter(v=>v!=null&&!isNaN(v));
+  if(!nums.length) return '';
+  const count={};
+  nums.forEach(n=>{ count[n]=(count[n]||0)+1; });
+  let maxCount=0;
+  Object.values(count).forEach(c=>{ if(c>maxCount) maxCount=c; });
+  const modes=Object.keys(count).filter(k=>count[k]===maxCount).map(Number);
+  return String(Math.min(...modes));
+}
+// การ์ดผลสรุป (อ่านอย่างเดียว) + ช่อง hidden เก็บค่าไว้ให้ saveRead()/saveChar() อ่านเหมือนเดิม
+function evSummaryBadge(id,val){
+  const v=val===''||val==null?'':String(val);
+  const cls={'3':'ev3','2':'ev2','1':'ev1','0':'ev0'}[v]||'';
+  return`<div class="es ${cls}" id="${id}-badge" style="text-align:center;cursor:default" title="คำนวณอัตโนมัติจากผลประเมินรายข้อ (ฐานนิยม) ตามแนวปฏิบัติของ สพฐ.">${v===''?'-':v}</div><input type="hidden" id="${id}" value="${v}">`;
+}
+function _evUpdSummaryBadge(id,val){
+  const v=val===''||val==null?'':String(val);
+  const cls={'3':'ev3','2':'ev2','1':'ev1','0':'ev0'}[v]||'';
+  const badge=$(id+'-badge'); if(badge){ badge.className='es '+cls; badge.textContent=v===''?'-':v; }
+  const hid=$(id); if(hid) hid.value=v;
+}
+function _evRecalcRead(sid){
+  const vals=[1,2,3,4,5].map(t=>$('rt'+t+'-'+sid)?.value||'');
+  _evUpdSummaryBadge('rr-'+sid, _evMode(vals));
+}
+function _evRecalcChar(sid){
+  const vals=CHAR8.map(ch=>$('ch-'+ch.key+'-'+sid)?.value||'');
+  _evUpdSummaryBadge('ch-res-'+sid, _evMode(vals));
+}
 function _evActiveType(){
   const activeTab=document.querySelector('.tab.active[data-tg="ev"]');
   return (activeTab&&activeTab.dataset.ti==='ev-char')?'char':'read';
@@ -4984,7 +5019,7 @@ function renderEvPage(){
   </div>
   <div class="tp active" id="ev-read" data-tp="ev">${renderReadTab()}</div>
   <div class="tp" id="ev-char" data-tp="ev">${renderCharTab()}</div>`;
-  document.querySelectorAll('.es').forEach(updEvCls);
+  document.querySelectorAll('select.es').forEach(updEvCls);
 }
 function renderReadTab(){
   const gR=id=>evRead.find(e=>e.student_id===id)||{};
@@ -4998,11 +5033,13 @@ function renderReadTab(){
         <th style="min-width:60px">ครั้ง 5</th>
         <th style="min-width:70px">ผลสรุป</th>
       </tr></thead>
-      <tbody>${evStus.map((s,i)=>{const ev=gR(s.id);return`<tr>
+      <tbody>${evStus.map((s,i)=>{const ev=gR(s.id);
+        const vals=[1,2,3,4,5].map(t=>ev['t'+t]);
+        return`<tr>
         <td class="tc" data-freeze="a">${i+1}</td>
         <td data-freeze="b" style="white-space:nowrap">${esc(s.student_name)}</td>
-        ${[1,2,3,4,5].map(t=>`<td class="tc" style="padding:6px 4px">${evSel('rt'+t+'-'+s.id,ev['t'+t])}</td>`).join('')}
-        <td class="tc" style="padding:6px 4px">${evSel('rr-'+s.id,ev.result)}</td>
+        ${[1,2,3,4,5].map(t=>`<td class="tc" style="padding:6px 4px">${evSel('rt'+t+'-'+s.id,ev['t'+t],`_evRecalcRead('${s.id}')`)}</td>`).join('')}
+        <td class="tc" style="padding:6px 4px">${evSummaryBadge('rr-'+s.id,_evMode(vals))}</td>
       </tr>`;}).join('')}</tbody>
     </table></div>
     <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
@@ -5023,11 +5060,13 @@ function renderCharTab(){
         ${CHAR8.map((ch,i)=>`<th style="font-size:10.5px;min-width:50px;padding:6px 3px;line-height:1.3">ข้อ ${i+1}</th>`).join('')}
         <th style="min-width:60px;font-size:11px">ผลสรุป</th>
       </tr></thead>
-      <tbody>${evStus.map((s,i)=>{const ev=gC(s.id);return`<tr>
+      <tbody>${evStus.map((s,i)=>{const ev=gC(s.id);
+        const vals=CHAR8.map(ch=>ev[ch.key]);
+        return`<tr>
         <td class="tc" data-freeze="a">${i+1}</td>
         <td data-freeze="b" style="white-space:nowrap">${esc(s.student_name)}</td>
-        ${CHAR8.map(ch=>`<td class="tc" style="padding:5px 2px">${evSel('ch-'+ch.key+'-'+s.id,ev[ch.key])}</td>`).join('')}
-        <td class="tc" style="padding:5px 2px">${evSel('ch-res-'+s.id,ev.overall_result)}</td>
+        ${CHAR8.map(ch=>`<td class="tc" style="padding:5px 2px">${evSel('ch-'+ch.key+'-'+s.id,ev[ch.key],`_evRecalcChar('${s.id}')`)}</td>`).join('')}
+        <td class="tc" style="padding:5px 2px">${evSummaryBadge('ch-res-'+s.id,_evMode(vals))}</td>
       </tr>`;}).join('')}</tbody>
     </table></div>
     <div style="margin-top:10px;font-size:11.5px;color:var(--muted);line-height:1.8;padding:8px 12px;background:var(--card2);border-radius:8px">
@@ -5050,16 +5089,16 @@ function clearEv(type){
       if(type==='read'){
         evStus.forEach(s=>{
           for(let t=1;t<=5;t++){const el=$('rt'+t+'-'+s.id);if(el)el.value='';}
-          const r=$('rr-'+s.id);if(r)r.value='';
+          _evRecalcRead(s.id);
         });
       } else {
         evStus.forEach(s=>{
           CHAR8.forEach(ch=>{const el=$('ch-'+ch.key+'-'+s.id);if(el)el.value='';});
-          const r=$('ch-res-'+s.id);if(r)r.value='';
+          _evRecalcChar(s.id);
         });
       }
-      // อัป color ทุก dropdown
-      document.querySelectorAll('.es').forEach(updEvCls);
+      // อัป color ทุก dropdown (ไม่รวมการ์ดผลสรุปที่คำนวณอัตโนมัติ — recalc ด้านบนอัปเดตให้แล้ว)
+      document.querySelectorAll('select.es').forEach(updEvCls);
       toast('ล้างค่าเรียบร้อย — กด "บันทึก" เพื่อบันทึกลงระบบ');
     }
   });
@@ -5068,15 +5107,15 @@ function autoFillEv(type,val){
   if(type==='read'){
     evStus.forEach(s=>{
       for(let t=1;t<=5;t++){const el=$('rt'+t+'-'+s.id);if(el&&!el.value){el.value=val;updEvCls(el);}}
-      const r=$('rr-'+s.id);if(r&&!r.value){r.value=val;updEvCls(r);}
+      _evRecalcRead(s.id);
     });
   } else {
     evStus.forEach(s=>{
       CHAR8.forEach(c=>{const el=$('ch-'+c.key+'-'+s.id);if(el&&!el.value){el.value=val;updEvCls(el);}});
-      const r=$('ch-res-'+s.id);if(r&&!r.value){r.value=val;updEvCls(r);}
+      _evRecalcChar(s.id);
     });
   }
-  toast('ตั้งค่าให้นักเรียนที่ยังไม่ได้ประเมิน');
+  toast('ตั้งค่าให้นักเรียนที่ยังไม่ได้ประเมิน — ผลสรุปคำนวณใหม่อัตโนมัติ');
 }
 async function saveRead(){
   // iv: ค่าว่าง → null, ค่าตัวเลข (รวม 0) → integer
