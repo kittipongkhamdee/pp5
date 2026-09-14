@@ -671,6 +671,7 @@ function renderEvalPlanPage(){
       <div style="font-size:13px;color:var(--muted);margin-top:2px">${esc(sub?.subject_name||'')} &nbsp;·&nbsp; ${esc(sub?.subject_code||'')} &nbsp;·&nbsp; ${grm(sub?.grade_level,sub?.room)} &nbsp;·&nbsp; ภาคเรียนที่ ${sub?.semester||1}/${esc(sub?.academic_year||'')}</div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn bs no-print" id="epl-compact-btn" onclick="toggleEplCompact()" title="ลดขนาดตัวอักษร/ระยะห่างในตาราง ให้เห็นหลายคอลัมน์พร้อมกันมากขึ้นบนจอแคบ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg><span id="epl-compact-label">ย่อตาราง</span></button>
       <button class="btn bs no-print" onclick="openCopyEvalPlanModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>คัดลอกจากวิชาอื่น</button>
       <button class="btn bs no-print" onclick="exportEvalPlan()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>Excel</button>
       <button class="btn bs no-print" onclick="printEvalPlan()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>พิมพ์</button>
@@ -685,8 +686,23 @@ function renderEvalPlanPage(){
     <button class="tab active" data-tg="epl" data-ti="epl-units" onclick="swTab('epl','epl-units')">หน่วยการเรียนรู้ &amp; มาตรฐาน</button>
     <button class="tab" data-tg="epl" data-ti="epl-ratio" onclick="swTab('epl','epl-ratio')">สัดส่วนคะแนน</button>
   </div>
-  <div class="tp active" id="epl-units" data-tp="epl">${renderEplUnitsTab()}</div>
-  <div class="tp" id="epl-ratio" data-tp="epl">${renderEplRatioTab()}</div>`;
+  <div id="epl-wrap">
+    <div class="tp active" id="epl-units" data-tp="epl">${renderEplUnitsTab()}</div>
+    <div class="tp" id="epl-ratio" data-tp="epl">${renderEplRatioTab()}</div>
+  </div>`;
+  _eplApplyCompact();
+}
+// ── ปุ่มย่อตาราง: ลดขนาดตัวอักษร/ระยะห่างในตารางของหน้านี้ ให้เห็นหลายคอลัมน์
+// พร้อมกันมากขึ้นก่อนต้อง scroll แนวนอน (จำค่าไว้ใน localStorage ต่อเนื่องข้ามการเข้าใช้งาน) ──
+function _eplApplyCompact(){
+  const on=localStorage.getItem('epl_compact')==='1';
+  const wrap=$('epl-wrap'); if(wrap) wrap.classList.toggle('epl-compact',on);
+  const lbl=$('epl-compact-label'); if(lbl) lbl.textContent=on?'ขนาดปกติ':'ย่อตาราง';
+}
+function toggleEplCompact(){
+  const on=localStorage.getItem('epl_compact')==='1';
+  localStorage.setItem('epl_compact', on?'0':'1');
+  _eplApplyCompact();
 }
 
 // ── TAB 1: หน่วยการเรียนรู้ & มาตรฐาน ──────────────────────────────
@@ -702,10 +718,10 @@ function renderEplUnitsTab(){
     <div class="ch"><div class="ct">หน่วยการเรียนรู้ มาตรฐานการเรียนรู้ ภาระงาน และสัดส่วนคะแนนประเมินผล</div>
       <span style="font-size:11.5px;color:var(--muted)">${epUnits.length} หน่วย</span></div>
     <div class="cb">
-      <div class="tw"><table>
+      <div class="tw tw-freeze"><table>
         <thead><tr>
-          <th style="width:34px" rowspan="2">ที่</th>
-          <th class="tl" style="min-width:150px" rowspan="2">ชื่อหน่วยการเรียนรู้</th>
+          <th style="width:34px" rowspan="2" data-freeze="a">ที่</th>
+          <th class="tl" style="min-width:150px" rowspan="2" data-freeze="b">ชื่อหน่วยการเรียนรู้</th>
           <th class="tl" style="min-width:240px" rowspan="2">มาตรฐานการเรียนรู้ / ตัวชี้วัด</th>
           <th style="width:80px" rowspan="2">เวลา (ชม.)</th>
           <th colspan="2">น้ำหนักคะแนน</th>
@@ -717,8 +733,8 @@ function renderEplUnitsTab(){
         <tbody>
         ${epUnits.length===0?`<tr><td colspan="7" class="tc" style="padding:20px;color:var(--muted)">ยังไม่มีหน่วยการเรียนรู้ — กด "เพิ่มหน่วยการเรียนรู้" ด้านล่าง</td></tr>`:
         epUnits.map((u,i)=>`<tr>
-          <td class="tc">${i+1}</td>
-          <td><textarea class="cell-in" rows="3" style="resize:vertical;white-space:normal;overflow-wrap:break-word;min-height:36px" placeholder="ชื่อหน่วยการเรียนรู้" onchange="saveEplUnit('${u.id}',{unit_name:this.value})">${esc(u.unit_name)}</textarea></td>
+          <td class="tc" data-freeze="a">${i+1}</td>
+          <td data-freeze="b"><textarea class="cell-in" rows="3" style="resize:vertical;white-space:normal;overflow-wrap:break-word;min-height:36px" placeholder="ชื่อหน่วยการเรียนรู้" onchange="saveEplUnit('${u.id}',{unit_name:this.value})">${esc(u.unit_name)}</textarea></td>
           <td>${renderIndCell(u)}</td>
           <td><input class="cell-in num" type="number" value="${u.hours||0}" min="0" onchange="saveEplUnit('${u.id}',{hours:+this.value||0})"></td>
           <td><input class="cell-in num" type="number" value="${u.weight||0}" min="0" onchange="saveEplUnit('${u.id}',{weight:+this.value||0})"></td>
@@ -726,14 +742,14 @@ function renderEplUnitsTab(){
           <td class="tc"><button class="rowdel" title="ลบหน่วย" onclick="delEplUnit('${u.id}','${escJs(u.unit_name||'หน่วยที่ '+(i+1))}')">✕</button></td>
         </tr>`).join('')}
         <tr style="font-weight:700;background:var(--card2)">
-          <td colspan="3" style="text-align:right;padding-right:14px">รวมหน่วยการเรียนรู้</td>
+          <td colspan="3" data-freeze="a" style="text-align:right;padding-right:14px;background:var(--card2)">รวมหน่วยการเรียนรู้</td>
           <td class="tc" style="color:${sumHours===(+sub.total_hours||0)?'var(--ok-txt)':'var(--err-txt)'}">${sumHours}${sumHours===(+sub.total_hours||0)?' ✓':' (ต้อง = '+(+sub.total_hours||0)+')'}</td>
           <td class="tc" style="color:${sumWeight===targetBetween?'var(--ok-txt)':'var(--err-txt)'}" title="คะแนนก่อนกลางภาค+กลางภาค+หลังกลางภาคที่ตั้งไว้ในแท็บ &quot;สัดส่วนคะแนน&quot; = ${targetBetween}">${sumWeight}${sumWeight===targetBetween?' ✓':' (ต้อง = '+targetBetween+')'}</td>
           <td class="tc" style="color:${sumWeightFinal===targetFinal?'var(--ok-txt)':'var(--err-txt)'}" title="คะแนนสอบปลายภาคที่ตั้งไว้ในแท็บ &quot;สัดส่วนคะแนน&quot; = ${targetFinal}">${sumWeightFinal}${sumWeightFinal===targetFinal?' ✓':' (ต้อง = '+targetFinal+')'}</td>
           <td></td>
         </tr>
         <tr style="font-weight:700;background:var(--card2)">
-          <td colspan="3" style="text-align:right;padding-right:14px">รวมคะแนนประเมินผล</td>
+          <td colspan="3" data-freeze="a" style="text-align:right;padding-right:14px;background:var(--card2)">รวมคะแนนประเมินผล</td>
           <td colspan="3" class="tc" style="font-size:14px;color:${grand===100?'var(--ok-txt)':'var(--err-txt)'}">${grand}${grand===100?' ✓':' (ต้อง = 100)'}</td>
           <td></td>
         </tr>
@@ -979,16 +995,16 @@ function renderKpaMatrix(sub){
   const grandTarget=periods.reduce((s,p)=>s+p.target,0);
   const grand=periods.reduce((s,p)=>s+colTotal(p.key),0);
   const allMatch=periods.every(p=>colTotal(p.key)===p.target)&&rows.every(r=>rowTotal(r.k)===r.target);
-  return`<div class="tw"><table>
-    <thead><tr><th class="tl">คุณลักษณะ</th>${periods.map(p=>`<th>${p.label}<br><span style="font-size:10px;font-weight:400;opacity:.65">(เต็ม ${p.target})</span></th>`).join('')}<th>รวม</th></tr></thead>
+  return`<div class="tw tw-freeze"><table>
+    <thead><tr><th class="tl" data-freeze="a">คุณลักษณะ</th>${periods.map(p=>`<th>${p.label}<br><span style="font-size:10px;font-weight:400;opacity:.65">(เต็ม ${p.target})</span></th>`).join('')}<th>รวม</th></tr></thead>
     <tbody>
       ${rows.map(r=>`<tr>
-        <td class="tl"><span class="kpa-tag"><span class="kpa-dot" style="background:${r.color}"></span>${r.label}</span></td>
+        <td class="tl" data-freeze="a"><span class="kpa-tag"><span class="kpa-dot" style="background:${r.color}"></span>${r.label}</span></td>
         ${periods.map(p=>`<td><input class="cell-in num" type="number" id="epl-kpa-${p.key}-${r.k}" value="${val(p.key,r.k)}" oninput="_eplKpaMatrixTouch()"></td>`).join('')}
         <td class="tc" style="font-weight:700;color:${rowTotal(r.k)===r.target?'var(--ok)':'var(--err)'}" id="epl-kpa-row-${r.k}">${rowTotal(r.k)}</td>
       </tr>`).join('')}
       <tr style="font-weight:700;background:var(--card2)">
-        <td class="tl">รวม</td>
+        <td class="tl" data-freeze="a" style="background:var(--card2)">รวม</td>
         ${periods.map(p=>`<td class="tc" id="epl-kpa-col-${p.key}" style="color:${colTotal(p.key)===p.target?'var(--ok)':'var(--err)'}">${colTotal(p.key)}</td>`).join('')}
         <td class="tc" id="epl-kpa-grand" style="color:${grand===grandTarget?'var(--ok)':'var(--err)'}">${grand}</td>
       </tr>
@@ -1095,9 +1111,9 @@ function renderIndicatorScoreTable(){
   };
   const fieldLabel={score_k:'คะแนนเก็บ (K)',score_p:'คะแนนเก็บ (P)',score_a:'คะแนนเก็บ (A)',score_mid:'กลางภาค',score_final:'ปลายภาค'};
   const mismatched=fields.filter(f=>totals[f]!==targets[f]);
-  return`<div class="tw"><table>
+  return`<div class="tw tw-freeze"><table>
     <thead><tr>
-      <th class="tl" style="min-width:170px">ตัวชี้วัด</th>
+      <th class="tl" style="min-width:170px" data-freeze="a">ตัวชี้วัด</th>
       ${fields.map(f=>`<th>${fieldLabel[f]}<br><span style="font-size:10px;font-weight:400;opacity:.65">(เต็ม ${targets[f]})</span></th>`).join('')}
       <th>รวม</th>
     </tr></thead>
@@ -1108,13 +1124,13 @@ function renderIndicatorScoreTable(){
       const rowOk=groups.every(g=>g.ok);
       const detail=groups.map(g=>g.actual+'/'+g.target).join(', ');
       return`<tr>
-        <td class="tl" title="${esc(ind.indicator_text)}">${esc(ind.indicator_code)}</td>
+        <td class="tl" data-freeze="a" title="${esc(ind.indicator_text)}">${esc(ind.indicator_code)}</td>
         ${fields.map(f=>`<td><input class="cell-in num" type="number" value="${sc[f]||0}" onchange="saveEplIndScore(${ind.id},{${f}:+this.value||0})"></td>`).join('')}
         <td class="tc" style="font-weight:700;color:${rowOk?'var(--ok-txt)':'var(--err-txt)'}" title="ผลรวมคะแนนเก็บ K+P+A+กลางภาคของทุกตัวชี้วัดในหน่วยเดียวกัน ต้องรวมได้เท่ากับน้ำหนักคะแนนระหว่างภาคของหน่วยนั้น (ตัวชี้วัดในหน่วยเดียวกันแบ่งน้ำหนักไม่เท่ากันได้ ขอแค่รวมกันตรง) — ${detail}">${rowTot}${rowOk?' ✓':' (หน่วยรวม '+detail+')'}</td>
       </tr>`;
     }).join('')}
     <tr style="font-weight:700;background:var(--card2)">
-      <td class="tl">รวมคะแนน</td>
+      <td class="tl" data-freeze="a" style="background:var(--card2)">รวมคะแนน</td>
       ${fields.map(f=>`<td class="tc" style="color:${totals[f]===targets[f]?'var(--ok)':'var(--err)'}">${totals[f]}</td>`).join('')}
       <td class="tc">${fields.reduce((s,f)=>s+totals[f],0)}</td>
     </tr>
