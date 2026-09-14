@@ -3592,7 +3592,6 @@ async function printAttendanceMsReportCombined(){
         <td style="text-align:center;padding:5px 6px;border:1px solid #999">${e.attended}</td>
         <td style="text-align:center;padding:5px 6px;border:1px solid #999">${absent}</td>
         <td style="text-align:center;padding:5px 6px;border:1px solid #999">${pct}%</td>
-        <td style="padding:5px 6px;border:1px solid #999">&nbsp;</td>
       </tr>`;
     });
   });
@@ -3608,12 +3607,11 @@ async function printAttendanceMsReportCombined(){
           <th style="width:32px;padding:5px 6px;border:1px solid #999">ที่</th>
           <th style="padding:5px 8px;border:1px solid #999;text-align:left">ชื่อ-สกุล</th>
           <th style="width:56px;padding:5px 6px;border:1px solid #999">ชั้น</th>
-          <th style="width:210px;padding:5px 8px;border:1px solid #999">รายวิชา/รหัสวิชา</th>
+          <th style="width:280px;padding:5px 8px;border:1px solid #999">รายวิชา/รหัสวิชา</th>
           <th style="width:58px;padding:5px 6px;border:1px solid #999">จำนวนคาบเต็ม</th>
           <th style="width:58px;padding:5px 6px;border:1px solid #999">จำนวนที่มาเรียน</th>
           <th style="width:58px;padding:5px 6px;border:1px solid #999">จำนวนที่ขาดเรียน</th>
           <th style="width:58px;padding:5px 6px;border:1px solid #999">คิดเป็นร้อยละ</th>
-          <th style="width:70px;padding:5px 6px;border:1px solid #999">หมายเหตุ</th>
         </tr>
       </thead>
       <tbody>${rowsHTML}</tbody>
