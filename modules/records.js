@@ -585,16 +585,11 @@ function renderFlexCard(){
     นักเรียนยืดหยุ่น
   </div></div><div class="cb">
     <div class="alert al-in"><div class="alert-ic">${_alertIcSvg}</div>
-      <div>สำหรับนักเรียนที่จัดการเรียนรู้แบบยืดหยุ่นตามแนวทาง สพฐ. — เลือกจากนักเรียนที่มีอยู่แล้ว พร้อมระบุรูปแบบการจัดการเรียนรู้ แถวของนักเรียนกลุ่มนี้จะถูกไฮไลต์ในหน้าเช็คเวลาเรียน/บันทึกคะแนน</div>
+      <div>สำหรับนักเรียนที่จัดการเรียนรู้แบบยืดหยุ่นตามแนวทาง สพฐ. — เลือกจากนักเรียนที่มีอยู่แล้ว แถวของนักเรียนกลุ่มนี้จะถูกไฮไลต์ในหน้าเช็คเวลาเรียน/บันทึกคะแนน</div>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
       <input class="fi" id="flex-q" placeholder="ค้นหาชื่อ/รหัส..." style="max-width:200px" oninput="_flexCandDebounced()">
       <select class="fs" id="flex-gr" style="max-width:130px" onchange="loadFlexCandidates()"><option value="">ทุกชั้น/ห้อง</option></select>
-      <select class="fs" id="flex-fmt" style="max-width:150px">
-        <option value="ในระบบ">รูปแบบ: ในระบบ</option>
-        <option value="นอกระบบ">รูปแบบ: นอกระบบ</option>
-        <option value="ตามอัธยาศัย">รูปแบบ: ตามอัธยาศัย</option>
-      </select>
     </div>
     <div id="flex-cand-list" style="border:1px solid var(--sep);border-radius:10px;max-height:220px;overflow:auto;margin-bottom:10px">
       <div style="padding:14px;text-align:center;color:var(--muted);font-size:12.5px">กำลังโหลด...</div>
@@ -619,7 +614,7 @@ function renderFlexCard(){
 
 async function loadFlexList(){
   try{
-    const rows=await q(sb.from('flexible_students').select('id,student_id,learning_format,students(student_name,grade_level,room)'));
+    const rows=await q(sb.from('flexible_students').select('id,student_id,students(student_name,grade_level,room)'));
     flexList=rows.sort((a,b)=>{
       const ga=a.students?.grade_level||'', gb=b.students?.grade_level||'';
       return String(ga).localeCompare(String(gb),'th',{numeric:true})
@@ -643,16 +638,11 @@ function renderFlexMemList(){
   const el=$('flex-mem-list'); if(!el) return;
   if(!flexList.length){ el.innerHTML='<div class="empty" style="padding:22px">ยังไม่มีนักเรียนในกลุ่มยืดหยุ่น</div>'; return; }
   el.innerHTML=`<div class="tw tw-cards"><table>
-    <thead><tr><th>ที่</th><th class="tl">ชื่อ-สกุล</th><th>ชั้น/ห้อง</th><th>รูปแบบ</th><th>จัดการ</th></tr></thead>
+    <thead><tr><th>ที่</th><th class="tl">ชื่อ-สกุล</th><th>ชั้น/ห้อง</th><th>จัดการ</th></tr></thead>
     <tbody>${flexList.map((f,i)=>`<tr>
       <td class="tc" data-label="ที่" data-hide-mobile>${i+1}</td>
       <td data-label="ชื่อ-สกุล" data-head style="white-space:nowrap">${esc(f.students?.student_name||'-')}</td>
       <td class="tc" data-label="ชั้น/ห้อง">${grm(f.students?.grade_level,f.students?.room)}</td>
-      <td class="tc" data-label="รูปแบบ">
-        <select class="fs" style="max-width:150px" onchange="changeFlexFormat('${f.id}',this.value)">
-          ${['ในระบบ','นอกระบบ','ตามอัธยาศัย'].map(o=>`<option value="${o}" ${f.learning_format===o?'selected':''}>${o}</option>`).join('')}
-        </select>
-      </td>
       <td class="tc" data-label="จัดการ" data-actions>
         <button class="btn bd btn-sm" onclick="removeFlexStudent('${f.id}','${escJs(f.students?.student_name||'')}')" style="padding:5px 8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       </td></tr>`).join('')}
@@ -721,19 +711,13 @@ async function loadFlexCandidates(){
 async function addFlexSelected(){
   const ids=[...document.querySelectorAll('.flex-cand-chk:checked')].map(c=>c.value);
   if(!ids.length){ toast('กรุณาติ๊กเลือกนักเรียนอย่างน้อย 1 คนก่อน','er'); return; }
-  const fmt=$('flex-fmt').value;
   loading(true);
   try{
-    await q(sb.from('flexible_students').upsert(ids.map(id=>({student_id:id,learning_format:fmt})),{onConflict:'student_id'}));
+    await q(sb.from('flexible_students').upsert(ids.map(id=>({student_id:id})),{onConflict:'student_id'}));
     cacheInv('flex_map'); await loadFlexMap();
     toast(`เพิ่มนักเรียน ${ids.length} คนเข้ากลุ่มยืดหยุ่นเรียบร้อย`);
     await loadFlexList();
   }catch(e){ toast('เกิดข้อผิดพลาด: '+e.message,'er'); }finally{ loading(false); }
-}
-function changeFlexFormat(id,val){
-  q(sb.from('flexible_students').update({learning_format:val}).eq('id',id))
-    .then(async()=>{ cacheInv('flex_map'); await loadFlexMap(); toast('เปลี่ยนรูปแบบเรียบร้อย'); await loadFlexList(); })
-    .catch(e=>toast('เกิดข้อผิดพลาด: '+e.message,'er'));
 }
 function removeFlexStudent(id,name){
   confirm2({title:'นำออกจากกลุ่มยืดหยุ่น',

@@ -1674,19 +1674,18 @@ let SUBJECT_GROUPS=['ภาษาไทย','คณิตศาสตร์','�
   'สังคมศึกษา ศาสนา และวัฒนธรรม','สุขศึกษาและพลศึกษา','ศิลปะ',
   'การงานอาชีพ','ภาษาต่างประเทศ','การศึกษาค้นคว้าด้วยตนเอง (IS)'];
 
-// ── นักเรียนยืดหยุ่น (สพฐ. 3 รูปแบบ) — โหลดครั้งเดียวตอน login เพื่อไฮไลต์แถวในหน้าเวลาเรียน/คะแนน
-let flexMap={}; // student_id -> learning_format
+// ── นักเรียนยืดหยุ่น — โหลดครั้งเดียวตอน login เพื่อไฮไลต์แถวในหน้าเวลาเรียน/คะแนน
+let flexMap=new Set(); // student_id ที่อยู่ในกลุ่มยืดหยุ่น
 async function loadFlexMap(){
   try{
-    const rows=await qc('flex_map', ()=>q(sb.from('flexible_students').select('student_id,learning_format')));
-    flexMap={}; rows.forEach(r=>flexMap[r.student_id]=r.learning_format);
-  }catch(e){ flexMap={}; }
+    const rows=await qc('flex_map', ()=>q(sb.from('flexible_students').select('student_id')));
+    flexMap=new Set(rows.map(r=>r.student_id));
+  }catch(e){ flexMap=new Set(); }
 }
 function flexBadge(sid){
-  const fmt=flexMap[sid];
-  return fmt?` <span class="badge bg-b" style="font-size:10px;margin-left:4px" title="นักเรียนกลุ่มยืดหยุ่น">ยืดหยุ่น·${esc(fmt)}</span>`:'';
+  return flexMap.has(sid)?` <span class="badge bg-b" style="font-size:10px;margin-left:4px" title="นักเรียนกลุ่มยืดหยุ่น">ยืดหยุ่น</span>`:'';
 }
-function flexRowCls(sid){ return flexMap[sid]?' flex-stu-row':''; }
+function flexRowCls(sid){ return flexMap.has(sid)?' flex-stu-row':''; }
 let _sgList=[];
 // ระดับชั้นที่ใช้ในระบบ — เก็บ grade_level เป็นเลขเปล่าเหมือนเดิมทุกจุด (ไม่กระทบข้อมูลเดิม)
 // คำนำหน้า (GRADE_PREFIX) และรายการระดับ (GRADE_LEVELS) ตั้งค่าได้จากหน้าตั้งค่าเท่านั้น
@@ -1785,7 +1784,7 @@ function _applyConcurrencyGuards(){
 // (ของโมดูลจะถูกห่อเพิ่มใน ensureModule หลังโหลดเสร็จ)
 _applyConcurrencyGuards();
 // ?v= กันแคชเก่าค้าง (modules/*.js แคชไว้ 1 วันตาม vercel.json) — แก้ไฟล์ใน modules/ เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย
-const MODULE_V='45';
+const MODULE_V='46';
 // ห่อฟังก์ชันของโมดูลหลังโหลดเสร็จด้วย (ตอนเริ่มระบบยังไม่มีฟังก์ชันเหล่านี้)
 function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V).then(()=>{ _applyConcurrencyGuards(); }); }
 function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
@@ -4372,7 +4371,7 @@ async function saveExam(){
       const capVal=capSetRows.length?parseFloat(capSetRows[0].max_grade):null;
       if(capVal!=null){
         const ZERO_GRADE=['ร','มส','มผ','ผ'];
-        const over_cap=rows.filter(r=>flexMap[r.student_id] && !ZERO_GRADE.includes(r.special_result) && parseFloat(r.grade)>capVal);
+        const over_cap=rows.filter(r=>flexMap.has(r.student_id) && !ZERO_GRADE.includes(r.special_result) && parseFloat(r.grade)>capVal);
         if(over_cap.length){
           loading(false);
           const nameOf=id=>scStus.find(s=>s.id===id)?.student_name||id;
