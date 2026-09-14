@@ -4926,6 +4926,7 @@ function printScores(){
 // 6. EVALUATION
 // ════════════════════════════════════════════════════════════════
 let evStus=[], evRead=[], evChar=[];
+let evChecked=new Set(); // student_id ที่ครูติ๊กเลือกไว้ เพื่อกำหนดผลประเมินหลายคนพร้อมกัน
 const EV_OPTS=['','3','2','1','0'];
 const EV_LBL={'3':'3','2':'2','1':'1','0':'0','':'-'};
 const CHAR8=[
@@ -4938,6 +4939,7 @@ const CHAR8=[
 async function pgEval(){
   if(!S.subjects.length){$('pg').innerHTML=`<div class="card"><div class="empty"><svg class="ei" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg><div>ยังไม่มีรายวิชา</div></div></div>`;return;}
   if(!S.selSub) S.selSub=S.subjects[0].id;
+  evChecked=new Set();
   loading(true);
   [evStus,evRead,evChar]=await Promise.all([
     getStudentsBySubject(S.selSub),
@@ -4992,6 +4994,38 @@ function _evRecalcChar(sid){
   const vals=CHAR8.map(ch=>$('ch-'+ch.key+'-'+sid)?.value||'');
   _evUpdSummaryBadge('ch-res-'+sid, _evMode(vals));
 }
+// ── ติ๊กเลือกนักเรียนรายคน/หลายคน เพื่อกำหนดผลประเมินครั้งที่ 1-5 / ข้อ 1-8 พร้อมกัน
+function _evSyncChecks(){
+  document.querySelectorAll('.ev-chk').forEach(cb=>{cb.checked=evChecked.has(cb.dataset.sid);});
+  document.querySelectorAll('.ev-chk-all').forEach(cb=>{cb.checked=evStus.length>0 && evChecked.size===evStus.length;});
+  document.querySelectorAll('.ev-sel-count').forEach(el=>{el.textContent=evChecked.size?`เลือกแล้ว ${evChecked.size} คน`:'ยังไม่ได้เลือกนักเรียน';});
+}
+function _evToggleOne(sid,checked){
+  if(checked) evChecked.add(sid); else evChecked.delete(sid);
+  _evSyncChecks();
+}
+function _evToggleAll(checked){
+  evChecked = checked ? new Set(evStus.map(s=>s.id)) : new Set();
+  _evSyncChecks();
+}
+function bulkSetEv(type){
+  if(!evChecked.size){ toast('กรุณาติ๊กเลือกนักเรียนอย่างน้อย 1 คนก่อน','er'); return; }
+  const val=$('ev-bulk-val').value;
+  if(type==='read'){
+    evStus.forEach(s=>{
+      if(!evChecked.has(s.id)) return;
+      for(let t=1;t<=5;t++){const el=$('rt'+t+'-'+s.id);if(el){el.value=val;updEvCls(el);}}
+      _evRecalcRead(s.id);
+    });
+  } else {
+    evStus.forEach(s=>{
+      if(!evChecked.has(s.id)) return;
+      CHAR8.forEach(c=>{const el=$('ch-'+c.key+'-'+s.id);if(el){el.value=val;updEvCls(el);}});
+      _evRecalcChar(s.id);
+    });
+  }
+  toast(`ตั้งค่าให้นักเรียนที่เลือก ${evChecked.size} คนเรียบร้อย — ผลสรุปคำนวณใหม่อัตโนมัติ`);
+}
 function _evActiveType(){
   const activeTab=document.querySelector('.tab.active[data-tg="ev"]');
   return (activeTab&&activeTab.dataset.ti==='ev-char')?'char':'read';
@@ -5008,10 +5042,21 @@ function renderEvPage(){
       <button class="btn bs no-print" onclick="printEval()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>พิมพ์</button>
     </div>
   </div>
-  <div style="display:flex;gap:10px;margin-bottom:18px">
+  <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
     <select class="fs" style="max-width:310px" onchange="changeEvSub(this.value)">
       ${S.subjects.map(s=>`<option value="${s.id}" ${s.id===sid?'selected':''}>${s.subject_name} ${grm(s.grade_level,s.room)}</option>`).join('')}
     </select>
+  </div>
+  <div class="card no-print" style="margin-bottom:18px;padding:10px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <span class="ev-sel-count" style="font-size:12.5px;color:var(--muted)">ยังไม่ได้เลือกนักเรียน</span>
+    <select id="ev-bulk-val" class="fs" style="max-width:170px">
+      <option value="3">3 (ดีเยี่ยม)</option>
+      <option value="2">2 (ดี)</option>
+      <option value="1">1 (ผ่าน)</option>
+      <option value="0">0 (ไม่ผ่าน)</option>
+    </select>
+    <button class="btn bs" onclick="bulkSetEv(_evActiveType())">ตั้งค่าให้นักเรียนที่เลือก</button>
+    <button class="btn bs" onclick="_evToggleAll(false)" style="color:#666">ล้างการเลือก</button>
   </div>
   <div class="tabs">
     <button class="tab active" data-tg="ev" data-ti="ev-read" onclick="swTab('ev','ev-read')">อ่าน คิด วิเคราะห์ เขียน</button>
@@ -5020,12 +5065,14 @@ function renderEvPage(){
   <div class="tp active" id="ev-read" data-tp="ev">${renderReadTab()}</div>
   <div class="tp" id="ev-char" data-tp="ev">${renderCharTab()}</div>`;
   document.querySelectorAll('select.es').forEach(updEvCls);
+  _evSyncChecks();
 }
 function renderReadTab(){
   const gR=id=>evRead.find(e=>e.student_id===id)||{};
   return`<div class="card"><div class="ch"><div class="ct">การอ่าน คิดวิเคราะห์และเขียน</div></div><div class="cb">
     <div class="tw tw-freeze"><table>
       <thead><tr>
+        <th class="no-print" style="width:30px"><input type="checkbox" class="ev-chk-all" onchange="_evToggleAll(this.checked)"></th>
         <th style="width:40px" data-freeze="a">ที่</th>
         <th class="tl" style="min-width:130px" data-freeze="b">ชื่อ-สกุล</th>
         <th style="min-width:60px">ครั้ง 1</th><th style="min-width:60px">ครั้ง 2</th>
@@ -5036,6 +5083,7 @@ function renderReadTab(){
       <tbody>${evStus.map((s,i)=>{const ev=gR(s.id);
         const vals=[1,2,3,4,5].map(t=>ev['t'+t]);
         return`<tr>
+        <td class="tc no-print"><input type="checkbox" class="ev-chk" data-sid="${s.id}" onchange="_evToggleOne('${s.id}',this.checked)"></td>
         <td class="tc" data-freeze="a">${i+1}</td>
         <td data-freeze="b" style="white-space:nowrap">${esc(s.student_name)}</td>
         ${[1,2,3,4,5].map(t=>`<td class="tc" style="padding:6px 4px">${evSel('rt'+t+'-'+s.id,ev['t'+t],`_evRecalcRead('${s.id}')`)}</td>`).join('')}
@@ -5055,6 +5103,7 @@ function renderCharTab(){
   return`<div class="card"><div class="ch"><div class="ct">คุณลักษณะอันพึงประสงค์ 8 ด้าน</div></div><div class="cb">
     <div class="tw tw-freeze"><table>
       <thead><tr>
+        <th class="no-print" style="width:30px"><input type="checkbox" class="ev-chk-all" onchange="_evToggleAll(this.checked)"></th>
         <th style="width:40px" data-freeze="a">ที่</th>
         <th class="tl" style="min-width:130px" data-freeze="b">ชื่อ-สกุล</th>
         ${CHAR8.map((ch,i)=>`<th style="font-size:10.5px;min-width:50px;padding:6px 3px;line-height:1.3">ข้อ ${i+1}</th>`).join('')}
@@ -5063,6 +5112,7 @@ function renderCharTab(){
       <tbody>${evStus.map((s,i)=>{const ev=gC(s.id);
         const vals=CHAR8.map(ch=>ev[ch.key]);
         return`<tr>
+        <td class="tc no-print"><input type="checkbox" class="ev-chk" data-sid="${s.id}" onchange="_evToggleOne('${s.id}',this.checked)"></td>
         <td class="tc" data-freeze="a">${i+1}</td>
         <td data-freeze="b" style="white-space:nowrap">${esc(s.student_name)}</td>
         ${CHAR8.map(ch=>`<td class="tc" style="padding:5px 2px">${evSel('ch-'+ch.key+'-'+s.id,ev[ch.key],`_evRecalcChar('${s.id}')`)}</td>`).join('')}
