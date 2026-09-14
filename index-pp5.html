@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <!-- ฟอนต์ Sarabun เก็บไว้ในโปรเจกต์เอง (assets/fonts/) แล้ว ประกาศ @font-face อยู่ในหัวไฟล์ style.css -->
 <!-- ?v= กันแคชเก่าค้าง (style.css แคชไว้ 1 วันตาม vercel.json) — แก้ style.css เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย -->
-<link rel="stylesheet" href="style.css?v=5">
+<link rel="stylesheet" href="style.css?v=6">
 </head>
 <body class="bg-bg text-txt antialiased">
 
@@ -1771,7 +1771,7 @@ function _applyConcurrencyGuards(){
 // (ของโมดูลจะถูกห่อเพิ่มใน ensureModule หลังโหลดเสร็จ)
 _applyConcurrencyGuards();
 // ?v= กันแคชเก่าค้าง (modules/*.js แคชไว้ 1 วันตาม vercel.json) — แก้ไฟล์ใน modules/ เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย
-const MODULE_V='42';
+const MODULE_V='43';
 // ห่อฟังก์ชันของโมดูลหลังโหลดเสร็จด้วย (ตอนเริ่มระบบยังไม่มีฟังก์ชันเหล่านี้)
 function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V).then(()=>{ _applyConcurrencyGuards(); }); }
 function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
@@ -2747,15 +2747,15 @@ function renderAttPage(){
   <!-- ══ TAB: สรุป ══ -->
   <div class="tp" id="att-sum" data-tp="att">
     <div class="card"><div class="ch"><div class="ct">สรุปเวลาเรียนรายคน</div></div><div class="cb">
-      <div class="tw"><table>
-        <thead><tr><th>เลขที่</th><th class="tl">ชื่อ-สกุล</th>
+      <div class="tw tw-freeze"><table>
+        <thead><tr><th style="width:40px" data-freeze="a">เลขที่</th><th class="tl" data-freeze="b">ชื่อ-สกุล</th>
           <th>มา</th><th>ขาด</th><th>ลา</th>
           <th>รวมเข้า</th><th>ชม.ที่เช็คชื่อ</th><th>% เข้าเรียน</th><th>สถานะ</th>
         </tr></thead>
         <tbody>${attStus.map((s,i)=>{
           const m=sumMap[s.id]||{present:0,absent:0,leave:0,attended:0,totalH:60,pct:0,ms:false};
           return`<tr>
-            <td class="tc">${i+1}</td><td style="white-space:nowrap">${esc(s.student_name)}</td>
+            <td class="tc" data-freeze="a">${i+1}</td><td data-freeze="b" style="white-space:nowrap">${esc(s.student_name)}</td>
             <td class="tc"><span class="badge bg-g">${m.present}</span></td>
             <td class="tc"><span class="badge bg-r">${m.absent}</span></td>
             <td class="tc"><span class="badge bg-b">${m.leave}</span></td>
@@ -3027,15 +3027,15 @@ function getCell(sid,day){
 function renderMonthGrid(){
   if(!attStus.length) return `<div class="empty" style="padding:22px">${_ico.warning} ไม่พบนักเรียนในชั้นนี้</div>`;
   const by=getBuddhistYear(); // ← แก้ bug scope
-  return `<div class="tw"><table>
+  return `<div class="tw tw-freeze"><table>
     <thead>
-      <tr><th rowspan="2">เลขที่</th><th rowspan="2" class="tl">ชื่อ-สกุล</th>
+      <tr><th rowspan="2" style="width:40px" data-freeze="a">เลขที่</th><th rowspan="2" class="tl" data-freeze="b">ชื่อ-สกุล</th>
         <th colspan="${attDays.length}">${MONTHS[attMonthIdx]} ${by}</th>
       </tr>
       <tr>${attDays.map(d=>`<th style="cursor:pointer;min-width:36px" onclick="removeAttDay(${d.day})" title="คาบ: ${d.periods} • คลิกเพื่อลบ">${d.day}<br><span style="font-size:9px;font-weight:400;opacity:.7">${d.periods}คาบ</span></th>`).join('')}</tr>
     </thead>
     <tbody>${attStus.map((s,i)=>`<tr>
-      <td class="tc">${i+1}</td><td style="white-space:nowrap">${esc(s.student_name)}</td>
+      <td class="tc" data-freeze="a">${i+1}</td><td data-freeze="b" style="white-space:nowrap">${esc(s.student_name)}</td>
       ${attDays.map(d=>{
         const st=getCell(s.id,d.day);
         return `<td class="tc"><div class="${ATT_K[st]}" data-sid="${s.id}" data-day="${d.day}" onclick="cycleAtt(this)" style="width:28px;height:28px;margin:auto">${ATT_I[st]}</div></td>`;
@@ -3126,15 +3126,15 @@ function _refreshSummaryTab(overrideSumMap){
     });
   }
   tab.innerHTML=`<div class="card"><div class="ch"><div class="ct">สรุปเวลาเรียนรายคน</div></div><div class="cb">
-    <div class="tw"><table>
-      <thead><tr><th>เลขที่</th><th class="tl">ชื่อ-สกุล</th>
+    <div class="tw tw-freeze"><table>
+      <thead><tr><th style="width:40px" data-freeze="a">เลขที่</th><th class="tl" data-freeze="b">ชื่อ-สกุล</th>
         <th>มา</th><th>ขาด</th><th>ลา</th>
         <th>รวมเข้า</th><th>ชม.ทั้งหมด</th><th>% เข้าเรียน</th><th>สถานะ</th>
       </tr></thead>
       <tbody>${attStus.map((s,i)=>{
         const m=sumMap[s.id]||{present:0,absent:0,leave:0,attended:0,totalH,pct:0,ms:false};
         return`<tr>
-          <td class="tc">${i+1}</td><td style="white-space:nowrap">${esc(s.student_name)}</td>
+          <td class="tc" data-freeze="a">${i+1}</td><td data-freeze="b" style="white-space:nowrap">${esc(s.student_name)}</td>
           <td class="tc"><span class="badge bg-g">${m.present}</span></td>
           <td class="tc"><span class="badge bg-r">${m.absent}</span></td>
           <td class="tc"><span class="badge bg-b">${m.leave}</span></td>
@@ -3793,9 +3793,9 @@ function renderUnitTab(period,maxTotal){
             </div>
           </div>`).join('')}
       </div>
-      <div class="tw"><table>
+      <div class="tw tw-freeze"><table>
         <thead><tr>
-          <th>เลขที่</th><th class="tl">ชื่อ-สกุล</th>
+          <th style="width:40px" data-freeze="a">เลขที่</th><th class="tl" data-freeze="b">ชื่อ-สกุล</th>
           ${units.map(u=>`<th style="min-width:64px">
             หน่วย ${u.unit_number}<br>
             <span style="font-size:10px;font-weight:400;opacity:.7">/${u.max_score}</span>
@@ -3813,8 +3813,8 @@ function renderUnitTab(period,maxTotal){
               return`<td class="tr2" style="cursor:pointer" onclick="quickEditScore('${period}',${u.unit_number},${u.max_score},'${s.id}',${sc??'null'})" title="คลิกเพื่อแก้ไข">${display}</td>`;
             });
             return`<tr>
-              <td class="tc">${i+1}</td>
-              <td style="white-space:nowrap">${esc(s.student_name)}</td>
+              <td class="tc" data-freeze="a">${i+1}</td>
+              <td data-freeze="b" style="white-space:nowrap">${esc(s.student_name)}</td>
               ${cells.join('')}
               <td class="tr2"><strong>${tot>0?tot:'-'}</strong></td>
             </tr>`;
@@ -4301,14 +4301,14 @@ function renderExamTab(){
   return`<div class="card"><div class="ch"><div class="ct">คะแนนสอบ</div>
     <button class="btn bs btn-sm" onclick="openOcrScoreModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>ถ่ายรูปกรอกคะแนน (ทดลอง)</button>
     </div><div class="cb">
-    <div class="tw"><table>
-      <thead><tr><th>เลขที่</th><th class="tl">ชื่อ-สกุล</th>
+    <div class="tw tw-freeze"><table>
+      <thead><tr><th style="width:40px" data-freeze="a">เลขที่</th><th class="tl" data-freeze="b">ชื่อ-สกุล</th>
         <th>กลางภาค (/${mM})${mM===0?'<br><span style="font-size:10px;font-weight:400;color:var(--muted)">วิชานี้ไม่มีสอบกลางภาค</span>':''}</th>
         <th>ปลายภาค (/${mF})${mF===0?'<br><span style="font-size:10px;font-weight:400;color:var(--muted)">วิชานี้ไม่มีสอบปลายภาค</span>':''}</th>
       </tr></thead>
       <tbody>${scStus.map((s,i)=>{
         const sm=gsum(s.id);
-        return`<tr><td class="tc">${i+1}</td><td style="white-space:nowrap">${esc(s.student_name)}</td>
+        return`<tr><td class="tc" data-freeze="a">${i+1}</td><td data-freeze="b" style="white-space:nowrap">${esc(s.student_name)}</td>
           <td class="tc"><input type="number" class="si2 score-nav" id="mid-${s.id}" value="${mM===0?'':(sm.mid_normal??'')}" min="0" max="${mM}" step="0.5" ${mM===0?'disabled title="วิชานี้ตั้งคะแนนกลางภาคไว้ 0 — แก้ได้ที่แผนการวัดฯ > สัดส่วนคะแนน"':''} oninput="this.classList.toggle('over',+this.value>+this.max);_markExamDirty()"></td>
           <td class="tc"><input type="number" class="si2 score-nav" id="fin-${s.id}" value="${mF===0?'':(sm.final_score??'')}" min="0" max="${mF}" step="0.5" ${mF===0?'disabled title="วิชานี้ตั้งคะแนนปลายภาคไว้ 0 — แก้ได้ที่แผนการวัดฯ > สัดส่วนคะแนน"':''} oninput="this.classList.toggle('over',+this.value>+this.max);_markExamDirty()"></td>
         </tr>`;
@@ -4612,9 +4612,9 @@ function renderSumTab(){
     <div class="alert al-in" style="margin-bottom:12px">
       กรอกคะแนนสอบในแท็บ "คะแนนสอบ" แล้วกดบันทึก จะคำนวณเกรดให้อัตโนมัติ
     </div>
-    <div class="tw"><table>
+    <div class="tw tw-freeze"><table>
       <thead><tr>
-        <th>เลขที่</th><th class="tl">ชื่อ-สกุล</th>
+        <th style="width:40px" data-freeze="a">เลขที่</th><th class="tl" data-freeze="b">ชื่อ-สกุล</th>
         <th>รวมก่อนกลาง<br><span style="font-size:10px;font-weight:400">/${scSub?.score_before_mid??25}</span></th>
         <th>รวมหลังกลาง<br><span style="font-size:10px;font-weight:400">/${scSub?.score_after_mid??25}</span></th>
         <th>กลางภาค<br><span style="font-size:10px;font-weight:400">/${scSub?.score_mid??20}</span></th>
@@ -4632,7 +4632,7 @@ function renderSumTab(){
         const tot=sm.total_score!=null?parseFloat(sm.total_score):0;
         const g=sm.grade!=null&&sm.grade!==''?sm.grade:(tot>0?calcGrade(tot):'-');
         return`<tr>
-          <td class="tc">${i+1}</td><td style="white-space:nowrap">${esc(s.student_name)}</td>
+          <td class="tc" data-freeze="a">${i+1}</td><td data-freeze="b" style="white-space:nowrap">${esc(s.student_name)}</td>
           <td class="tr2">${bef||'-'}</td><td class="tr2">${aft||'-'}</td>
           <td class="tr2">${mid||'-'}</td><td class="tr2">${fin||'-'}</td>
           <td class="tr2"><strong>${tot||'-'}</strong></td>
@@ -4989,18 +4989,18 @@ function renderEvPage(){
 function renderReadTab(){
   const gR=id=>evRead.find(e=>e.student_id===id)||{};
   return`<div class="card"><div class="ch"><div class="ct">การอ่าน คิดวิเคราะห์และเขียน</div></div><div class="cb">
-    <div class="tw"><table>
+    <div class="tw tw-freeze"><table>
       <thead><tr>
-        <th style="width:40px">ที่</th>
-        <th class="tl" style="min-width:130px">ชื่อ-สกุล</th>
+        <th style="width:40px" data-freeze="a">ที่</th>
+        <th class="tl" style="min-width:130px" data-freeze="b">ชื่อ-สกุล</th>
         <th style="min-width:60px">ครั้ง 1</th><th style="min-width:60px">ครั้ง 2</th>
         <th style="min-width:60px">ครั้ง 3</th><th style="min-width:60px">ครั้ง 4</th>
         <th style="min-width:60px">ครั้ง 5</th>
         <th style="min-width:70px">ผลสรุป</th>
       </tr></thead>
       <tbody>${evStus.map((s,i)=>{const ev=gR(s.id);return`<tr>
-        <td class="tc">${i+1}</td>
-        <td style="white-space:nowrap">${esc(s.student_name)}</td>
+        <td class="tc" data-freeze="a">${i+1}</td>
+        <td data-freeze="b" style="white-space:nowrap">${esc(s.student_name)}</td>
         ${[1,2,3,4,5].map(t=>`<td class="tc" style="padding:6px 4px">${evSel('rt'+t+'-'+s.id,ev['t'+t])}</td>`).join('')}
         <td class="tc" style="padding:6px 4px">${evSel('rr-'+s.id,ev.result)}</td>
       </tr>`;}).join('')}</tbody>
@@ -5016,16 +5016,16 @@ function renderReadTab(){
 function renderCharTab(){
   const gC=id=>evChar.find(e=>e.student_id===id)||{};
   return`<div class="card"><div class="ch"><div class="ct">คุณลักษณะอันพึงประสงค์ 8 ด้าน</div></div><div class="cb">
-    <div class="tw"><table>
+    <div class="tw tw-freeze"><table>
       <thead><tr>
-        <th style="width:40px">ที่</th>
-        <th class="tl" style="min-width:130px">ชื่อ-สกุล</th>
+        <th style="width:40px" data-freeze="a">ที่</th>
+        <th class="tl" style="min-width:130px" data-freeze="b">ชื่อ-สกุล</th>
         ${CHAR8.map((ch,i)=>`<th style="font-size:10.5px;min-width:50px;padding:6px 3px;line-height:1.3">ข้อ ${i+1}</th>`).join('')}
         <th style="min-width:60px;font-size:11px">ผลสรุป</th>
       </tr></thead>
       <tbody>${evStus.map((s,i)=>{const ev=gC(s.id);return`<tr>
-        <td class="tc">${i+1}</td>
-        <td style="white-space:nowrap">${esc(s.student_name)}</td>
+        <td class="tc" data-freeze="a">${i+1}</td>
+        <td data-freeze="b" style="white-space:nowrap">${esc(s.student_name)}</td>
         ${CHAR8.map(ch=>`<td class="tc" style="padding:5px 2px">${evSel('ch-'+ch.key+'-'+s.id,ev[ch.key])}</td>`).join('')}
         <td class="tc" style="padding:5px 2px">${evSel('ch-res-'+s.id,ev.overall_result)}</td>
       </tr>`;}).join('')}</tbody>
