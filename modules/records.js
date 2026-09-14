@@ -720,7 +720,7 @@ function renderEplUnitsTab(){
     <div class="cb">
       <div class="tw tw-freeze"><table>
         <thead><tr>
-          <th style="width:34px" rowspan="2" data-freeze="a">ที่</th>
+          <th style="width:40px" rowspan="2" data-freeze="a">ที่</th>
           <th class="tl" style="min-width:150px" rowspan="2" data-freeze="b">ชื่อหน่วยการเรียนรู้</th>
           <th class="tl" style="min-width:240px" rowspan="2">มาตรฐานการเรียนรู้ / ตัวชี้วัด</th>
           <th style="width:80px" rowspan="2">เวลา (ชม.)</th>
