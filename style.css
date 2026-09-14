@@ -590,20 +590,25 @@ body.dark .subc{
   header.tb{padding:0 10px!important;gap:1.5px!important;}
   #tb-presence{gap:4px!important;}
 
-  /* หน้ารายวิชา: ตารางแปลงเป็นการ์ดบนจอแคบ แทนการ scroll แนวนอน 10 คอลัมน์ */
-  .subj-tw table,.subj-tw thead,.subj-tw tbody,.subj-tw tr,.subj-tw th,.subj-tw td{display:block;}
-  .subj-tw thead{display:none;}
-  .subj-tw tbody tr{background:var(--card);border:1px solid var(--bdr);border-radius:14px;padding:4px 14px;margin-bottom:12px;}
-  .subj-tw tbody tr:hover td{background:none;}
-  .subj-tw td{border-bottom:none;padding:7px 0;display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:right;}
-  .subj-tw td::before{content:attr(data-label);font-size:11.5px;font-weight:600;color:var(--muted);text-align:left;flex-shrink:0;}
-  .subj-tw td[data-label="ลำดับ"]{display:none;}
-  .subj-tw td[data-label="ชื่อวิชา"]{font-size:15px;padding:10px 0;border-bottom:1px solid var(--bdr);margin-bottom:2px;}
-  .subj-tw td[data-label="ชื่อวิชา"]::before{display:none;}
-  .subj-tw td[data-label="โครงสร้างคะแนน"]{display:block;text-align:left;}
-  .subj-tw td[data-label="โครงสร้างคะแนน"]::before{display:block;margin-bottom:3px;}
-  .subj-tw td[data-label="จัดการ"]{justify-content:flex-end;gap:6px;padding-top:10px;border-top:1px solid var(--bdr);margin-top:4px;}
-  .subj-tw td[data-label="จัดการ"]::before{display:none;}
+  /* ตารางรายการ (นักเรียน/รายวิชา/รายงานผล/มาตรฐานฯ ฯลฯ): แปลงเป็นการ์ดบนจอแคบ
+     แทนการ scroll แนวนอนหลายคอลัมน์ — ใส่ class "tw-cards" ที่ div ครอบตาราง
+     แล้วกำกับแต่ละ td ด้วย data-label="ชื่อคอลัมน์" เสมอ ส่วน td ที่ต้องการ
+     พฤติกรรมพิเศษ ใส่ attribute เพิ่ม: data-head (ทำเป็นหัวการ์ด เช่น ชื่อ/ชื่อวิชา),
+     data-actions (ปุ่มจัดการ ชิดขวาล่าง), data-block (เนื้อหาหลายบรรทัด ไม่จัดแบบ label:value),
+     data-hide-mobile (ซ่อนบนจอแคบ เช่นคอลัมน์ลำดับ/เลขที่ที่ไม่จำเป็นในการ์ด) */
+  .tw-cards table,.tw-cards thead,.tw-cards tbody,.tw-cards tr,.tw-cards th,.tw-cards td{display:block;}
+  .tw-cards thead{display:none;}
+  .tw-cards tbody tr{background:var(--card);border:1px solid var(--bdr);border-radius:14px;padding:4px 14px;margin-bottom:12px;}
+  .tw-cards tbody tr:hover td{background:none;}
+  .tw-cards td{border-bottom:none;padding:7px 0;display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:right;}
+  .tw-cards td::before{content:attr(data-label);font-size:11.5px;font-weight:600;color:var(--muted);text-align:left;flex-shrink:0;}
+  .tw-cards td[data-hide-mobile]{display:none;}
+  .tw-cards td[data-head]{font-size:15px;padding:10px 0;border-bottom:1px solid var(--bdr);margin-bottom:2px;}
+  .tw-cards td[data-head]::before{display:none;}
+  .tw-cards td[data-block]{display:block;text-align:left;}
+  .tw-cards td[data-block]::before{display:block;margin-bottom:3px;}
+  .tw-cards td[data-actions]{justify-content:flex-end;gap:6px;padding-top:10px;border-top:1px solid var(--bdr);margin-top:4px;}
+  .tw-cards td[data-actions]::before{display:none;}
 }
 
 /* ── Welcome loading overlay ── */

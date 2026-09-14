@@ -220,14 +220,14 @@ async function pgStudents(){
 }
 function renderStuTbl(list){
   if(!list.length)return`<div class="empty"><svg class="ei" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg><div>ไม่พบนักเรียน</div></div>`;
-  return`<div class="tw"><table>
+  return`<div class="tw tw-cards"><table>
     <thead><tr><th>ลำดับ</th><th>รหัส</th><th class="tl">ชื่อ-สกุล</th><th>ชั้น/ห้อง</th><th>เพศ</th><th>จัดการ</th></tr></thead>
     <tbody>${list.map((s,i)=>`<tr>
-      <td class="tc">${i+1}</td><td class="tc">${esc(s.student_code)}</td>
-      <td style="white-space:nowrap">${esc(s.student_name)}</td>
-      <td class="tc">${grm(s.grade_level,s.room)}</td>
-      <td class="tc">${s.gender==='ช'?'ชาย':s.gender==='ญ'?'หญิง':esc(s.gender||'-')}</td>
-      <td class="tc">
+      <td class="tc" data-label="ลำดับ" data-hide-mobile>${i+1}</td><td class="tc" data-label="รหัส">${esc(s.student_code)}</td>
+      <td data-label="ชื่อ-สกุล" data-head style="white-space:nowrap">${esc(s.student_name)}</td>
+      <td class="tc" data-label="ชั้น/ห้อง">${grm(s.grade_level,s.room)}</td>
+      <td class="tc" data-label="เพศ">${s.gender==='ช'?'ชาย':s.gender==='ญ'?'หญิง':esc(s.gender||'-')}</td>
+      <td class="tc" data-label="จัดการ" data-actions>
         <button class="btn bs btn-sm" onclick="openStuModal('${s.id}')" style="padding:5px 8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
         <button class="btn bd btn-sm" onclick="delStu('${s.id}','${escJs(s.student_name)}')" style="padding:5px 8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
       </td></tr>`).join('')}
@@ -1351,7 +1351,7 @@ async function pgReport(){
       <div class="ct">สรุปผลการเรียนรายบุคคล</div>
       <div style="font-size:11.5px;color:var(--muted);margin-top:2px">${esc(sub?.subject_name||'')} (${esc(sub?.subject_code||'')}) ${grm(sub?.grade_level||0,sub?.room||0)} ครู${esc(sub?.teacher_name||'')}</div>
     </div></div>
-    <div class="cb"><div class="tw"><table>
+    <div class="cb"><div class="tw tw-cards"><table>
       <thead><tr>
         <th>เลขที่</th><th class="tl">ชื่อ-สกุล</th>
         <th>รวมก่อนกลาง</th><th>รวมหลังกลาง</th><th>กลางภาค</th><th>ปลายภาค</th>
@@ -1365,17 +1365,17 @@ async function pgReport(){
         const att=attMap[s.id]||{pct:0,ms:false};
         const g=sm.grade??'-';
         return`<tr>
-          <td class="tc">${i+1}</td><td style="white-space:nowrap">${esc(s.student_name)}</td>
-          <td class="tr2">${sm.total_before_mid??0}</td>
-          <td class="tr2">${sm.total_after_mid??0}</td>
-          <td class="tr2">${sm.mid_normal??0}</td>
-          <td class="tr2">${sm.final_score??0}</td>
-          <td class="tr2">${sm.total_score??0}</td>
-          <td class="tc"><span class="${gcls(g)}" style="font-size:15px;font-weight:700">${g}</span></td>
-          <td class="tc">${sm.special_result?`<span class="badge bg-r">${esc(sm.special_result)}</span>`:`<span class="badge bg-g">ปกติ</span>`}</td>
-          <td class="tc"><span class="badge ${att.ms?'bg-r':'bg-g'}">${att.pct}%${att.ms?' (มส)':''}</span></td>
-          <td class="tc"><span class="badge bg-b">${elb(er.result)}</span></td>
-          <td class="tc"><span class="badge bg-b">${elb(ec.overall_result)}</span></td>
+          <td class="tc" data-label="เลขที่" data-hide-mobile>${i+1}</td><td data-label="ชื่อ-สกุล" data-head style="white-space:nowrap">${esc(s.student_name)}</td>
+          <td class="tr2" data-label="รวมก่อนกลาง">${sm.total_before_mid??0}</td>
+          <td class="tr2" data-label="รวมหลังกลาง">${sm.total_after_mid??0}</td>
+          <td class="tr2" data-label="กลางภาค">${sm.mid_normal??0}</td>
+          <td class="tr2" data-label="ปลายภาค">${sm.final_score??0}</td>
+          <td class="tr2" data-label="รวม">${sm.total_score??0}</td>
+          <td class="tc" data-label="ผลการเรียน"><span class="${gcls(g)}" style="font-size:15px;font-weight:700">${g}</span></td>
+          <td class="tc" data-label="ผลพิเศษ">${sm.special_result?`<span class="badge bg-r">${esc(sm.special_result)}</span>`:`<span class="badge bg-g">ปกติ</span>`}</td>
+          <td class="tc" data-label="เวลาเรียน"><span class="badge ${att.ms?'bg-r':'bg-g'}">${att.pct}%${att.ms?' (มส)':''}</span></td>
+          <td class="tc" data-label="อ่าน/คิด/เขียน"><span class="badge bg-b">${elb(er.result)}</span></td>
+          <td class="tc" data-label="คุณลักษณะ"><span class="badge bg-b">${elb(ec.overall_result)}</span></td>
         </tr>`;
       }).join('')}
       </tbody></table></div></div>
