@@ -5026,6 +5026,32 @@ function bulkSetEv(type){
   }
   toast(`ตั้งค่าให้นักเรียนที่เลือก ${evChecked.size} คนเรียบร้อย — ผลสรุปคำนวณใหม่อัตโนมัติ`);
 }
+function clearSelectedEv(type){
+  if(!evChecked.size){ toast('กรุณาติ๊กเลือกนักเรียนอย่างน้อย 1 คนก่อน','er'); return; }
+  const n=evChecked.size;
+  confirm2({
+    title: type==='read'?'ล้างค่าการอ่านฯ (เฉพาะที่เลือก)':'ล้างค่าคุณลักษณะฯ (เฉพาะที่เลือก)',
+    msg: `ล้างค่าทุกช่องของ<strong>นักเรียนที่เลือกไว้ ${n} คน</strong> คืนเป็น "ยังไม่ประเมิน"`,
+    type:'warn', confirmText:'ล้างค่าที่เลือก', cancelText:'ยกเลิก',
+    onConfirm:()=>{
+      if(type==='read'){
+        evStus.forEach(s=>{
+          if(!evChecked.has(s.id)) return;
+          for(let t=1;t<=5;t++){const el=$('rt'+t+'-'+s.id);if(el)el.value='';}
+          _evRecalcRead(s.id);
+        });
+      } else {
+        evStus.forEach(s=>{
+          if(!evChecked.has(s.id)) return;
+          CHAR8.forEach(ch=>{const el=$('ch-'+ch.key+'-'+s.id);if(el)el.value='';});
+          _evRecalcChar(s.id);
+        });
+      }
+      document.querySelectorAll('select.es').forEach(updEvCls);
+      toast(`ล้างค่าของนักเรียนที่เลือก ${n} คนเรียบร้อย — กด "บันทึก" เพื่อบันทึกลงระบบ`);
+    }
+  });
+}
 function _evActiveType(){
   const activeTab=document.querySelector('.tab.active[data-tg="ev"]');
   return (activeTab&&activeTab.dataset.ti==='ev-char')?'char':'read';
@@ -5056,7 +5082,8 @@ function renderEvPage(){
       <option value="0">0 (ไม่ผ่าน)</option>
     </select>
     <button class="btn bs" onclick="bulkSetEv(_evActiveType())">ตั้งค่าให้นักเรียนที่เลือก</button>
-    <button class="btn bs" onclick="_evToggleAll(false)" style="color:#666">ล้างการเลือก</button>
+    <button class="btn bs" onclick="clearSelectedEv(_evActiveType())" style="color:#dc2626;background:#fff1f0;border-color:#fecaca">ล้างค่าที่เลือก</button>
+    <button class="btn bs" onclick="_evToggleAll(false)" style="color:#666">ยกเลิกการติ๊ก</button>
   </div>
   <div class="tabs">
     <button class="tab active" data-tg="ev" data-ti="ev-read" onclick="swTab('ev','ev-read')">อ่าน คิด วิเคราะห์ เขียน</button>
