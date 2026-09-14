@@ -327,8 +327,8 @@ tbody tr:hover td{background:rgba(0,122,255,.04);}
 .tw-freeze [data-freeze="b"]{left:40px;box-shadow:2px 0 4px rgba(0,0,0,.06);}
 .tw-freeze thead [data-freeze]{z-index:3;background:var(--card2);}
 /* ไฮไลต์แถวนักเรียนกลุ่มยืดหยุ่น (flexMap) ในหน้าเช็คเวลาเรียน/บันทึกคะแนน */
-tr.flex-stu-row td{background:rgba(99,102,241,.07);}
-tr.flex-stu-row [data-freeze]{background:rgba(99,102,241,.12)!important;}
+tr.flex-stu-row td{background:rgba(142,142,147,.10);}
+tr.flex-stu-row [data-freeze]{background:rgba(142,142,147,.16)!important;}
 /* ปุ่มย่อตาราง (หน้าแผนการวัดและประเมินผล): ลด font/padding ให้เห็นคอลัมน์พร้อมกันได้มากขึ้นก่อนต้อง scroll */
 #epl-wrap.epl-compact .tw table{font-size:11px;}
 #epl-wrap.epl-compact .tw th,#epl-wrap.epl-compact .tw td{padding:3px 5px;}
@@ -385,7 +385,7 @@ tr.flex-stu-row [data-freeze]{background:rgba(99,102,241,.12)!important;}
 .ev0{background:var(--err-bg);color:var(--err-txt);border-color:var(--err-bdr);}
 /* Subject cards */
 .subg{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}@media(max-width:1100px){.subg{grid-template-columns:repeat(2,1fr);}}@media(max-width:680px){.subg{grid-template-columns:1fr;}}
-.subc{border:1px solid var(--bdr);border-left:4px solid #007AFF;border-radius:var(--r);padding:16px;background:var(--card);cursor:pointer;display:flex;flex-direction:column;gap:8px;box-shadow:0 2px 8px rgba(0,0,0,.07);transition:all .2s cubic-bezier(.4,0,.2,1);-webkit-tap-highlight-color:transparent;}
+.subc{border:1px solid var(--bdr);border-left:4px solid rgb(var(--subc-rgb));border-radius:var(--r);padding:16px;background:var(--card);cursor:pointer;display:flex;flex-direction:column;gap:8px;box-shadow:0 2px 8px rgba(0,0,0,.07);transition:all .2s cubic-bezier(.4,0,.2,1);-webkit-tap-highlight-color:transparent;}
 .subc:hover{box-shadow:0 6px 20px rgba(0,0,0,.1);transform:translateY(-2px);}
 .subc:active{transform:scale(.98) translateY(0);}
 /* Stats */
@@ -529,34 +529,9 @@ body.dark .prof-sep{background:rgba(255,255,255,.08);}
 body.dark .prof-row-logout{color:#f87171!important;}
 
 
-/* Subject Card — Gradient Glass Style C */
-.subc{
-  border-radius:16px;
-  background:linear-gradient(135deg,rgba(var(--subc-rgb),.08) 0%,rgba(var(--subc-rgb),.03) 100%);
-  border:1px solid rgba(var(--subc-rgb),.18);
-  box-shadow:0 2px 12px rgba(var(--subc-rgb),.07);
-  padding:16px;cursor:pointer;
-  transition:all .2s ease;
-  position:relative;overflow:hidden;
-  border-left:none !important;
-  display:flex;flex-direction:column;
-}
-.subc::after{
-  content:'';position:absolute;bottom:-20px;left:-20px;
-  width:80px;height:80px;border-radius:50%;
-  background:rgba(var(--subc-rgb),.05);
-  pointer-events:none;
-}
-.subc:hover{
-  box-shadow:0 6px 24px rgba(var(--subc-rgb),.14);
-  transform:translateY(-2px);
-}
-.subc:active{transform:translateY(0);box-shadow:0 2px 8px rgba(var(--subc-rgb),.1);}
-body.dark .subc{
-  background:linear-gradient(135deg,rgba(var(--subc-rgb),.12) 0%,rgba(var(--subc-rgb),.05) 100%);
-  border-color:rgba(var(--subc-rgb),.25);
-}
-.subc-tag{font-size:10.5px;padding:2px 8px;border-radius:10px;font-weight:600;white-space:nowrap;}
+/* Subject Card — โทนกลาง + แถบสีซ้ายเล็กๆ ตามชั้นเรียน (ลดความลายตาเมื่อมีการ์ดเยอะ) */
+body.dark .subc{background:var(--card);border-color:var(--bdr);}
+.subc-tag{font-size:10.5px;padding:2px 8px;border-radius:10px;font-weight:600;white-space:nowrap;background:var(--card2);color:var(--txt2);}
 
 /* Print */
 .print-only{display:none}
