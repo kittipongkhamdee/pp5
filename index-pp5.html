@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <!-- ฟอนต์ Sarabun เก็บไว้ในโปรเจกต์เอง (assets/fonts/) แล้ว ประกาศ @font-face อยู่ในหัวไฟล์ style.css -->
 <!-- ?v= กันแคชเก่าค้าง (style.css แคชไว้ 1 วันตาม vercel.json) — แก้ style.css เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย -->
-<link rel="stylesheet" href="style.css?v=2">
+<link rel="stylesheet" href="style.css?v=3">
 </head>
 <body class="bg-bg text-txt antialiased">
 
@@ -2165,27 +2165,27 @@ async function pgSubjects(){
     </div></div>
   <div class="card"><div class="cb">
   ${!S.subjects.length?`<div class="empty"><svg class="ei" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg><div>ยังไม่มีรายวิชา</div></div>`:`
-  <div class="tw"><table>
+  <div class="tw subj-tw"><table>
     <thead><tr><th>ลำดับ</th><th class="tl">รหัส</th><th class="tl">ชื่อวิชา</th>
       <th>ชั้น/ห้อง</th><th>ชม./สัปดาห์</th><th>ชม./ภาค</th><th class="tl">ครูผู้สอน</th>
       <th>โครงสร้างคะแนน</th><th>ประกาศผลการเรียน</th><th>จัดการ</th></tr></thead>
     <tbody>${S.subjects.map((s,i)=>`<tr>
-      <td class="tc">${i+1}</td><td>${esc(s.subject_code)}</td>
-      <td><strong>${esc(s.subject_name)}</strong>${s.subject_type==='วิชาเพิ่มเติม'?' <span class="badge bg-o" style="margin-left:4px">เพิ่มเติม</span>':''}</td>
-      <td class="tc">${grm(s.grade_level,s.room)}</td>
-      <td class="tc">${s.hours_per_week}</td><td class="tc">${s.total_hours||60}</td>
-      <td>${esc(s.teacher_name||'-')}</td>
-      <td class="tc" style="font-size:11px;line-height:1.7">
+      <td class="tc" data-label="ลำดับ">${i+1}</td><td data-label="รหัส">${esc(s.subject_code)}</td>
+      <td data-label="ชื่อวิชา"><strong>${esc(s.subject_name)}</strong>${s.subject_type==='วิชาเพิ่มเติม'?' <span class="badge bg-o" style="margin-left:4px">เพิ่มเติม</span>':''}</td>
+      <td class="tc" data-label="ชั้น/ห้อง">${grm(s.grade_level,s.room)}</td>
+      <td class="tc" data-label="ชม./สัปดาห์">${s.hours_per_week}</td><td class="tc" data-label="ชม./ภาค">${s.total_hours||60}</td>
+      <td data-label="ครูผู้สอน">${esc(s.teacher_name||'-')}</td>
+      <td class="tc" data-label="โครงสร้างคะแนน" style="font-size:11px;line-height:1.7">
         ก่อนกลาง ${s.score_before_mid}|กลาง ${s.score_mid}<br>
         หลังกลาง ${s.score_after_mid}|ปลาย ${s.score_final}
       </td>
-      <td class="tc">
+      <td class="tc" data-label="ประกาศผลการเรียน">
         <label class="tglsw" title="${s.published?'นักเรียนดูผลการเรียนวิชานี้ได้':'นักเรียนยังดูผลการเรียนวิชานี้ไม่ได้'}">
           <input type="checkbox" ${s.published?'checked':''} onchange="toggleSubjectPublish('${s.id}',this)">
           <span class="tgl-slider"></span>
         </label>
       </td>
-      <td class="tc">
+      <td class="tc" data-label="จัดการ">
         <button class="btn bs btn-sm" onclick="nav('evalplan','${s.id}')" title="แผนการวัดและประเมินผล" style="padding:5px 8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></button>
         <button class="btn bs btn-sm" onclick="openSubModal('${s.id}')" style="padding:5px 8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
         <button class="btn bd btn-sm" onclick="delSub('${s.id}','${escJs(s.subject_name)}')" style="padding:5px 8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
