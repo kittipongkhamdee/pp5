@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mockup — นักเรียนยืดหยุ่น + Pagination</title>
+<link rel="stylesheet" href="style.css?v=6">
+<style>
+  /* ── เฉพาะพรีวิวไฟล์นี้ ไม่เกี่ยวกับแอปจริง ── */
+  body{background:var(--bg);padding:0}
+  .preview-banner{position:sticky;top:0;z-index:50;background:#111827;color:#fff;padding:10px 20px;font-size:13px;text-align:center;font-weight:600}
+  .preview-wrap{max-width:1180px;margin:0 auto;padding:20px}
+  .note{background:#fffbeb;border:1px dashed #f59e0b;border-radius:10px;padding:10px 14px;font-size:12.5px;color:#92400e;line-height:1.7;margin:10px 0 20px}
+  .note b{color:#78350f}
+  .section-lbl{font-size:11px;font-weight:800;letter-spacing:.6px;color:#fff;background:#6366f1;display:inline-block;padding:3px 10px;border-radius:6px;margin:34px 0 10px}
+  .flex-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .fmt-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+  .fmt-1{background:#dbeafe;color:#1e40af}
+  .fmt-2{background:#fce7f3;color:#9d174d}
+  .fmt-3{background:#dcfce7;color:#166534}
+  .cand-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid var(--sep)}
+  .cand-row:last-child{border-bottom:none}
+  .pager{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:12px 4px 4px}
+  .pager-btns{display:flex;gap:4px;align-items:center}
+  .pg-btn{min-width:30px;height:30px;padding:0 6px;border-radius:7px;border:1px solid var(--bdr);background:var(--card);color:var(--txt2);font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .pg-btn.active{background:var(--ac);border-color:var(--ac);color:#fff}
+  .pg-btn:disabled{opacity:.4;cursor:default}
+  tr.flex-row-hl td{background:linear-gradient(90deg,rgba(99,102,241,.08),transparent 60%)!important;border-left:3px solid #6366f1}
+</style>
+</head>
+<body>
+
+<div class="preview-banner">🎨 พรีวิว แนวคิดออกแบบ — ยังไม่เชื่อมฐานข้อมูลจริง ใช้ประกอบการตัดสินใจก่อนลงมือทำ</div>
+
+<div class="preview-wrap">
+
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="section-lbl">1 · เมนู "นักเรียน" — แบ่งหน้า (pagination)</div>
+  <div class="ph">
+    <div><div class="ptitle">จัดการนักเรียน</div><div class="psub">รวม 320 คน</div></div>
+    <div class="flex-row">
+      <button class="btn bs" style="background:rgba(255,149,0,.1);color:#c2410c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="17 11 12 6 7 11"/><polyline points="17 18 12 13 7 18"/></svg>เลื่อนชั้น</button>
+      <button class="btn bs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>นำเข้ารายชื่อ</button>
+      <button class="btn bp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>เพิ่มนักเรียน</button>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:14px"><div class="cb" style="padding:10px 16px">
+    <div class="flex-row">
+      <input class="fi" placeholder="ค้นหาชื่อ/รหัส..." style="max-width:220px">
+      <select class="fs" style="max-width:140px"><option>ทุกชั้น/ห้อง</option><option>ม.1/1</option></select>
+      <span style="margin-left:auto;font-size:12px;color:var(--muted)">แสดง</span>
+      <select class="fs" style="max-width:90px">
+        <option>25</option><option selected>50</option><option>100</option>
+      </select>
+      <span style="font-size:12px;color:var(--muted)">คน/หน้า</span>
+    </div>
+  </div></div>
+
+  <div class="card"><div class="cb">
+    <div class="tw tw-cards"><table>
+      <thead><tr><th>ลำดับ</th><th>รหัส</th><th class="tl">ชื่อ-สกุล</th><th>ชั้น/ห้อง</th><th>เพศ</th><th>จัดการ</th></tr></thead>
+      <tbody>
+        <tr><td class="tc">1</td><td class="tc">02411</td><td>เด็กชายณัฐวุฒิ ฉัตรเงิน</td><td class="tc">ม.1/1</td><td class="tc">ชาย</td><td class="tc">…</td></tr>
+        <tr><td class="tc">2</td><td class="tc">02412</td><td>เด็กชายจิรายุ แรงจบ</td><td class="tc">ม.1/1</td><td class="tc">ชาย</td><td class="tc">…</td></tr>
+        <tr><td class="tc">…</td><td class="tc" colspan="4" style="text-align:center;color:var(--muted)">(แสดง 50 แถวต่อหน้า แทนที่จะโหลดทั้ง 320 คนทีเดียว)</td></tr>
+      </tbody>
+    </table></div>
+
+    <!-- ── ตัวแบ่งหน้าใหม่ ── -->
+    <div class="pager">
+      <div style="font-size:12.5px;color:var(--muted)">แสดง 1–50 จาก 320 คน</div>
+      <div class="pager-btns">
+        <button class="pg-btn" disabled>‹ ก่อนหน้า</button>
+        <button class="pg-btn active">1</button>
+        <button class="pg-btn">2</button>
+        <button class="pg-btn">3</button>
+        <span style="color:var(--muted);font-size:12px">…</span>
+        <button class="pg-btn">7</button>
+        <button class="pg-btn">ถัดไป ›</button>
+      </div>
+    </div>
+  </div></div>
+
+  <div class="note">
+    <b>หมายเหตุการออกแบบ:</b> ตอนนี้เมนู "นักเรียน" ดึงนักเรียน<b>ทั้งหมดของโรงเรียน</b>มาแสดงครั้งเดียว (query เดียวไม่มี limit/offset) พอมีหลายร้อยคนหน้าจะโหลดช้า
+    แนวทางแก้: ใช้ Supabase <code>.range(from, to)</code> ดึงทีละหน้า (ค่าเริ่มต้น 50 คน/หน้า ปรับได้ 25/50/100) ส่วนการค้นหา/กรองชั้นจะยิง query ใหม่ทุกครั้งที่เปลี่ยนหน้า
+    (ต่างจากตอนนี้ที่กรองจาก array ในเบราว์เซอร์ เพราะโหลดมาหมดแล้ว) — เปลี่ยนหน้าจะมี loading สั้นๆ ระหว่างดึงข้อมูล
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="section-lbl">2 · การ์ดใหม่ "นักเรียนยืดหยุ่น"</div>
+
+  <div class="card" style="margin-bottom:14px">
+    <div class="ch"><div class="ct">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--ac)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      นักเรียนยืดหยุ่น
+    </div></div>
+    <div class="cb">
+      <div class="alert al-in">
+        <div class="alert-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+        <div>สำหรับนักเรียนที่จัดการเรียนรู้แบบยืดหยุ่นตามแนวทาง สพฐ. — เลือกรายชื่อจากนักเรียนที่มีอยู่แล้วในระบบ พร้อมระบุ<strong>รูปแบบการจัดการเรียนรู้</strong>ที่ใช้:
+          <span class="fmt-chip fmt-1" style="margin-left:6px">ในระบบ</span>
+          <span class="fmt-chip fmt-2">นอกระบบ</span>
+          <span class="fmt-chip fmt-3">ตามอัธยาศัย</span>
+        </div>
+      </div>
+
+      <!-- แถบเพิ่มนักเรียน -->
+      <div class="flex-row" style="margin-bottom:10px">
+        <input class="fi" placeholder="ค้นหาชื่อ/รหัส..." style="max-width:200px">
+        <select class="fs" style="max-width:130px"><option>ทุกชั้น/ห้อง</option><option>ม.1/1</option></select>
+        <select class="fs" id="fmt-pick" style="max-width:150px">
+          <option>รูปแบบ: ในระบบ</option><option>รูปแบบ: นอกระบบ</option><option>รูปแบบ: ตามอัธยาศัย</option>
+        </select>
+      </div>
+
+      <!-- รายชื่อผู้สมัคร (ยังไม่อยู่ในกลุ่ม) — ติ๊กเลือกได้หลายคนแบบเดียวกับหน้าประเมิน -->
+      <div style="border:1px solid var(--sep);border-radius:10px;max-height:220px;overflow:auto;margin-bottom:10px">
+        <div class="cand-row"><input type="checkbox" checked><span style="flex:1">เด็กชายณัฐวุฒิ ฉัตรเงิน</span><span style="font-size:11.5px;color:var(--muted)">ม.1/1</span></div>
+        <div class="cand-row"><input type="checkbox"><span style="flex:1">เด็กชายจิรายุ แรงจบ</span><span style="font-size:11.5px;color:var(--muted)">ม.1/1</span></div>
+        <div class="cand-row"><input type="checkbox" checked><span style="flex:1">เด็กชายนราธิป สิทธิ์ประโคน</span><span style="font-size:11.5px;color:var(--muted)">ม.1/1</span></div>
+        <div class="cand-row"><input type="checkbox"><span style="flex:1">เด็กชายรัฐศาสตร์ ขนวน</span><span style="font-size:11.5px;color:var(--muted)">ม.1/1</span></div>
+      </div>
+      <div style="text-align:right;margin-bottom:20px">
+        <button class="btn bp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>เพิ่มเข้ากลุ่มยืดหยุ่น (2 คน)</button>
+      </div>
+
+      <!-- ตารางสมาชิกกลุ่ม -->
+      <div style="font-size:13px;font-weight:700;margin-bottom:8px">สมาชิกกลุ่มยืดหยุ่น (3 คน)</div>
+      <div class="tw tw-cards"><table>
+        <thead><tr><th>ที่</th><th class="tl">ชื่อ-สกุล</th><th>ชั้น/ห้อง</th><th>รูปแบบ</th><th>จัดการ</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="tc">1</td><td>เด็กชายชยาศิส สมานทอง</td><td class="tc">ม.1/2</td>
+            <td class="tc"><span class="fmt-chip fmt-1">ในระบบ</span></td>
+            <td class="tc"><button class="btn bd btn-sm" style="padding:5px 8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></td>
+          </tr>
+          <tr>
+            <td class="tc">2</td><td>เด็กชายชัยวัตร เรืองสุขสุด</td><td class="tc">ม.2/1</td>
+            <td class="tc"><span class="fmt-chip fmt-2">นอกระบบ</span></td>
+            <td class="tc"><button class="btn bd btn-sm" style="padding:5px 8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></td>
+          </tr>
+          <tr>
+            <td class="tc">3</td><td>เด็กชายณัฐกรณ์ เกิ้อรัมย์</td><td class="tc">ม.3/1</td>
+            <td class="tc"><span class="fmt-chip fmt-3">ตามอัธยาศัย</span></td>
+            <td class="tc"><button class="btn bd btn-sm" style="padding:5px 8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></td>
+          </tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>หมายเหตุการออกแบบ:</b> ใช้ตาราง Supabase ใหม่ <code>flexible_students</code> (student_id, learning_format, max_grade, created_at) —
+    1 นักเรียน = 1 แถว (ไม่ซ้ำ) เพราะแนวทาง สพฐ. ให้นักเรียนอยู่ในรูปแบบเดียวต่อภาคเรียน "รูปแบบ" 3 แบบอ้างอิงตาม พ.ร.บ.การศึกษาแห่งชาติ
+    (ในระบบ/นอกระบบ/ตามอัธยาศัย) — ถ้าจริงๆ แล้วโรงเรียนใช้คำเรียกอื่น (เช่น ทวิศึกษา/สายอาชีพ/เรียนร่วม) แจ้งมาได้ จะแก้ตัวเลือกให้ตรง
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="section-lbl">3 · การ์ดใหม่ "กำหนดเกรดสูงสุด"</div>
+
+  <div class="card" style="margin-bottom:14px">
+    <div class="ch"><div class="ct">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--ac)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg>
+      กำหนดเกรดสูงสุด (นักเรียนยืดหยุ่น)
+    </div></div>
+    <div class="cb">
+      <div class="alert al-wa">
+        <div class="alert-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg></div>
+        <div>นักเรียนในกลุ่มยืดหยุ่นแต่ละรูปแบบ จะได้เกรดสูงสุดไม่เกินค่าที่ตั้งไว้ — ถ้าครูกรอกคะแนนแล้วคำนวณได้เกรดสูงกว่านี้ ระบบจะ<strong>แจ้งเตือนครูผู้สอนวิชานั้น</strong>และ<strong>ต้องแก้ไขคะแนนก่อนจึงจะบันทึกได้</strong></div>
+      </div>
+      <div class="tw"><table>
+        <thead><tr><th class="tl">รูปแบบการจัดการเรียนรู้</th><th>เกรดสูงสุดที่กำหนด</th><th>จำนวนนักเรียน</th></tr></thead>
+        <tbody>
+          <tr><td><span class="fmt-chip fmt-1">ในระบบ</span></td>
+            <td class="tc"><select class="fs" style="max-width:110px"><option>ไม่จำกัด</option><option selected>3.0</option><option>2.5</option><option>2.0</option></select></td>
+            <td class="tc">1 คน</td></tr>
+          <tr><td><span class="fmt-chip fmt-2">นอกระบบ</span></td>
+            <td class="tc"><select class="fs" style="max-width:110px"><option>ไม่จำกัด</option><option>3.0</option><option selected>2.5</option><option>2.0</option></select></td>
+            <td class="tc">1 คน</td></tr>
+          <tr><td><span class="fmt-chip fmt-3">ตามอัธยาศัย</span></td>
+            <td class="tc"><select class="fs" style="max-width:110px"><option>ไม่จำกัด</option><option>3.0</option><option>2.5</option><option selected>2.0</option></select></td>
+            <td class="tc">1 คน</td></tr>
+        </tbody>
+      </table></div>
+      <div style="text-align:right;margin-top:12px">
+        <button class="btn bp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>บันทึกเกรดสูงสุด</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>คำถามที่อยากให้ช่วยยืนยัน:</b><br>
+    1) กำหนด "เกรดสูงสุด" เป็น<b>รายรูปแบบ</b> (ทุกคนในรูปแบบเดียวกันเพดานเท่ากัน ตามภาพร่างนี้) หรือกำหนด<b>รายบุคคล</b> (แต่ละคนตั้งเพดานต่างกันได้)?<br>
+    2) ระบบควรเช็กตอนไหน — ตอนกด "บันทึก" ในหน้าคะแนนของแต่ละวิชา (ตามที่ร่างไว้ด้านล่าง) เท่านั้น หรือให้เตือนแบบ real-time ขณะพิมพ์คะแนนด้วย?<br>
+    3) "เกรดสูงสุด" นับจากเกรดวิชาไหน — ทุกวิชาที่นักเรียนคนนี้ลงทะเบียนเรียน ใช่ไหมครับ (ไม่ใช่เฉพาะบางวิชา)?
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="section-lbl">4 · ตัวอย่างการแสดงผลในหน้าอื่น (illustration เท่านั้น)</div>
+
+  <div class="card" style="margin-bottom:14px">
+    <div class="ch"><div class="ct">ก) หน้า "เวลาเรียน" / "คะแนน" — ไฮไลต์แถวนักเรียนยืดหยุ่น</div></div>
+    <div class="cb">
+      <div class="tw"><table>
+        <thead><tr><th>เลขที่</th><th class="tl">ชื่อ-สกุล</th><th>สถานะ</th></tr></thead>
+        <tbody>
+          <tr><td class="tc">1</td><td>เด็กชายณัฐวุฒิ ฉัตรเงิน</td><td class="tc"><span class="badge bg-g">ปกติ</span></td></tr>
+          <tr class="flex-row-hl">
+            <td class="tc">2</td>
+            <td>เด็กชายชยาศิส สมานทอง <span class="fmt-chip fmt-1" title="นักเรียนกลุ่มยืดหยุ่น — เกรดสูงสุด 3.0">ยืดหยุ่น · ในระบบ</span></td>
+            <td class="tc"><span class="badge bg-g">ปกติ</span></td>
+          </tr>
+          <tr><td class="tc">3</td><td>เด็กชายนราธิป สิทธิ์ประโคน</td><td class="tc"><span class="badge bg-g">ปกติ</span></td></tr>
+        </tbody>
+      </table></div>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:8px">แถบสีม่วงอ่อนด้านซ้าย + ป้าย "ยืดหยุ่น · รูปแบบ" ให้ครูสังเกตได้ทันทีว่านักเรียนคนนี้อยู่ในกลุ่มยืดหยุ่น</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:24px">
+    <div class="ch"><div class="ct">ข) หน้า "คะแนน" — เตือนเมื่อเกรดเกินเพดาน ต้องแก้ก่อนบันทึก</div></div>
+    <div class="cb">
+      <div class="alert al-er">
+        <div class="alert-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+        <div><strong>เด็กชายชยาศิส สมานทอง</strong> คำนวณได้เกรด <strong>4.0</strong> แต่กลุ่มยืดหยุ่น (ในระบบ) กำหนดเกรดสูงสุดไว้ที่ <strong>3.0</strong><br>
+        กรุณาปรับคะแนนของนักเรียนคนนี้ก่อน จึงจะบันทึกได้</div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px">
+        <button class="btn bs" disabled style="opacity:.5;cursor:not-allowed">Excel</button>
+        <button class="btn bp" disabled style="opacity:.5;cursor:not-allowed" title="ต้องแก้ไขคะแนนที่เกินเพดานก่อน">บันทึก (ถูกล็อกไว้)</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
