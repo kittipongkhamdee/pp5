@@ -283,6 +283,10 @@ button{font-family:var(--font);}
 .bd{background:var(--err-bg);color:var(--err);}.bd:hover{background:#fee2e2;}
 .bk{background:var(--ok-bg);color:var(--ok-txt);}
 .btn-sm{padding:5px 11px!important;font-size:12px!important;border-radius:7px!important;}
+/* ปุ่มจัดการในตาราง (แก้ไข/ลบ/ฯลฯ) — ขยายพื้นที่กดและเว้นระยะห่างกันเอง กันกดพลาดบนจอสัมผัส/จอแคบ
+   ใช้ margin แทน flex gap เพราะ td[data-actions] เป็น table-cell ปกติตอนจอกว้าง (ไม่ใช่ flex) */
+td[data-actions] .btn-sm{padding:7px 10px!important;}
+td[data-actions] .btn-sm+.btn-sm{margin-left:8px;}
 /* Badge */
 .badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11.5px;font-weight:600;}
 .bg-g{background:var(--ok-bg);color:var(--ok-txt);}
