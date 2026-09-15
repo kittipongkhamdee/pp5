@@ -5371,9 +5371,10 @@ function _stdLabelsRefresh(){
   const stEl=$('std-f-st'); if(!stEl) return;
   const isAdd=stEl.value==='วิชาเพิ่มเติม';
   const stdWrap=$('std-f-std-wrap'); if(stdWrap) stdWrap.style.display=isAdd?'none':'';
-  const codeLbl=$('std-f-code-lbl'); if(codeLbl) codeLbl.innerHTML=(isAdd?'ข้อที่ (ระบบใส่ให้อัตโนมัติ แก้ไขได้)':'รหัสตัวชี้วัด')+' <span class="req">*</span>';
-  const codeInp=$('std-f-code'); if(codeInp) codeInp.placeholder=isAdd?'เช่น 1':'เช่น ว 1.2 ม.1/1';
+  const codeLbl=$('std-f-code-lbl'); if(codeLbl) codeLbl.innerHTML=(isAdd?'ข้อที่':'รหัสตัวชี้วัด')+' <span class="req">*</span>';
+  const codeInp=$('std-f-code'); if(codeInp) codeInp.placeholder=isAdd?'เช่น 1':'เช่น ว 1.2';
   const textLbl=$('std-f-text-lbl'); if(textLbl) textLbl.innerHTML=(isAdd?'ผลการเรียนรู้ที่คาดหวัง':'คำอธิบายตัวชี้วัด')+' <span class="req">*</span>';
+  const codeHint=$('std-f-code-hint'); if(codeHint) codeHint.textContent=isAdd?'ระบบใส่เลขให้อัตโนมัติ แก้ไขได้':'';
   const subcWrap=$('std-f-subcode-wrap'); if(subcWrap) subcWrap.style.display=isAdd?'':'none';
   if(isAdd) _stdSubjectOptsRefresh();
 }
@@ -5551,10 +5552,13 @@ function openStdModal(id){
         <label class="fl">วิชา <span style="font-weight:400;color:var(--muted)">(เลือกได้เมื่อเป็นวิชาเพิ่มเติม — ไม่เลือก = ยังไม่ระบุวิชา)</span></label>
         <select class="fs" id="std-f-subcode" onchange="_stdRenumber()">${_stdSubjectOptions(r?.subject_group||stdFilterGroup,defGrade,r?.subject_code||'')}</select>
       </div>
-      <div style="margin-top:14px"><label class="fl" id="std-f-code-lbl">${(r?.subject_type||'รายวิชาพื้นฐาน')==='วิชาเพิ่มเติม'?'ข้อที่ (ระบบใส่ให้อัตโนมัติ แก้ไขได้)':'รหัสตัวชี้วัด'} <span class="req">*</span></label>
-        <input class="fi" id="std-f-code" value="${esc(r?.indicator_code||'')}" placeholder="${(r?.subject_type||'รายวิชาพื้นฐาน')==='วิชาเพิ่มเติม'?'เช่น 1':'เช่น ว 1.2 ม.1/1'}"></div>
-      <div style="margin-top:14px"><label class="fl" id="std-f-text-lbl">${(r?.subject_type||'รายวิชาพื้นฐาน')==='วิชาเพิ่มเติม'?'ผลการเรียนรู้ที่คาดหวัง':'คำอธิบายตัวชี้วัด'} <span class="req">*</span></label>
-        <textarea class="fta" id="std-f-text" rows="3">${esc(r?.indicator_text||'')}</textarea></div>
+      <div style="margin-top:14px;display:flex;gap:10px;align-items:flex-start">
+        <div style="width:80px;flex-shrink:0"><label class="fl" id="std-f-code-lbl">${(r?.subject_type||'รายวิชาพื้นฐาน')==='วิชาเพิ่มเติม'?'ข้อที่':'รหัสตัวชี้วัด'} <span class="req">*</span></label>
+          <input class="fi" id="std-f-code" value="${esc(r?.indicator_code||'')}" placeholder="${(r?.subject_type||'รายวิชาพื้นฐาน')==='วิชาเพิ่มเติม'?'เช่น 1':'เช่น ว 1.2'}"></div>
+        <div style="flex:1;min-width:0"><label class="fl" id="std-f-text-lbl">${(r?.subject_type||'รายวิชาพื้นฐาน')==='วิชาเพิ่มเติม'?'ผลการเรียนรู้ที่คาดหวัง':'คำอธิบายตัวชี้วัด'} <span class="req">*</span></label>
+          <textarea class="fta" id="std-f-text" rows="3">${esc(r?.indicator_text||'')}</textarea></div>
+      </div>
+      ${id?'':'<div id="std-f-code-hint" style="font-size:11.5px;color:var(--muted);margin-top:4px;margin-left:90px">'+((r?.subject_type||'รายวิชาพื้นฐาน')==='วิชาเพิ่มเติม'?'ระบบใส่เลขให้อัตโนมัติ แก้ไขได้':'')+'</div>'}
       ${id?'':'<div id="std-extra-rows"></div><div style="margin-top:10px"><button type="button" class="btn bs btn-sm" onclick="_stdAddRow()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>เพิ่มอีกข้อ</button></div>'}
       <div style="margin-top:14px"><label class="fl">ประเภท <span class="req">*</span></label>
         <select class="fs" id="std-f-kind" ${(r?.subject_type||'รายวิชาพื้นฐาน')==='วิชาเพิ่มเติม'?'disabled':''}>
@@ -5654,7 +5658,7 @@ function _stdAddRow(){
   const textPh=isExtraType?'ผลการเรียนรู้ที่คาดหวัง':'คำอธิบายตัวชี้วัด';
   wrap.insertAdjacentHTML('beforeend',`
     <div class="std-extra-row" style="display:flex;gap:8px;align-items:flex-start;margin-top:10px;padding-top:10px;border-top:1px dashed var(--bdr)">
-      <div style="width:120px"><label class="fl" style="font-size:11px">${esc(codeLbl)}</label>
+      <div style="width:80px;flex-shrink:0"><label class="fl" style="font-size:11px">${esc(codeLbl)}</label>
         <input class="fi std-x-code" value="${esc(codeVal)}" placeholder="${esc(codePh)}"></div>
       <div style="flex:1"><label class="fl" style="font-size:11px">&nbsp;</label>
         <textarea class="fta std-x-text" rows="2" placeholder="${esc(textPh)}"></textarea></div>
