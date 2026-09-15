@@ -5371,7 +5371,7 @@ function _stdLabelsRefresh(){
   const stEl=$('std-f-st'); if(!stEl) return;
   const isAdd=stEl.value==='วิชาเพิ่มเติม';
   const stdWrap=$('std-f-std-wrap'); if(stdWrap) stdWrap.style.display=isAdd?'none':'';
-  const codeLbl=$('std-f-code-lbl'); if(codeLbl) codeLbl.innerHTML=(isAdd?'ข้อที่':'รหัสตัวชี้วัด')+' <span class="req">*</span>';
+  const codeLbl=$('std-f-code-lbl'); if(codeLbl) codeLbl.innerHTML=(isAdd?'ข้อที่ (ระบบใส่ให้อัตโนมัติ แก้ไขได้)':'รหัสตัวชี้วัด')+' <span class="req">*</span>';
   const codeInp=$('std-f-code'); if(codeInp) codeInp.placeholder=isAdd?'เช่น 1':'เช่น ว 1.2 ม.1/1';
   const textLbl=$('std-f-text-lbl'); if(textLbl) textLbl.innerHTML=(isAdd?'ผลการเรียนรู้ที่คาดหวัง':'คำอธิบายตัวชี้วัด')+' <span class="req">*</span>';
   const subcWrap=$('std-f-subcode-wrap'); if(subcWrap) subcWrap.style.display=isAdd?'':'none';
@@ -5532,26 +5532,26 @@ function openStdModal(id){
     <div class="mb">
       <div class="fg">
         <div><label class="fl">กลุ่มสาระการเรียนรู้ <span class="req">*</span></label>
-          <select class="fs" id="std-f-sg" onchange="_stdSubjectOptsRefresh()">
+          <select class="fs" id="std-f-sg" onchange="_stdSubjectOptsRefresh();_stdRenumber()">
             ${SUBJECT_GROUPS.map(g=>`<option value="${esc(g)}" ${(r?.subject_group||stdFilterGroup)===g?'selected':''}>${esc(g)}</option>`).join('')}
           </select></div>
         <div><label class="fl">ประเภทวิชา</label>
-          <select class="fs" id="std-f-st" onchange="_stdKindRefresh();_stdLabelsRefresh()">
+          <select class="fs" id="std-f-st" onchange="_stdKindRefresh();_stdLabelsRefresh();_stdRenumber()">
             <option value="รายวิชาพื้นฐาน" ${(r?.subject_type||'รายวิชาพื้นฐาน')==='รายวิชาพื้นฐาน'?'selected':''}>รายวิชาพื้นฐาน</option>
             <option value="วิชาเพิ่มเติม" ${r?.subject_type==='วิชาเพิ่มเติม'?'selected':''}>วิชาเพิ่มเติม</option>
           </select></div>
       </div>
       <div class="fg" style="margin-top:14px">
         <div><label class="fl">ระดับชั้น <span class="req">*</span></label>
-          <select class="fs" id="std-f-gr" onchange="_stdSubjectOptsRefresh()">${_stdGradeOptions(defGrade)}</select></div>
+          <select class="fs" id="std-f-gr" onchange="_stdSubjectOptsRefresh();_stdRenumber()">${_stdGradeOptions(defGrade)}</select></div>
         <div id="std-f-std-wrap" style="display:${(r?.subject_type||'รายวิชาพื้นฐาน')==='วิชาเพิ่มเติม'?'none':''}"><label class="fl">มาตรฐาน</label>
           <input class="fi" id="std-f-std" value="${esc(r?.standard_code||'')}" placeholder="เช่น ว 1.2"></div>
       </div>
       <div id="std-f-subcode-wrap" style="margin-top:14px;display:${(r?.subject_type||'รายวิชาพื้นฐาน')==='วิชาเพิ่มเติม'?'':'none'}">
         <label class="fl">วิชา <span style="font-weight:400;color:var(--muted)">(เลือกได้เมื่อเป็นวิชาเพิ่มเติม — ไม่เลือก = ยังไม่ระบุวิชา)</span></label>
-        <select class="fs" id="std-f-subcode">${_stdSubjectOptions(r?.subject_group||stdFilterGroup,defGrade,r?.subject_code||'')}</select>
+        <select class="fs" id="std-f-subcode" onchange="_stdRenumber()">${_stdSubjectOptions(r?.subject_group||stdFilterGroup,defGrade,r?.subject_code||'')}</select>
       </div>
-      <div style="margin-top:14px"><label class="fl" id="std-f-code-lbl">${(r?.subject_type||'รายวิชาพื้นฐาน')==='วิชาเพิ่มเติม'?'ข้อที่':'รหัสตัวชี้วัด'} <span class="req">*</span></label>
+      <div style="margin-top:14px"><label class="fl" id="std-f-code-lbl">${(r?.subject_type||'รายวิชาพื้นฐาน')==='วิชาเพิ่มเติม'?'ข้อที่ (ระบบใส่ให้อัตโนมัติ แก้ไขได้)':'รหัสตัวชี้วัด'} <span class="req">*</span></label>
         <input class="fi" id="std-f-code" value="${esc(r?.indicator_code||'')}" placeholder="${(r?.subject_type||'รายวิชาพื้นฐาน')==='วิชาเพิ่มเติม'?'เช่น 1':'เช่น ว 1.2 ม.1/1'}"></div>
       <div style="margin-top:14px"><label class="fl" id="std-f-text-lbl">${(r?.subject_type||'รายวิชาพื้นฐาน')==='วิชาเพิ่มเติม'?'ผลการเรียนรู้ที่คาดหวัง':'คำอธิบายตัวชี้วัด'} <span class="req">*</span></label>
         <textarea class="fta" id="std-f-text" rows="3">${esc(r?.indicator_text||'')}</textarea></div>
@@ -5570,6 +5570,7 @@ function openStdModal(id){
     </div>
   </div></div>`);
   _stdRowSeq=1;
+  _stdRenumber();
 }
 // อ่านค่าจากฟอร์ม + validate + insert/update ลง DB — คืนแถวที่บันทึกสำเร็จ หรือ null ถ้าไม่ผ่าน (toast แจ้งเหตุผลไว้ให้แล้ว)
 // แยกออกมาจาก saveStdIndicator เพื่อให้ saveStdIndicatorAndNext เรียกใช้ตรรกะเดียวกันได้โดยไม่ต้องปิดโมดัล/รีโหลดทั้งหน้า
@@ -5614,22 +5615,52 @@ async function saveStdIndicator(id){
 // แถวแรกใช้ช่อง std-f-code/std-f-text เดิม แถวที่เพิ่มเองอยู่ใน #std-extra-rows
 // ฟิลด์ร่วม (กลุ่มสาระ/ประเภทวิชา/ระดับชั้น/มาตรฐาน/วิชา/ประเภท) ใช้ค่าเดียวกันทุกแถว
 let _stdRowSeq=1;
+// "ข้อที่" ของวิชาเพิ่มเติมเรียงเลขอัตโนมัติ — หาเลขถัดจากที่บันทึกไว้แล้วใน DB (ตามกลุ่มสาระ+ระดับชั้น+วิชา)
+// รวมกับเลขที่กรอกอยู่ในฟอร์ม (แถวที่ยังไม่บันทึก) กันชนกันเองระหว่างเพิ่มหลายข้อในครั้งเดียว
+function _stdDbMaxCode(){
+  const subject_type=$('std-f-st')?.value;
+  if(subject_type!=='วิชาเพิ่มเติม') return 0;
+  const subject_group=$('std-f-sg')?.value;
+  const grade_level=$('std-f-gr')?.value;
+  const subject_code=($('std-f-subcode')?.value||'').trim()||null;
+  let max=0;
+  (stdList||[]).forEach(r=>{
+    if((r.subject_type||'รายวิชาพื้นฐาน')!=='วิชาเพิ่มเติม') return;
+    if(r.subject_group!==subject_group||r.grade_level!==grade_level) return;
+    if(subject_code ? r.subject_code!==subject_code : !!r.subject_code) return;
+    const n=parseInt(r.indicator_code,10); if(!isNaN(n)&&n>max) max=n;
+  });
+  return max;
+}
+function _stdCurrentMaxCode(){
+  let max=0;
+  const v1=parseInt($('std-f-code')?.value,10); if(!isNaN(v1)&&v1>max) max=v1;
+  document.querySelectorAll('.std-x-code').forEach(el=>{ const n=parseInt(el.value,10); if(!isNaN(n)&&n>max) max=n; });
+  return max;
+}
+// เรียกตอนเปิดฟอร์ม/เปลี่ยนกลุ่มสาระ-ระดับชั้น-วิชา-ประเภทวิชา — ตั้งเลข "ข้อที่" ของแถวแรกใหม่ (เฉพาะโหมดเพิ่มใหม่ + วิชาเพิ่มเติม)
+function _stdRenumber(){
+  if(!$('std-extra-rows')) return; // เฉพาะโหมดเพิ่มใหม่ (โหมดแก้ไขไม่มี div นี้)
+  const codeEl=$('std-f-code'); if(!codeEl) return;
+  codeEl.value = $('std-f-st')?.value==='วิชาเพิ่มเติม' ? String(_stdDbMaxCode()+1) : '';
+}
 function _stdAddRow(){
   _stdRowSeq++;
   const wrap=$('std-extra-rows'); if(!wrap) return;
   const isExtraType=($('std-f-st')?.value)==='วิชาเพิ่มเติม';
+  const codeVal=isExtraType?String(Math.max(_stdDbMaxCode(),_stdCurrentMaxCode())+1):'';
   const codeLbl=isExtraType?'ข้อที่ '+_stdRowSeq:'รหัสตัวชี้วัด '+_stdRowSeq;
   const codePh=isExtraType?'เช่น '+_stdRowSeq:'เช่น ว 1.2 ม.1/1';
   const textPh=isExtraType?'ผลการเรียนรู้ที่คาดหวัง':'คำอธิบายตัวชี้วัด';
   wrap.insertAdjacentHTML('beforeend',`
     <div class="std-extra-row" style="display:flex;gap:8px;align-items:flex-start;margin-top:10px;padding-top:10px;border-top:1px dashed var(--bdr)">
       <div style="width:120px"><label class="fl" style="font-size:11px">${esc(codeLbl)}</label>
-        <input class="fi std-x-code" placeholder="${esc(codePh)}"></div>
+        <input class="fi std-x-code" value="${esc(codeVal)}" placeholder="${esc(codePh)}"></div>
       <div style="flex:1"><label class="fl" style="font-size:11px">&nbsp;</label>
         <textarea class="fta std-x-text" rows="2" placeholder="${esc(textPh)}"></textarea></div>
       <button type="button" class="mx" style="margin-top:20px" onclick="this.closest('.std-extra-row').remove()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="10" height="10"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>`);
-  wrap.lastElementChild.querySelector('.std-x-code')?.focus();
+  wrap.lastElementChild.querySelector('.std-x-text')?.focus();
 }
 async function saveStdIndicatorAllRows(){
   const subject_group=$('std-f-sg').value;
