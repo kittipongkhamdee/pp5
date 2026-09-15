@@ -1760,7 +1760,7 @@ function _loadScriptOnce(key, src){
 // ทำให้ฟังก์ชันที่ insert แถวใหม่ (เพิ่มหน่วย/เพิ่มวิชา/เพิ่มตัวชี้วัด) สร้างข้อมูลซ้ำได้
 // จึงล็อกที่ตัวฟังก์ชันแทน ครอบคลุมทุกปุ่มที่เรียกฟังก์ชันนั้นโดยไม่ต้องแก้ทีละปุ่ม
 const _GUARDED_FNS=['saveExam','saveUnitSc','addUnitOnly','deleteUnit','saveSubForm','delSub',
-  'saveSpecial','saveRead','saveChar','saveStdIndicator','saveStdIndicatorAndNext','delStdIndicator',
+  'saveSpecial','saveRead','saveChar','saveStdIndicator','saveStdIndicatorAllRows','delStdIndicator',
   'importOmrScores','saveEplRatioAll','addEplUnit','delEplUnit','doCopyEvalPlan',
   'saveSettings','saveAdminPassword','saveSgList','saveRoomsPerGrade','saveGradeLevels',
   'saveMenuPerms','saveIQATargets','saveAnnouncement','saveMaintenanceMode','saveCheckinSync',
@@ -5555,19 +5555,21 @@ function openStdModal(id){
         <input class="fi" id="std-f-code" value="${esc(r?.indicator_code||'')}" placeholder="${(r?.subject_type||'รายวิชาพื้นฐาน')==='วิชาเพิ่มเติม'?'เช่น 1':'เช่น ว 1.2 ม.1/1'}"></div>
       <div style="margin-top:14px"><label class="fl" id="std-f-text-lbl">${(r?.subject_type||'รายวิชาพื้นฐาน')==='วิชาเพิ่มเติม'?'ผลการเรียนรู้ที่คาดหวัง':'คำอธิบายตัวชี้วัด'} <span class="req">*</span></label>
         <textarea class="fta" id="std-f-text" rows="3">${esc(r?.indicator_text||'')}</textarea></div>
+      ${id?'':'<div id="std-extra-rows"></div><div style="margin-top:10px"><button type="button" class="btn bs btn-sm" onclick="_stdAddRow()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>เพิ่มอีกข้อ</button></div>'}
       <div style="margin-top:14px"><label class="fl">ประเภท <span class="req">*</span></label>
         <select class="fs" id="std-f-kind" ${(r?.subject_type||'รายวิชาพื้นฐาน')==='วิชาเพิ่มเติม'?'disabled':''}>
           ${_stdKindOptions(r?.subject_type||'รายวิชาพื้นฐาน',r?.kind)}
         </select>
         <div id="std-f-kind-hint" style="font-size:11.5px;color:var(--muted);margin-top:4px${(r?.subject_type||'รายวิชาพื้นฐาน')==='วิชาเพิ่มเติม'?'':';display:none'}">วิชาเพิ่มเติมใช้ "ผลการเรียนรู้" แทนตัวชี้วัดระหว่างทาง/ปลายทาง</div>
+        ${id?'':'<div style="font-size:11.5px;color:var(--muted);margin-top:4px">ใช้ค่าเดียวกันกับทุกข้อที่เพิ่มพร้อมกันในครั้งนี้</div>'}
       </div>
     </div>
     <div class="mf">
       <button class="btn bs" onclick="rmModal('stdMod');_stdRefreshTable()">${id?'ยกเลิก':'เสร็จสิ้น'}</button>
-      ${id?'':'<button class="btn bs" onclick="saveStdIndicatorAndNext()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>บันทึกแล้วเพิ่มต่อ</button>'}
-      <button class="btn bp" onclick="saveStdIndicator(${id||'null'})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>บันทึก${id?'':'แล้วปิด'}</button>
+      <button class="btn bp" onclick="${id?`saveStdIndicator(${id})`:'saveStdIndicatorAllRows()'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>${id?'บันทึก':'บันทึกทั้งหมด'}</button>
     </div>
   </div></div>`);
+  _stdRowSeq=1;
 }
 // อ่านค่าจากฟอร์ม + validate + insert/update ลง DB — คืนแถวที่บันทึกสำเร็จ หรือ null ถ้าไม่ผ่าน (toast แจ้งเหตุผลไว้ให้แล้ว)
 // แยกออกมาจาก saveStdIndicator เพื่อให้ saveStdIndicatorAndNext เรียกใช้ตรรกะเดียวกันได้โดยไม่ต้องปิดโมดัล/รีโหลดทั้งหน้า
@@ -5608,21 +5610,78 @@ async function saveStdIndicator(id){
   stdFilterGroup=saved.subject_group;
   await pgStandards();
 }
-// บันทึกแล้วเปิดฟอร์มค้างไว้เพื่อเพิ่มข้อถัดไปทันที — คงกลุ่มสาระ/ประเภทวิชา/ระดับชั้น/มาตรฐาน/ประเภทไว้
-// (มักไม่เปลี่ยนระหว่างเพิ่มชุดเดียวกัน) ล้างแค่ช่องรหัส/ข้อความ แล้วเลื่อนเลข "ข้อที่" ให้อัตโนมัติถ้าเป็นตัวเลขล้วน
-async function saveStdIndicatorAndNext(){
-  const saved=await _saveStdIndicatorCore(null);
-  if(!saved) return;
-  stdList.push(saved); _indicatorsAll=stdList;
-  toast('เพิ่ม "'+saved.indicator_code+'" เรียบร้อย — กรอกข้อถัดไปได้เลย');
-  const codeEl=$('std-f-code'), textEl=$('std-f-text');
-  if(codeEl){
-    const codeStr=(saved.indicator_code||'').trim();
-    const n=parseInt(codeStr,10);
-    codeEl.value=(!isNaN(n)&&String(n)===codeStr)?String(n+1):'';
+// ── เพิ่มหลายข้อพร้อมกันในฟอร์มเดียว (แทนที่ "บันทึกแล้วเพิ่มต่อ" เดิม) ──
+// แถวแรกใช้ช่อง std-f-code/std-f-text เดิม แถวที่เพิ่มเองอยู่ใน #std-extra-rows
+// ฟิลด์ร่วม (กลุ่มสาระ/ประเภทวิชา/ระดับชั้น/มาตรฐาน/วิชา/ประเภท) ใช้ค่าเดียวกันทุกแถว
+let _stdRowSeq=1;
+function _stdAddRow(){
+  _stdRowSeq++;
+  const wrap=$('std-extra-rows'); if(!wrap) return;
+  const isExtraType=($('std-f-st')?.value)==='วิชาเพิ่มเติม';
+  const codeLbl=isExtraType?'ข้อที่ '+_stdRowSeq:'รหัสตัวชี้วัด '+_stdRowSeq;
+  const codePh=isExtraType?'เช่น '+_stdRowSeq:'เช่น ว 1.2 ม.1/1';
+  const textPh=isExtraType?'ผลการเรียนรู้ที่คาดหวัง':'คำอธิบายตัวชี้วัด';
+  wrap.insertAdjacentHTML('beforeend',`
+    <div class="std-extra-row" style="display:flex;gap:8px;align-items:flex-start;margin-top:10px;padding-top:10px;border-top:1px dashed var(--bdr)">
+      <div style="width:120px"><label class="fl" style="font-size:11px">${esc(codeLbl)}</label>
+        <input class="fi std-x-code" placeholder="${esc(codePh)}"></div>
+      <div style="flex:1"><label class="fl" style="font-size:11px">&nbsp;</label>
+        <textarea class="fta std-x-text" rows="2" placeholder="${esc(textPh)}"></textarea></div>
+      <button type="button" class="mx" style="margin-top:20px" onclick="this.closest('.std-extra-row').remove()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="10" height="10"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>`);
+  wrap.lastElementChild.querySelector('.std-x-code')?.focus();
+}
+async function saveStdIndicatorAllRows(){
+  const subject_group=$('std-f-sg').value;
+  const subject_type=($('std-f-st').value||'').trim()||'รายวิชาพื้นฐาน';
+  const grade_level=($('std-f-gr').value||'').trim();
+  const standard_code=subject_type==='วิชาเพิ่มเติม'?'':($('std-f-std').value||'').trim();
+  const subject_code=subject_type==='วิชาเพิ่มเติม'?(($('std-f-subcode').value||'').trim()||null):null;
+  const kind=$('std-f-kind').value;
+  if(!grade_level){ toast('กรุณาเลือกระดับชั้น','er'); return; }
+
+  const items=[{code:($('std-f-code').value||'').trim(), text:($('std-f-text').value||'').trim()}];
+  document.querySelectorAll('.std-extra-row').forEach(row=>{
+    items.push({code:(row.querySelector('.std-x-code').value||'').trim(), text:(row.querySelector('.std-x-text').value||'').trim()});
+  });
+  const filled=items.filter(it=>it.code||it.text);
+  if(!filled.length){
+    toast(subject_type==='วิชาเพิ่มเติม'?'กรุณากรอกข้อที่และผลการเรียนรู้อย่างน้อย 1 ข้อ':'กรุณากรอกรหัสตัวชี้วัดและคำอธิบายอย่างน้อย 1 ข้อ','er');
+    return;
   }
-  if(textEl) textEl.value='';
-  codeEl?.focus();
+  if(filled.some(it=>!it.code||!it.text)){
+    toast('กรุณากรอกให้ครบทั้งสองช่องทุกแถวที่กรอกไว้ (หรือลบแถวที่ไม่ใช้ออก)','er');
+    return;
+  }
+
+  loading(true);
+  const results=[];
+  for(const it of filled){
+    try{
+      const payload={subject_group,subject_type,grade_level,standard_code,indicator_code:it.code,indicator_text:it.text,kind,subject_code};
+      const saved=await q(sb.from('indicators').insert(payload).select());
+      stdList.push(saved[0]);
+      results.push({code:it.code,ok:true});
+    }catch(e){
+      const dup=/duplicate|unique/i.test(e.message);
+      results.push({code:it.code,ok:false,
+        err:dup?(subject_type==='วิชาเพิ่มเติม'?(subject_code?'วิชานี้มีข้อนี้อยู่แล้ว':'กลุ่มสาระนี้มีข้อนี้อยู่แล้ว'):'มีตัวชี้วัดรหัสนี้อยู่แล้ว'):e.message});
+    }
+  }
+  _indicatorsAll=stdList;
+  loading(false);
+  const okCount=results.filter(r=>r.ok).length;
+  const fails=results.filter(r=>!r.ok);
+  if(fails.length){
+    toast(`บันทึกสำเร็จ ${okCount}/${results.length} ข้อ — ล้มเหลว: ${fails.map(f=>`"${esc(f.code)}" (${f.err})`).join(', ')}`,'er');
+  } else {
+    toast(`บันทึกทั้งหมด ${okCount} ข้อเรียบร้อย`);
+  }
+  if(okCount>0){
+    stdFilterGroup=subject_group;
+    rmModal('stdMod');
+    await pgStandards();
+  }
 }
 async function delStdIndicator(id){
   const ind=stdList.find(x=>x.id===id); if(!ind) return;
