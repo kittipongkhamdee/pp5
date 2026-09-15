@@ -802,6 +802,27 @@ async function doCopyEvalPlan(){
   const destId=S.selSub;
   if(!srcId){toast('กรุณาเลือกวิชาต้นทาง','er');return;}
   if(!copyPlan&&!copyUnits&&!copyRatio){toast('กรุณาเลือกอย่างน้อย 1 รายการ','er');return;}
+
+  // ตัวชี้วัด/ผลการเรียนรู้ของวิชาเพิ่มเติมผูกกับรหัสวิชาเฉพาะ (ดู migration 016) —
+  // คัดลอก "แผนการวัดฯ" ข้ามรหัสวิชาที่ไม่ตรงกันจะได้ ID ตัวชี้วัดของวิชาต้นทางติดมาด้วย
+  // ไม่ใช่ของวิชาปลายทางจริงๆ ต้องเตือนก่อน ไม่บล็อกเด็ดขาดเพราะบางกรณี (พื้นฐาน/มาตรฐานร่วม) ยังปลอดภัย
+  const srcSub=S.subjects.find(s=>s.id===srcId), destSub=S.subjects.find(s=>s.id===destId);
+  const mismatchRisk = copyPlan && srcSub && destSub && srcSub.subject_code!==destSub.subject_code
+    && (srcSub.subject_type==='วิชาเพิ่มเติม' || destSub.subject_type==='วิชาเพิ่มเติม');
+  if(mismatchRisk){
+    confirm2({
+      title:'รหัสวิชาไม่ตรงกัน',
+      msg:`วิชาต้นทาง (<strong>${esc(srcSub.subject_code)}</strong>) กับวิชานี้ (<strong>${esc(destSub.subject_code)}</strong>) รหัสวิชาไม่ตรงกัน<br>`
+        +`ถ้าเป็นวิชาเพิ่มเติม "ผลการเรียนรู้" (ข้อที่) ที่คัดลอกมาจะยังเป็นของวิชาต้นทางอยู่ ไม่ใช่ของวิชานี้ อาจทำให้เนื้อหาในแผนการวัดฯ ไม่ตรงกับวิชาที่สอนจริง<br>`
+        +`<span style="font-size:12px;color:var(--muted)">แนะนำ: คัดลอกเฉพาะระหว่างวิชารหัสเดียวกัน (เช่น คนละห้อง/คนละปีการศึกษา) จะปลอดภัยกว่า</span>`,
+      type:'warn', confirmText:'เข้าใจแล้ว คัดลอกต่อ', cancelText:'ยกเลิก',
+      onConfirm:()=>_doCopyEvalPlanExec(srcId,copyPlan,copyUnits,copyRatio,destId)
+    });
+    return;
+  }
+  await _doCopyEvalPlanExec(srcId,copyPlan,copyUnits,copyRatio,destId);
+}
+async function _doCopyEvalPlanExec(srcId,copyPlan,copyUnits,copyRatio,destId){
   loading(true);
   try{
     if(copyRatio){
