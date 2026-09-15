@@ -1031,6 +1031,9 @@ function _epPickBasePool(sub){
   return (_indicatorsAll||[]).filter(ind=>{
     if(sub.subject_group && ind.subject_group!==sub.subject_group) return false;
     if(ind.subject_type!==stype) return false;
+    // วิชาเพิ่มเติม: ตัวชี้วัดที่ระบุรหัสวิชาไว้แล้วต้องตรงกับวิชานี้เท่านั้น
+    // ส่วนที่ยังไม่ระบุวิชา (ข้อมูลเก่า) ยังแสดงร่วมกันทุกวิชาในกลุ่มสาระเดิมไปก่อน จนกว่าจะถูกระบุวิชาให้ชัดเจน
+    if(stype==='วิชาเพิ่มเติม' && ind.subject_code && ind.subject_code!==sub.subject_code) return false;
     if(g){
       // "ม.4-6" คือการรวมมาตรฐานช่วงชั้นตอนปลายตามเอกสารหลักสูตรมัธยมศึกษาต้นฉบับ — ยังผูกกับคำนำหน้า ม. โดยเฉพาะ
       const grOk = ind.grade_level===GRADE_PREFIX+g || (GRADE_PREFIX==='ม.' && ['4','5','6'].includes(g) && ind.grade_level==='ม.4-6');
@@ -1086,7 +1089,7 @@ function renderIndPickList(){
     <label class="ind-pick-row">
       <input type="checkbox" ${selected.has(ind.id)?'checked':''} onchange="toggleEplUnitIndicator('${_epPickUnit}',${ind.id},this.checked)">
       <div style="min-width:0;flex:1">
-        <div style="font-size:12px;font-weight:700;color:var(--ac)">${esc(ind.indicator_code)} <span class="badge ${_kindBadgeCls(ind.kind)}" style="margin-left:4px">${esc(ind.kind)}</span></div>
+        <div style="font-size:12px;font-weight:700;color:var(--ac)">${esc(ind.indicator_code)} <span class="badge ${_kindBadgeCls(ind.kind)}" style="margin-left:4px">${esc(ind.kind)}</span>${ind.subject_type==='วิชาเพิ่มเติม'&&!ind.subject_code?' <span class="badge bg-r" style="font-size:10px">ยังไม่ระบุวิชา</span>':''}</div>
         <div style="font-size:12.5px;color:var(--txt2);margin-top:2px">${esc(ind.indicator_text)}</div>
       </div>
     </label>`).join('');
