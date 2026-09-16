@@ -1308,21 +1308,39 @@ async function saveEplRatioAll(){
   finally{ loading(false); }
 }
 // หน่วยหนึ่งอาจผูกกับหลายตัวชี้วัดพร้อมกัน แต่ละตัวไม่จำเป็นต้องได้น้ำหนักเท่ากัน (เช่น หน่วยหนัก 40
-// แบ่งเป็นตัวชี้วัดละ 10+30 ก็ได้) — จึงเช็คที่ระดับ "กลุ่ม" แทนแต่ละแถวเดี่ยวๆ: สำหรับตัวชี้วัดนี้
-// หาทุกหน่วยที่ผูกอยู่ แล้วรวมคะแนนเก็บ K+P+A+กลางภาคของ "ทุกตัวชี้วัดในหน่วยเดียวกัน" เข้าด้วยกัน
+// แบ่งเป็นตัวชี้วัดละ 10+30 ก็ได้) และตัวชี้วัดเดียวกันก็ผูกซ้ำกับหลายหน่วยได้เช่นกัน (เช่น ทักษะที่
+// ประเมินซ้ำทุกหน่วยตลอดเทอมในวิชาภาษาอังกฤษ) — จึงต้องเช็คที่ระดับ "กลุ่มหน่วยที่เชื่อมถึงกัน" ไม่ใช่
+// ทีละหน่วยเดี่ยวๆ: เริ่มจากหน่วยที่ผูกกับตัวชี้วัดนี้ แล้วขยายกลุ่มไปยังหน่วยอื่นที่ผูกตัวชี้วัดร่วมกันไป
+// เรื่อยๆ (transitive) จนกลุ่มนิ่ง — รวมคะแนนเก็บ K+P+A+กลางภาคของ "ทุกตัวชี้วัดที่ไม่ซ้ำ" ในกลุ่มนั้น
+// (นับตัวชี้วัดที่ใช้ร่วมกันแค่ครั้งเดียว ไม่นับซ้ำตามจำนวนหน่วยที่ผูก)
 // (ปลายภาคไม่รวม เพราะน้ำหนักหน่วยฯ ตรงนี้นับเฉพาะคอลัมน์ "ระหว่างภาค" — ดู renderEplUnitsTab)
-// เทียบผลรวมของกลุ่มกับน้ำหนักคะแนนระหว่างภาคของหน่วยนั้น
+// เทียบผลรวมของกลุ่มกับผลรวมน้ำหนักคะแนนระหว่างภาคของทุกหน่วยในกลุ่ม
 function _indicatorUnitGroups(indId){
-  return epUnits.filter(u=>(epUnitInd[u.id]||[]).includes(indId)).map(u=>{
-    const linked=epUnitInd[u.id]||[];
-    const actual=linked.reduce((sum,id)=>{
-      const sc=epIndScores.find(x=>x.indicator_id===id)||{};
-      return sum+(+sc.score_k||0)+(+sc.score_p||0)+(+sc.score_a||0)+(+sc.score_mid||0);
-    },0);
-    const target=Math.round((+u.weight||0)*100)/100;
-    const actualR=Math.round(actual*100)/100; // กันปัญหาจุดทศนิยมเพี้ยนก่อนเทียบ ===
-    return {unitId:u.id,target,actual:actualR,ok:actualR===target};
-  });
+  const startUnits=epUnits.filter(u=>(epUnitInd[u.id]||[]).includes(indId));
+  if(!startUnits.length) return [];
+  const unitIds=new Set(startUnits.map(u=>u.id));
+  let changed=true;
+  while(changed){
+    changed=false;
+    const indIds=new Set();
+    unitIds.forEach(uid=>(epUnitInd[uid]||[]).forEach(id=>indIds.add(id)));
+    epUnits.forEach(u=>{
+      if(unitIds.has(u.id)) return;
+      if((epUnitInd[u.id]||[]).some(id=>indIds.has(id))){ unitIds.add(u.id); changed=true; }
+    });
+  }
+  const indIds=new Set();
+  unitIds.forEach(uid=>(epUnitInd[uid]||[]).forEach(id=>indIds.add(id)));
+  const actual=[...indIds].reduce((sum,id)=>{
+    const sc=epIndScores.find(x=>x.indicator_id===id)||{};
+    return sum+(+sc.score_k||0)+(+sc.score_p||0)+(+sc.score_a||0)+(+sc.score_mid||0);
+  },0);
+  const target=Math.round([...unitIds].reduce((s,uid)=>{
+    const u=epUnits.find(x=>x.id===uid);
+    return s+(+(u&&u.weight)||0);
+  },0)*100)/100;
+  const actualR=Math.round(actual*100)/100; // กันปัญหาจุดทศนิยมเพี้ยนก่อนเทียบ ===
+  return[{unitIds:[...unitIds],target,actual:actualR,ok:actualR===target}];
 }
 function renderIndicatorScoreTable(){
   const sub=S.subjects.find(s=>s.id===S.selSub)||{};
@@ -1363,7 +1381,7 @@ function renderIndicatorScoreTable(){
       return`<tr>
         <td class="tl" data-freeze="a" title="${esc(ind.indicator_text)}">${esc(ind.indicator_code)}</td>
         ${fields.map(f=>`<td><input class="cell-in num" type="number" value="${sc[f]||0}" onchange="saveEplIndScore(${ind.id},{${f}:+this.value||0})"></td>`).join('')}
-        <td class="tc" style="font-weight:700;color:${rowOk?'var(--ok-txt)':'var(--err-txt)'}" title="ผลรวมคะแนนเก็บ K+P+A+กลางภาคของทุกตัวชี้วัดในหน่วยเดียวกัน ต้องรวมได้เท่ากับน้ำหนักคะแนนระหว่างภาคของหน่วยนั้น (ตัวชี้วัดในหน่วยเดียวกันแบ่งน้ำหนักไม่เท่ากันได้ ขอแค่รวมกันตรง) — ${detail}">${rowTot}${rowOk?' ✓':' (หน่วยรวม '+detail+')'}</td>
+        <td class="tc" style="font-weight:700;color:${rowOk?'var(--ok-txt)':'var(--err-txt)'}" title="ผลรวมคะแนนเก็บ K+P+A+กลางภาคของทุกตัวชี้วัดในกลุ่มหน่วยที่เชื่อมถึงกัน (นับซ้ำในหลายหน่วยได้ เช่น ตัวชี้วัดเดียวประเมินซ้ำทุกหน่วย) ต้องรวมได้เท่ากับผลรวมน้ำหนักคะแนนระหว่างภาคของหน่วยทั้งหมดในกลุ่มนั้น — ${detail}">${rowTot}${rowOk?' ✓':' (รวมกลุ่มหน่วย '+detail+')'}</td>
       </tr>`;
     }).join('')}
     <tr style="font-weight:700;background:var(--card2)">
@@ -1377,7 +1395,7 @@ function renderIndicatorScoreTable(){
     ${_ico.warning} ผลรวม ${mismatched.map(f=>fieldLabel[f]+' ('+totals[f]+'/'+targets[f]+')').join(', ')} ยังไม่ตรงกับตารางแสดงสัดส่วนคะแนน (ข้อ 3)
   </div>
   <div style="margin-top:6px;font-size:12px;color:var(--err);display:${rows.some(({ind})=>!_indicatorUnitGroups(ind.id).every(g=>g.ok))?'block':'none'}">
-    ${_ico.warning} คะแนนเก็บ (K+P+A+กลางภาค) รวมของตัวชี้วัดในบางหน่วยยังไม่ตรงกับน้ำหนักคะแนนระหว่างภาคที่ตั้งไว้ในตารางหน่วยการเรียนรู้ — ดูช่อง "รวม" สีแดงในตารางด้านบน (ตัวชี้วัดในหน่วยเดียวกันแบ่งน้ำหนักไม่เท่ากันได้ ขอแค่รวมกันในหน่วยตรงกับน้ำหนักหน่วยนั้น)
+    ${_ico.warning} คะแนนเก็บ (K+P+A+กลางภาค) รวมของตัวชี้วัดในบางกลุ่มหน่วยยังไม่ตรงกับน้ำหนักคะแนนระหว่างภาคที่ตั้งไว้ในตารางหน่วยการเรียนรู้ — ดูช่อง "รวม" สีแดงในตารางด้านบน (ตัวชี้วัดในหน่วยเดียวกันแบ่งน้ำหนักไม่เท่ากันได้ และตัวชี้วัดเดียวกันผูกซ้ำหลายหน่วยได้ ขอแค่รวมกันในกลุ่มหน่วยที่เชื่อมถึงกันตรงกับผลรวมน้ำหนักของหน่วยเหล่านั้น)
   </div>`;
 }
 async function saveEplIndScore(indId,patch){
