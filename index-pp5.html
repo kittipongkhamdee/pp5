@@ -3754,6 +3754,8 @@ function renderScPage(){
 }
 function renderUnitTab(period,maxTotal){
   const units=scU[period], lbl=period==='before'?'ก่อนกลางภาค':'หลังกลางภาค';
+  const sumMax=units.reduce((s,u)=>s+(parseFloat(u.max_score)||0),0);
+  const sumOk=units.length===0||sumMax===maxTotal;
   return`
   <!-- ── เพิ่มหน่วยการเรียน ── -->
   <div class="card" style="margin-bottom:14px"><div class="cb">
@@ -3789,9 +3791,13 @@ function renderUnitTab(period,maxTotal){
       <div class="ct">คะแนนหน่วย${lbl}</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         <span class="badge bg-gr">${units.length} หน่วย</span>
+        <span class="badge ${sumOk?'bg-g':'bg-r'}">รวมคะแนนเต็ม ${sumMax}/${maxTotal}</span>
       </div>
     </div>
     <div class="cb">
+      ${sumOk?'':`<div style="font-size:12px;color:var(--err-txt);background:var(--err-bg);border:1px solid var(--err-bdr);border-radius:8px;padding:8px 10px;margin-bottom:12px">
+        ${_ico.warning} รวมคะแนนเต็มของหน่วย${lbl}ทั้งหมด (${sumMax}) ${sumMax>maxTotal?'เกิน':'ยังไม่ครบ'}คะแนนที่ตั้งไว้ (${maxTotal}) — ตรวจสอบคะแนนเต็มของแต่ละหน่วยด้านล่าง
+      </div>`}
       <!-- หัวหน่วย: ชื่อ + ปุ่มแก้/ลบ -->
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
         ${units.map(u=>`
