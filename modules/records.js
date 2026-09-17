@@ -860,7 +860,10 @@ async function _doCopyEvalPlanExec(srcId,copyPlan,copyUnits,copyRatio,destId){
       if(scores.length){
         const newScores=scores.map(s=>({subject_id:destId,indicator_id:s.indicator_id,
           score_k:s.score_k,score_p:s.score_p,score_a:s.score_a,score_mid:s.score_mid,score_final:s.score_final,note:s.note}));
-        await q(sb.from('eval_plan_indicator_scores').insert(newScores));
+        // upsert แทน insert เฉยๆ — กันชนกับแถวคะแนนที่อาจค้างอยู่ก่อนแล้วในวิชาปลายทาง
+        // (เช่น เคยลบหน่วยการเรียนรู้ทิ้งไปแต่คะแนนตัวชี้วัดไม่ได้ถูกลบตาม เพราะผูกกับ subject+indicator
+        // ไม่ได้ผูกกับหน่วย) ถ้าเจอแถวเดิมให้ทับด้วยค่าจากวิชาต้นทางไปเลย แทนที่จะ error ทั้งก้อน
+        await q(sb.from('eval_plan_indicator_scores').upsert(newScores,{onConflict:'subject_id,indicator_id'}));
       }
     }
     if(copyUnits){
@@ -1034,9 +1037,18 @@ function delEplUnit(id,name){
   confirm2({title:'ลบหน่วยการเรียนรู้',msg:'ต้องการลบหน่วย "<strong>'+name+'</strong>"? ตัวชี้วัดที่ผูกไว้จะถูกเอาออกด้วย',type:'danger',confirmText:'ลบเลย',cancelText:'ยกเลิก',onConfirm:async()=>{
     loading(true);
     try{
+      const indIdsOfUnit=epUnitInd[id]||[];
       await q(sb.from('eval_plan_units').delete().eq('id',id));
       epUnits=epUnits.filter(u=>u.id!==id);
       delete epUnitInd[id];
+      // ตัวชี้วัดที่หลังลบหน่วยนี้แล้วไม่เหลือหน่วยไหนผูกอยู่เลย จะกลายเป็นคะแนนกำพร้าใน
+      // eval_plan_indicator_scores (ตารางนั้นผูกแค่ subject+indicator ไม่ผูกกับหน่วย) — ลบทิ้งไปด้วย
+      // กันไปชนกับ unique constraint ตอนคัดลอกแผนการวัดฯ จากวิชาอื่นในอนาคต
+      const orphanIds=indIdsOfUnit.filter(indId=>!epUnits.some(u=>(epUnitInd[u.id]||[]).includes(indId)));
+      if(orphanIds.length){
+        await q(sb.from('eval_plan_indicator_scores').delete().eq('subject_id',S.selSub).in('indicator_id',orphanIds));
+        epIndScores=epIndScores.filter(s=>!orphanIds.includes(s.indicator_id));
+      }
       const utab=$('epl-units'); if(utab) utab.innerHTML=renderEplUnitsTab();
       const rtab=$('epl-ratio'); if(rtab) rtab.innerHTML=renderEplRatioTab();
       toast('ลบเรียบร้อย');
