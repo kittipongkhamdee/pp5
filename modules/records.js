@@ -783,7 +783,7 @@ function openCopyEvalPlanModal(){
         ${others.length?`<optgroup label="วิชาอื่น">${others.map(opt).join('')}</optgroup>`:''}
       </select>
       <div style="margin-top:14px;display:flex;flex-direction:column;gap:10px">
-        <label style="display:flex;align-items:flex-start;gap:8px;font-size:13.5px;cursor:pointer"><input type="checkbox" id="cep-c-plan" checked style="width:16px;height:16px;margin-top:1px;flex-shrink:0">แผนการวัดฯ (หน่วยการเรียนรู้ + ตัวชี้วัด + น้ำหนักคะแนนรายตัวชี้วัด)</label>
+        <label style="display:flex;align-items:flex-start;gap:8px;font-size:13.5px;cursor:pointer"><input type="checkbox" id="cep-c-plan" checked style="width:16px;height:16px;margin-top:1px;flex-shrink:0">แผนการวัดฯ (หน่วยการเรียนรู้ + ตัวชี้วัด/ผลการเรียนรู้ + น้ำหนักคะแนนรายตัวชี้วัด/ผลการเรียนรู้)</label>
         <label style="display:flex;align-items:flex-start;gap:8px;font-size:13.5px;cursor:pointer"><input type="checkbox" id="cep-c-units" checked style="width:16px;height:16px;margin-top:1px;flex-shrink:0">คะแนนหน่วยก่อน/หลังกลางภาค (หน้าบันทึกคะแนน) — คัดลอกเฉพาะชื่อหน่วยและคะแนนเต็ม คะแนนของนักเรียนแต่ละคนเริ่มที่ 0</label>
         <label style="display:flex;align-items:flex-start;gap:8px;font-size:13.5px;cursor:pointer"><input type="checkbox" id="cep-c-ratio" checked style="width:16px;height:16px;margin-top:1px;flex-shrink:0">สัดส่วนคะแนน (โครงสร้างคะแนนก่อนกลาง/กลาง/หลังกลาง/ปลายภาค + อัตราส่วน K:P:A + ตารางแสดงสัดส่วนคะแนน) — ทับค่าเดิมของวิชานี้</label>
       </div>
@@ -1198,7 +1198,7 @@ function renderEplRatioTab(){
   </div>
 
   <div class="card">
-    <div class="ch"><div class="ct">4. ตารางแสดงน้ำหนักคะแนนรายตัวชี้วัด</div><span style="font-size:11.5px;color:var(--muted)">อ้างอิงจากหน่วยการเรียนรู้ในแท็บแรก</span></div>
+    <div class="ch"><div class="ct">4. ตารางแสดงน้ำหนักคะแนนรายตัวชี้วัด/ผลการเรียนรู้</div><span style="font-size:11.5px;color:var(--muted)">อ้างอิงจากหน่วยการเรียนรู้ในแท็บแรก</span></div>
     <div class="cb">${renderIndicatorScoreTable()}</div>
   </div>
 
@@ -1380,7 +1380,7 @@ function renderIndicatorScoreTable(){
   const mismatched=fields.filter(f=>totals[f]!==targets[f]);
   return`<div class="tw tw-freeze"><table>
     <thead><tr>
-      <th class="tl" style="min-width:170px" data-freeze="a">ตัวชี้วัด</th>
+      <th class="tl" style="min-width:170px" data-freeze="a">ตัวชี้วัด/ผลการเรียนรู้</th>
       ${fields.map(f=>`<th>${fieldLabel[f]}<br><span style="font-size:10px;font-weight:400;opacity:.65">(เต็ม ${targets[f]})</span></th>`).join('')}
       <th>รวม</th>
     </tr></thead>
@@ -1480,7 +1480,7 @@ function buildEvalPlanKpaRows(){
 function buildEvalPlanIndicatorRows(){
   const idSet=new Set();
   Object.values(epUnitInd).forEach(arr=>arr.forEach(id=>idSet.add(id)));
-  const h=['ตัวชี้วัด','คะแนนเก็บ (K)','คะแนนเก็บ (P)','คะแนนเก็บ (A)','กลางภาค','ปลายภาค','รวม'];
+  const h=['ตัวชี้วัด/ผลการเรียนรู้','คะแนนเก็บ (K)','คะแนนเก็บ (P)','คะแนนเก็บ (A)','กลางภาค','ปลายภาค','รวม'];
   const rows=[h];
   const fields=['score_k','score_p','score_a','score_mid','score_final'];
   const totals={score_k:0,score_p:0,score_a:0,score_mid:0,score_final:0};
@@ -1558,7 +1558,7 @@ function printEvalPlan(){
 
   const indRows=buildEvalPlanIndicatorRows();
   let p3='<div>';
-  p3+='<h3 style="margin-bottom:6px">น้ำหนักคะแนนรายตัวชี้วัด</h3>';
+  p3+='<h3 style="margin-bottom:6px">น้ำหนักคะแนนรายตัวชี้วัด/ผลการเรียนรู้</h3>';
   p3+=`<div class="meta" style="margin-bottom:8px">วิชา ${esc(sub.subject_name)} (${esc(sub.subject_code)}) ${grm(sub.grade_level,sub.room)}</div>`;
   p3+='<table><thead><tr>';
   indRows[0].forEach(h=>{p3+=`<th>${e2(h)}</th>`;});
@@ -1965,7 +1965,7 @@ ${cvTh('รายการประเมิน','text-align:left;padding-left:6
   body+='</tbody></table>';
 
   const evalIndRows=buildEvalPlanIndicatorRows();
-  body+='<h3>น้ำหนักคะแนนรายตัวชี้วัด</h3><table><thead><tr>';
+  body+='<h3>น้ำหนักคะแนนรายตัวชี้วัด/ผลการเรียนรู้</h3><table><thead><tr>';
   evalIndRows[0].forEach(h=>{ body+=`<th>${esc(String(h))}</th>`; });
   body+='</tr></thead><tbody>';
   for(let i=1;i<evalIndRows.length;i++){
