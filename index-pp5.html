@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <!-- ฟอนต์ Sarabun เก็บไว้ในโปรเจกต์เอง (assets/fonts/) แล้ว ประกาศ @font-face อยู่ในหัวไฟล์ style.css -->
 <!-- ?v= กันแคชเก่าค้าง (style.css แคชไว้ 1 วันตาม vercel.json) — แก้ style.css เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย -->
-<link rel="stylesheet" href="style.css?v=11">
+<link rel="stylesheet" href="style.css?v=12">
 </head>
 <body class="bg-bg text-txt antialiased">
 
@@ -547,6 +547,8 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 // ตัดคำว่า "โรงเรียน" ที่ขึ้นต้นชื่อโรงเรียนออก กันข้อความซ้ำเวลาต่อท้ายป้าย "ผู้อำนวยการโรงเรียน..."
 const schoolNameOnly = s => String(s||'').replace(/^โรงเรียน/,'');
+// ช่องข้อมูลในแบบฟอร์ม (เช่น ปก ปพ.5) ที่ยังไม่ได้กรอก ให้แสดง "-" แทนช่องว่างเปล่า กันดูเหมือนลืมกรอก
+const cvv = v => { const s = (v===undefined||v===null?'':String(v)).trim(); return s===''?'-':s; };
 // เติม "โรงเรียน" นำหน้าชื่อ ยกเว้นถ้าชื่อที่บันทึกไว้มีคำว่า "โรงเรียน" อยู่แล้ว (กันซ้ำเป็น "โรงเรียนโรงเรียนตาเบาวิทยา")
 const schoolNameWithPrefix = s => { s=String(s||''); return s.startsWith('โรงเรียน')?s:'โรงเรียน'+s; };
 // สำหรับข้อความที่ไปอยู่ใน JS string literal ภายใน attribute เช่น onclick="fn('...')"
@@ -1784,7 +1786,7 @@ function _applyConcurrencyGuards(){
 // (ของโมดูลจะถูกห่อเพิ่มใน ensureModule หลังโหลดเสร็จ)
 _applyConcurrencyGuards();
 // ?v= กันแคชเก่าค้าง (modules/*.js แคชไว้ 1 วันตาม vercel.json) — แก้ไฟล์ใน modules/ เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย
-const MODULE_V='52';
+const MODULE_V='53';
 // ห่อฟังก์ชันของโมดูลหลังโหลดเสร็จด้วย (ตอนเริ่มระบบยังไม่มีฟังก์ชันเหล่านี้)
 function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V).then(()=>{ _applyConcurrencyGuards(); }); }
 function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }

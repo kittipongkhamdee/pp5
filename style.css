@@ -549,8 +549,8 @@ body.dark .subc{background:var(--card);border-color:var(--bdr);}
   /* ใช้ Sarabun น้ำหนัก 300 (บาง) ทั้งหน้าตอนพิมพ์ — เขียนทับ th/strong/badge ฯลฯ
      ที่ตั้ง font-weight หนักไว้สำหรับจอ เพราะบนกระดาษตัวหนาอ่านแน่น/เปลืองหมึกเกินไป */
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;font-weight:300!important;}
-  /* ยกเว้นค่าข้อมูลในปก ปพ.5 (ชื่อโรงเรียน/รหัสวิชา ฯลฯ) ให้ยังตัวหนาตอนพิมพ์ตามที่ตั้งใจ */
-  .cv-val{font-weight:700!important;}
+  /* ยกเว้นป้ายชื่อฟิลด์ในปก ปพ.5 (โรงเรียน/รหัสวิชา ฯลฯ) ให้ยังตัวหนาตอนพิมพ์ตามที่ตั้งใจ */
+  .cv-label{font-weight:700!important;}
   .card{box-shadow:none!important;border:1px solid #ccc!important;}
   /* Dark mode reset เมื่อ print */
   body.dark,body.dark *{background:#fff!important;color:#000!important;}
