@@ -1817,14 +1817,14 @@ function _buildPP5Body(sub,cfg,stus,sumMap,erMap,ecMap,scUnitsAll,attRows,attMap
 <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;margin:8px 0 10px;text-align:center"><img src="${cfg.logo_url||'/assets/logo.webp'}" alt="ตราโรงเรียน" style="height:80px;width:auto;object-fit:contain;display:block;margin:0 auto" onerror="this.style.display='none'"></div>
 <div style="text-align:center;font-size:16px;font-weight:700;margin-bottom:10px">แบบบันทึกผลการเรียนประจำรายวิชา</div>
 <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:10px;table-layout:fixed"><colgroup><col style="width:150px"><col><col style="width:80px"><col></colgroup>
-<tr><td style="padding:4px 6px">โรงเรียน</td><td colspan="3" style="padding:4px 6px;border-bottom:1px dotted #999">${esc(schoolNameOnly(cfg.school_name))}</td></tr>
-<tr><td style="padding:4px 6px">อำเภอ/เขต</td><td style="padding:4px 6px;border-bottom:1px dotted #999">${esc(cfg.school_district||'')}</td><td style="padding:4px 6px">จังหวัด</td><td style="padding:4px 6px;border-bottom:1px dotted #999">${esc(cfg.school_province||'')}</td></tr>
-<tr><td style="padding:4px 6px">ชั้นมัธยมศึกษาปีที่</td><td style="padding:4px 6px;border-bottom:1px dotted #999">${sub.grade_level}</td><td style="padding:4px 6px">ห้อง</td><td style="padding:4px 6px;border-bottom:1px dotted #999">${+sub.room===0?'':sub.room}</td></tr>
-<tr><td style="padding:4px 6px">ภาคเรียนที่</td><td style="padding:4px 6px;border-bottom:1px dotted #999;white-space:nowrap">${cfg.semester||''}</td><td style="padding:4px 6px;white-space:nowrap">ปีการศึกษา</td><td style="padding:4px 6px;border-bottom:1px dotted #999;white-space:nowrap">${cfg.academic_year||''}</td></tr>
-<tr><td style="padding:4px 6px">รหัสวิชา</td><td style="padding:4px 6px;border-bottom:1px dotted #999">${esc(sub.subject_code)}</td><td style="padding:4px 6px;white-space:nowrap">รายวิชา</td><td style="padding:4px 6px;border-bottom:1px dotted #999">${esc(sub.subject_name)}</td></tr>
-<tr><td style="padding:4px 6px">ประเภท</td><td colspan="3" style="padding:4px 6px;border-bottom:1px dotted #999">${esc(sub.subject_type||'')}</td></tr>
-<tr><td style="padding:4px 6px">หน่วยกิต</td><td style="padding:4px 6px;border-bottom:1px dotted #999;white-space:nowrap">${sub.credits}</td><td style="padding:4px 6px;white-space:nowrap">เวลาเรียน</td><td style="padding:4px 6px;border-bottom:1px dotted #999;white-space:nowrap">${sub.total_hours} ชม./ภาค (${sub.hours_per_week} ชม./สัปดาห์)</td></tr>
-<tr><td style="padding:4px 6px">ครูผู้สอน</td><td colspan="3" style="padding:4px 6px;border-bottom:1px dotted #999">${esc(sub.teacher_name||'')}</td></tr>
+<tr><td style="padding:4px 6px">โรงเรียน</td><td colspan="3" class="cv-val" style="padding:4px 6px;border-bottom:1px dotted #999;font-weight:700">${esc(schoolNameOnly(cfg.school_name))}</td></tr>
+<tr><td style="padding:4px 6px">อำเภอ/เขต</td><td class="cv-val" style="padding:4px 6px;border-bottom:1px dotted #999;font-weight:700">${esc(cfg.school_district||'')}</td><td style="padding:4px 6px">จังหวัด</td><td class="cv-val" style="padding:4px 6px;border-bottom:1px dotted #999;font-weight:700">${esc(cfg.school_province||'')}</td></tr>
+<tr><td style="padding:4px 6px">ชั้นมัธยมศึกษาปีที่</td><td class="cv-val" style="padding:4px 6px;border-bottom:1px dotted #999;font-weight:700">${sub.grade_level}</td><td style="padding:4px 6px">ห้อง</td><td class="cv-val" style="padding:4px 6px;border-bottom:1px dotted #999;font-weight:700">${+sub.room===0?'':sub.room}</td></tr>
+<tr><td style="padding:4px 6px">ภาคเรียนที่</td><td class="cv-val" style="padding:4px 6px;border-bottom:1px dotted #999;font-weight:700;white-space:nowrap">${cfg.semester||''}</td><td style="padding:4px 6px;white-space:nowrap">ปีการศึกษา</td><td class="cv-val" style="padding:4px 6px;border-bottom:1px dotted #999;font-weight:700;white-space:nowrap">${cfg.academic_year||''}</td></tr>
+<tr><td style="padding:4px 6px">รหัสวิชา</td><td class="cv-val" style="padding:4px 6px;border-bottom:1px dotted #999;font-weight:700">${esc(sub.subject_code)}</td><td style="padding:4px 6px;white-space:nowrap">รายวิชา</td><td class="cv-val" style="padding:4px 6px;border-bottom:1px dotted #999;font-weight:700">${esc(sub.subject_name)}</td></tr>
+<tr><td style="padding:4px 6px">ประเภท</td><td colspan="3" class="cv-val" style="padding:4px 6px;border-bottom:1px dotted #999;font-weight:700">${esc(sub.subject_type||'')}</td></tr>
+<tr><td style="padding:4px 6px">หน่วยกิต</td><td class="cv-val" style="padding:4px 6px;border-bottom:1px dotted #999;font-weight:700;white-space:nowrap">${sub.credits}</td><td style="padding:4px 6px;white-space:nowrap">เวลาเรียน</td><td class="cv-val" style="padding:4px 6px;border-bottom:1px dotted #999;font-weight:700;white-space:nowrap">${sub.total_hours} ชม./ภาค (${sub.hours_per_week} ชม./สัปดาห์)</td></tr>
+<tr><td style="padding:4px 6px">ครูผู้สอน</td><td colspan="3" class="cv-val" style="padding:4px 6px;border-bottom:1px dotted #999;font-weight:700">${esc(sub.teacher_name||'')}</td></tr>
 </table>
 <div style="font-size:13px;font-weight:700;margin:6px 0 4px">สรุปผลการประเมิน</div>
 <table style="width:100%;border-collapse:collapse;border:1px solid #666;font-size:13px;margin-bottom:5px"><thead><tr style="background:#efefef">
@@ -2113,31 +2113,31 @@ async function pgCover(){
     <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:10px;table-layout:fixed">
       <colgroup><col style="width:150px"><col><col style="width:80px"><col></colgroup>
       <tr><td style="padding:4px 6px">โรงเรียน</td>
-          <td colspan="3" style="padding:4px 6px;border-bottom:1px dotted #999">${esc(schoolNameOnly(cfg.school_name))}</td></tr>
+          <td colspan="3" class="cv-val" style="padding:4px 6px;border-bottom:1px dotted #999;font-weight:700">${esc(schoolNameOnly(cfg.school_name))}</td></tr>
       <tr><td style="padding:4px 6px">อำเภอ/เขต</td>
-          <td style="padding:4px 6px;border-bottom:1px dotted #999">${esc(cfg.school_district||'')}</td>
+          <td class="cv-val" style="padding:4px 6px;border-bottom:1px dotted #999;font-weight:700">${esc(cfg.school_district||'')}</td>
           <td style="padding:4px 6px">จังหวัด</td>
-          <td style="padding:4px 6px;border-bottom:1px dotted #999">${esc(cfg.school_province||'')}</td></tr>
+          <td class="cv-val" style="padding:4px 6px;border-bottom:1px dotted #999;font-weight:700">${esc(cfg.school_province||'')}</td></tr>
       <tr><td style="padding:4px 6px">ชั้นมัธยมศึกษาปีที่</td>
-          <td style="padding:4px 6px;border-bottom:1px dotted #999">${sub.grade_level}</td>
+          <td class="cv-val" style="padding:4px 6px;border-bottom:1px dotted #999;font-weight:700">${sub.grade_level}</td>
           <td style="padding:4px 6px">ห้อง</td>
-          <td style="padding:4px 6px;border-bottom:1px dotted #999">${+sub.room===0?'':sub.room}</td></tr>
+          <td class="cv-val" style="padding:4px 6px;border-bottom:1px dotted #999;font-weight:700">${+sub.room===0?'':sub.room}</td></tr>
       <tr><td style="padding:4px 6px">ภาคเรียนที่</td>
-          <td style="padding:4px 6px;border-bottom:1px dotted #999;white-space:nowrap">${cfg.semester||''}</td>
+          <td class="cv-val" style="padding:4px 6px;border-bottom:1px dotted #999;font-weight:700;white-space:nowrap">${cfg.semester||''}</td>
           <td style="padding:4px 6px;white-space:nowrap">ปีการศึกษา</td>
-          <td style="padding:4px 6px;border-bottom:1px dotted #999;white-space:nowrap">${cfg.academic_year||''}</td></tr>
+          <td class="cv-val" style="padding:4px 6px;border-bottom:1px dotted #999;font-weight:700;white-space:nowrap">${cfg.academic_year||''}</td></tr>
       <tr><td style="padding:4px 6px">รหัสวิชา</td>
-          <td style="padding:4px 6px;border-bottom:1px dotted #999">${esc(sub.subject_code)}</td>
+          <td class="cv-val" style="padding:4px 6px;border-bottom:1px dotted #999;font-weight:700">${esc(sub.subject_code)}</td>
           <td style="padding:4px 6px;white-space:nowrap">รายวิชา</td>
-          <td style="padding:4px 6px;border-bottom:1px dotted #999">${esc(sub.subject_name)}</td></tr>
+          <td class="cv-val" style="padding:4px 6px;border-bottom:1px dotted #999;font-weight:700">${esc(sub.subject_name)}</td></tr>
       <tr><td style="padding:4px 6px">ประเภท</td>
-          <td colspan="3" style="padding:4px 6px;border-bottom:1px dotted #999">${esc(sub.subject_type||'')}</td></tr>
+          <td colspan="3" class="cv-val" style="padding:4px 6px;border-bottom:1px dotted #999;font-weight:700">${esc(sub.subject_type||'')}</td></tr>
       <tr><td style="padding:4px 6px">หน่วยกิต</td>
-          <td style="padding:4px 6px;border-bottom:1px dotted #999;white-space:nowrap">${sub.credits}</td>
+          <td class="cv-val" style="padding:4px 6px;border-bottom:1px dotted #999;font-weight:700;white-space:nowrap">${sub.credits}</td>
           <td style="padding:4px 6px;white-space:nowrap">เวลาเรียน</td>
-          <td style="padding:4px 6px;border-bottom:1px dotted #999;white-space:nowrap">${sub.total_hours} ชม./ภาค (${sub.hours_per_week} ชม./สัปดาห์)</td></tr>
+          <td class="cv-val" style="padding:4px 6px;border-bottom:1px dotted #999;font-weight:700;white-space:nowrap">${sub.total_hours} ชม./ภาค (${sub.hours_per_week} ชม./สัปดาห์)</td></tr>
       <tr><td style="padding:4px 6px">ครูผู้สอน</td>
-          <td colspan="3" style="padding:4px 6px;border-bottom:1px dotted #999">${esc(sub.teacher_name||'')}</td></tr>
+          <td colspan="3" class="cv-val" style="padding:4px 6px;border-bottom:1px dotted #999;font-weight:700">${esc(sub.teacher_name||'')}</td></tr>
     </table>
 
     <!-- สรุปผลการประเมิน -->
