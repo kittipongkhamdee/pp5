@@ -545,8 +545,10 @@ body.dark .subc{background:var(--card);border-color:var(--bdr);}
   .print-only{display:block!important;}
   .mc{margin-left:0!important;}
   .pg{padding:8px!important;}
-  body{font-size:12px;color:#000!important;background:#fff!important;overflow:visible!important;}
-  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
+  body{font-size:12px;color:#000!important;background:#fff!important;overflow:visible!important;font-weight:300!important;}
+  /* ใช้ Sarabun น้ำหนัก 300 (บาง) ทั้งหน้าตอนพิมพ์ — เขียนทับ th/strong/badge ฯลฯ
+     ที่ตั้ง font-weight หนักไว้สำหรับจอ เพราะบนกระดาษตัวหนาอ่านแน่น/เปลืองหมึกเกินไป */
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;font-weight:300!important;}
   .card{box-shadow:none!important;border:1px solid #ccc!important;}
   /* Dark mode reset เมื่อ print */
   body.dark,body.dark *{background:#fff!important;color:#000!important;}
