@@ -1811,7 +1811,7 @@ function _buildPP5Body(sub,cfg,stus,sumMap,erMap,ecMap,scUnitsAll,attRows,attMap
   Object.entries(ecMap).filter(([sid])=>stuIds.has(String(sid))).forEach(([,e])=>{cvEcTotal++;const v=parseInt(e.overall_result);if(v in cvEcLv)cvEcLv[v]++;});
   const cvPct=n=>totalN>0?(n/totalN*100).toFixed(2):'';
   const cvTh=(c,ex='')=>`<td style="border:1px solid #000;padding:3px 4px;text-align:center;font-size:11px;font-weight:600;background:#f0f0f0;${ex}">${c}</td>`;
-  const cvTd=(c,ex='')=>`<td style="border:1px solid #000;padding:4px;text-align:center;font-size:12px;${ex}">${c}</td>`;
+  const cvTd=(c,ex='')=>`<td style="border:1px solid #000;padding:4px;text-align:center;font-size:12px;${ex}">${c===''||c===null||c===undefined?'-':c}</td>`;
   body+=`<div class="cv sec"><div style="border:1.5px solid #333;padding:12px 18px 14px;font-family:'Sarabun','TH SarabunNew',sans-serif;background:#fff;position:relative;min-height:270mm">
 <div style="position:absolute;top:10px;right:16px;font-size:12px;font-weight:700;letter-spacing:.5px">ปพ. 5</div>
 <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;margin:8px 0 10px;text-align:center"><img src="${cfg.logo_url||'/assets/logo.webp'}" alt="ตราโรงเรียน" style="height:80px;width:auto;object-fit:contain;display:block;margin:0 auto" onerror="this.style.display='none'"></div>
@@ -2078,7 +2078,7 @@ async function pgCover(){
   ecFiltered.forEach(e=>{ const v=parseInt(e.overall_result); if(v in ecLv) ecLv[v]++; });
   const ecTotal=ecFiltered.length;
 
-  const td=(c,ex='')=>`<td style="border:1px solid #000;padding:4px;text-align:center;font-size:12px;${ex}">${c}</td>`;
+  const td=(c,ex='')=>`<td style="border:1px solid #000;padding:4px;text-align:center;font-size:12px;${ex}">${c===''||c===null||c===undefined?'-':c}</td>`;
   const th=(c,ex='')=>`<td style="border:1px solid #000;padding:3px 4px;text-align:center;font-size:11px;font-weight:600;background:#f0f0f0;${ex}">${c}</td>`;
   const pct=(n)=>totalN>0?(n/totalN*100).toFixed(2):'';
 
