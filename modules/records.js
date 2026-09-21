@@ -1654,7 +1654,7 @@ async function pgReport(){
           <td class="tr2" data-label="กลางภาค">${sm.mid_normal??0}</td>
           <td class="tr2" data-label="ปลายภาค">${sm.final_score??0}</td>
           <td class="tr2" data-label="รวม">${sm.total_score??0}</td>
-          <td class="tc" data-label="ผลการเรียน"><span class="${gcls(g)}" style="font-size:15px;font-weight:700">${g}</span></td>
+          <td class="tc" data-label="ผลการเรียน"><span style="font-size:15px;font-weight:700;color:var(--txt)">${g}</span></td>
           <td class="tc" data-label="ผลพิเศษ">${sm.special_result?`<span class="badge bg-r">${esc(sm.special_result)}</span>`:`<span class="badge bg-g">ปกติ</span>`}</td>
           <td class="tc" data-label="เวลาเรียน"><span class="badge ${att.ms?'bg-r':'bg-g'}">${att.pct}%${att.ms?' (มส)':''}</span></td>
           <td class="tc" data-label="อ่าน/คิด/เขียน"><span class="badge bg-b">${elb(er.result)}</span></td>
@@ -1711,7 +1711,6 @@ function printReport(){
   const cfg=S.config||{};
   const schoolName=cfg.school_name||'';
   const _elb=v=>{const n=parseInt(v);return[0,1,2,3].includes(n)?String(n):'-';};
-  const _gcol=g=>{const n=parseFloat(g);if(n>=3.5)return'#15803d';if(n>=2.5)return'#0284c7';if(n>=1.5)return'#e6940a';if(n>=1)return'#c0392b';return'#922b21';};
 
   let rows='';
   stus.forEach((s,i)=>{
@@ -1720,7 +1719,6 @@ function printReport(){
     const ec=ecMap[s.id]||{};
     const att=attMap[s.id]||{pct:0,ms:false};
     const g=sm.grade??'-';
-    const gCol=parseFloat(g)>0?_gcol(g):'#555';
     rows+=`<tr>
       <td>${i+1}</td>
       <td class="l">${esc(s.student_name)}</td>
@@ -1729,7 +1727,7 @@ function printReport(){
       <td>${sm.mid_normal??0}</td>
       <td>${sm.final_score??0}</td>
       <td>${sm.total_score??0}</td>
-      <td style="color:${gCol}">${g}</td>
+      <td style="color:#000">${g}</td>
       <td>${sm.special_result||'-'}</td>
       <td>${att.pct}%${att.ms?' <span style="color:#c0392b">(มส)</span>':''}</td>
       <td>${_elb(er.result)}</td>
@@ -1931,9 +1929,8 @@ ${cvTh('รายการประเมิน','text-align:left;padding-left:6
   body+=`</div></div>`;
 
   // ── 6. รายงานผลการเรียน ──────────────────────────────────────
-  const gcl=g=>{const n=parseFloat(g);if(n>=3.5)return'#15803d';if(n>=2.5)return'#0284c7';if(n>=1.5)return'#e6940a';if(n>=1)return'#c0392b';return'#922b21';};
   body+=`<div class="sec pb">${ph('รายงานผลการเรียน — '+sub.subject_name+' '+grm(sub.grade_level,sub.room),1,1)}<h3>สรุปผลการเรียนรายบุคคล</h3><table><thead><tr><th>ที่</th><th class="l">ชื่อ-สกุล</th><th>รวมก่อน<br>(/${mBef})</th><th>รวมหลัง<br>(/${mAft})</th><th>กลางภาค<br>(/${mM})</th><th>ปลายภาค<br>(/${mF})</th><th>รวม<br>(100)</th><th>ผลการเรียน</th><th>ผลพิเศษ</th><th>เวลาเรียน</th><th>อ่าน/คิด</th><th>คุณลักษณะ</th></tr></thead><tbody>`;
-  stus.forEach((s,i)=>{ const sm=sumMap[s.id]||{},er=erMap[s.id]||{},ec=ecMap[s.id]||{},att=attMap[s.id]||{pct:0,ms:false},g=sm.grade??'-'; body+=`<tr><td>${i+1}</td><td class="l">${esc(s.student_name)}</td><td>${sm.total_before_mid??0}</td><td>${sm.total_after_mid??0}</td><td>${sm.mid_normal??0}</td><td>${sm.final_score??0}</td><td>${sm.total_score??0}</td><td style="color:${gcl(g)}"><strong>${g}</strong></td><td>${sm.special_result||'-'}</td><td>${att.pct}%${att.ms?' (มส)':''}</td><td>${elb(er.result)}</td><td>${elb(ec.overall_result)}</td></tr>`; });
+  stus.forEach((s,i)=>{ const sm=sumMap[s.id]||{},er=erMap[s.id]||{},ec=ecMap[s.id]||{},att=attMap[s.id]||{pct:0,ms:false},g=sm.grade??'-'; body+=`<tr><td>${i+1}</td><td class="l">${esc(s.student_name)}</td><td>${sm.total_before_mid??0}</td><td>${sm.total_after_mid??0}</td><td>${sm.mid_normal??0}</td><td>${sm.final_score??0}</td><td>${sm.total_score??0}</td><td style="color:#000"><strong>${g}</strong></td><td>${sm.special_result||'-'}</td><td>${att.pct}%${att.ms?' (มส)':''}</td><td>${elb(er.result)}</td><td>${elb(ec.overall_result)}</td></tr>`; });
   body+=`</tbody></table></div>`;
 
   // ── 7. แผนการวัดและประเมินผล ── ไว้ท้ายเล่มเป็นเอกสารอ้างอิงประกอบ ──
