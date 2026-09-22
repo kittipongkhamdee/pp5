@@ -5034,7 +5034,10 @@ async function pgEval(){
   loading(false);
   renderEvPage();
 }
-function invalidateEv(){ cacheInv('ev_read_'+S.selSub,'ev_char_'+S.selSub); }
+// ล้างทั้งชุด cache key ของหน้า "ประเมิน" (ev_read_/ev_char_) และ "ปก ปพ.5" (ev_read_cvr_/ev_char_cvr_)
+// เพราะสองหน้านี้ query ตาราง eval_read/eval_char ชุดเดียวกันแต่คนละ cache key — ถ้าล้างแค่ชุดเดียว
+// อีกหน้าจะยังเห็นค่าว่างเดิมค้างอยู่จน cache หมดอายุ (TTL 5 นาที) ทั้งที่บันทึกลง DB สำเร็จแล้ว
+function invalidateEv(){ cacheInv('ev_read_'+S.selSub,'ev_char_'+S.selSub,'ev_read_cvr_'+S.selSub,'ev_char_cvr_'+S.selSub); }
 function evSel(id,val,onExtra){
   const v=val===null||val===undefined?'':String(val);
   const cls={'3':'ev3','2':'ev2','1':'ev1','0':'ev0'}[v]||'';
