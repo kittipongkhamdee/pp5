@@ -2618,12 +2618,12 @@ function printMsMemo(){
         <span></span>
       </div>
       <div class="memo-subject"><b>เรื่อง</b> &nbsp;แจ้งรายชื่อนักเรียนมีเวลาเรียนไม่ครบร้อยละ 80 ไม่อนุญาตให้สอบปลายภาค</div>
-      <div class="memo-row"><b>เรียน</b> &nbsp;กรรมการคุมสอบวัดผลปลายภาค ห้อง ม...${esc(String(sub.grade_level))}${+sub.room?'/'+esc(String(sub.room)):''}......</div>
+      <div class="memo-row">เรียน &nbsp;กรรมการคุมสอบวัดผลปลายภาค ห้อง ม...${esc(String(sub.grade_level))}${+sub.room?'/'+esc(String(sub.room)):''}......</div>
       <p class="memo-body">
-        ด้วย...........${esc(st.teacherName||'')}.......ครูผู้สอนรายวิชา...............${esc(sub.subject_name)}..........
-        รหัสวิชา......${esc(sub.subject_code)}.... ได้แจ้งรายชื่อนักเรียนที่มีเวลาเรียนไม่ครบร้อยละ 80 &nbsp;นักเรียนที่มีรายชื่อ
-        ดังต่อไปนี้ไม่อนุญาตให้เข้าสอบวัดผลปลายภาค ภาคเรียนที่ ${esc(cfg.semester||'')} &nbsp;ปีการศึกษา ${esc(cfg.academic_year||'')} &nbsp;นักเรียนดังกล่าวไม่ได้
-        ดำเนินการยื่นคำร้องขอมีสิทธิ์สอบตามกำหนดเวลา &nbsp;ดังมีรายชื่อต่อไปนี้
+        ด้วย <span class="fill">${esc(st.teacherName||'')}</span> ครูผู้สอนรายวิชา <span class="fill">${esc(sub.subject_name)}</span>
+        รหัสวิชา <span class="fill">${esc(sub.subject_code)}</span> ได้แจ้งรายชื่อนักเรียนที่มีเวลาเรียนไม่ครบร้อยละ 80 นักเรียนที่มีรายชื่อ
+        ดังต่อไปนี้ไม่อนุญาตให้เข้าสอบวัดผลปลายภาค ภาคเรียนที่ <span class="fill">${esc(cfg.semester||'')}</span> ปีการศึกษา <span class="fill">${esc(cfg.academic_year||'')}</span> นักเรียนดังกล่าวไม่ได้
+        ดำเนินการยื่นคำร้องขอมีสิทธิ์สอบตามกำหนดเวลา ดังมีรายชื่อต่อไปนี้
       </p>
       <div class="memo-list">
         ${sorted.map((sid,j)=>{
@@ -2655,14 +2655,18 @@ function printMsMemo(){
       body{margin:0;padding:0;background:#fff;font-family:'TH Sarabun New','Sarabun','Noto Sans Thai',sans-serif;font-weight:300;font-size:12.5pt;line-height:1.35;color:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
       b{font-weight:700;}
       .memo-page{padding-top:1px;}
-      /* ครุฑชิดซ้าย + "บันทึกข้อความ" กึ่งกลางหน้า ให้ขอบล่างของครุฑเสมอกับขอบล่างข้อความ */
-      .memo-header{position:relative;text-align:center;margin-bottom:8pt;min-height:1.5cm}
+      /* ครุฑชิดซ้าย + "บันทึกข้อความ" กึ่งกลางหน้า ให้ขอบล่างของครุฑเสมอกับขอบล่างข้อความ (ใช้ flex
+         align-items:flex-end แทน text อยู่บนสุดของกล่อง เพราะ .memo-header สูงเท่าตราครุฑ 1.5 ซม.) */
+      .memo-header{position:relative;display:flex;justify-content:center;align-items:flex-end;margin-bottom:8pt;min-height:1.5cm}
       .memo-header img{position:absolute;left:0;bottom:0;height:1.5cm}
       .memo-title{font-size:20pt;font-weight:700;}
       .memo-row{margin-bottom:5pt;}
       .memo-row-split{display:grid;grid-template-columns:1fr 1fr 1fr;}
       .memo-date-center{text-align:center;}
-      .memo-subject{border-bottom:1.5pt solid #000;padding-bottom:5pt;margin-bottom:6pt;}
+      .memo-subject{border-bottom:.75pt solid #000;padding-bottom:5pt;margin-bottom:6pt;}
+      /* ค่าที่กรอกในเนื้อความ (ชื่อครู/วิชา/รหัสวิชา/ภาคเรียน/ปีการศึกษา) ไม่ใช้จุดไข่ปลาล้อมรอบ
+         แสดงค่าตรงๆ แล้วขีดเส้นใต้แบบเส้นปรุ/จุดไข่ปลาแทน เว้นระยะซ้ายขวาให้ไม่ติดคำข้างเคียง */
+      .fill{border-bottom:1px dotted #000;padding:0 3px;}
       /* ย่อหน้าใหม่เว้น 2.5 ซม. จากขอบซ้ายตามระเบียบ (เฉพาะบรรทัดแรกของย่อหน้า บรรทัดถัดไปชิดขอบปกติ) */
       .memo-body{text-indent:2.5cm;margin:0 0 5pt;}
       .memo-list{margin:0 0 6pt 2.5cm;}
