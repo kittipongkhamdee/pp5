@@ -2669,10 +2669,12 @@ function printMsMemo(){
       .memo-subject{border-bottom:.75pt solid #000;padding-bottom:5pt;margin-bottom:6pt;}
       /* ค่าที่กรอกในเนื้อความ (ชื่อครู/วิชา/รหัสวิชา/ภาคเรียน/ปีการศึกษา) ไม่ใช้จุดไข่ปลาล้อมรอบ
          แสดงค่าตรงๆ แล้วขีดเส้นใต้แบบเส้นปรุ/จุดไข่ปลาแทน เว้นระยะซ้ายขวาให้ไม่ติดคำข้างเคียง
-         เส้นใต้ใช้ ::after วาดเอง (ไม่ใช้ text-decoration) แล้วยืดออกนอกกล่องเท่ากับ padding
-         ทั้งสองข้าง ให้เส้นจุดชนคำข้างเคียงพอดี โดยไม่ต้องลดระยะเว้นวรรค (padding) ที่ทำให้อ่านง่าย */
-      .fill{position:relative;padding:0 8px;}
-      .fill::after{content:'';position:absolute;left:-8px;right:-8px;bottom:3px;border-bottom:1px dotted #000;}
+         ใช้ text-decoration (ไม่ใช่ ::after ยืดนอกกล่อง) เพราะทดสอบแล้วพบว่า ::after แบบ
+         position:absolute ยืดเลยกล่องจะบวมผิดปกติเมื่อ .fill ตัวใดตัวหนึ่งตัดขึ้นบรรทัดใหม่
+         พอดี (ร่วมกับ text-indent ของ .memo-body) ทำให้เส้นไปทับข้อความข้างเคียงที่ไม่เกี่ยวข้อง
+         — text-decoration เกาะติดกล่องจริงของแต่ละ fragment เสมอ ปลอดภัยกว่าแม้เส้นจะไม่ชน
+         คำข้างเคียงเป๊ะๆ */
+      .fill{padding:0 8px;text-decoration:underline;text-decoration-style:dotted;text-decoration-color:#000;text-decoration-thickness:1px;text-underline-offset:3px;}
       /* ย่อหน้าใหม่เว้น 2.5 ซม. จากขอบซ้ายตามระเบียบ (เฉพาะบรรทัดแรกของย่อหน้า บรรทัดถัดไปชิดขอบปกติ) */
       .memo-body{text-indent:2.5cm;margin:0 0 5pt;}
       .memo-list{margin:0 0 6pt 2.5cm;}
