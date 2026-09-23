@@ -2730,7 +2730,7 @@ function printMsMemo(selectedIds){
       <div class="memo-row"><b>ส่วนราชการ</b> &nbsp;โรงเรียน${esc(schoolNameOnly(cfg.school_name))} &nbsp;ตำบล${esc(cfg.school_subdistrict||'')} &nbsp;อำเภอ${esc(cfg.school_district||'')} &nbsp;จังหวัด${esc(cfg.school_province||'')}</div>
       <div class="memo-row memo-row-split">
         <span><b>ที่</b> .........................................</span>
-        <span><b>วันที่</b> &nbsp;${thaiDate}</span>
+        <span class="memo-date-nowrap"><b>วันที่</b> &nbsp;${thaiDate}</span>
       </div>
       <div class="memo-subject"><b>เรื่อง</b> &nbsp;แจ้งรายชื่อนักเรียนมีเวลาเรียนไม่ครบร้อยละ 80 ไม่อนุญาตให้สอบปลายภาค</div>
       <div class="memo-row">เรียน &nbsp;กรรมการคุมสอบวัดผลปลายภาค ห้อง<span class="fill">ม.${esc(String(sub.grade_level))}${+sub.room?'/'+esc(String(sub.room)):''}</span></div>
@@ -2796,6 +2796,9 @@ function printMsMemo(selectedIds){
       /* "วันที่" เริ่มต้นพอดีที่กึ่งกลางหน้ากระดาษ — แบ่ง 2 คอลัมน์เท่ากัน (ไม่ใช่ 3 คอลัมน์
          + text-align:center แบบเดิม ซึ่งจะดันข้อความไปกึ่งกลางคอลัมน์ที่ 2 ไม่ใช่กึ่งกลางหน้า) */
       .memo-row-split{display:grid;grid-template-columns:1fr 1fr;}
+      /* คอลัมน์ขวาแคบลงกว่าเดิม (จาก 3 คอลัมน์เหลือ 2) — กัน "วันที่ 24 กันยายน 2569" ตัดขึ้น
+         บรรทัดใหม่กลางวันที่ ทั้งที่สั้นพอจะอยู่บรรทัดเดียวได้สบายๆ */
+      .memo-date-nowrap{white-space:nowrap;}
       .memo-subject{border-bottom:.75pt solid #000;padding-bottom:5pt;margin-bottom:6pt;}
       /* ค่าที่กรอกในเนื้อความ (ชื่อครู/วิชา/รหัสวิชา/ภาคเรียน/ปีการศึกษา) ไม่ใช้จุดไข่ปลาล้อมรอบ
          แสดงค่าตรงๆ แล้วขีดเส้นใต้แบบเส้นปรุ/จุดไข่ปลาแทน เว้นระยะซ้ายขวาให้ไม่ติดคำข้างเคียง
