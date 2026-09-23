@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autofill SGS จากระบบ ปพ.5
 // @namespace    pp5-sgs-autofill
-// @version      2.6.1
+// @version      2.7.0
 // @description  วางคะแนนที่คัดลอกจากระบบ ปพ.5 ลงหน้ากรอกคะแนน SGS (sgs.bopp-obec.info) ให้อัตโนมัติ
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts1-Table.aspx*
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts2-Table.aspx*
@@ -222,12 +222,25 @@
     running = false;
   }
 
+  // ── ตำแหน่ง/สถานะย่อ-ขยายของกล่อง — จำไว้ใน localStorage กันบังตารางคะแนนซ้ำทุกครั้งที่เปิดหน้าใหม่
+  const POS_KEY = 'pp5SgsPanelPos';
+  function loadPanelState() {
+    try { return JSON.parse(localStorage.getItem(POS_KEY)) || {}; } catch (e) { return {}; }
+  }
+  function savePanelState(state) {
+    try { localStorage.setItem(POS_KEY, JSON.stringify(state)); } catch (e) { /* ไม่เป็นไร แค่จำตำแหน่งไม่ได้ */ }
+  }
+
   function buildUI() {
     const wrap = document.createElement('div');
     wrap.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:99999;background:#fff;border:2px solid #0066cc;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.25);padding:12px;width:320px;font-family:sans-serif;font-size:13px;color:#111';
     wrap.innerHTML =
-      '<div style="font-weight:700;margin-bottom:6px;color:#0066cc">📋 Autofill SGS จาก ปพ.5 (' + (isPage1 ? 'กลางภาค' : 'หลังกลางภาค') + ')</div>' +
-      '<div style="font-size:11px;color:#555;margin-bottom:6px">1) ติ๊กกล่องเช็คบล็อกด้านบนคอลัมน์ที่จะกรอกในหน้า SGS เองก่อน 2) กดวางจากคลิปบอร์ด (หรือวางเอง) 3) กดเริ่มกรอก</div>' +
+      '<div id="pp5-sgs-header" style="cursor:move;display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;user-select:none">' +
+      '<span style="font-weight:700;color:#0066cc">📋 Autofill SGS จาก ปพ.5 (' + (isPage1 ? 'กลางภาค' : 'หลังกลางภาค') + ')</span>' +
+      '<button id="pp5-sgs-min" title="ย่อ/ขยายกล่องนี้ — ลากที่แถบหัวข้อเพื่อย้ายตำแหน่งได้" style="flex-shrink:0;background:#e6f0fa;border:1px solid #b3d1f0;border-radius:5px;cursor:pointer;font-size:13px;color:#0066cc;width:22px;height:22px;line-height:1;padding:0">–</button>' +
+      '</div>' +
+      '<div id="pp5-sgs-body">' +
+      '<div style="font-size:11px;color:#555;margin-bottom:6px">1) ติ๊กกล่องเช็คบล็อกด้านบนคอลัมน์ที่จะกรอกในหน้า SGS เองก่อน 2) กดวางจากคลิปบอร์ด (หรือวางเอง) 3) กดเริ่มกรอก — ลากที่แถบหัวข้อด้านบนเพื่อย้ายกล่องนี้ให้พ้นตารางได้</div>' +
       '<textarea id="pp5-sgs-paste" placeholder="วาง JSON ที่คัดลอกจากปุ่ม &quot;Autofill SGS&quot; ในระบบ ปพ.5 ตรงนี้" style="width:100%;height:60px;font-size:11px;margin-bottom:6px;box-sizing:border-box"></textarea>' +
       '<button id="pp5-sgs-pasteclip" style="width:100%;margin-bottom:6px;padding:6px;background:#e0e7ff;color:#3730a3;border:1px solid #6366f1;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600">📋 วางจากคลิปบอร์ด</button>' +
       '<div style="display:flex;gap:6px;margin-bottom:6px">' +
@@ -240,8 +253,60 @@
       '</details>' +
       '<div id="pp5-sgs-log" style="max-height:160px;overflow-y:auto;background:#f5f5f5;border-radius:6px;padding:6px;font-size:11px;line-height:1.6"></div>' +
       '<button id="pp5-sgs-copylog" style="width:100%;margin-top:6px;padding:5px;background:#eee;border:1px solid #ccc;border-radius:6px;cursor:pointer;font-size:11px">คัดลอก log ทั้งหมด (ส่งให้ผู้พัฒนาช่วยตรวจ)</button>' +
-      '<div style="font-size:10px;color:#888;margin-top:6px">⚠️ ทดสอบกับนักเรียน 1 คนก่อน แล้วรีเฟรชหน้าตรวจว่าคะแนนถูกบันทึกจริง ก่อนกรอกทั้งห้อง</div>';
+      '<div style="font-size:10px;color:#888;margin-top:6px">⚠️ ทดสอบกับนักเรียน 1 คนก่อน แล้วรีเฟรชหน้าตรวจว่าคะแนนถูกบันทึกจริง ก่อนกรอกทั้งห้อง</div>' +
+      '</div>';
     document.body.appendChild(wrap);
+
+    // ── ย้ายตำแหน่งกล่องได้ (ลากที่แถบหัวข้อ) กันบังคอลัมน์คะแนนที่กำลังกรอก ──
+    const header = document.getElementById('pp5-sgs-header');
+    const savedState = loadPanelState();
+    if (savedState.left != null && savedState.top != null) {
+      wrap.style.left = savedState.left + 'px';
+      wrap.style.top = savedState.top + 'px';
+      wrap.style.right = 'auto';
+      wrap.style.bottom = 'auto';
+    }
+    header.addEventListener('mousedown', (e) => {
+      if (e.target.id === 'pp5-sgs-min') return;
+      e.preventDefault();
+      const rect = wrap.getBoundingClientRect();
+      const offsetX = e.clientX - rect.left;
+      const offsetY = e.clientY - rect.top;
+      wrap.style.left = rect.left + 'px';
+      wrap.style.top = rect.top + 'px';
+      wrap.style.right = 'auto';
+      wrap.style.bottom = 'auto';
+      function onMove(ev) {
+        const maxLeft = window.innerWidth - wrap.offsetWidth;
+        const maxTop = window.innerHeight - wrap.offsetHeight;
+        wrap.style.left = Math.min(Math.max(0, ev.clientX - offsetX), Math.max(0, maxLeft)) + 'px';
+        wrap.style.top = Math.min(Math.max(0, ev.clientY - offsetY), Math.max(0, maxTop)) + 'px';
+      }
+      function onUp() {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        savePanelState(Object.assign(loadPanelState(), {
+          left: parseInt(wrap.style.left, 10), top: parseInt(wrap.style.top, 10)
+        }));
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+
+    // ── ย่อ/ขยาย — ย่อเหลือแค่แถบหัวข้อเวลาต้องดูตารางที่ถูกบังอยู่ ──
+    const body = document.getElementById('pp5-sgs-body');
+    const minBtn = document.getElementById('pp5-sgs-min');
+    function applyCollapsed(collapsed) {
+      body.style.display = collapsed ? 'none' : 'block';
+      minBtn.textContent = collapsed ? '+' : '–';
+      wrap.style.width = collapsed ? 'auto' : '320px';
+    }
+    applyCollapsed(!!savedState.collapsed);
+    minBtn.onclick = () => {
+      const collapsed = body.style.display !== 'none';
+      applyCollapsed(collapsed);
+      savePanelState(Object.assign(loadPanelState(), { collapsed }));
+    };
 
     document.getElementById('pp5-sgs-pasteclip').onclick = async () => {
       try {
