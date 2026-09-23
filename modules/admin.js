@@ -2730,8 +2730,7 @@ function printMsMemo(selectedIds){
       <div class="memo-row"><b>ส่วนราชการ</b> &nbsp;โรงเรียน${esc(schoolNameOnly(cfg.school_name))} &nbsp;ตำบล${esc(cfg.school_subdistrict||'')} &nbsp;อำเภอ${esc(cfg.school_district||'')} &nbsp;จังหวัด${esc(cfg.school_province||'')}</div>
       <div class="memo-row memo-row-split">
         <span><b>ที่</b> .........................................</span>
-        <span class="memo-date-center"><b>วันที่</b> &nbsp;${thaiDate}</span>
-        <span></span>
+        <span><b>วันที่</b> &nbsp;${thaiDate}</span>
       </div>
       <div class="memo-subject"><b>เรื่อง</b> &nbsp;แจ้งรายชื่อนักเรียนมีเวลาเรียนไม่ครบร้อยละ 80 ไม่อนุญาตให้สอบปลายภาค</div>
       <div class="memo-row">เรียน &nbsp;กรรมการคุมสอบวัดผลปลายภาค ห้อง<span class="fill">ม.${esc(String(sub.grade_level))}${+sub.room?'/'+esc(String(sub.room)):''}</span></div>
@@ -2753,7 +2752,6 @@ function printMsMemo(selectedIds){
           <div class="memo-sign-name">(${esc(cfg.head_academic||'..........................................')})</div>
           <div class="memo-sign-name">หัวหน้ากลุ่มบริหารงานวิชาการ</div>
         </div>
-        <div></div>
       </div>
       <div class="memo-committee-title">กรรมการคุมสอบลงนาม</div>
       <div class="memo-committee-line">1.................................................................</div>
@@ -2795,8 +2793,9 @@ function printMsMemo(selectedIds){
       .memo-header img{position:absolute;left:0;bottom:0;height:1.5cm}
       .memo-title{font-size:29pt;font-weight:700;line-height:1;}
       .memo-row{margin-bottom:5pt;}
-      .memo-row-split{display:grid;grid-template-columns:1fr 1fr 1fr;}
-      .memo-date-center{text-align:center;}
+      /* "วันที่" เริ่มต้นพอดีที่กึ่งกลางหน้ากระดาษ — แบ่ง 2 คอลัมน์เท่ากัน (ไม่ใช่ 3 คอลัมน์
+         + text-align:center แบบเดิม ซึ่งจะดันข้อความไปกึ่งกลางคอลัมน์ที่ 2 ไม่ใช่กึ่งกลางหน้า) */
+      .memo-row-split{display:grid;grid-template-columns:1fr 1fr;}
       .memo-subject{border-bottom:.75pt solid #000;padding-bottom:5pt;margin-bottom:6pt;}
       /* ค่าที่กรอกในเนื้อความ (ชื่อครู/วิชา/รหัสวิชา/ภาคเรียน/ปีการศึกษา) ไม่ใช้จุดไข่ปลาล้อมรอบ
          แสดงค่าตรงๆ แล้วขีดเส้นใต้แบบเส้นปรุ/จุดไข่ปลาแทน เว้นระยะซ้ายขวาให้ไม่ติดคำข้างเคียง
@@ -2810,10 +2809,10 @@ function printMsMemo(selectedIds){
       .memo-body{text-indent:2.5cm;margin:0 0 5pt;}
       .memo-list{margin:0 0 6pt 2.5cm;}
       .memo-list div{margin-bottom:1pt;}
-      /* บล็อกลงชื่อ: อยู่คอลัมน์กลางเดียวกับ "วันที่" ชิดซ้ายในคอลัมน์นั้น (ไม่กึ่งกลางเต็มหน้า) */
-      .memo-sign-row{display:grid;grid-template-columns:1fr 1fr 1fr;margin:23pt 0 16pt;}
-      /* เริ่มที่คอลัมน์กลางเดียวกับ "วันที่" แต่กินพื้นที่ถึงคอลัมน์ขวาสุดด้วย กันชื่อ/ตำแหน่งยาวๆ ตัดขึ้นบรรทัดใหม่ */
-      .memo-sign{grid-column:2 / 4;text-align:left;white-space:nowrap;}
+      /* "ลงชื่อ" เริ่มต้นพอดีที่กึ่งกลางหน้ากระดาษเช่นเดียวกับ "วันที่" — แบ่ง 2 คอลัมน์เท่ากัน
+         ให้คอลัมน์ขวา (ที่ .memo-sign อยู่) เริ่มต้นตรงกึ่งกลางหน้าพอดี */
+      .memo-sign-row{display:grid;grid-template-columns:1fr 1fr;margin:23pt 0 16pt;}
+      .memo-sign{text-align:left;white-space:nowrap;}
       .sig-dots{display:inline-block;width:110pt;border-bottom:1px dotted #000;margin-left:6pt;vertical-align:bottom;}
       .memo-sign-name{margin-left:2.2em;}
       .memo-committee-title{font-weight:700;margin-top:auto;padding-top:20pt;margin-bottom:10pt;}
