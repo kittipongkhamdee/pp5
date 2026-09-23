@@ -2584,17 +2584,30 @@ function openMsMemoSelectDialog(){
   const subjectsWithMs=data.filter(s=>s._stats.msStudentIds&&s._stats.msStudentIds.length>0);
   if(!subjectsWithMs.length){toast('ไม่พบนักเรียน มส ในทุกวิชา','in');return;}
 
-  const rows=subjectsWithMs.map(sub=>{
+  // จัดกลุ่มตามชั้น (ม.1-6) แต่ละกลุ่มเรียงตาม ครู > วิชา > ห้อง ตามที่ผู้ใช้ขอ
+  const sortedSubjects=[...subjectsWithMs].sort((a,b)=>{
+    const g=(+a.grade_level||0)-(+b.grade_level||0); if(g) return g;
+    const t=(a._stats.teacherName||'').localeCompare(b._stats.teacherName||'','th'); if(t) return t;
+    const sn=(a.subject_name||'').localeCompare(b.subject_name||'','th'); if(sn) return sn;
+    return (+a.room||0)-(+b.room||0);
+  });
+  let rows='';
+  let curGrade=null;
+  sortedSubjects.forEach(sub=>{
+    if(sub.grade_level!==curGrade){
+      curGrade=sub.grade_level;
+      rows+='<div style="font-size:12.5px;font-weight:700;color:var(--ac);padding:12px 4px 4px;">ม.'+esc(String(curGrade))+'</div>';
+    }
     const st=sub._stats;
     const room='ม.'+esc(String(sub.grade_level))+(+sub.room?'/'+esc(String(sub.room)):'');
-    return '<label style="display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:0.5px solid rgba(0,0,0,.06);cursor:pointer;">'+
+    rows+='<label style="display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:0.5px solid rgba(0,0,0,.06);cursor:pointer;">'+
       '<input type="checkbox" class="ms-memo-cb" value="'+esc(String(sub.id))+'" checked style="width:18px;height:18px;accent-color:var(--ac);flex-shrink:0">'+
       '<div style="flex:1;min-width:0">'+
         '<div style="font-size:13.5px;font-weight:600;">'+esc(st.teacherName||'—')+'</div>'+
         '<div style="font-size:12px;color:#6e6e73;">'+esc(sub.subject_name)+' · '+room+' · มส '+st.msStudentIds.length+' คน</div>'+
       '</div>'+
     '</label>';
-  }).join('');
+  });
 
   const wrap=document.createElement('div');
   wrap.id='msmemo-select-wrap';
