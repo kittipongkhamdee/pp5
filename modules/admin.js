@@ -2367,7 +2367,7 @@ async function pgSchoolReport(){
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>'+
             'พิมพ์ มส'+
           '</button>'+
-          '<button class="no-print" onclick="printMsMemo()" style="display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:10px;border:none;cursor:pointer;font-size:13px;font-weight:600;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-family:var(--font);box-shadow:0 2px 8px rgba(245,158,11,.35);transition:opacity .15s" onmouseover="this.style.opacity=\'.85\'" onmouseout="this.style.opacity=\'1\'">'+
+          '<button class="no-print" onclick="openMsMemoSelectDialog()" style="display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:10px;border:none;cursor:pointer;font-size:13px;font-weight:600;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-family:var(--font);box-shadow:0 2px 8px rgba(245,158,11,.35);transition:opacity .15s" onmouseover="this.style.opacity=\'.85\'" onmouseout="this.style.opacity=\'1\'">'+
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/><line x1="9" y1="11" x2="15" y2="11"/></svg>'+
             'บันทึกข้อความ มส'+
           '</button>'+
@@ -2576,6 +2576,64 @@ function printMsReport(){
   printHTML('รายงานนักเรียน มส',pages,'portrait');
 }
 
+// เอกสาร "บันทึกข้อความ มส" มีหลายฉบับ (หนึ่งฉบับต่อรายวิชา/ครู) — ก่อนพิมพ์จริง ให้เลือกได้ว่า
+// จะพิมพ์ของครู/วิชาไหนบ้าง แทนที่จะพิมพ์รวมทุกวิชาที่มี มส ทุกครั้ง
+function openMsMemoSelectDialog(){
+  const data=S._schoolReport;
+  if(!data){toast('กรุณาโหลดหน้ารายงานก่อน','er');return;}
+  const subjectsWithMs=data.filter(s=>s._stats.msStudentIds&&s._stats.msStudentIds.length>0);
+  if(!subjectsWithMs.length){toast('ไม่พบนักเรียน มส ในทุกวิชา','in');return;}
+
+  const rows=subjectsWithMs.map(sub=>{
+    const st=sub._stats;
+    const room='ม.'+esc(String(sub.grade_level))+(+sub.room?'/'+esc(String(sub.room)):'');
+    return '<label style="display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:0.5px solid rgba(0,0,0,.06);cursor:pointer;">'+
+      '<input type="checkbox" class="ms-memo-cb" value="'+esc(String(sub.id))+'" checked style="width:18px;height:18px;accent-color:var(--ac);flex-shrink:0">'+
+      '<div style="flex:1;min-width:0">'+
+        '<div style="font-size:13.5px;font-weight:600;">'+esc(st.teacherName||'—')+'</div>'+
+        '<div style="font-size:12px;color:#6e6e73;">'+esc(sub.subject_name)+' · '+room+' · มส '+st.msStudentIds.length+' คน</div>'+
+      '</div>'+
+    '</label>';
+  }).join('');
+
+  const wrap=document.createElement('div');
+  wrap.id='msmemo-select-wrap';
+  wrap.style.cssText='position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.25);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);animation:fadeIn .15s ease';
+  wrap.innerHTML =
+    '<div style="background:rgba(255,255,255,.9);backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);border-radius:22px;width:100%;max-width:460px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.2);animation:dlgPop .22s cubic-bezier(.34,1.56,.64,1)">'+
+      '<div style="padding:20px 20px 12px;flex-shrink:0">'+
+        '<div style="font-size:17px;font-weight:700;margin-bottom:4px;">เลือกวิชาที่จะพิมพ์บันทึกข้อความ มส</div>'+
+        '<div style="font-size:12.5px;color:#6e6e73;">พบ '+subjectsWithMs.length+' วิชาที่มีนักเรียน มส — เลือกเฉพาะครู/วิชาที่ต้องการพิมพ์ได้</div>'+
+      '</div>'+
+      '<div style="padding:0 20px 8px;flex-shrink:0">'+
+        '<button onclick="_toggleAllMsMemoCb(true)" style="font-size:12px;color:var(--ac);background:none;border:none;cursor:pointer;padding:4px 0;margin-right:14px;">เลือกทั้งหมด</button>'+
+        '<button onclick="_toggleAllMsMemoCb(false)" style="font-size:12px;color:#8e8e93;background:none;border:none;cursor:pointer;padding:4px 0;">ไม่เลือกเลย</button>'+
+      '</div>'+
+      '<div style="overflow-y:auto;padding:0 20px;flex:1">'+rows+'</div>'+
+      '<div style="border-top:0.5px solid rgba(0,0,0,.08);flex-shrink:0">'+
+        '<button onclick="_doPrintMsMemoSelected()" style="width:100%;padding:14px;font-size:15px;font-weight:600;color:var(--ac);background:none;border:none;border-bottom:1px solid #f3f4f6;cursor:pointer;font-family:var(--font);">พิมพ์ที่เลือก</button>'+
+        '<button onclick="_closeMsMemoSelectDialog()" style="width:100%;padding:14px;font-size:15px;color:#8e8e93;background:none;border:none;cursor:pointer;font-family:var(--font);">ยกเลิก</button>'+
+      '</div>'+
+    '</div>';
+  document.body.appendChild(wrap);
+}
+
+function _toggleAllMsMemoCb(checked){
+  document.querySelectorAll('.ms-memo-cb').forEach(cb=>cb.checked=checked);
+}
+
+function _closeMsMemoSelectDialog(){
+  const w=document.getElementById('msmemo-select-wrap');
+  if(w){ w.style.animation='fadeIn .15s ease reverse forwards'; setTimeout(()=>w.remove(),150); }
+}
+
+function _doPrintMsMemoSelected(){
+  const ids=Array.from(document.querySelectorAll('.ms-memo-cb:checked')).map(cb=>cb.value);
+  if(!ids.length){ toast('กรุณาเลือกอย่างน้อย 1 วิชา','er'); return; }
+  _closeMsMemoSelectDialog();
+  printMsMemo(ids);
+}
+
 // พิมพ์ "บันทึกข้อความ" แจ้งรายชื่อนักเรียน มส ไม่มีสิทธิ์สอบปลายภาค — หนึ่งฉบับต่อหนึ่งรายวิชา
 // ตามแบบฟอร์มราชการ (ส่วนราชการ/ที่-วันที่/เรื่อง/เรียน/เนื้อความ/รายชื่อ/ลงชื่อ/กรรมการคุมสอบลงนาม)
 // ลงนามโดยหัวหน้ากลุ่มบริหารงานวิชาการ (cfg.head_academic) ไม่ใช่ครูผู้สอน — ครูผู้สอนถูกอ้างถึงในเนื้อความแทน
@@ -2584,12 +2642,17 @@ function printMsReport(){
 // ต้องจัดหน้าตามระเบียบสำนักนายกรัฐมนตรีว่าด้วยงานสารบรรณ (หนังสือภายใน/บันทึกข้อความ) โดยเฉพาะ —
 // ขอบกระดาษ ขนาดตัวอักษร ระยะย่อหน้า/บรรทัด ต่างจากตารางรายงานทั่วไปของระบบ ถ้าไปแก้ค่ากลางใน
 // printHTML() จะกระทบรายงานอื่นทั้งหมดที่ใช้ฟังก์ชันเดียวกัน
-function printMsMemo(){
+// selectedIds: array ของ subject.id ที่เลือกจาก openMsMemoSelectDialog() — ไม่ระบุ (undefined) = พิมพ์ทุกวิชาที่มี มส
+function printMsMemo(selectedIds){
   const data=S._schoolReport;
   if(!data){toast('กรุณาโหลดหน้ารายงานก่อน','er');return;}
   const stuMap=Object.fromEntries((S._schoolStudents||[]).map(s=>[String(s.id),s]));
   const cfg=S.config;
-  const subjectsWithMs=data.filter(s=>s._stats.msStudentIds&&s._stats.msStudentIds.length>0);
+  let subjectsWithMs=data.filter(s=>s._stats.msStudentIds&&s._stats.msStudentIds.length>0);
+  if(Array.isArray(selectedIds)){
+    const idSet=new Set(selectedIds.map(String));
+    subjectsWithMs=subjectsWithMs.filter(s=>idSet.has(String(s.id)));
+  }
   if(!subjectsWithMs.length){toast('ไม่พบนักเรียน มส ในทุกวิชา','in');return;}
 
   const now=new Date();
