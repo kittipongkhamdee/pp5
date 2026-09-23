@@ -2595,9 +2595,7 @@ function printMsMemo(){
   const now=new Date();
   const thaiDate=now.getDate()+' '+MONTHS[now.getMonth()]+' '+(now.getFullYear()+543);
   // ตราครุฑบันทึกข้อความ: ชิดซ้าย สูง 1.5 ซม. ตามระเบียบงานสารบรรณ
-  const garudaHTML=cfg.garuda_url
-    ? `<img src="${cfg.garuda_url}" style="height:1.5cm;display:block">`
-    : `<div style="height:1.5cm"></div>`;
+  const garudaHTML=cfg.garuda_url ? `<img src="${cfg.garuda_url}">` : '';
 
   let pages='';
   subjectsWithMs.forEach((sub,i)=>{
@@ -2609,12 +2607,15 @@ function printMsMemo(){
     });
     const isLast=i===subjectsWithMs.length-1;
     pages+=`<div class="memo-page"${isLast?'':' style="page-break-after:always"'}>
-      ${garudaHTML}
-      <div class="memo-title">บันทึกข้อความ</div>
+      <div class="memo-header">
+        ${garudaHTML}
+        <div class="memo-title">บันทึกข้อความ</div>
+      </div>
       <div class="memo-row"><b>ส่วนราชการ</b> &nbsp;โรงเรียน${esc(schoolNameOnly(cfg.school_name))} &nbsp;ตำบล${esc(cfg.school_subdistrict||'')} &nbsp;อำเภอ${esc(cfg.school_district||'')} &nbsp;จังหวัด${esc(cfg.school_province||'')}</div>
       <div class="memo-row memo-row-split">
         <span><b>ที่</b> .........................................</span>
-        <span><b>วันที่</b> &nbsp;${thaiDate}</span>
+        <span class="memo-date-center"><b>วันที่</b> &nbsp;${thaiDate}</span>
+        <span></span>
       </div>
       <div class="memo-subject"><b>เรื่อง</b> &nbsp;แจ้งรายชื่อนักเรียนมีเวลาเรียนไม่ครบร้อยละ 80 ไม่อนุญาตให้สอบปลายภาค</div>
       <div class="memo-row"><b>เรียน</b> &nbsp;กรรมการคุมสอบวัดผลปลายภาค ห้อง ม...${esc(String(sub.grade_level))}${+sub.room?'/'+esc(String(sub.room)):''}......</div>
@@ -2646,25 +2647,30 @@ function printMsMemo(){
   if(!w){toast('เบราว์เซอร์บล็อก Popup — กรุณาอนุญาต Popup แล้วลองใหม่','er');return;}
   w.document.write(`<!DOCTYPE html><html lang="th"><head>
     <meta charset="UTF-8"><title>บันทึกข้อความ — แจ้งรายชื่อนักเรียน มส</title>
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;700&display=swap" rel="stylesheet">
     <style>
       /* ขอบกระดาษตามระเบียบสำนักนายกรัฐมนตรีว่าด้วยงานสารบรรณ: บน 1.5 ซม. ขวา/ล่าง 2 ซม. ซ้าย 3 ซม. (เผื่อเจาะแฟ้ม) */
       @page{size:A4 portrait;margin:15mm 20mm 20mm 30mm;}
       *{box-sizing:border-box;}
-      body{margin:0;padding:0;background:#fff;font-family:'TH Sarabun New','Sarabun','Noto Sans Thai',sans-serif;font-size:14pt;line-height:1.45;color:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      body{margin:0;padding:0;background:#fff;font-family:'TH Sarabun New','Sarabun','Noto Sans Thai',sans-serif;font-weight:300;font-size:12.5pt;line-height:1.35;color:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      b{font-weight:700;}
       .memo-page{padding-top:1px;}
-      .memo-title{text-align:center;font-size:22pt;font-weight:700;margin:0 0 10pt;}
-      .memo-row{margin-bottom:6pt;}
-      .memo-row-split{display:flex;justify-content:space-between;}
-      .memo-subject{border-bottom:1.5pt solid #000;padding-bottom:6pt;margin-bottom:8pt;}
+      /* ครุฑชิดซ้าย + "บันทึกข้อความ" กึ่งกลางหน้า ให้ขอบล่างของครุฑเสมอกับขอบล่างข้อความ */
+      .memo-header{position:relative;text-align:center;margin-bottom:8pt;min-height:1.5cm}
+      .memo-header img{position:absolute;left:0;bottom:0;height:1.5cm}
+      .memo-title{font-size:20pt;font-weight:700;}
+      .memo-row{margin-bottom:5pt;}
+      .memo-row-split{display:grid;grid-template-columns:1fr 1fr 1fr;}
+      .memo-date-center{text-align:center;}
+      .memo-subject{border-bottom:1.5pt solid #000;padding-bottom:5pt;margin-bottom:6pt;}
       /* ย่อหน้าใหม่เว้น 2.5 ซม. จากขอบซ้ายตามระเบียบ (เฉพาะบรรทัดแรกของย่อหน้า บรรทัดถัดไปชิดขอบปกติ) */
-      .memo-body{text-indent:2.5cm;text-align:justify;margin:0 0 6pt;}
-      .memo-list{margin:0 0 8pt 2.5cm;}
+      .memo-body{text-indent:2.5cm;margin:0 0 5pt;}
+      .memo-list{margin:0 0 6pt 2.5cm;}
       .memo-list div{margin-bottom:1pt;}
-      .memo-sign{text-align:center;margin:6pt 0 20pt;}
-      .memo-sign-gap{margin-top:26pt;}
-      .memo-committee-title{font-weight:700;margin-bottom:12pt;}
-      .memo-committee-line{margin-bottom:16pt;}
+      .memo-sign{text-align:center;margin:5pt 0 16pt;}
+      .memo-sign-gap{margin-top:22pt;}
+      .memo-committee-title{font-weight:700;margin-bottom:10pt;}
+      .memo-committee-line{margin-bottom:14pt;}
       .action-bar{display:flex;gap:10px;justify-content:center;padding:14px;margin-top:20px;background:#f5f5f7;border-radius:10px;position:sticky;bottom:0;font-family:'Sarabun',sans-serif;}
       .btn-print{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#1d1d1f;color:#fff;font-weight:600;}
       @media print{.action-bar{display:none!important;}}
