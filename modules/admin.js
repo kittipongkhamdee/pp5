@@ -2579,6 +2579,11 @@ function printMsReport(){
 // พิมพ์ "บันทึกข้อความ" แจ้งรายชื่อนักเรียน มส ไม่มีสิทธิ์สอบปลายภาค — หนึ่งฉบับต่อหนึ่งรายวิชา
 // ตามแบบฟอร์มราชการ (ส่วนราชการ/ที่-วันที่/เรื่อง/เรียน/เนื้อความ/รายชื่อ/ลงชื่อ/กรรมการคุมสอบลงนาม)
 // ลงนามโดยหัวหน้ากลุ่มบริหารงานวิชาการ (cfg.head_academic) ไม่ใช่ครูผู้สอน — ครูผู้สอนถูกอ้างถึงในเนื้อความแทน
+//
+// เปิดหน้าต่างพิมพ์ของตัวเอง (ไม่ใช้ printHTML() ที่ตารางรายงานอื่นๆ ใช้ร่วมกัน) เพราะเอกสารนี้
+// ต้องจัดหน้าตามระเบียบสำนักนายกรัฐมนตรีว่าด้วยงานสารบรรณ (หนังสือภายใน/บันทึกข้อความ) โดยเฉพาะ —
+// ขอบกระดาษ ขนาดตัวอักษร ระยะย่อหน้า/บรรทัด ต่างจากตารางรายงานทั่วไปของระบบ ถ้าไปแก้ค่ากลางใน
+// printHTML() จะกระทบรายงานอื่นทั้งหมดที่ใช้ฟังก์ชันเดียวกัน
 function printMsMemo(){
   const data=S._schoolReport;
   if(!data){toast('กรุณาโหลดหน้ารายงานก่อน','er');return;}
@@ -2591,8 +2596,8 @@ function printMsMemo(){
   const thaiDate=now.getDate()+' '+MONTHS[now.getMonth()]+' '+(now.getFullYear()+543);
   // ตราครุฑบันทึกข้อความ: ชิดซ้าย สูง 1.5 ซม. ตามระเบียบงานสารบรรณ
   const garudaHTML=cfg.garuda_url
-    ? `<img src="${cfg.garuda_url}" style="height:1.5cm;display:block;margin:0 0 6px">`
-    : `<div style="height:1.5cm;margin-bottom:6px"></div>`;
+    ? `<img src="${cfg.garuda_url}" style="height:1.5cm;display:block">`
+    : `<div style="height:1.5cm"></div>`;
 
   let pages='';
   subjectsWithMs.forEach((sub,i)=>{
@@ -2603,44 +2608,72 @@ function printMsMemo(){
       return sa.localeCompare(sb2,'th');
     });
     const isLast=i===subjectsWithMs.length-1;
-    pages+=`<div style="page-break-after:${isLast?'auto':'always'};font-size:15.5px;line-height:1.9">
+    pages+=`<div class="memo-page"${isLast?'':' style="page-break-after:always"'}>
       ${garudaHTML}
-      <div style="text-align:center;font-size:20px;font-weight:700;margin-bottom:14px">บันทึกข้อความ</div>
-      <div style="display:flex;margin-bottom:2px">
-        <div style="width:90px;flex-shrink:0">ส่วนราชการ</div>
-        <div>โรงเรียน${esc(schoolNameOnly(cfg.school_name))} &nbsp;ตำบล${esc(cfg.school_subdistrict||'')} &nbsp;อำเภอ${esc(cfg.school_district||'')} &nbsp;จังหวัด${esc(cfg.school_province||'')}</div>
+      <div class="memo-title">บันทึกข้อความ</div>
+      <div class="memo-row"><b>ส่วนราชการ</b> &nbsp;โรงเรียน${esc(schoolNameOnly(cfg.school_name))} &nbsp;ตำบล${esc(cfg.school_subdistrict||'')} &nbsp;อำเภอ${esc(cfg.school_district||'')} &nbsp;จังหวัด${esc(cfg.school_province||'')}</div>
+      <div class="memo-row memo-row-split">
+        <span><b>ที่</b> .........................................</span>
+        <span><b>วันที่</b> &nbsp;${thaiDate}</span>
       </div>
-      <div style="display:flex;margin-bottom:2px">
-        <div style="width:50%">ที่.........................................</div>
-        <div>วันที่ &nbsp;${thaiDate}</div>
-      </div>
-      <div style="border-bottom:1.5px solid #000;padding-bottom:8px;margin-bottom:10px">เรื่อง &nbsp;แจ้งรายชื่อนักเรียนมีเวลาเรียนไม่ครบร้อยละ 80 ไม่อนุญาตให้สอบปลายภาค</div>
-      <div style="margin-bottom:6px">เรียน &nbsp;กรรมการคุมสอบวัดผลปลายภาค ห้อง ม...${esc(String(sub.grade_level))}${+sub.room?'/'+esc(String(sub.room)):''}......</div>
-      <p style="text-indent:48px;text-align:justify;margin:0 0 10px">
+      <div class="memo-subject"><b>เรื่อง</b> &nbsp;แจ้งรายชื่อนักเรียนมีเวลาเรียนไม่ครบร้อยละ 80 ไม่อนุญาตให้สอบปลายภาค</div>
+      <div class="memo-row"><b>เรียน</b> &nbsp;กรรมการคุมสอบวัดผลปลายภาค ห้อง ม...${esc(String(sub.grade_level))}${+sub.room?'/'+esc(String(sub.room)):''}......</div>
+      <p class="memo-body">
         ด้วย...........${esc(st.teacherName||'')}.......ครูผู้สอนรายวิชา...............${esc(sub.subject_name)}..........
         รหัสวิชา......${esc(sub.subject_code)}.... ได้แจ้งรายชื่อนักเรียนที่มีเวลาเรียนไม่ครบร้อยละ 80 &nbsp;นักเรียนที่มีรายชื่อ
         ดังต่อไปนี้ไม่อนุญาตให้เข้าสอบวัดผลปลายภาค ภาคเรียนที่ ${esc(cfg.semester||'')} &nbsp;ปีการศึกษา ${esc(cfg.academic_year||'')} &nbsp;นักเรียนดังกล่าวไม่ได้
         ดำเนินการยื่นคำร้องขอมีสิทธิ์สอบตามกำหนดเวลา &nbsp;ดังมีรายชื่อต่อไปนี้
       </p>
-      <div style="margin:0 0 14px 60px">
+      <div class="memo-list">
         ${sorted.map((sid,j)=>{
           const stu=stuMap[String(sid)];
           return `<div>${j+1}. &nbsp;${esc(stu?.student_name||'(ไม่พบชื่อ)')}</div>`;
         }).join('')}
       </div>
-      <div style="text-indent:48px;margin-bottom:36px">จึงเรียนมาเพื่อทราบและดำเนินการ</div>
-      <div style="text-align:center;margin-bottom:40px">
+      <p class="memo-body">จึงเรียนมาเพื่อทราบและดำเนินการ</p>
+      <div class="memo-sign">
         <div>ลงชื่อ</div>
-        <div style="margin-top:44px">(${esc(cfg.head_academic||'..........................................')})</div>
+        <div class="memo-sign-gap">(${esc(cfg.head_academic||'..........................................')})</div>
         <div>หัวหน้ากลุ่มบริหารงานวิชาการ</div>
       </div>
-      <div style="font-weight:700;margin-bottom:18px">กรรมการคุมสอบลงนาม</div>
-      <div style="margin-bottom:26px">1.................................................................</div>
-      <div style="margin-bottom:10px">2.................................................................</div>
+      <div class="memo-committee-title">กรรมการคุมสอบลงนาม</div>
+      <div class="memo-committee-line">1.................................................................</div>
+      <div class="memo-committee-line">2.................................................................</div>
     </div>`;
   });
 
-  printHTML('บันทึกข้อความ — แจ้งรายชื่อนักเรียน มส',pages,'portrait',true);
+  const w=window.open('','_blank');
+  if(!w){toast('เบราว์เซอร์บล็อก Popup — กรุณาอนุญาต Popup แล้วลองใหม่','er');return;}
+  w.document.write(`<!DOCTYPE html><html lang="th"><head>
+    <meta charset="UTF-8"><title>บันทึกข้อความ — แจ้งรายชื่อนักเรียน มส</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+      /* ขอบกระดาษตามระเบียบสำนักนายกรัฐมนตรีว่าด้วยงานสารบรรณ: บน 1.5 ซม. ขวา/ล่าง 2 ซม. ซ้าย 3 ซม. (เผื่อเจาะแฟ้ม) */
+      @page{size:A4 portrait;margin:15mm 20mm 20mm 30mm;}
+      *{box-sizing:border-box;}
+      body{margin:0;padding:0;background:#fff;font-family:'TH Sarabun New','Sarabun','Noto Sans Thai',sans-serif;font-size:16pt;line-height:1.6;color:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      .memo-page{padding-top:1px;}
+      .memo-title{text-align:center;font-size:29pt;font-weight:700;margin:0 0 14pt;}
+      .memo-row{margin-bottom:8pt;}
+      .memo-row-split{display:flex;justify-content:space-between;}
+      .memo-subject{border-bottom:1.5pt solid #000;padding-bottom:10pt;margin-bottom:10pt;}
+      /* ย่อหน้าใหม่เว้น 2.5 ซม. จากขอบซ้ายตามระเบียบ (เฉพาะบรรทัดแรกของย่อหน้า บรรทัดถัดไปชิดขอบปกติ) */
+      .memo-body{text-indent:2.5cm;text-align:justify;margin:0 0 10pt;}
+      .memo-list{margin:0 0 12pt 2.5cm;}
+      .memo-list div{margin-bottom:2pt;}
+      .memo-sign{text-align:center;margin:8pt 0 32pt;}
+      .memo-sign-gap{margin-top:40pt;}
+      .memo-committee-title{font-weight:700;margin-bottom:20pt;}
+      .memo-committee-line{margin-bottom:26pt;}
+      .action-bar{display:flex;gap:10px;justify-content:center;padding:14px;margin-top:20px;background:#f5f5f7;border-radius:10px;position:sticky;bottom:0;font-family:'Sarabun',sans-serif;}
+      .btn-print{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#1d1d1f;color:#fff;font-weight:600;}
+      @media print{.action-bar{display:none!important;}}
+    </style>
+    </head><body>
+    ${pages}
+    <div class="action-bar"><button class="btn-print" onclick="document.fonts.ready.then(()=>window.print())">พิมพ์</button></div>
+    </body></html>`);
+  w.document.close();
 }
 
 function _toggleSchoolCard(cardId){
