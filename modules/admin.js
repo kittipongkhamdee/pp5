@@ -2767,15 +2767,28 @@ function printMsMemo(selectedIds){
     <meta charset="UTF-8"><title>บันทึกข้อความ — แจ้งรายชื่อนักเรียน มส</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;700&display=swap" rel="stylesheet">
     <style>
-      /* ขอบกระดาษตามระเบียบสำนักนายกรัฐมนตรีว่าด้วยงานสารบรรณ: บน 1.5 ซม. ขวา/ล่าง 2 ซม. ซ้าย 3 ซม. (เผื่อเจาะแฟ้ม) */
-      @page{size:A4 portrait;margin:15mm 20mm 20mm 30mm;}
+      /* @page margin ใช้ได้แค่ตอนพิมพ์จริง — บนหน้าจอ (โดยเฉพาะมือถือ) เบราว์เซอร์ไม่สนใจ
+         ค่านี้เลย ทำให้ข้อความไหลเต็มความกว้างจอแทนที่จะเป็น A4 จริง ตำแหน่งจึงดูต่างจากตอน
+         พิมพ์ลงกระดาษ (ไม่ใช่เพราะเปิดผ่านมือถือโดยเฉพาะ แต่เพราะพรีวิวไม่เคยบังคับขนาด A4
+         มาก่อน) — ย้ายระยะขอบทั้งหมดไปเป็น padding ของ .memo-page แทน (@page margin:0)
+         แล้วบังคับ .memo-page ให้กว้าง/สูงเท่ากระดาษ A4 จริง (210mm/297mm) ทั้งบนจอและตอนพิมพ์
+         ระยะขอบตามระเบียบสำนักนายกรัฐมนตรีว่าด้วยงานสารบรรณ: บน 1.5 ซม. ขวา 2 ซม. ซ้าย 3 ซม.
+         (เผื่อเจาะแฟ้ม) ส่วนล่างรวม 2.9 ซม. (ขอบตามระเบียบ 2 ซม. + กันชน 0.9 ซม. ไม่ให้เนื้อหา
+         ชิดขอบเกินไปเวลารายชื่อนักเรียนน้อย) */
+      @page{size:A4 portrait;margin:0;}
       *{box-sizing:border-box;}
       /* lang="th" บน <html> ให้เบราว์เซอร์ตัดคำภาษาไทยตามพจนานุกรมเอง (ไม่ฉีกคำกลางคำ)
          อยู่แล้วโดยธรรมชาติ — กำหนด word-break/overflow-wrap เป็น normal ชัดเจนไว้ด้วย
          กันการฉีกคำแบบ break-all/anywhere ที่บางเบราว์เซอร์/ค่าเริ่มต้นอาจสลับมาใช้ */
-      body{margin:0;padding:0;background:#fff;font-family:'TH Sarabun New','Sarabun','Noto Sans Thai',sans-serif;font-weight:300;font-size:16pt;line-height:1.5;color:#000;word-break:normal;overflow-wrap:normal;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      body{margin:0;padding:0;font-family:'TH Sarabun New','Sarabun','Noto Sans Thai',sans-serif;font-weight:300;font-size:16pt;line-height:1.5;color:#000;word-break:normal;overflow-wrap:normal;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
       b{font-weight:700;}
-      .memo-page{padding-top:1px;display:flex;flex-direction:column;min-height:253mm;}
+      .memo-page{width:210mm;min-height:297mm;padding:15mm 20mm 29mm 30mm;display:flex;flex-direction:column;background:#fff;}
+      /* พรีวิวบนจอ: จำลองหน้ากระดาษจริงให้เห็นตำแหน่งตรงกับตอนพิมพ์ — พื้นหลังเทาคั่นให้เห็น
+         ขอบกระดาษแต่ละแผ่นชัดเจน (ตอนพิมพ์จริงเอฟเฟกต์พวกนี้หายไปเอง ไม่กระทบกระดาษจริง) */
+      @media screen{
+        html,body{background:#e5e5ea;}
+        .memo-page{margin:20px auto;box-shadow:0 4px 24px rgba(0,0,0,.18);}
+      }
       /* ครุฑชิดซ้าย + "บันทึกข้อความ" กึ่งกลางหน้า ให้ขอบล่างของครุฑเสมอกับขอบล่างข้อความ (ใช้ flex
          align-items:flex-end แทน text อยู่บนสุดของกล่อง เพราะ .memo-header สูงเท่าตราครุฑ 1.5 ซม.) */
       .memo-header{position:relative;display:flex;justify-content:center;align-items:flex-end;margin-bottom:8pt;min-height:1.5cm}
