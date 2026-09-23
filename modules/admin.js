@@ -2663,20 +2663,20 @@ function printMsMemo(){
          align-items:flex-end แทน text อยู่บนสุดของกล่อง เพราะ .memo-header สูงเท่าตราครุฑ 1.5 ซม.) */
       .memo-header{position:relative;display:flex;justify-content:center;align-items:flex-end;margin-bottom:8pt;min-height:1.5cm}
       .memo-header img{position:absolute;left:0;bottom:0;height:1.5cm}
-      .memo-title{font-size:29pt;font-weight:700;}
+      .memo-title{font-size:29pt;font-weight:700;line-height:1;}
       .memo-row{margin-bottom:5pt;}
       .memo-row-split{display:grid;grid-template-columns:1fr 1fr 1fr;}
       .memo-date-center{text-align:center;}
       .memo-subject{border-bottom:.75pt solid #000;padding-bottom:5pt;margin-bottom:6pt;}
       /* ค่าที่กรอกในเนื้อความ (ชื่อครู/วิชา/รหัสวิชา/ภาคเรียน/ปีการศึกษา) ไม่ใช้จุดไข่ปลาล้อมรอบ
          แสดงค่าตรงๆ แล้วขีดเส้นใต้แบบเส้นปรุ/จุดไข่ปลาแทน เว้นระยะซ้ายขวาให้ไม่ติดคำข้างเคียง */
-      .fill{padding:0 3px;text-decoration:underline;text-decoration-style:dotted;text-decoration-color:#000;text-underline-offset:1px;}
+      .fill{padding:0 3px;text-decoration:underline;text-decoration-style:dotted;text-decoration-color:#000;text-underline-offset:3px;}
       /* ย่อหน้าใหม่เว้น 2.5 ซม. จากขอบซ้ายตามระเบียบ (เฉพาะบรรทัดแรกของย่อหน้า บรรทัดถัดไปชิดขอบปกติ) */
       .memo-body{text-indent:2.5cm;margin:0 0 5pt;}
       .memo-list{margin:0 0 6pt 2.5cm;}
       .memo-list div{margin-bottom:1pt;}
       /* บล็อกลงชื่อ: อยู่คอลัมน์กลางเดียวกับ "วันที่" ชิดซ้ายในคอลัมน์นั้น (ไม่กึ่งกลางเต็มหน้า) */
-      .memo-sign-row{display:grid;grid-template-columns:1fr 1fr 1fr;margin:47pt 0 16pt;}
+      .memo-sign-row{display:grid;grid-template-columns:1fr 1fr 1fr;margin:23pt 0 16pt;}
       /* เริ่มที่คอลัมน์กลางเดียวกับ "วันที่" แต่กินพื้นที่ถึงคอลัมน์ขวาสุดด้วย กันชื่อ/ตำแหน่งยาวๆ ตัดขึ้นบรรทัดใหม่ */
       .memo-sign{grid-column:2 / 4;text-align:left;white-space:nowrap;}
       .sig-dots{display:inline-block;width:110pt;border-bottom:1px dotted #000;margin-left:6pt;vertical-align:bottom;}
