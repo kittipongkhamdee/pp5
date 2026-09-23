@@ -2632,10 +2632,14 @@ function printMsMemo(){
         }).join('')}
       </div>
       <p class="memo-body">จึงเรียนมาเพื่อทราบและดำเนินการ</p>
-      <div class="memo-sign">
-        <div>ลงชื่อ</div>
-        <div class="memo-sign-gap">(${esc(cfg.head_academic||'..........................................')})</div>
-        <div>หัวหน้ากลุ่มบริหารงานวิชาการ</div>
+      <div class="memo-sign-row">
+        <div></div>
+        <div class="memo-sign">
+          <div>ลงชื่อ<span class="sig-dots"></span></div>
+          <div class="memo-sign-name">(${esc(cfg.head_academic||'..........................................')})</div>
+          <div class="memo-sign-name">หัวหน้ากลุ่มบริหารงานวิชาการ</div>
+        </div>
+        <div></div>
       </div>
       <div class="memo-committee-title">กรรมการคุมสอบลงนาม</div>
       <div class="memo-committee-line">1.................................................................</div>
@@ -2652,7 +2656,7 @@ function printMsMemo(){
       /* ขอบกระดาษตามระเบียบสำนักนายกรัฐมนตรีว่าด้วยงานสารบรรณ: บน 1.5 ซม. ขวา/ล่าง 2 ซม. ซ้าย 3 ซม. (เผื่อเจาะแฟ้ม) */
       @page{size:A4 portrait;margin:15mm 20mm 20mm 30mm;}
       *{box-sizing:border-box;}
-      body{margin:0;padding:0;background:#fff;font-family:'TH Sarabun New','Sarabun','Noto Sans Thai',sans-serif;font-weight:300;font-size:12.5pt;line-height:1.35;color:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      body{margin:0;padding:0;background:#fff;font-family:'TH Sarabun New','Sarabun','Noto Sans Thai',sans-serif;font-weight:300;font-size:12.5pt;line-height:1.7;color:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
       b{font-weight:700;}
       .memo-page{padding-top:1px;}
       /* ครุฑชิดซ้าย + "บันทึกข้อความ" กึ่งกลางหน้า ให้ขอบล่างของครุฑเสมอกับขอบล่างข้อความ (ใช้ flex
@@ -2671,8 +2675,11 @@ function printMsMemo(){
       .memo-body{text-indent:2.5cm;margin:0 0 5pt;}
       .memo-list{margin:0 0 6pt 2.5cm;}
       .memo-list div{margin-bottom:1pt;}
-      .memo-sign{text-align:center;margin:5pt 0 16pt;}
-      .memo-sign-gap{margin-top:22pt;}
+      /* บล็อกลงชื่อ: อยู่คอลัมน์กลางเดียวกับ "วันที่" ชิดซ้ายในคอลัมน์นั้น (ไม่กึ่งกลางเต็มหน้า) */
+      .memo-sign-row{display:grid;grid-template-columns:1fr 1fr 1fr;margin:5pt 0 16pt;}
+      .memo-sign{text-align:left;}
+      .sig-dots{display:inline-block;width:110pt;border-bottom:1px dotted #000;margin-left:6pt;vertical-align:bottom;}
+      .memo-sign-name{margin-left:2.2em;}
       .memo-committee-title{font-weight:700;margin-bottom:10pt;}
       .memo-committee-line{margin-bottom:14pt;}
       .action-bar{display:flex;gap:10px;justify-content:center;padding:14px;margin-top:20px;background:#f5f5f7;border-radius:10px;position:sticky;bottom:0;font-family:'Sarabun',sans-serif;}
