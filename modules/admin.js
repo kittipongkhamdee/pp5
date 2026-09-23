@@ -2736,9 +2736,8 @@ function printMsMemo(selectedIds){
       <div class="memo-subject"><b>เรื่อง</b> &nbsp;แจ้งรายชื่อนักเรียนมีเวลาเรียนไม่ครบร้อยละ 80 ไม่อนุญาตให้สอบปลายภาค</div>
       <div class="memo-row">เรียน &nbsp;กรรมการคุมสอบวัดผลปลายภาค ห้อง<span class="fill">ม.${esc(String(sub.grade_level))}${+sub.room?'/'+esc(String(sub.room)):''}</span></div>
       <p class="memo-body">
-        ด้วย<span class="fill">${esc(st.teacherName||'')}</span>ครูผู้สอนรายวิชา<span class="fill">${esc(sub.subject_name)}</span>รหัสวิชา<span class="fill">${esc(sub.subject_code)}</span>ได้แจ้งรายชื่อนักเรียนที่มีเวลาเรียนไม่ครบร้อยละ 80 นักเรียนที่มีรายชื่อ
-        ดังต่อไปนี้ไม่อนุญาตให้เข้าสอบวัดผลปลายภาค ภาคเรียนที่<span class="fill">${esc(cfg.semester||'')}</span>ปีการศึกษา<span class="fill">${esc(cfg.academic_year||'')}</span>นักเรียนดังกล่าวไม่ได้
-        ดำเนินการยื่นคำร้องขอมีสิทธิ์สอบตามกำหนดเวลา ดังมีรายชื่อต่อไปนี้
+        ด้วย<span class="fill">${esc(st.teacherName||'')}</span>ครูผู้สอนรายวิชา<span class="fill">${esc(sub.subject_name)}</span>รหัสวิชา<span class="fill">${esc(sub.subject_code)}</span>ได้แจ้งรายชื่อนักเรียนที่มีเวลาเรียนไม่ครบร้อยละ 80 นักเรียนที่มีรายชื่อดังต่อไปนี้ไม่อนุญาตให้เข้าสอบวัดผลปลายภาค
+        ภาคเรียนที่<span class="fill">${esc(cfg.semester||'')}</span>ปีการศึกษา<span class="fill">${esc(cfg.academic_year||'')}</span>นักเรียนดังกล่าวไม่ได้ดำเนินการยื่นคำร้องขอมีสิทธิ์สอบตามกำหนดเวลา ดังมีรายชื่อต่อไปนี้
       </p>
       <div class="memo-list">
         ${sorted.map((sid,j)=>{
@@ -2771,7 +2770,10 @@ function printMsMemo(selectedIds){
       /* ขอบกระดาษตามระเบียบสำนักนายกรัฐมนตรีว่าด้วยงานสารบรรณ: บน 1.5 ซม. ขวา/ล่าง 2 ซม. ซ้าย 3 ซม. (เผื่อเจาะแฟ้ม) */
       @page{size:A4 portrait;margin:15mm 20mm 20mm 30mm;}
       *{box-sizing:border-box;}
-      body{margin:0;padding:0;background:#fff;font-family:'TH Sarabun New','Sarabun','Noto Sans Thai',sans-serif;font-weight:300;font-size:16pt;line-height:1.5;color:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      /* lang="th" บน <html> ให้เบราว์เซอร์ตัดคำภาษาไทยตามพจนานุกรมเอง (ไม่ฉีกคำกลางคำ)
+         อยู่แล้วโดยธรรมชาติ — กำหนด word-break/overflow-wrap เป็น normal ชัดเจนไว้ด้วย
+         กันการฉีกคำแบบ break-all/anywhere ที่บางเบราว์เซอร์/ค่าเริ่มต้นอาจสลับมาใช้ */
+      body{margin:0;padding:0;background:#fff;font-family:'TH Sarabun New','Sarabun','Noto Sans Thai',sans-serif;font-weight:300;font-size:16pt;line-height:1.5;color:#000;word-break:normal;overflow-wrap:normal;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
       b{font-weight:700;}
       .memo-page{padding-top:1px;display:flex;flex-direction:column;min-height:253mm;}
       /* ครุฑชิดซ้าย + "บันทึกข้อความ" กึ่งกลางหน้า ให้ขอบล่างของครุฑเสมอกับขอบล่างข้อความ (ใช้ flex
