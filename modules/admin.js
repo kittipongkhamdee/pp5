@@ -2584,30 +2584,38 @@ function openMsMemoSelectDialog(){
   const subjectsWithMs=data.filter(s=>s._stats.msStudentIds&&s._stats.msStudentIds.length>0);
   if(!subjectsWithMs.length){toast('ไม่พบนักเรียน มส ในทุกวิชา','in');return;}
 
-  // จัดกลุ่มตามชั้น (ม.1-6) แต่ละกลุ่มเรียงตาม ครู > วิชา > ห้อง ตามที่ผู้ใช้ขอ
+  // จัดกลุ่มตามชั้น (ม.1-6) แต่ละกลุ่มเรียงตาม ครู > วิชา > ห้อง — แต่ละกลุ่มหุบ/กางได้
+  // และมีเช็คบ็อกเลือกทั้งชั้นได้ในตัว (คลิกหัวการ์ดหุบ/กาง, คลิกเช็คบ็อกเลือก/ไม่เลือกทั้งชั้น)
   const sortedSubjects=[...subjectsWithMs].sort((a,b)=>{
     const g=(+a.grade_level||0)-(+b.grade_level||0); if(g) return g;
     const t=(a._stats.teacherName||'').localeCompare(b._stats.teacherName||'','th'); if(t) return t;
     const sn=(a.subject_name||'').localeCompare(b.subject_name||'','th'); if(sn) return sn;
     return (+a.room||0)-(+b.room||0);
   });
-  let rows='';
-  let curGrade=null;
-  sortedSubjects.forEach(sub=>{
-    if(sub.grade_level!==curGrade){
-      curGrade=sub.grade_level;
-      rows+='<div style="font-size:12.5px;font-weight:700;color:var(--ac);padding:12px 4px 4px;">ม.'+esc(String(curGrade))+'</div>';
-    }
-    const st=sub._stats;
-    const room='ม.'+esc(String(sub.grade_level))+(+sub.room?'/'+esc(String(sub.room)):'');
-    rows+='<label style="display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:0.5px solid rgba(0,0,0,.06);cursor:pointer;">'+
-      '<input type="checkbox" class="ms-memo-cb" value="'+esc(String(sub.id))+'" checked style="width:18px;height:18px;accent-color:var(--ac);flex-shrink:0">'+
-      '<div style="flex:1;min-width:0">'+
-        '<div style="font-size:13.5px;font-weight:600;">'+esc(st.teacherName||'—')+'</div>'+
-        '<div style="font-size:12px;color:#6e6e73;">'+esc(sub.subject_name)+' · '+room+' · มส '+st.msStudentIds.length+' คน</div>'+
+  const byGrade={};
+  sortedSubjects.forEach(sub=>{ (byGrade[sub.grade_level]=byGrade[sub.grade_level]||[]).push(sub); });
+  const rows=Object.keys(byGrade).sort((a,b)=>+a-+b).map(grade=>{
+    const subs=byGrade[grade];
+    const items=subs.map(sub=>{
+      const st=sub._stats;
+      const room='ม.'+esc(String(sub.grade_level))+(+sub.room?'/'+esc(String(sub.room)):'');
+      return '<label style="display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:0.5px solid rgba(0,0,0,.06);cursor:pointer;">'+
+        '<input type="checkbox" class="ms-memo-cb" value="'+esc(String(sub.id))+'" checked onchange="_updateMsGradeCbState(this)" style="width:18px;height:18px;accent-color:var(--ac);flex-shrink:0">'+
+        '<div style="flex:1;min-width:0">'+
+          '<div style="font-size:13.5px;font-weight:600;">'+esc(st.teacherName||'—')+'</div>'+
+          '<div style="font-size:12px;color:#6e6e73;">'+esc(sub.subject_name)+' · '+room+' · มส '+st.msStudentIds.length+' คน</div>'+
+        '</div>'+
+      '</label>';
+    }).join('');
+    return '<div class="ms-grade-group" style="margin-bottom:10px;border:1px solid rgba(0,0,0,.08);border-radius:12px;overflow:hidden;">'+
+      '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(0,0,0,.03);cursor:pointer;" onclick="_toggleMsGradeCollapse(this)">'+
+        '<input type="checkbox" class="ms-grade-cb" checked onclick="event.stopPropagation();_toggleMsGradeAll(this)" style="width:18px;height:18px;accent-color:var(--ac);flex-shrink:0">'+
+        '<div style="flex:1;font-size:13.5px;font-weight:700;">ม.'+esc(String(grade))+' <span style="font-weight:400;color:#6e6e73;">('+subs.length+' รายการ)</span></div>'+
+        '<svg class="ms-grade-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="flex-shrink:0;transition:transform .15s;transform:rotate(180deg)"><polyline points="6 9 12 15 18 9"/></svg>'+
       '</div>'+
-    '</label>';
-  });
+      '<div class="ms-grade-body" style="padding:0 12px;">'+items+'</div>'+
+    '</div>';
+  }).join('');
 
   const wrap=document.createElement('div');
   wrap.id='msmemo-select-wrap';
@@ -2633,6 +2641,38 @@ function openMsMemoSelectDialog(){
 
 function _toggleAllMsMemoCb(checked){
   document.querySelectorAll('.ms-memo-cb').forEach(cb=>cb.checked=checked);
+  document.querySelectorAll('.ms-grade-cb').forEach(cb=>{ cb.checked=checked; cb.indeterminate=false; });
+}
+
+// คลิกหัวการ์ดชั้น (นอกเช็คบ็อก) — หุบ/กางรายการวิชาในชั้นนั้น
+function _toggleMsGradeCollapse(headerEl){
+  const group=headerEl.closest('.ms-grade-group');
+  const body=group?.querySelector('.ms-grade-body');
+  const chevron=group?.querySelector('.ms-grade-chevron');
+  if(!body) return;
+  const collapsed=body.style.display==='none';
+  body.style.display=collapsed?'':'none';
+  if(chevron) chevron.style.transform=collapsed?'rotate(180deg)':'rotate(0deg)';
+}
+
+// คลิกเช็คบ็อกหัวชั้น — เลือก/ไม่เลือกทุกวิชาในชั้นนั้นทีเดียว
+function _toggleMsGradeAll(gradeCb){
+  const group=gradeCb.closest('.ms-grade-group');
+  if(!group) return;
+  group.querySelectorAll('.ms-memo-cb').forEach(cb=>cb.checked=gradeCb.checked);
+  gradeCb.indeterminate=false;
+}
+
+// ติ๊ก/ปลดติ๊กวิชาใดวิชาหนึ่งในชั้น — อัปเดตสถานะเช็คบ็อกหัวชั้นให้ตรงกัน
+// (ติ๊กครบทุกวิชา = ติ๊ก, ไม่ติ๊กเลย = ไม่ติ๊ก, ติ๊กบางส่วน = indeterminate)
+function _updateMsGradeCbState(cb){
+  const group=cb.closest('.ms-grade-group');
+  const gradeCb=group?.querySelector('.ms-grade-cb');
+  if(!gradeCb) return;
+  const all=Array.from(group.querySelectorAll('.ms-memo-cb'));
+  const checkedCount=all.filter(c=>c.checked).length;
+  gradeCb.checked=checkedCount===all.length;
+  gradeCb.indeterminate=checkedCount>0&&checkedCount<all.length;
 }
 
 function _closeMsMemoSelectDialog(){
