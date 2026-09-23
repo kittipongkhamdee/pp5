@@ -540,6 +540,42 @@ async function pgSettings(){
     </div>
   </div>
 
+  <!-- ── ตราครุฑ (สำหรับพิมพ์บันทึกข้อความ) ── -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="ch">
+      <div class="ct" style="display:flex;align-items:center;gap:7px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--ac)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1z"/></svg>
+        ตราครุฑ (ใช้พิมพ์บันทึกข้อความ)
+      </div>
+    </div>
+    <div class="cb">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
+        <div style="width:72px;height:72px;border-radius:16px;overflow:hidden;background:#f5f5f7;border:1px solid rgba(0,0,0,.08);flex-shrink:0;display:flex;align-items:center;justify-content:center">
+          ${S.config.garuda_url
+            ? `<img id="garuda-preview" src="${S.config.garuda_url}" style="width:72px;height:72px;object-fit:contain">`
+            : `<span style="font-size:10px;color:var(--muted);text-align:center;padding:4px">ยังไม่ได้<br>อัปโหลด</span>`}
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--txt);margin-bottom:3px">${S.config.garuda_url?'ใช้ตราครุฑที่อัปโหลด':'ยังไม่ได้ตั้งค่าตราครุฑ'}</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:2px">PNG พื้นโปร่งใส แนะนำ 400×400px ขึ้นไป ไม่เกิน 5MB</div>
+          <div style="font-size:11.5px;color:var(--muted)">แสดงใน: หัวเอกสาร "บันทึกข้อความ" (เช่น แจ้งรายชื่อนักเรียน มส ไม่มีสิทธิ์สอบปลายภาค) — ถ้ายังไม่อัปโหลด เอกสารจะเว้นที่ว่างไว้แทน</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <label class="btn bs" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin:0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          เลือกรูปภาพ
+          <input type="file" accept="image/*" style="display:none" onchange="uploadGaruda(this)">
+        </label>
+        ${S.config.garuda_url?`
+        <button class="btn" onclick="removeGaruda()" style="color:#FF3B30;border-color:rgba(255,59,48,.3)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          ลบตราครุฑ
+        </button>`:''}
+      </div>
+    </div>
+  </div>
+
   <!-- ── ลิงก์คู่มือการใช้งาน (Google Drive) ── -->
   <div class="card" style="margin-bottom:16px">
     <div class="ch">
@@ -574,6 +610,10 @@ async function pgSettings(){
           <div style="grid-column:1/-1">
             <label class="fl">ชื่อโรงเรียน</label>
             <input class="fi" id="c-school" value="${esc(cfg.school_name||'')}" placeholder="เช่น โรงเรียนตาเบาวิทยา">
+          </div>
+          <div>
+            <label class="fl">ตำบล/แขวง</label>
+            <input class="fi" id="c-subdist" value="${esc(cfg.school_subdistrict||'')}" placeholder="ตำบล">
           </div>
           <div>
             <label class="fl">อำเภอ/เขต</label>
@@ -1611,6 +1651,7 @@ async function saveSettings(){
   const teacherVal = Array.from(teacherRows).map(el=>el.value.trim()).filter(Boolean).join('\n');
   const updates=[
     {key:'school_name',    value:$('c-school').value.trim()},
+    {key:'school_subdistrict',value:$('c-subdist')?.value.trim()||''},
     {key:'school_district',value:$('c-dist').value.trim()},
     {key:'school_province',value:$('c-prov').value.trim()},
     {key:'academic_year',  value:$('c-year').value.trim()},
@@ -1779,6 +1820,53 @@ async function removeLogo(){
     delete S.config.logo_url;
     updateLogoDisplay(_DEFAULT_LOGO);
     toast('คืนค่าโลโก้เริ่มต้นแล้ว');
+    pgSettings();
+  }catch(e){ toast('เกิดข้อผิดพลาด: '+e.message,'er'); }
+  finally{ loading(false); }
+}
+
+async function uploadGaruda(input){
+  const file = input.files?.[0];
+  if(!file) return;
+  if(file.size > 5*1024*1024){ toast('ไฟล์ใหญ่เกิน 5MB กรุณาเลือกไฟล์ที่เล็กกว่า','er'); return; }
+  loading(true);
+  try{
+    const dataUrl = await new Promise((res,rej)=>{
+      const reader = new FileReader();
+      reader.onerror = rej;
+      reader.onload = e=>{
+        const img = new Image();
+        img.onerror = rej;
+        img.onload = ()=>{
+          const MAX = 512;
+          let w = img.width, h = img.height;
+          if(w > MAX || h > MAX){
+            if(w >= h){ h = Math.round(h*MAX/w); w = MAX; }
+            else { w = Math.round(w*MAX/h); h = MAX; }
+          }
+          const cv = document.createElement('canvas');
+          cv.width = w; cv.height = h;
+          cv.getContext('2d').drawImage(img, 0, 0, w, h);
+          res(cv.toDataURL('image/png', 0.9));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+    await q(sb.from('config').upsert([{key:'garuda_url', value:dataUrl}], {onConflict:'key'}));
+    S.config.garuda_url = dataUrl;
+    toast('บันทึกตราครุฑเรียบร้อย');
+    pgSettings();
+  }catch(e){ toast('เกิดข้อผิดพลาด: '+e.message,'er'); }
+  finally{ loading(false); }
+}
+
+async function removeGaruda(){
+  loading(true);
+  try{
+    await q(sb.from('config').delete().eq('key','garuda_url'));
+    delete S.config.garuda_url;
+    toast('ลบตราครุฑแล้ว');
     pgSettings();
   }catch(e){ toast('เกิดข้อผิดพลาด: '+e.message,'er'); }
   finally{ loading(false); }
@@ -2279,6 +2367,10 @@ async function pgSchoolReport(){
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>'+
             'พิมพ์ มส'+
           '</button>'+
+          '<button class="no-print" onclick="printMsMemo()" style="display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:10px;border:none;cursor:pointer;font-size:13px;font-weight:600;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-family:var(--font);box-shadow:0 2px 8px rgba(245,158,11,.35);transition:opacity .15s" onmouseover="this.style.opacity=\'.85\'" onmouseout="this.style.opacity=\'1\'">'+
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/><line x1="9" y1="11" x2="15" y2="11"/></svg>'+
+            'บันทึกข้อความ มส'+
+          '</button>'+
           '<button class="no-print" onclick="exportSchoolReport()" style="display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:10px;border:none;cursor:pointer;font-size:13px;font-weight:600;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;font-family:var(--font);box-shadow:0 2px 8px rgba(22,163,74,.35);transition:opacity .15s" onmouseover="this.style.opacity=\'.85\'" onmouseout="this.style.opacity=\'1\'">'+
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>'+
             'Excel'+
@@ -2482,6 +2574,76 @@ function printMsReport(){
   });
 
   printHTML('รายงานนักเรียน มส',pages,'portrait');
+}
+
+// พิมพ์ "บันทึกข้อความ" แจ้งรายชื่อนักเรียน มส ไม่มีสิทธิ์สอบปลายภาค — หนึ่งฉบับต่อหนึ่งรายวิชา
+// ตามแบบฟอร์มราชการ (ส่วนราชการ/ที่-วันที่/เรื่อง/เรียน/เนื้อความ/รายชื่อ/ลงชื่อ/กรรมการคุมสอบลงนาม)
+// ลงนามโดยหัวหน้ากลุ่มบริหารงานวิชาการ (cfg.head_academic) ไม่ใช่ครูผู้สอน — ครูผู้สอนถูกอ้างถึงในเนื้อความแทน
+function printMsMemo(){
+  const data=S._schoolReport;
+  if(!data){toast('กรุณาโหลดหน้ารายงานก่อน','er');return;}
+  const stuMap=Object.fromEntries((S._schoolStudents||[]).map(s=>[String(s.id),s]));
+  const cfg=S.config;
+  const subjectsWithMs=data.filter(s=>s._stats.msStudentIds&&s._stats.msStudentIds.length>0);
+  if(!subjectsWithMs.length){toast('ไม่พบนักเรียน มส ในทุกวิชา','in');return;}
+
+  const now=new Date();
+  const thaiDate=now.getDate()+' '+MONTHS[now.getMonth()]+' '+(now.getFullYear()+543);
+  const garudaHTML=cfg.garuda_url
+    ? `<img src="${cfg.garuda_url}" style="height:85px;display:block;margin:0 auto">`
+    : `<div style="height:85px"></div>`;
+
+  let pages='';
+  subjectsWithMs.forEach((sub,i)=>{
+    const st=sub._stats;
+    const sorted=[...st.msStudentIds].sort((a,b)=>{
+      const sa=stuMap[String(a)]?.student_code||'';
+      const sb2=stuMap[String(b)]?.student_code||'';
+      return sa.localeCompare(sb2,'th');
+    });
+    const isLast=i===subjectsWithMs.length-1;
+    pages+=`<div style="page-break-after:${isLast?'auto':'always'};font-size:15.5px;line-height:1.9">
+      ${garudaHTML}
+      <div style="text-align:center;font-size:20px;font-weight:700;margin-bottom:14px">บันทึกข้อความ</div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:4px">
+        <tr>
+          <td style="vertical-align:top;width:90px">ส่วนราชการ</td>
+          <td style="vertical-align:top" colspan="3">โรงเรียน${esc(schoolNameOnly(cfg.school_name))} &nbsp;ตำบล${esc(cfg.school_subdistrict||'')} &nbsp;อำเภอ${esc(cfg.school_district||'')} &nbsp;จังหวัด${esc(cfg.school_province||'')}</td>
+        </tr>
+      </table>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:4px">
+        <tr>
+          <td style="width:50%;vertical-align:top">ที่.........................................</td>
+          <td style="width:50%;vertical-align:top">วันที่ &nbsp;${thaiDate}</td>
+        </tr>
+      </table>
+      <div style="border-bottom:1.5px solid #000;padding-bottom:8px;margin-bottom:10px">เรื่อง &nbsp;แจ้งรายชื่อนักเรียนมีเวลาเรียนไม่ครบร้อยละ 80 ไม่อนุญาตให้สอบปลายภาค</div>
+      <div style="margin-bottom:6px">เรียน &nbsp;กรรมการคุมสอบวัดผลปลายภาค ห้อง ${esc(grm(sub.grade_level,sub.room))}</div>
+      <p style="text-indent:48px;text-align:justify;margin:0 0 10px">
+        ด้วย...........${esc(st.teacherName||'')}.......ครูผู้สอนรายวิชา...............${esc(sub.subject_name)}..........
+        รหัสวิชา......${esc(sub.subject_code)}.... ได้แจ้งรายชื่อนักเรียนที่มีเวลาเรียนไม่ครบร้อยละ 80 &nbsp;นักเรียนที่มีรายชื่อ
+        ดังต่อไปนี้ไม่อนุญาตให้เข้าสอบวัดผลปลายภาค ภาคเรียนที่ ${esc(cfg.semester||'')} &nbsp;ปีการศึกษา ${esc(cfg.academic_year||'')} &nbsp;นักเรียนดังกล่าวไม่ได้
+        ดำเนินการยื่นคำร้องขอมีสิทธิ์สอบตามกำหนดเวลา &nbsp;ดังมีรายชื่อต่อไปนี้
+      </p>
+      <div style="margin:0 0 14px 60px">
+        ${sorted.map((sid,j)=>{
+          const stu=stuMap[String(sid)];
+          return `<div>${j+1}. &nbsp;${esc(stu?.student_name||'(ไม่พบชื่อ)')}</div>`;
+        }).join('')}
+      </div>
+      <div style="text-indent:48px;margin-bottom:36px">จึงเรียนมาเพื่อทราบและดำเนินการ</div>
+      <div style="width:280px;margin:0 0 40px auto;text-align:center">
+        <div>ลงชื่อ</div>
+        <div style="margin-top:44px">(${esc(cfg.head_academic||'..........................................')})</div>
+        <div>หัวหน้ากลุ่มบริหารงานวิชาการ</div>
+      </div>
+      <div style="font-weight:700;margin-bottom:18px">กรรมการคุมสอบลงนาม</div>
+      <div style="margin-bottom:26px">1.................................................................</div>
+      <div style="margin-bottom:10px">2.................................................................</div>
+    </div>`;
+  });
+
+  printHTML('บันทึกข้อความ — แจ้งรายชื่อนักเรียน มส',pages,'portrait',true);
 }
 
 function _toggleSchoolCard(cardId){
