@@ -2656,14 +2656,14 @@ function printMsMemo(){
       /* ขอบกระดาษตามระเบียบสำนักนายกรัฐมนตรีว่าด้วยงานสารบรรณ: บน 1.5 ซม. ขวา/ล่าง 2 ซม. ซ้าย 3 ซม. (เผื่อเจาะแฟ้ม) */
       @page{size:A4 portrait;margin:15mm 20mm 20mm 30mm;}
       *{box-sizing:border-box;}
-      body{margin:0;padding:0;background:#fff;font-family:'TH Sarabun New','Sarabun','Noto Sans Thai',sans-serif;font-weight:300;font-size:12.5pt;line-height:1.7;color:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      body{margin:0;padding:0;background:#fff;font-family:'TH Sarabun New','Sarabun','Noto Sans Thai',sans-serif;font-weight:300;font-size:16pt;line-height:1.7;color:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
       b{font-weight:700;}
       .memo-page{padding-top:1px;display:flex;flex-direction:column;min-height:262mm;}
       /* ครุฑชิดซ้าย + "บันทึกข้อความ" กึ่งกลางหน้า ให้ขอบล่างของครุฑเสมอกับขอบล่างข้อความ (ใช้ flex
          align-items:flex-end แทน text อยู่บนสุดของกล่อง เพราะ .memo-header สูงเท่าตราครุฑ 1.5 ซม.) */
       .memo-header{position:relative;display:flex;justify-content:center;align-items:flex-end;margin-bottom:8pt;min-height:1.5cm}
       .memo-header img{position:absolute;left:0;bottom:0;height:1.5cm}
-      .memo-title{font-size:20pt;font-weight:700;}
+      .memo-title{font-size:29pt;font-weight:700;}
       .memo-row{margin-bottom:5pt;}
       .memo-row-split{display:grid;grid-template-columns:1fr 1fr 1fr;}
       .memo-date-center{text-align:center;}
