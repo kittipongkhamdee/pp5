@@ -2589,9 +2589,10 @@ function printMsMemo(){
 
   const now=new Date();
   const thaiDate=now.getDate()+' '+MONTHS[now.getMonth()]+' '+(now.getFullYear()+543);
+  // ตราครุฑบันทึกข้อความ: ชิดซ้าย สูง 1.5 ซม. ตามระเบียบงานสารบรรณ
   const garudaHTML=cfg.garuda_url
-    ? `<img src="${cfg.garuda_url}" style="height:85px;display:block;margin:0 auto">`
-    : `<div style="height:85px"></div>`;
+    ? `<img src="${cfg.garuda_url}" style="height:1.5cm;display:block;margin:0 0 6px">`
+    : `<div style="height:1.5cm;margin-bottom:6px"></div>`;
 
   let pages='';
   subjectsWithMs.forEach((sub,i)=>{
