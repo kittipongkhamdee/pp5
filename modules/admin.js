@@ -2677,7 +2677,8 @@ function printMsMemo(){
       .memo-list div{margin-bottom:1pt;}
       /* บล็อกลงชื่อ: อยู่คอลัมน์กลางเดียวกับ "วันที่" ชิดซ้ายในคอลัมน์นั้น (ไม่กึ่งกลางเต็มหน้า) */
       .memo-sign-row{display:grid;grid-template-columns:1fr 1fr 1fr;margin:5pt 0 16pt;}
-      .memo-sign{text-align:left;}
+      /* เริ่มที่คอลัมน์กลางเดียวกับ "วันที่" แต่กินพื้นที่ถึงคอลัมน์ขวาสุดด้วย กันชื่อ/ตำแหน่งยาวๆ ตัดขึ้นบรรทัดใหม่ */
+      .memo-sign{grid-column:2 / 4;text-align:left;white-space:nowrap;}
       .sig-dots{display:inline-block;width:110pt;border-bottom:1px dotted #000;margin-left:6pt;vertical-align:bottom;}
       .memo-sign-name{margin-left:2.2em;}
       .memo-committee-title{font-weight:700;margin-bottom:10pt;}
