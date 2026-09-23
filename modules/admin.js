@@ -2816,7 +2816,9 @@ function printMsMemo(selectedIds){
          ให้คอลัมน์ขวา (ที่ .memo-sign อยู่) เริ่มต้นตรงกึ่งกลางหน้าพอดี */
       .memo-sign-row{display:grid;grid-template-columns:1fr 1fr;margin:23pt 0 16pt;}
       .memo-sign{text-align:left;white-space:nowrap;}
-      .sig-dots{display:inline-block;width:110pt;border-bottom:1px dotted #000;margin-left:6pt;vertical-align:bottom;}
+      /* ความยาวเส้นปรุจริงถูกตั้งด้วย JS (ดู _syncMemoSignDots ท้ายหน้า) ให้เท่ากับความกว้าง
+         ของชื่อผู้ลงนามที่พิมพ์อยู่ด้านล่างพอดี — ค่า width ตรงนี้เป็นแค่ fallback ก่อน JS ทำงาน */
+      .sig-dots{display:inline-block;width:140pt;border-bottom:1px dotted #000;margin-left:6pt;vertical-align:bottom;}
       .memo-sign-name{margin-left:2.2em;}
       .memo-committee-title{font-weight:700;margin-top:auto;padding-top:20pt;margin-bottom:10pt;}
       .memo-committee-line{margin-bottom:14pt;}
@@ -2827,6 +2829,19 @@ function printMsMemo(selectedIds){
     </head><body>
     ${pages}
     <div class="action-bar"><button class="btn-print" onclick="document.fonts.ready.then(()=>window.print())">พิมพ์</button></div>
+    <script>
+      // ตั้งความยาวเส้นปรุ (.sig-dots) ให้เท่ากับความกว้างจริงของชื่อผู้ลงนามที่พิมพ์อยู่บรรทัดถัดไป
+      // ต้องรอฟอนต์โหลดเสร็จก่อนวัดความกว้าง ไม่งั้นจะวัดจากฟอนต์สำรอง (fallback) ที่ความกว้างไม่ตรงจริง
+      function _syncMemoSignDots(){
+        document.querySelectorAll('.memo-sign').forEach(function(sign){
+          var dots=sign.querySelector('.sig-dots');
+          var nameEl=sign.querySelector('.memo-sign-name');
+          if(dots&&nameEl) dots.style.width=nameEl.getBoundingClientRect().width+'px';
+        });
+      }
+      document.fonts.ready.then(_syncMemoSignDots);
+      window.addEventListener('resize',_syncMemoSignDots);
+    </script>
     </body></html>`);
   w.document.close();
 }
