@@ -2605,20 +2605,16 @@ function printMsMemo(){
     pages+=`<div style="page-break-after:${isLast?'auto':'always'};font-size:15.5px;line-height:1.9">
       ${garudaHTML}
       <div style="text-align:center;font-size:20px;font-weight:700;margin-bottom:14px">บันทึกข้อความ</div>
-      <table style="width:100%;border-collapse:collapse;margin-bottom:4px">
-        <tr>
-          <td style="vertical-align:top;width:90px">ส่วนราชการ</td>
-          <td style="vertical-align:top" colspan="3">โรงเรียน${esc(schoolNameOnly(cfg.school_name))} &nbsp;ตำบล${esc(cfg.school_subdistrict||'')} &nbsp;อำเภอ${esc(cfg.school_district||'')} &nbsp;จังหวัด${esc(cfg.school_province||'')}</td>
-        </tr>
-      </table>
-      <table style="width:100%;border-collapse:collapse;margin-bottom:4px">
-        <tr>
-          <td style="width:50%;vertical-align:top">ที่.........................................</td>
-          <td style="width:50%;vertical-align:top">วันที่ &nbsp;${thaiDate}</td>
-        </tr>
-      </table>
+      <div style="display:flex;margin-bottom:2px">
+        <div style="width:90px;flex-shrink:0">ส่วนราชการ</div>
+        <div>โรงเรียน${esc(schoolNameOnly(cfg.school_name))} &nbsp;ตำบล${esc(cfg.school_subdistrict||'')} &nbsp;อำเภอ${esc(cfg.school_district||'')} &nbsp;จังหวัด${esc(cfg.school_province||'')}</div>
+      </div>
+      <div style="display:flex;margin-bottom:2px">
+        <div style="width:50%">ที่.........................................</div>
+        <div>วันที่ &nbsp;${thaiDate}</div>
+      </div>
       <div style="border-bottom:1.5px solid #000;padding-bottom:8px;margin-bottom:10px">เรื่อง &nbsp;แจ้งรายชื่อนักเรียนมีเวลาเรียนไม่ครบร้อยละ 80 ไม่อนุญาตให้สอบปลายภาค</div>
-      <div style="margin-bottom:6px">เรียน &nbsp;กรรมการคุมสอบวัดผลปลายภาค ห้อง ${esc(grm(sub.grade_level,sub.room))}</div>
+      <div style="margin-bottom:6px">เรียน &nbsp;กรรมการคุมสอบวัดผลปลายภาค ห้อง ม...${esc(String(sub.grade_level))}${+sub.room?'/'+esc(String(sub.room)):''}......</div>
       <p style="text-indent:48px;text-align:justify;margin:0 0 10px">
         ด้วย...........${esc(st.teacherName||'')}.......ครูผู้สอนรายวิชา...............${esc(sub.subject_name)}..........
         รหัสวิชา......${esc(sub.subject_code)}.... ได้แจ้งรายชื่อนักเรียนที่มีเวลาเรียนไม่ครบร้อยละ 80 &nbsp;นักเรียนที่มีรายชื่อ
@@ -2632,7 +2628,7 @@ function printMsMemo(){
         }).join('')}
       </div>
       <div style="text-indent:48px;margin-bottom:36px">จึงเรียนมาเพื่อทราบและดำเนินการ</div>
-      <div style="width:280px;margin:0 0 40px auto;text-align:center">
+      <div style="text-align:center;margin-bottom:40px">
         <div>ลงชื่อ</div>
         <div style="margin-top:44px">(${esc(cfg.head_academic||'..........................................')})</div>
         <div>หัวหน้ากลุ่มบริหารงานวิชาการ</div>
