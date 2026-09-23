@@ -2618,7 +2618,7 @@ function printMsMemo(){
         <span></span>
       </div>
       <div class="memo-subject"><b>เรื่อง</b> &nbsp;แจ้งรายชื่อนักเรียนมีเวลาเรียนไม่ครบร้อยละ 80 ไม่อนุญาตให้สอบปลายภาค</div>
-      <div class="memo-row">เรียน &nbsp;กรรมการคุมสอบวัดผลปลายภาค ห้อง ม...${esc(String(sub.grade_level))}${+sub.room?'/'+esc(String(sub.room)):''}......</div>
+      <div class="memo-row">เรียน &nbsp;กรรมการคุมสอบวัดผลปลายภาค ห้อง <span class="fill">ม.${esc(String(sub.grade_level))}${+sub.room?'/'+esc(String(sub.room)):''}</span></div>
       <p class="memo-body">
         ด้วย <span class="fill">${esc(st.teacherName||'')}</span> ครูผู้สอนรายวิชา <span class="fill">${esc(sub.subject_name)}</span>
         รหัสวิชา <span class="fill">${esc(sub.subject_code)}</span> ได้แจ้งรายชื่อนักเรียนที่มีเวลาเรียนไม่ครบร้อยละ 80 นักเรียนที่มีรายชื่อ
