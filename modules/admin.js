@@ -2670,7 +2670,7 @@ function printMsMemo(){
       .memo-subject{border-bottom:.75pt solid #000;padding-bottom:5pt;margin-bottom:6pt;}
       /* ค่าที่กรอกในเนื้อความ (ชื่อครู/วิชา/รหัสวิชา/ภาคเรียน/ปีการศึกษา) ไม่ใช้จุดไข่ปลาล้อมรอบ
          แสดงค่าตรงๆ แล้วขีดเส้นใต้แบบเส้นปรุ/จุดไข่ปลาแทน เว้นระยะซ้ายขวาให้ไม่ติดคำข้างเคียง */
-      .fill{padding:0 3px;text-decoration:underline;text-decoration-style:dotted;text-decoration-color:#000;text-underline-offset:3px;}
+      .fill{padding:0 3px;text-decoration:underline;text-decoration-style:dotted;text-decoration-color:#000;text-decoration-thickness:1px;text-underline-offset:3px;}
       /* ย่อหน้าใหม่เว้น 2.5 ซม. จากขอบซ้ายตามระเบียบ (เฉพาะบรรทัดแรกของย่อหน้า บรรทัดถัดไปชิดขอบปกติ) */
       .memo-body{text-indent:2.5cm;margin:0 0 5pt;}
       .memo-list{margin:0 0 6pt 2.5cm;}
