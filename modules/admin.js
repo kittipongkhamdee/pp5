@@ -2658,7 +2658,7 @@ function printMsMemo(){
       *{box-sizing:border-box;}
       body{margin:0;padding:0;background:#fff;font-family:'TH Sarabun New','Sarabun','Noto Sans Thai',sans-serif;font-weight:300;font-size:12.5pt;line-height:1.7;color:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
       b{font-weight:700;}
-      .memo-page{padding-top:1px;}
+      .memo-page{padding-top:1px;display:flex;flex-direction:column;min-height:262mm;}
       /* ครุฑชิดซ้าย + "บันทึกข้อความ" กึ่งกลางหน้า ให้ขอบล่างของครุฑเสมอกับขอบล่างข้อความ (ใช้ flex
          align-items:flex-end แทน text อยู่บนสุดของกล่อง เพราะ .memo-header สูงเท่าตราครุฑ 1.5 ซม.) */
       .memo-header{position:relative;display:flex;justify-content:center;align-items:flex-end;margin-bottom:8pt;min-height:1.5cm}
@@ -2676,12 +2676,12 @@ function printMsMemo(){
       .memo-list{margin:0 0 6pt 2.5cm;}
       .memo-list div{margin-bottom:1pt;}
       /* บล็อกลงชื่อ: อยู่คอลัมน์กลางเดียวกับ "วันที่" ชิดซ้ายในคอลัมน์นั้น (ไม่กึ่งกลางเต็มหน้า) */
-      .memo-sign-row{display:grid;grid-template-columns:1fr 1fr 1fr;margin:5pt 0 16pt;}
+      .memo-sign-row{display:grid;grid-template-columns:1fr 1fr 1fr;margin:47pt 0 16pt;}
       /* เริ่มที่คอลัมน์กลางเดียวกับ "วันที่" แต่กินพื้นที่ถึงคอลัมน์ขวาสุดด้วย กันชื่อ/ตำแหน่งยาวๆ ตัดขึ้นบรรทัดใหม่ */
       .memo-sign{grid-column:2 / 4;text-align:left;white-space:nowrap;}
       .sig-dots{display:inline-block;width:110pt;border-bottom:1px dotted #000;margin-left:6pt;vertical-align:bottom;}
       .memo-sign-name{margin-left:2.2em;}
-      .memo-committee-title{font-weight:700;margin-bottom:10pt;}
+      .memo-committee-title{font-weight:700;margin-top:auto;padding-top:20pt;margin-bottom:10pt;}
       .memo-committee-line{margin-bottom:14pt;}
       .action-bar{display:flex;gap:10px;justify-content:center;padding:14px;margin-top:20px;background:#f5f5f7;border-radius:10px;position:sticky;bottom:0;font-family:'Sarabun',sans-serif;}
       .btn-print{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#1d1d1f;color:#fff;font-weight:600;}
