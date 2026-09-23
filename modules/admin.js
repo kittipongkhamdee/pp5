@@ -2600,7 +2600,7 @@ function openMsMemoSelectDialog(){
       const st=sub._stats;
       const room='ม.'+esc(String(sub.grade_level))+(+sub.room?'/'+esc(String(sub.room)):'');
       return '<label style="display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:0.5px solid rgba(0,0,0,.06);cursor:pointer;">'+
-        '<input type="checkbox" class="ms-memo-cb" value="'+esc(String(sub.id))+'" checked onchange="_updateMsGradeCbState(this)" style="width:18px;height:18px;accent-color:var(--ac);flex-shrink:0">'+
+        '<input type="checkbox" class="ms-memo-cb" value="'+esc(String(sub.id))+'" onchange="_updateMsGradeCbState(this)" style="width:18px;height:18px;accent-color:var(--ac);flex-shrink:0">'+
         '<div style="flex:1;min-width:0">'+
           '<div style="font-size:13.5px;font-weight:600;">'+esc(st.teacherName||'—')+'</div>'+
           '<div style="font-size:12px;color:#6e6e73;">'+esc(sub.subject_name)+' · '+room+' · มส '+st.msStudentIds.length+' คน</div>'+
@@ -2609,11 +2609,11 @@ function openMsMemoSelectDialog(){
     }).join('');
     return '<div class="ms-grade-group" style="margin-bottom:10px;border:1px solid rgba(0,0,0,.08);border-radius:12px;overflow:hidden;">'+
       '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(0,0,0,.03);cursor:pointer;" onclick="_toggleMsGradeCollapse(this)">'+
-        '<input type="checkbox" class="ms-grade-cb" checked onclick="event.stopPropagation();_toggleMsGradeAll(this)" style="width:18px;height:18px;accent-color:var(--ac);flex-shrink:0">'+
+        '<input type="checkbox" class="ms-grade-cb" onclick="event.stopPropagation();_toggleMsGradeAll(this)" style="width:18px;height:18px;accent-color:var(--ac);flex-shrink:0">'+
         '<div style="flex:1;font-size:13.5px;font-weight:700;">ม.'+esc(String(grade))+' <span style="font-weight:400;color:#6e6e73;">('+subs.length+' รายการ)</span></div>'+
-        '<svg class="ms-grade-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="flex-shrink:0;transition:transform .15s;transform:rotate(180deg)"><polyline points="6 9 12 15 18 9"/></svg>'+
+        '<svg class="ms-grade-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="flex-shrink:0;transition:transform .15s;transform:rotate(0deg)"><polyline points="6 9 12 15 18 9"/></svg>'+
       '</div>'+
-      '<div class="ms-grade-body" style="padding:0 12px;">'+items+'</div>'+
+      '<div class="ms-grade-body" style="padding:0 12px;display:none;">'+items+'</div>'+
     '</div>';
   }).join('');
 
