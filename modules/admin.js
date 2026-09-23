@@ -2651,20 +2651,20 @@ function printMsMemo(){
       /* ขอบกระดาษตามระเบียบสำนักนายกรัฐมนตรีว่าด้วยงานสารบรรณ: บน 1.5 ซม. ขวา/ล่าง 2 ซม. ซ้าย 3 ซม. (เผื่อเจาะแฟ้ม) */
       @page{size:A4 portrait;margin:15mm 20mm 20mm 30mm;}
       *{box-sizing:border-box;}
-      body{margin:0;padding:0;background:#fff;font-family:'TH Sarabun New','Sarabun','Noto Sans Thai',sans-serif;font-size:16pt;line-height:1.6;color:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      body{margin:0;padding:0;background:#fff;font-family:'TH Sarabun New','Sarabun','Noto Sans Thai',sans-serif;font-size:14pt;line-height:1.45;color:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
       .memo-page{padding-top:1px;}
-      .memo-title{text-align:center;font-size:29pt;font-weight:700;margin:0 0 14pt;}
-      .memo-row{margin-bottom:8pt;}
+      .memo-title{text-align:center;font-size:22pt;font-weight:700;margin:0 0 10pt;}
+      .memo-row{margin-bottom:6pt;}
       .memo-row-split{display:flex;justify-content:space-between;}
-      .memo-subject{border-bottom:1.5pt solid #000;padding-bottom:10pt;margin-bottom:10pt;}
+      .memo-subject{border-bottom:1.5pt solid #000;padding-bottom:6pt;margin-bottom:8pt;}
       /* ย่อหน้าใหม่เว้น 2.5 ซม. จากขอบซ้ายตามระเบียบ (เฉพาะบรรทัดแรกของย่อหน้า บรรทัดถัดไปชิดขอบปกติ) */
-      .memo-body{text-indent:2.5cm;text-align:justify;margin:0 0 10pt;}
-      .memo-list{margin:0 0 12pt 2.5cm;}
-      .memo-list div{margin-bottom:2pt;}
-      .memo-sign{text-align:center;margin:8pt 0 32pt;}
-      .memo-sign-gap{margin-top:40pt;}
-      .memo-committee-title{font-weight:700;margin-bottom:20pt;}
-      .memo-committee-line{margin-bottom:26pt;}
+      .memo-body{text-indent:2.5cm;text-align:justify;margin:0 0 6pt;}
+      .memo-list{margin:0 0 8pt 2.5cm;}
+      .memo-list div{margin-bottom:1pt;}
+      .memo-sign{text-align:center;margin:6pt 0 20pt;}
+      .memo-sign-gap{margin-top:26pt;}
+      .memo-committee-title{font-weight:700;margin-bottom:12pt;}
+      .memo-committee-line{margin-bottom:16pt;}
       .action-bar{display:flex;gap:10px;justify-content:center;padding:14px;margin-top:20px;background:#f5f5f7;border-radius:10px;position:sticky;bottom:0;font-family:'Sarabun',sans-serif;}
       .btn-print{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#1d1d1f;color:#fff;font-weight:600;}
       @media print{.action-bar{display:none!important;}}
