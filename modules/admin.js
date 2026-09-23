@@ -2658,7 +2658,7 @@ function printMsMemo(){
       *{box-sizing:border-box;}
       body{margin:0;padding:0;background:#fff;font-family:'TH Sarabun New','Sarabun','Noto Sans Thai',sans-serif;font-weight:300;font-size:16pt;line-height:1.5;color:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
       b{font-weight:700;}
-      .memo-page{padding-top:1px;display:flex;flex-direction:column;min-height:262mm;}
+      .memo-page{padding-top:1px;display:flex;flex-direction:column;min-height:253mm;}
       /* ครุฑชิดซ้าย + "บันทึกข้อความ" กึ่งกลางหน้า ให้ขอบล่างของครุฑเสมอกับขอบล่างข้อความ (ใช้ flex
          align-items:flex-end แทน text อยู่บนสุดของกล่อง เพราะ .memo-header สูงเท่าตราครุฑ 1.5 ซม.) */
       .memo-header{position:relative;display:flex;justify-content:center;align-items:flex-end;margin-bottom:8pt;min-height:1.5cm}
@@ -2670,7 +2670,7 @@ function printMsMemo(){
       .memo-subject{border-bottom:.75pt solid #000;padding-bottom:5pt;margin-bottom:6pt;}
       /* ค่าที่กรอกในเนื้อความ (ชื่อครู/วิชา/รหัสวิชา/ภาคเรียน/ปีการศึกษา) ไม่ใช้จุดไข่ปลาล้อมรอบ
          แสดงค่าตรงๆ แล้วขีดเส้นใต้แบบเส้นปรุ/จุดไข่ปลาแทน เว้นระยะซ้ายขวาให้ไม่ติดคำข้างเคียง */
-      .fill{padding:0 3px;text-decoration:underline;text-decoration-style:dotted;text-decoration-color:#000;text-decoration-thickness:1px;text-underline-offset:3px;}
+      .fill{padding:0 6px;text-decoration:underline;text-decoration-style:dotted;text-decoration-color:#000;text-decoration-thickness:1px;text-underline-offset:3px;}
       /* ย่อหน้าใหม่เว้น 2.5 ซม. จากขอบซ้ายตามระเบียบ (เฉพาะบรรทัดแรกของย่อหน้า บรรทัดถัดไปชิดขอบปกติ) */
       .memo-body{text-indent:2.5cm;margin:0 0 5pt;}
       .memo-list{margin:0 0 6pt 2.5cm;}
