@@ -2734,7 +2734,7 @@ function printMsMemo(selectedIds){
       </div>
       <div class="memo-subject"><b>เรื่อง</b> &nbsp;แจ้งรายชื่อนักเรียนมีเวลาเรียนไม่ครบร้อยละ 80 ไม่อนุญาตให้สอบปลายภาค</div>
       <div class="memo-row">เรียน &nbsp;กรรมการคุมสอบวัดผลปลายภาค ห้อง<span class="fill">ม.${esc(String(sub.grade_level))}${+sub.room?'/'+esc(String(sub.room)):''}</span></div>
-      <p class="memo-body">
+      <p class="memo-body memo-body-keepwords">
         ด้วย<span class="fill">${esc(st.teacherName||'')}</span>ครูผู้สอนรายวิชา<span class="fill">${esc(sub.subject_name)}</span>รหัสวิชา<span class="fill">${esc(sub.subject_code)}</span>ได้แจ้งรายชื่อนักเรียนที่มีเวลาเรียนไม่ครบร้อยละ 80 นักเรียนที่มีรายชื่อดังต่อไปนี้ไม่อนุญาตให้เข้าสอบวัดผลปลายภาค
         ภาคเรียนที่<span class="fill">${esc(cfg.semester||'')}</span>ปีการศึกษา<span class="fill">${esc(cfg.academic_year||'')}</span>นักเรียนดังกล่าวไม่ได้ดำเนินการยื่นคำร้องขอมีสิทธิ์สอบตามกำหนดเวลา ดังมีรายชื่อต่อไปนี้
       </p>
@@ -2793,9 +2793,10 @@ function printMsMemo(selectedIds){
       .memo-header img{position:absolute;left:0;bottom:0;height:1.5cm}
       .memo-title{font-size:29pt;font-weight:700;line-height:1;}
       .memo-row{margin-bottom:5pt;}
-      /* "วันที่" เริ่มต้นพอดีที่กึ่งกลางหน้ากระดาษ — แบ่ง 2 คอลัมน์เท่ากัน (ไม่ใช่ 3 คอลัมน์
-         + text-align:center แบบเดิม ซึ่งจะดันข้อความไปกึ่งกลางคอลัมน์ที่ 2 ไม่ใช่กึ่งกลางหน้า) */
-      .memo-row-split{display:grid;grid-template-columns:1fr 1fr;}
+      /* "วันที่" ขยับมาทางซ้ายจากกึ่งกลางหน้าเดิม (50%) มาที่ 35% แทน — คอลัมน์ขวาเริ่มเร็วขึ้น
+         ให้เข้าใกล้เนื้อหาฝั่งซ้ายมากกว่าเดิม (.memo-sign-row ด้านล่างใช้สัดส่วนเดียวกัน ให้
+         "ลงชื่อ" อยู่ตำแหน่งเดียวกับ "วันที่" เป๊ะๆ เหมือนก่อน) */
+      .memo-row-split{display:grid;grid-template-columns:35% 65%;}
       /* คอลัมน์ขวาแคบลงกว่าเดิม (จาก 3 คอลัมน์เหลือ 2) — กัน "วันที่ 24 กันยายน 2569" ตัดขึ้น
          บรรทัดใหม่กลางวันที่ ทั้งที่สั้นพอจะอยู่บรรทัดเดียวได้สบายๆ */
       .memo-date-nowrap{white-space:nowrap;}
@@ -2808,13 +2809,15 @@ function printMsMemo(selectedIds){
          — text-decoration เกาะติดกล่องจริงของแต่ละ fragment เสมอ ปลอดภัยกว่าแม้เส้นจะไม่ชน
          คำข้างเคียงเป๊ะๆ */
       .fill{padding:0 8px;text-decoration:underline;text-decoration-style:dotted;text-decoration-color:#000;text-decoration-thickness:1px;text-underline-offset:3px;}
+      /* วลีที่ต้องอยู่ครบห้ามฉีก (ดู _protectThaiPhrases ท้ายหน้า) — จัดชิดซ้ายตามปกติทุกอย่าง
+         ไม่มีการยืด/กระจายช่องว่างเลย แค่กันไม่ให้เบราว์เซอร์เลือกตัดบรรทัดกลางวลีพวกนี้ */
+      .tj-nowrap{white-space:nowrap;}
       /* ย่อหน้าใหม่เว้น 2.5 ซม. จากขอบซ้ายตามระเบียบ (เฉพาะบรรทัดแรกของย่อหน้า บรรทัดถัดไปชิดขอบปกติ) */
       .memo-body{text-indent:2.5cm;margin:0 0 5pt;}
       .memo-list{margin:0 0 6pt 2.5cm;}
       .memo-list div{margin-bottom:1pt;}
-      /* "ลงชื่อ" เริ่มต้นพอดีที่กึ่งกลางหน้ากระดาษเช่นเดียวกับ "วันที่" — แบ่ง 2 คอลัมน์เท่ากัน
-         ให้คอลัมน์ขวา (ที่ .memo-sign อยู่) เริ่มต้นตรงกึ่งกลางหน้าพอดี */
-      .memo-sign-row{display:grid;grid-template-columns:1fr 1fr;margin:23pt 0 16pt;}
+      /* "ลงชื่อ" อยู่ตำแหน่งเดียวกับ "วันที่" เป๊ะๆ (35% เหมือนกัน) */
+      .memo-sign-row{display:grid;grid-template-columns:35% 65%;margin:23pt 0 16pt;}
       .memo-sign{text-align:left;white-space:nowrap;}
       /* ความยาวเส้นปรุจริงถูกตั้งด้วย JS (ดู _syncMemoSignDots ท้ายหน้า) ให้เท่ากับความกว้าง
          ของชื่อผู้ลงนามที่พิมพ์อยู่ด้านล่างพอดี — ค่า width ตรงนี้เป็นแค่ fallback ก่อน JS ทำงาน */
@@ -2839,8 +2842,59 @@ function printMsMemo(selectedIds){
           if(dots&&nameEl) dots.style.width=nameEl.getBoundingClientRect().width+'px';
         });
       }
+      // เรียกหลายจุด (ทันที + window.load + fonts.ready + setTimeout กันเหนียว) เพราะบางเบราว์เซอร์
+      // (โดยเฉพาะมือถือ) document.fonts.ready อย่างเดียวบางทีไม่ยิง/ยิงช้ากว่าที่คิด ทำให้เส้นปรุ
+      // ค้างที่ค่า fallback ยาวเกินจริงในเอกสารที่พิมพ์ออกมา
+      _syncMemoSignDots();
+      window.addEventListener('load',_syncMemoSignDots);
       document.fonts.ready.then(_syncMemoSignDots);
+      setTimeout(_syncMemoSignDots,300);
       window.addEventListener('resize',_syncMemoSignDots);
+
+      // กันวลีภาษาไทยที่ควรอยู่ด้วยกันถูกฉีกกลางคำตอนตัดบรรทัด (เบราว์เซอร์มีระบบตัดคำไทยในตัว
+      // อยู่แล้วแม้ไม่เว้นวรรค แต่บางทีก็เลือกตัดกลางคำผสมที่ควรอยู่ด้วยกัน เช่น "ปีการศึกษา")
+      // จัดชิดซ้ายเหมือนเดิมทุกอย่าง ไม่มีการยืด/กระจายช่องว่างใดๆ — แค่ห่อวลีที่อยู่ในลิสต์นี้
+      // ด้วย white-space:nowrap เฉพาะจุด เจอวลีอื่นที่โดนฉีกอีกในอนาคต เพิ่มเข้าลิสต์นี้ได้เรื่อยๆ
+      var TJ_KEEP_TOGETHER=['ปีการศึกษา','ภาคเรียนที่','รหัสวิชา','ปลายภาค','ดังต่อไปนี้','ครูผู้สอนรายวิชา','ดำเนินการ'];
+      function _tjMergeSegments(segs){
+        var result=[]; var i=0;
+        while(i<segs.length){
+          var matched=null;
+          for(var pi=0;pi<TJ_KEEP_TOGETHER.length;pi++){
+            var phrase=TJ_KEEP_TOGETHER[pi];
+            var acc=''; var j=i;
+            while(j<segs.length && acc.length<phrase.length){ acc+=segs[j].segment; j++; }
+            if(acc===phrase){ matched={text:acc,end:j}; break; }
+          }
+          if(matched){ result.push(matched.text); i=matched.end; }
+          else { result.push(segs[i].segment); i++; }
+        }
+        return result;
+      }
+      function _protectThaiPhrases(p){
+        try{
+          if(typeof Intl==='undefined'||!Intl.Segmenter) return;
+          var seg=new Intl.Segmenter('th',{granularity:'word'});
+          Array.from(p.childNodes).forEach(function(node){
+            if(node.nodeType!==3) return;
+            var merged=_tjMergeSegments(Array.from(seg.segment(node.textContent)));
+            if(merged.length===1 && TJ_KEEP_TOGETHER.indexOf(merged[0])===-1) return;
+            var frag=document.createDocumentFragment();
+            merged.forEach(function(text){
+              if(TJ_KEEP_TOGETHER.indexOf(text)!==-1){
+                var span=document.createElement('span');
+                span.className='tj-nowrap';
+                span.textContent=text;
+                frag.appendChild(span);
+              }else{
+                frag.appendChild(document.createTextNode(text));
+              }
+            });
+            node.parentNode.replaceChild(frag,node);
+          });
+        }catch(e){ /* ผิดพลาดจุดไหนก็ปล่อยข้อความเดิม ไม่ให้เอกสารพังทั้งหน้า */ }
+      }
+      document.querySelectorAll('.memo-body-keepwords').forEach(_protectThaiPhrases);
     </script>
     </body></html>`);
   w.document.close();
