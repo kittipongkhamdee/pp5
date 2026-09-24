@@ -2890,6 +2890,57 @@ function printMsMemo(selectedIds){
         }catch(e){ /* ผิดพลาดจุดไหนก็ปล่อยข้อความเดิม ไม่ให้เอกสารพังทั้งหน้า */ }
       }
       document.querySelectorAll('.memo-body-keepwords').forEach(_protectThaiPhrases);
+
+      // จัดแบบ Thai Distributed: กระจายระยะเท่าๆ กันทุกตัวอักษรในบรรทัดให้ชิดขอบขวา (เหมือน Word)
+      // text-align:justify ของเบราว์เซอร์ยืดได้แค่ตรงเว้นวรรค ช่องว่างจึงไปกองจุดเดียว — ใช้ JS แทน
+      // จำกัดระยะเพิ่มไม่เกิน TD_MAX_PX ต่อตัวอักษร บรรทัดที่สั้นมาก (คำถัดไปเป็นก้อนยาวดึงขึ้นมาไม่ได้)
+      // จะไม่ถูกยืดจนตัวอักษรห่างผิดปกติ บรรทัดสุดท้ายของย่อหน้าชิดซ้ายตามปกติ
+      var TD_MAX_PX=1.5, TD_SAFETY_PX=1.5, ZWSP=String.fromCharCode(8203);
+      function _tdLines(spans){
+        var lines=[],cur=null;
+        spans.forEach(function(sp){
+          var r=sp.getBoundingClientRect();
+          if(!r.width && sp.textContent.trim()==='') return;
+          if(!cur||Math.abs(r.top-cur.top)>4){ cur={top:r.top,items:[]}; lines.push(cur); }
+          cur.items.push(sp);
+        });
+        return lines;
+      }
+      function _thaiDistribute(p){
+        var spans=[];
+        try{
+          if(typeof Intl==='undefined'||!Intl.Segmenter) return;
+          var gs=new Intl.Segmenter('th',{granularity:'grapheme'});
+          var walker=document.createTreeWalker(p,NodeFilter.SHOW_TEXT);
+          var nodes=[],n; while((n=walker.nextNode())) nodes.push(n);
+          nodes.forEach(function(t){
+            var frag=document.createDocumentFragment();
+            Array.from(gs.segment(t.textContent)).forEach(function(s){
+              if(s.segment===ZWSP){ frag.appendChild(document.createTextNode(s.segment)); return; }
+              var sp=document.createElement('span'); sp.textContent=s.segment;
+              frag.appendChild(sp); spans.push(sp);
+            });
+            t.parentNode.replaceChild(frag,t);
+          });
+          var cs=getComputedStyle(p);
+          var right=p.getBoundingClientRect().right-parseFloat(cs.paddingRight)-parseFloat(cs.borderRightWidth);
+          var lines=_tdLines(spans);
+          lines.slice(0,-1).forEach(function(L){
+            var items=L.items;
+            while(items.length>1 && items[items.length-1].textContent.trim()==='') items=items.slice(0,-1);
+            if(items.length<2) return;
+            var slack=right-items[items.length-1].getBoundingClientRect().right-TD_SAFETY_PX;
+            if(slack<=0) return;
+            var per=Math.min(slack/(items.length-1),TD_MAX_PX);
+            items.slice(0,-1).forEach(function(sp){ sp.style.letterSpacing=per+'px'; });
+          });
+          // กันพลาด: ถ้ายืดแล้วบรรทัดตัดใหม่ต่างจากเดิม ถอยกลับเป็นชิดซ้ายทั้งย่อหน้า
+          if(_tdLines(spans).length!==lines.length) spans.forEach(function(sp){ sp.style.letterSpacing=''; });
+        }catch(e){ spans.forEach(function(sp){ sp.style.letterSpacing=''; }); }
+      }
+      document.fonts.ready.then(function(){
+        document.querySelectorAll('.memo-body-keepwords').forEach(_thaiDistribute);
+      });
     </script>
     </body></html>`);
   w.document.close();
