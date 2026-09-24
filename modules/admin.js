@@ -2798,10 +2798,10 @@ function printMsMemo(selectedIds){
       .memo-header img{position:absolute;left:0;bottom:0;height:1.5cm}
       .memo-title{font-size:29pt;font-weight:700;line-height:1;}
       .memo-row{margin-bottom:5pt;}
-      /* "วันที่" ขยับมาทางซ้ายจากกึ่งกลางหน้าเดิม (50%) มาที่ 35% แทน — คอลัมน์ขวาเริ่มเร็วขึ้น
-         ให้เข้าใกล้เนื้อหาฝั่งซ้ายมากกว่าเดิม (.memo-sign-row ด้านล่างใช้สัดส่วนเดียวกัน ให้
-         "ลงชื่อ" อยู่ตำแหน่งเดียวกับ "วันที่" เป๊ะๆ เหมือนก่อน) */
-      .memo-row-split{display:grid;grid-template-columns:35% 65%;}
+      /* "วันที่" เริ่มตรงกับตัว "ก" ของ "บันทึกข้อความ" พอดี — วัดตำแหน่งจริงด้วย headless
+         Chromium (โหลดฟอนต์ Sarabun จริง) ได้ 43.13% ของความกว้างเนื้อหา จึงปัดเป็น 43%
+         (.memo-sign-row ด้านล่างใช้สัดส่วนเดียวกัน ให้ "ลงชื่อ" อยู่ตำแหน่งเดียวกับ "วันที่" เป๊ะๆ) */
+      .memo-row-split{display:grid;grid-template-columns:43% 57%;}
       /* คอลัมน์ขวาแคบลงกว่าเดิม (จาก 3 คอลัมน์เหลือ 2) — กัน "วันที่ 24 กันยายน 2569" ตัดขึ้น
          บรรทัดใหม่กลางวันที่ ทั้งที่สั้นพอจะอยู่บรรทัดเดียวได้สบายๆ */
       .memo-date-nowrap{white-space:nowrap;}
@@ -2825,8 +2825,8 @@ function printMsMemo(selectedIds){
       .memo-body{text-indent:2.5cm;margin:0 0 5pt;}
       .memo-list{margin:0 0 6pt 2.5cm;}
       .memo-list div{margin-bottom:1pt;}
-      /* "ลงชื่อ" อยู่ตำแหน่งเดียวกับ "วันที่" เป๊ะๆ (35% เหมือนกัน) */
-      .memo-sign-row{display:grid;grid-template-columns:35% 65%;margin:23pt 0 16pt;}
+      /* "ลงชื่อ" อยู่ตำแหน่งเดียวกับ "วันที่" เป๊ะๆ (43% เหมือนกัน) */
+      .memo-sign-row{display:grid;grid-template-columns:43% 57%;margin:23pt 0 16pt;}
       .memo-sign{text-align:left;white-space:nowrap;}
       /* ความยาวเส้นปรุต้องเท่ากับความกว้างชื่อผู้ลงนามที่พิมพ์อยู่บรรทัดถัดไปพอดี — เดิมใช้ JS
          วัดความกว้างจริงแล้วค่อยตั้ง width (document.fonts.ready ฯลฯ) แต่พบว่าไม่เสถียร ยังมีเคส
