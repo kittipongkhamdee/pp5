@@ -2800,7 +2800,7 @@ function printMsMemo(selectedIds){
       /* คอลัมน์ขวาแคบลงกว่าเดิม (จาก 3 คอลัมน์เหลือ 2) — กัน "วันที่ 24 กันยายน 2569" ตัดขึ้น
          บรรทัดใหม่กลางวันที่ ทั้งที่สั้นพอจะอยู่บรรทัดเดียวได้สบายๆ */
       .memo-date-nowrap{white-space:nowrap;}
-      .memo-subject{border-bottom:.75pt solid #000;padding-bottom:5pt;margin-bottom:6pt;}
+      .memo-subject{border-bottom:.75pt solid #000;padding-bottom:2pt;margin-bottom:6pt;}
       /* ค่าที่กรอกในเนื้อความ (ชื่อครู/วิชา/รหัสวิชา/ภาคเรียน/ปีการศึกษา) ไม่ใช้จุดไข่ปลาล้อมรอบ
          แสดงค่าตรงๆ แล้วขีดเส้นใต้แบบเส้นปรุ/จุดไข่ปลาแทน เว้นระยะซ้ายขวาให้ไม่ติดคำข้างเคียง
          ใช้ text-decoration (ไม่ใช่ ::after ยืดนอกกล่อง) เพราะทดสอบแล้วพบว่า ::after แบบ
@@ -2808,7 +2808,11 @@ function printMsMemo(selectedIds){
          พอดี (ร่วมกับ text-indent ของ .memo-body) ทำให้เส้นไปทับข้อความข้างเคียงที่ไม่เกี่ยวข้อง
          — text-decoration เกาะติดกล่องจริงของแต่ละ fragment เสมอ ปลอดภัยกว่าแม้เส้นจะไม่ชน
          คำข้างเคียงเป๊ะๆ */
-      .fill{padding:0 8px;text-decoration:underline;text-decoration-style:dotted;text-decoration-color:#000;text-decoration-thickness:1px;text-underline-offset:3px;}
+      /* ค่าที่กรอก (ชื่อครู/ชื่อวิชา/รหัสวิชา) มาจากข้อมูลจริงที่ครูพิมพ์เอง ควบคุมเนื้อหาไม่ได้
+         ล่วงหน้า บางชื่อวิชามีเลขต่อท้ายหรือมีช่องว่างในตัว (เช่น "ปฏิบัติดนตรีไทย 1",
+         "หน้าที่พลเมือง1") ถ้าไม่กัน เบราว์เซอร์จะเลือกตัดบรรทัดกลางค่านั้นได้เหมือนกับปัญหา
+         วลีภาษาไทยฉีกคำ — ค่าที่กรอกควรอยู่เป็นก้อนเดียวเสมอไม่ว่ากรณีไหน จึง nowrap ทั้งหมด */
+      .fill{padding:0 8px;text-decoration:underline;text-decoration-style:dotted;text-decoration-color:#000;text-decoration-thickness:1px;text-underline-offset:3px;white-space:nowrap;}
       /* วลีที่ต้องอยู่ครบห้ามฉีก (ดู _protectThaiPhrases ท้ายหน้า) — จัดชิดซ้ายตามปกติทุกอย่าง
          ไม่มีการยืด/กระจายช่องว่างเลย แค่กันไม่ให้เบราว์เซอร์เลือกตัดบรรทัดกลางวลีพวกนี้ */
       .tj-nowrap{white-space:nowrap;}
@@ -2848,7 +2852,9 @@ function printMsMemo(selectedIds){
       _syncMemoSignDots();
       window.addEventListener('load',_syncMemoSignDots);
       document.fonts.ready.then(_syncMemoSignDots);
+      requestAnimationFrame(function(){requestAnimationFrame(_syncMemoSignDots);});
       setTimeout(_syncMemoSignDots,300);
+      setTimeout(_syncMemoSignDots,1000);
       window.addEventListener('resize',_syncMemoSignDots);
 
       // กันวลีภาษาไทยที่ควรอยู่ด้วยกันถูกฉีกกลางคำตอนตัดบรรทัด (เบราว์เซอร์มีระบบตัดคำไทยในตัว
