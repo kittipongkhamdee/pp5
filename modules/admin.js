@@ -2836,7 +2836,7 @@ function printMsMemo(selectedIds){
       .sig-dots{color:transparent;border-bottom:1px dotted #000;margin-left:6pt;vertical-align:bottom;}
       .memo-sign-name{margin-left:2.2em;}
       .memo-committee-title{font-weight:700;margin-top:auto;padding-top:20pt;margin-bottom:10pt;}
-      .memo-committee-line{margin-bottom:14pt;}
+      .memo-committee-line{margin-bottom:6pt;}
       .action-bar{display:flex;gap:10px;justify-content:center;padding:14px;margin-top:20px;background:#f5f5f7;border-radius:10px;position:sticky;bottom:0;font-family:'Sarabun',sans-serif;}
       .btn-print{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#1d1d1f;color:#fff;font-weight:600;}
       @media print{.action-bar{display:none!important;}}
