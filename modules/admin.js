@@ -2748,7 +2748,7 @@ function printMsMemo(selectedIds){
       <div class="memo-sign-row">
         <div></div>
         <div class="memo-sign">
-          <div>ลงชื่อ<span class="sig-dots"></span></div>
+          <div>ลงชื่อ<span class="sig-dots">(${esc(cfg.head_academic||'..........................................')})</span></div>
           <div class="memo-sign-name">(${esc(cfg.head_academic||'..........................................')})</div>
           <div class="memo-sign-name">หัวหน้ากลุ่มบริหารงานวิชาการ</div>
         </div>
@@ -2823,9 +2823,12 @@ function printMsMemo(selectedIds){
       /* "ลงชื่อ" อยู่ตำแหน่งเดียวกับ "วันที่" เป๊ะๆ (35% เหมือนกัน) */
       .memo-sign-row{display:grid;grid-template-columns:35% 65%;margin:23pt 0 16pt;}
       .memo-sign{text-align:left;white-space:nowrap;}
-      /* ความยาวเส้นปรุจริงถูกตั้งด้วย JS (ดู _syncMemoSignDots ท้ายหน้า) ให้เท่ากับความกว้าง
-         ของชื่อผู้ลงนามที่พิมพ์อยู่ด้านล่างพอดี — ค่า width ตรงนี้เป็นแค่ fallback ก่อน JS ทำงาน */
-      .sig-dots{display:inline-block;width:140pt;border-bottom:1px dotted #000;margin-left:6pt;vertical-align:bottom;}
+      /* ความยาวเส้นปรุต้องเท่ากับความกว้างชื่อผู้ลงนามที่พิมพ์อยู่บรรทัดถัดไปพอดี — เดิมใช้ JS
+         วัดความกว้างจริงแล้วค่อยตั้ง width (document.fonts.ready ฯลฯ) แต่พบว่าไม่เสถียร ยังมีเคส
+         ที่เส้นไม่ sync จริงตอนพิมพ์ จึงเปลี่ยนมาใช้ CSS ล้วน: span นี้มีข้อความชื่อเดียวกันกับ
+         ที่พิมพ์จริงซ่อนอยู่ (color:transparent) ให้เบราว์เซอร์คำนวณความกว้างเองจากเนื้อหาจริง
+         ไม่ต้องพึ่ง JS/จังหวะโหลดฟอนต์เลย รับประกันตรงกันเสมอไม่ว่าจะเปิดจากอุปกรณ์ไหน */
+      .sig-dots{color:transparent;border-bottom:1px dotted #000;margin-left:6pt;vertical-align:bottom;}
       .memo-sign-name{margin-left:2.2em;}
       .memo-committee-title{font-weight:700;margin-top:auto;padding-top:20pt;margin-bottom:10pt;}
       .memo-committee-line{margin-bottom:14pt;}
@@ -2837,25 +2840,6 @@ function printMsMemo(selectedIds){
     ${pages}
     <div class="action-bar"><button class="btn-print" onclick="document.fonts.ready.then(()=>window.print())">พิมพ์</button></div>
     <script>
-      // ตั้งความยาวเส้นปรุ (.sig-dots) ให้เท่ากับความกว้างจริงของชื่อผู้ลงนามที่พิมพ์อยู่บรรทัดถัดไป
-      // ต้องรอฟอนต์โหลดเสร็จก่อนวัดความกว้าง ไม่งั้นจะวัดจากฟอนต์สำรอง (fallback) ที่ความกว้างไม่ตรงจริง
-      function _syncMemoSignDots(){
-        document.querySelectorAll('.memo-sign').forEach(function(sign){
-          var dots=sign.querySelector('.sig-dots');
-          var nameEl=sign.querySelector('.memo-sign-name');
-          if(dots&&nameEl) dots.style.width=nameEl.getBoundingClientRect().width+'px';
-        });
-      }
-      // เรียกหลายจุด (ทันที + window.load + fonts.ready + setTimeout กันเหนียว) เพราะบางเบราว์เซอร์
-      // (โดยเฉพาะมือถือ) document.fonts.ready อย่างเดียวบางทีไม่ยิง/ยิงช้ากว่าที่คิด ทำให้เส้นปรุ
-      // ค้างที่ค่า fallback ยาวเกินจริงในเอกสารที่พิมพ์ออกมา
-      _syncMemoSignDots();
-      window.addEventListener('load',_syncMemoSignDots);
-      document.fonts.ready.then(_syncMemoSignDots);
-      requestAnimationFrame(function(){requestAnimationFrame(_syncMemoSignDots);});
-      setTimeout(_syncMemoSignDots,300);
-      setTimeout(_syncMemoSignDots,1000);
-      window.addEventListener('resize',_syncMemoSignDots);
 
       // กันวลีภาษาไทยที่ควรอยู่ด้วยกันถูกฉีกกลางคำตอนตัดบรรทัด (เบราว์เซอร์มีระบบตัดคำไทยในตัว
       // อยู่แล้วแม้ไม่เว้นวรรค แต่บางทีก็เลือกตัดกลางคำผสมที่ควรอยู่ด้วยกัน เช่น "ปีการศึกษา")
