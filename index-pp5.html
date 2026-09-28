@@ -4161,6 +4161,16 @@ async function openOmrImportModal(){
         <div><label class="fl">คะแนนเต็ม</label>
           <input type="number" class="fi" id="omr-mx" value="0" min="1" style="width:80px" oninput="_omrRecomputeOverflow()"></div>
       </div>
+      <div id="omr-scale-box" style="display:none;margin-top:10px;padding:10px 12px;background:var(--info-bg);border:1px solid var(--info-bdr);border-radius:10px;font-size:12px">
+        <div style="color:var(--info-txt);margin-bottom:6px">ชุดข้อสอบนี้คะแนนเต็ม <strong id="omr-scale-src">0</strong> แต่จะนำเข้าเป็นคะแนนเต็ม <strong id="omr-scale-dst">0</strong></div>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:600"><input type="checkbox" id="omr-scale-on" onchange="_omrRecomputeOverflow()">แปลงคะแนนตามสัดส่วน</label>
+        <div id="omr-scale-example" style="color:var(--muted);margin:4px 0 0 22px"></div>
+        <div id="omr-round-box" style="display:none;margin:8px 0 0 22px">
+          <div style="margin-bottom:4px">มี <strong id="omr-round-count">0</strong> คนที่แปลงแล้วได้คะแนนเป็นทศนิยม ต้องการ:</div>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400"><input type="radio" name="omr-round" value="up" onchange="_omrRecomputeOverflow()">ปัดขึ้น</label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400"><input type="radio" name="omr-round" value="down" onchange="_omrRecomputeOverflow()">ปัดลง</label>
+        </div>
+      </div>
       <div id="omr-preview" style="margin-top:12px;font-size:12.5px;color:var(--muted)">กำลังโหลดผลตรวจ...</div>
       <div id="omr-overflow-warn" style="display:none;margin-top:10px;padding:10px 12px;background:var(--err-bg);border:1px solid var(--err-bdr);border-radius:10px;font-size:12px">
         <div style="color:var(--err-txt);font-weight:600;margin-bottom:4px">${_ico.warning} มี <span id="omr-overflow-count">0</span> คนที่คะแนนเกินคะแนนเต็มที่ตั้งไว้</div>
@@ -4195,6 +4205,7 @@ async function _omrQuizMaxScore(quizId){
 async function _omrQuizChanged(){
   const quizId=$('omr-quiz')?.value; if(!quizId) return;
   const quiz=_omrCtx.quizzes.find(qz=>qz.id===quizId);
+  _omrCtx.quizMax=(await _omrQuizMaxScore(quizId))||(quiz?.source==='omr'?quiz.num_questions:0)||0;
   const target=$('omr-target')?.value;
   const existingSelected=$('omr-existing-unit')?.value;
   if((target==='unit_before'||target==='unit_after')&&!existingSelected){
@@ -4258,10 +4269,7 @@ async function _omrUpdateMaxDefault(){
   if(target==='mid'){ mxEl.value=scSub?.score_mid??20; }
   else if(target==='final'){ mxEl.value=scSub?.score_final??30; }
   else{
-    const quizId=$('omr-quiz')?.value; if(!quizId) return;
-    const quiz=_omrCtx.quizzes.find(qz=>qz.id===quizId);
-    const mx=await _omrQuizMaxScore(quizId);
-    mxEl.value=mx||quiz?.num_questions||20;
+    mxEl.value=_omrCtx.quizMax||20;
   }
   _omrRecomputeOverflow();
 }
@@ -4290,17 +4298,50 @@ async function _omrLoadPreview(){
 }
 // เช็คว่ามีนักเรียนคนไหนคะแนน OMR เกินคะแนนเต็มที่ตั้งไว้ตอนนี้ไหม — เรียกซ้ำได้ทุกครั้งที่แก้ช่อง "คะแนนเต็ม"
 // โดยไม่ต้องยิง query ใหม่ (ใช้ _omrCtx.scoreMap ที่โหลดไว้แล้ว)
+// แปลงคะแนนตามสัดส่วน: คะแนนดิบ × คะแนนเต็มที่นำเข้า ÷ คะแนนเต็มชุดข้อสอบ (เช่น 18/20 → 9/10)
+// ถ้าผลเป็นทศนิยม ให้ครูเลือกเองว่าปัดขึ้นหรือปัดลง — คืน null ถ้ายังไม่ได้เลือกวิธีปัด
+function _omrScaleOn(){
+  const src=_omrCtx.quizMax||0, mx=parseFloat($('omr-mx')?.value)||0;
+  return !!($('omr-scale-on')?.checked && src>0 && mx>0 && src!==mx);
+}
+function _omrIsFrac(v){ return Math.abs(v-Math.round(v))>1e-9; }
+function _omrFinalScore(raw){
+  if(!_omrScaleOn()) return raw;
+  const v=raw*(parseFloat($('omr-mx').value)||0)/_omrCtx.quizMax;
+  if(!_omrIsFrac(v)) return Math.round(v);
+  const mode=document.querySelector('input[name="omr-round"]:checked')?.value;
+  if(mode==='up') return Math.ceil(v-1e-9);
+  if(mode==='down') return Math.floor(v+1e-9);
+  return null;
+}
+function _omrUpdateScaleUI(){
+  const box=$('omr-scale-box'); if(!box) return;
+  const src=_omrCtx.quizMax||0, mx=parseFloat($('omr-mx')?.value)||0;
+  if(!(src>0 && mx>0 && src!==mx)){ box.style.display='none'; return; }
+  box.style.display='block';
+  $('omr-scale-src').textContent=src; $('omr-scale-dst').textContent=mx;
+  const on=_omrScaleOn();
+  const byStudent=_omrCtx.scoreMap||{};
+  const withScore=scStus.filter(s=>byStudent[s.id]);
+  const fmt=v=>String(Math.round(v*100)/100);
+  const exEl=$('omr-scale-example');
+  if(exEl) exEl.textContent='เช่น ได้ '+fmt(src)+' → '+fmt(mx)+', ได้ '+fmt(src*0.9)+' → '+fmt(mx*0.9)+(on?'':' (ถ้าไม่ติ๊ก จะนำเข้าคะแนนดิบตามเดิม)');
+  const fracCount=on?withScore.filter(s=>_omrIsFrac((parseFloat(byStudent[s.id].score)||0)*mx/src)).length:0;
+  const roundBox=$('omr-round-box');
+  if(roundBox){ roundBox.style.display=fracCount?'block':'none'; const c=$('omr-round-count'); if(c) c.textContent=fracCount; }
+}
 function _omrRecomputeOverflow(){
+  _omrUpdateScaleUI();
   const warnEl=$('omr-overflow-warn'); if(!warnEl) return;
   const mx=parseFloat($('omr-mx')?.value)||0;
   const byStudent=_omrCtx.scoreMap||{};
-  const overflow=scStus.filter(s=>byStudent[s.id]&&(parseFloat(byStudent[s.id].score)||0)>mx);
+  const overflow=scStus.filter(s=>byStudent[s.id]&&(_omrFinalScore(parseFloat(byStudent[s.id].score)||0)??0)>mx);
   if(!overflow.length){ warnEl.style.display='none'; return; }
   warnEl.style.display='block';
   const countEl=$('omr-overflow-count'); if(countEl) countEl.textContent=overflow.length;
   const namesEl=$('omr-overflow-names');
   if(namesEl){
-    const names=overflow.slice(0,5).map(s=>esc(s.student_name)+' ('+byStudent[s.id].score+')').join(', ');
+    const names=overflow.slice(0,5).map(s=>esc(s.student_name)+' ('+_omrFinalScore(parseFloat(byStudent[s.id].score)||0)+')').join(', ');
     namesEl.innerHTML=names+(overflow.length>5?' และอีก '+(overflow.length-5)+' คน':'');
   }
 }
@@ -4308,6 +4349,11 @@ async function importOmrScores(){
   const target=$('omr-target')?.value;
   const mx=parseFloat($('omr-mx')?.value)||(target==='final'?30:20);
   const byStudent=_omrCtx.scoreMap||{};
+  const scaled=_omrScaleOn();
+  const scaleNote=scaled?' (แปลงสัดส่วน '+_omrCtx.quizMax+' → '+mx+')':'';
+  if(scaled && scStus.some(s=>byStudent[s.id] && _omrFinalScore(parseFloat(byStudent[s.id].score)||0)===null)){
+    toast('มีคะแนนที่แปลงแล้วเป็นทศนิยม — กรุณาเลือก "ปัดขึ้น" หรือ "ปัดลง" ก่อน','er'); return;
+  }
 
   // คะแนนสอบกลางภาค/ปลายภาค — แค่เติมค่าลงช่องกรอกในแท็บ "คะแนนสอบ" เหมือนฟีเจอร์ถ่ายรูปกรอกคะแนน
   // ไม่บันทึกลง DB ตรงๆ ครูต้องตรวจแล้วกด "บันทึกคะแนนสอบ" เอง (ช่องที่เกินคะแนนเต็มจะไฮไลต์แดงเตือนอยู่แล้ว)
@@ -4316,14 +4362,14 @@ async function importOmrScores(){
     let count=0;
     scStus.forEach(s=>{
       const r=byStudent[s.id]; if(!r) return;
-      const val=parseFloat(r.score)||0;
+      const val=_omrFinalScore(parseFloat(r.score)||0);
       const el=$(prefix+s.id);
       if(el){ el.value=val; el.classList.toggle('over', val>parseFloat(el.max)); count++; }
     });
     if(!count){ toast('ไม่พบนักเรียนที่มีผลตรวจตรงกันเลย','er'); return; }
     rmModal('omrMod');
     swTab('sc','sc-ex');
-    toast('เติมคะแนน'+(target==='mid'?'กลางภาค':'ปลายภาค')+'ให้ '+count+' คนแล้ว — ตรวจสอบอีกครั้งแล้วกด "บันทึกคะแนนสอบ" เพื่อบันทึกจริง');
+    toast('เติมคะแนน'+(target==='mid'?'กลางภาค':'ปลายภาค')+'ให้ '+count+' คนแล้ว'+scaleNote+' — ตรวจสอบอีกครั้งแล้วกด "บันทึกคะแนนสอบ" เพื่อบันทึกจริง');
     return;
   }
 
@@ -4335,7 +4381,7 @@ async function importOmrScores(){
   const rows=[];
   scStus.forEach(s=>{
     const r=byStudent[s.id]; if(!r) return;
-    const raw=parseFloat(r.score)||0;
+    const raw=_omrFinalScore(parseFloat(r.score)||0);
     let score=raw;
     if(raw>mx){
       if(overflowAction==='skip'){ skippedCount++; return; }
@@ -4352,7 +4398,7 @@ async function importOmrScores(){
     scUnits=await qAll(()=>sb.from('score_units').select('*').eq('subject_id',S.selSub));
     rebuildUnits();
     rmModal('omrMod');
-    toast('นำเข้าคะแนน '+rows.length+' คนเรียบร้อย'+(skippedCount?' (ข้าม '+skippedCount+' คนที่คะแนนเกินคะแนนเต็ม)':''));
+    toast('นำเข้าคะแนน '+rows.length+' คนเรียบร้อย'+scaleNote+(skippedCount?' (ข้าม '+skippedCount+' คนที่คะแนนเกินคะแนนเต็ม)':''));
     const tabId='sc-'+(period==='before'?'bf':'af');
     const tabEl=$(tabId);
     if(tabEl) tabEl.innerHTML=renderUnitTab(period,period==='before'?scSub?.score_before_mid??25:scSub?.score_after_mid??25);
