@@ -152,8 +152,16 @@
       log('ยกเลิก — ยังไม่ได้บันทึก กดบันทึกเองได้เมื่อตรวจแล้ว');
       return;
     }
+    const chainCb = document.getElementById('pp5-sgs-chain');
+    const willChain = evalKind === 'char' && !!chainCb && chainCb.checked && !!(lastPayload && lastPayload.subject_code);
+    if (willChain) {
+      const g = findGroupSelect();
+      const go = g && g.options[g.selectedIndex];
+      saveChain({ step: 'goL', code: lastPayload.subject_code, group: go ? { value: go.value, text: go.text.trim() } : null, tries: 0 });
+    }
     log('กดปุ่มบันทึกของ SGS แล้ว — รอหน้ารีโหลด แล้วตรวจว่าค่าถูกบันทึกจริง (ข้อมูลที่วางยังจำไว้ให้ ไม่ต้องวางใหม่)');
     btn.click();
+    if (willChain) { await sleep(6000); afterSaveOnQ(); } // ถ้าหน้ารีโหลดเต็มหน้า สคริปต์นี้ตายก่อน หน้าใหม่จะเรียก afterSaveOnQ เอง
   }
 
   // หาเลขประจำตัวนักเรียนของแถวนั้นจากข้อความในตาราง (ไม่ใช่ช่องกรอก)
@@ -548,6 +556,99 @@
     return infoOnly || skipped;
   }
 
+  // ── ต่อหน้า "อ่าน คิดวิเคราะห์ และเขียน" หลังบันทึกหน้า "คุณลักษณะอันพึงประสงค์" เสร็จ (ติ๊กเปิด/ปิดได้) ──
+  // ขั้นตอน: หน้า Q กรอก+บันทึกเสร็จ → (ตรวจว่าค่ายังอยู่หลังบันทึก) → ไปหน้า L → เลือกรายวิชาและกลุ่มเดียวกับหน้า Q
+  // → กดเริ่มกรอกให้เอง (ที่เหลือเป็นขั้นตอนปกติ: สร้างแถว/ปรับรายการต่อหน้า/กรอก/บันทึก)
+  // สถานะเก็บใน localStorage (ข้ามการรีโหลด/เปลี่ยนหน้า) หมดอายุ 3 นาทีต่อขั้น และนับจำนวนรอบกันวนซ้ำ
+  const CHAIN_KEY = 'pp5SgsChain';
+  let lastPayload = null;
+  function loadChain() {
+    try { const c = JSON.parse(localStorage.getItem(CHAIN_KEY)); return c && c.ts && Date.now() - c.ts < 180000 ? c : null; } catch (e) { return null; }
+  }
+  function saveChain(c) {
+    try { localStorage.setItem(CHAIN_KEY, JSON.stringify(Object.assign({}, loadChain() || {}, c, { ts: Date.now() }))); } catch (e) { /* ไม่เป็นไร */ }
+  }
+  function clearChain() { try { localStorage.removeItem(CHAIN_KEY); } catch (e) { /* ไม่เป็นไร */ } }
+  function readPageUrl() {
+    return location.href.split('?')[0].replace(/TblTranscriptsQ\/Edit-TblTranscriptsQ-Table(\.\w+)$/, 'TblTranscriptsL/Edit-TblTranscriptsL-Table$1');
+  }
+  // ช่องเลือก "กลุ่ม" = <select> แรกที่อยู่หลังข้อความ "กลุ่ม"
+  function findGroupSelect() {
+    const label = leafTexts(/^กลุ่ม$/)[0];
+    if (!label) return null;
+    let found = null;
+    Array.from(document.querySelectorAll('select')).forEach((sel) => {
+      if (!found && !sel.closest('#pp5-sgs-panel') && (label.el.compareDocumentPosition(sel) & Node.DOCUMENT_POSITION_FOLLOWING)) found = sel;
+    });
+    return found;
+  }
+  function currentPayloadStudents() {
+    try { return JSON.parse(document.getElementById('pp5-sgs-paste').value).students || null; } catch (e) { return null; }
+  }
+  // หลังบันทึกหน้า Q: ถ้าตารางยังมีแถว เช็คว่าค่าข้อ 1 ตรงกับที่กรอก (true/false) ถ้าตารางว่างเช็คไม่ได้ (null)
+  function quickVerifySaved() {
+    const students = currentPayloadStudents();
+    const layout = evalTableLayout();
+    if (!students || !layout || !layout.items[1]) return null;
+    let checked = 0;
+    for (const tr of Array.from(layout.table.rows)) {
+      if (tr === layout.headerRow) continue;
+      const cells = evalCells(tr);
+      const code = cells[layout.codeIdx] ? cells[layout.codeIdx].textContent.trim() : '';
+      const d = students[code];
+      if (!d || !Array.isArray(d.char) || d.char[0] === '' || d.char[0] == null) continue;
+      const inp = evalCellInput(cells[layout.items[1]]);
+      if (!inp) continue;
+      checked++;
+      if (inp.value !== String(d.char[0])) return false;
+    }
+    return checked ? true : null;
+  }
+  async function afterSaveOnQ() {
+    const c = loadChain();
+    if (!c || c.step !== 'goL') return;
+    const ok = quickVerifySaved();
+    if (ok === false) { clearChain(); log('หลังบันทึก ค่าในตารางไม่ตรงกับที่กรอก (อาจบันทึกไม่สำเร็จ) — ไม่ไปหน้าถัดไปให้ ตรวจแล้วทำต่อเอง', true); return; }
+    if (ok === null) log('ตรวจซ้ำค่าหลังบันทึกไม่ได้ (ตารางว่างหลังบันทึก) — ไปหน้าถัดไปต่อ');
+    saveChain({ step: 'onL', tries: 0 });
+    log('บันทึกหน้าคุณลักษณะฯ แล้ว — ไปหน้า "อ่าน คิดวิเคราะห์ และเขียน" ต่อให้...');
+    await sleep(600);
+    location.href = readPageUrl();
+  }
+  async function advanceChainOnRead(chain) {
+    const fail = (m) => { clearChain(); log(m, true); };
+    if ((chain.tries || 0) > 5) return fail('เลือกรายวิชา/กลุ่มอัตโนมัติหลายรอบแล้วยังไม่สำเร็จ — เลือกเอง แล้วกดเริ่มกรอก');
+    saveChain({ tries: (chain.tries || 0) + 1 });
+    log('ต่อจากหน้าคุณลักษณะฯ — กำลังเลือกรายวิชา ' + chain.code + (chain.group ? ' กลุ่ม ' + chain.group.text : '') + ' ให้...');
+    await sleep(600);
+    const want = normCode(chain.code);
+    const subSel = Array.from(document.querySelectorAll('select')).find((sel) => !sel.closest('#pp5-sgs-panel') && Array.from(sel.options).some((o) => normCode(o.text).includes(want)));
+    if (!subSel) return fail('ไม่พบรายวิชา ' + chain.code + ' ในหน้านี้ — เลือกรายวิชา/กลุ่มเอง แล้วกดเริ่มกรอก');
+    const curSub = subSel.options[subSel.selectedIndex];
+    if (!curSub || !normCode(curSub.text).includes(want)) {
+      const opt = Array.from(subSel.options).find((o) => normCode(o.text).includes(want));
+      subSel.value = opt.value;
+      fireEvent(subSel, 'change');
+      await sleep(3000); // ถ้าหน้ารีโหลดเต็มหน้า สคริปต์ตายตรงนี้ หน้าใหม่จะทำขั้นนี้ต่อ ถ้าอัปเดตบางส่วนจะวนเช็คใหม่
+      return advanceChainOnRead(loadChain() || chain);
+    }
+    if (chain.group) {
+      const gSel = findGroupSelect();
+      const curG = gSel && gSel.options[gSel.selectedIndex];
+      if (gSel && (!curG || (curG.text.trim() !== chain.group.text && curG.value !== chain.group.value))) {
+        const opt = Array.from(gSel.options).find((o) => o.text.trim() === chain.group.text) || Array.from(gSel.options).find((o) => o.value === chain.group.value);
+        if (!opt) return fail('ไม่พบกลุ่ม ' + chain.group.text + ' ในหน้านี้ — เลือกกลุ่มเอง แล้วกดเริ่มกรอก');
+        gSel.value = opt.value;
+        fireEvent(gSel, 'change');
+        await sleep(3000);
+        return advanceChainOnRead(loadChain() || chain);
+      }
+    }
+    clearChain();
+    log('เลือกรายวิชา/กลุ่มแล้ว — เริ่มกรอกให้');
+    document.getElementById('pp5-sgs-start').click();
+  }
+
   function buildUI() {
     const wrap = document.createElement('div');
     wrap.id = 'pp5-sgs-panel';
@@ -569,6 +670,9 @@
       '<button id="pp5-sgs-stop" style="padding:13px 14px;background:#dc2626;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">หยุด</button>' +
       '</div>' +
       '<label style="display:flex;align-items:flex-start;gap:6px;font-size:11px;margin-bottom:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-autosave" style="margin-top:2px"> กดปุ่ม "บันทึก" ของ SGS ให้หลังกรอกและตรวจซ้ำครบ (บันทึกทั้งหน้า)</label>' +
+      (evalKind === 'char'
+        ? '<label style="display:flex;align-items:flex-start;gap:6px;font-size:11px;margin-bottom:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-chain" style="margin-top:2px"> เมื่อบันทึกหน้านี้เสร็จ ไปหน้า "อ่าน คิดวิเคราะห์ และเขียน" ต่อให้เลย (เลือกรายวิชา/กลุ่มเดียวกัน แล้วกรอกให้)</label>'
+        : '') +
       '<details style="margin-bottom:6px">' +
       '<summary style="cursor:pointer;font-size:11px;color:#666;padding:2px 0">⚙️ ตัวเลือกเพิ่มเติม</summary>' +
       '<button id="pp5-sgs-scan" style="width:100%;margin-top:6px;padding:5px;background:#fff3cd;border:1px solid #ffc107;border-radius:6px;cursor:pointer;font-size:11px">🔍 สแกนโครงสร้างหน้านี้ (ถ้ากรอกแล้วไม่ขึ้นเลย)</button>' +
@@ -635,6 +739,11 @@
     noAskCb.checked = savedState.noask !== false;
     autoSaveCb.onchange = () => savePanelState(Object.assign(loadPanelState(), { autosave: autoSaveCb.checked }));
     noAskCb.onchange = () => savePanelState(Object.assign(loadPanelState(), { noask: noAskCb.checked }));
+    const chainCb = document.getElementById('pp5-sgs-chain');
+    if (chainCb) {
+      chainCb.checked = savedState.chain !== false;
+      chainCb.onchange = () => savePanelState(Object.assign(loadPanelState(), { chain: chainCb.checked }));
+    }
     minBtn.onclick = () => {
       const collapsed = body.style.display !== 'none';
       applyCollapsed(collapsed);
@@ -660,6 +769,7 @@
       catch (e) { log('อ่าน JSON ไม่สำเร็จ: ' + e.message, true); return; }
       if (!payload.students) { log('รูปแบบข้อมูลไม่ถูกต้อง (ไม่พบ students)', true); return; }
       saveData(raw);
+      lastPayload = payload;
       if (!checkSubject(payload)) return;
       ensureCreated(payload.students).then((created) => (created ? ensureFullPage(Object.keys(payload.students).length) : false)).then((ok) => {
         if (!ok) return;
@@ -677,6 +787,9 @@
       document.getElementById('pp5-sgs-paste').value = saved.raw;
       log('ใส่ข้อมูลที่วางไว้ก่อนหน้าให้แล้ว — วิชา ' + (describePayload(saved.raw) || '(ไม่ระบุ)') + ' (จำไว้เมื่อ ' + new Date(saved.savedAt).toLocaleTimeString('th-TH') + ') ตรวจให้ตรงกับวิชาที่กำลังกรอก ถ้าไม่ตรงให้กดวางใหม่');
       try { checkSubject(JSON.parse(saved.raw), true); } catch (e) { /* ข้อมูลเสีย ไม่ต้องเช็ค */ }
+      const chain = loadChain();
+      if (chain && evalKind === 'char' && chain.step === 'goL') afterSaveOnQ();
+      else if (chain && evalKind === 'read' && chain.step === 'onL') advanceChainOnRead(chain);
       let resume = null;
       try { resume = JSON.parse(localStorage.getItem(RESUME_KEY)); localStorage.removeItem(RESUME_KEY); } catch (e) { /* ไม่เป็นไร */ }
       if (resume && resume.ts && Date.now() - resume.ts < 60000) {
