@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autofill SGS จากระบบ ปพ.5
 // @namespace    pp5-sgs-autofill
-// @version      2.13.0
+// @version      2.14.0
 // @description  วางคะแนนและผลประเมิน (อ่าน คิดวิเคราะห์ เขียน / คุณลักษณะอันพึงประสงค์) ที่คัดลอกจากระบบ ปพ.5 ลงหน้ากรอกคะแนน SGS (sgs.bopp-obec.info) ให้อัตโนมัติ
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts1-Table.aspx*
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts2-Table.aspx*
@@ -370,13 +370,93 @@
     try { const p = JSON.parse(raw); return ((p.subject_code || '') + ' ' + (p.subject_name || '')).trim(); } catch (e) { return ''; }
   }
 
+  // ── หน้าคุณลักษณะฯ / อ่าน คิดฯ เขียน: ต้องติ๊ก "หัวข้อ" แล้วกดปุ่ม "สร้าง" ก่อน ตารางถึงจะมีแถวนักเรียนให้กรอก ──
+  // ส่วนขยายทำให้เองถ้าตารางยังไม่มีแถวนักเรียน: ติ๊กหัวข้อ 1..N (N = จำนวนหัวข้อในข้อมูลที่วาง: คุณลักษณะ 8 / อ่านคิดฯ 5)
+  // และเอาติ๊กหัวข้อที่เกิน N ออก → กด "สร้าง" → รอแถวนักเรียนขึ้น (หน้ารีโหลดเต็มหน้าก็กรอกต่อให้เองผ่าน flag)
+  function evalHasRows() {
+    const l = evalTableLayout();
+    if (!l) return false;
+    return Array.from(l.table.rows).some((tr) => {
+      if (tr === l.headerRow) return false;
+      const c = evalCells(tr)[l.codeIdx];
+      return !!c && /^\d+$/.test(c.textContent.trim());
+    });
+  }
+  function findItemCheckboxes() {
+    const label = leafTexts(/^หัวข้อ$/)[0];
+    if (!label) return null;
+    let box = label.el;
+    let cbs = [];
+    for (let i = 0; i < 6 && box; i++) {
+      cbs = Array.from(box.querySelectorAll('input[type="checkbox"]')).filter((c) => !c.closest('#pp5-sgs-panel'));
+      if (cbs.length >= 3) break;
+      box = box.parentElement;
+    }
+    if (cbs.length < 3) return null;
+    const numOf = (cb) => {
+      let t = '';
+      if (cb.id) { const l = document.querySelector('label[for="' + cb.id + '"]'); if (l) t = l.textContent; }
+      if (!t.trim()) { let n = cb.nextSibling; while (n && !t.trim()) { if (n.nodeType === 1 && n.tagName === 'INPUT') break; t = n.textContent || ''; n = n.nextSibling; } }
+      if (!t.trim() && cb.parentElement) t = cb.parentElement.textContent || '';
+      const m = t.trim().match(/^(\d+)/);
+      return m ? parseInt(m[1], 10) : 0;
+    };
+    return cbs.map((cb, i) => ({ cb, no: numOf(cb) || i + 1 }));
+  }
+  function findCreateButton() {
+    const cands = Array.from(document.querySelectorAll('input[type="image"], input[type="submit"], input[type="button"], button, a'))
+      .filter((el) => !el.closest('#pp5-sgs-panel'));
+    const byText = cands.find((el) => [el.title, el.alt, el.value, el.textContent].some((t) => (t || '').replace(/\s+/g, ' ').trim() === 'สร้าง'));
+    if (byText) return byText;
+    const byId = cands.filter((el) => /(Create|Generate|Build)\w*(Button)?$/i.test(el.id));
+    if (byId.length === 1) return byId[0];
+    // สำรอง: ปุ่มเดียวในแถวเดียวกับช่องเลือกรายวิชา (ปุ่ม "สร้าง" อยู่ข้างช่องรายวิชา)
+    for (const sel of document.querySelectorAll('select')) {
+      const opt = sel.options[sel.selectedIndex];
+      if (!opt || !/[A-Za-zก-ฮ]{1,3}\s?\d{4,6}/.test(opt.text)) continue;
+      const row = sel.closest('tr');
+      if (!row) continue;
+      const btns = Array.from(row.querySelectorAll('input[type="image"], input[type="submit"], input[type="button"], button'));
+      if (btns.length === 1) return btns[0];
+    }
+    return null;
+  }
+  async function ensureCreated(students) {
+    if (!isEval) return true;
+    if (evalHasRows()) return true;
+    if (resumeStep === 'create') { log('กด "สร้าง" อัตโนมัติแล้วแต่ยังไม่มีแถวนักเรียนในตาราง — ตรวจว่าเลือกรายวิชา/กลุ่มแล้ว แล้วติ๊กหัวข้อและกด "สร้าง" เอง จากนั้นกดเริ่มใหม่', true); return false; }
+    const boxes = findItemCheckboxes();
+    if (!boxes) { log('ตารางยังไม่มีแถวนักเรียน และหาช่องเลือก "หัวข้อ" ไม่เจอ — ติ๊กหัวข้อ กด "สร้าง" เอง แล้วกดเริ่มใหม่', true); return false; }
+    const sample = Object.values(students).find((d) => Array.isArray(evalKind === 'char' ? d.char : d.read));
+    const need = sample ? (evalKind === 'char' ? sample.char : sample.read).length : (evalKind === 'char' ? 8 : 5);
+    log('ตารางยังไม่มีแถวนักเรียน — กำลังติ๊กหัวข้อ 1-' + need + ' แล้วกด "สร้าง" ให้...');
+    setResume('create');
+    for (const { cb, no } of boxes) {
+      const want = no <= need;
+      if (cb.checked !== want) { cb.click(); await sleep(80); }
+    }
+    await sleep(300);
+    const btn = findCreateButton();
+    if (!btn) { clearResume(); log('หาปุ่ม "สร้าง" ไม่เจอ — หัวข้อติ๊กให้แล้ว กดปุ่ม "สร้าง" เอง แล้วกดเริ่มใหม่', true); return false; }
+    btn.click();
+    for (let i = 0; i < 50; i++) {
+      await sleep(300);
+      if (evalHasRows()) { clearResume(); await sleep(600); log('สร้างรายการนักเรียนแล้ว'); return true; }
+    }
+    clearResume();
+    log('รอแถวนักเรียนหลังกด "สร้าง" ไม่สำเร็จ — กดปุ่ม "สร้าง" เอง แล้วกดเริ่มใหม่', true);
+    return false;
+  }
+
   // ── ปรับช่อง "รายการ / หน้า" ให้แสดงนักเรียนครบทุกคนในหน้าเดียว ──
   // SGS แบ่งหน้าละ 10 แถว (เช่น "1 ของ 3") ส่วนขยายกรอกได้เฉพาะแถวที่แสดงอยู่ ครูจึงต้องใส่ช่อง "รายการ / หน้า"
   // ให้ ≥ จำนวนนักเรียนเอง — ตอนกดเริ่มกรอก ถ้าช่องนี้น้อยกว่าจำนวนรายการทั้งหมด จะปรับให้แล้วรอตารางอัปเดตก่อนกรอก
   // ยังไม่ทราบ id จริงของช่อง/ปุ่มยืนยัน จึงหาหลายวิธี: id ที่มีคำว่า PageSize → ช่องข้อความที่อยู่ก่อนข้อความ "/ หน้า"
   // ถ้าหน้ารีโหลดเต็มหน้า (ไม่ใช่อัปเดตบางส่วน) จะจำ flag ไว้แล้วกดเริ่มกรอกต่อให้เองหลังโหลดเสร็จ (ครั้งเดียว)
   const RESUME_KEY = 'pp5SgsResume';
-  let resumedOnce = false;
+  let resumeStep = ''; // ขั้นที่ทำค้างไว้ก่อนหน้ารีโหลด ('create' = สร้างรายการนักเรียน, 'pagesize' = ปรับรายการ/หน้า)
+  function setResume(step) { try { localStorage.setItem(RESUME_KEY, JSON.stringify({ ts: Date.now(), step })); } catch (e) { /* ไม่เป็นไร */ } }
+  function clearResume() { try { localStorage.removeItem(RESUME_KEY); } catch (e) { /* ไม่เป็นไร */ } }
   function leafTexts(re) {
     const out = [];
     document.querySelectorAll('td, span, div, b, label').forEach((el) => {
@@ -416,9 +496,9 @@
     if (!inp || !total) { log('หาช่อง "รายการ / หน้า" หรือจำนวนรายการทั้งหมดไม่เจอ — ตรวจเองว่าช่องนี้ ≥ จำนวนนักเรียน (ไม่งั้นจะกรอกได้เฉพาะหน้าที่แสดงอยู่)', true); return true; }
     const cur = parseInt(inp.value, 10) || 0;
     if (cur >= total && readTotalPages() <= 1) return true;
-    if (resumedOnce) { log('ปรับช่อง "รายการ / หน้า" อัตโนมัติแล้วแต่ยังแสดงไม่ครบ — ปรับเองเป็น ' + total + ' แล้วกดเริ่มใหม่', true); return false; }
+    if (resumeStep === 'pagesize') { log('ปรับช่อง "รายการ / หน้า" อัตโนมัติแล้วแต่ยังแสดงไม่ครบ — ปรับเองเป็น ' + total + ' แล้วกดเริ่มใหม่', true); return false; }
     log('ช่อง "รายการ / หน้า" เป็น ' + cur + ' แต่มีนักเรียน ' + total + ' รายการ — กำลังปรับเป็น ' + total + ' ให้...');
-    try { localStorage.setItem(RESUME_KEY, String(Date.now())); } catch (e) { /* ไม่เป็นไร */ }
+    setResume('pagesize');
     inp.focus();
     setNativeValue(inp, String(Math.max(total, cur)));
     const btn = findPageSizeButton(inp);
@@ -428,14 +508,14 @@
     for (let i = 0; i < 40; i++) {
       await sleep(300);
       if (readTotalPages() === 1) {
-        try { localStorage.removeItem(RESUME_KEY); } catch (e) { /* ไม่เป็นไร */ }
+        clearResume();
         await sleep(400);
         log('ปรับช่อง "รายการ / หน้า" เป็น ' + total + ' แล้ว');
         return true;
       }
       if (i === 9 && !changeSent) { changeSent = true; const cur2 = findPageSizeInput(); if (cur2) fireEvent(cur2, 'change'); }
     }
-    try { localStorage.removeItem(RESUME_KEY); } catch (e) { /* ไม่เป็นไร */ }
+    clearResume();
     log('รอตารางอัปเดตหลังปรับ "รายการ / หน้า" ไม่สำเร็จ — ปรับช่องนี้เองเป็น ' + total + ' แล้วกดเริ่มใหม่', true);
     return false;
   }
@@ -593,7 +673,7 @@
       if (!payload.students) { log('รูปแบบข้อมูลไม่ถูกต้อง (ไม่พบ students)', true); return; }
       saveData(raw);
       if (!checkSubject(payload)) return;
-      ensureFullPage(Object.keys(payload.students).length).then((ok) => {
+      ensureCreated(payload.students).then((created) => (created ? ensureFullPage(Object.keys(payload.students).length) : false)).then((ok) => {
         if (!ok) return;
         if (isEval) runEvalFill(payload.students); else runFill(payload.students);
       });
@@ -609,11 +689,11 @@
       document.getElementById('pp5-sgs-paste').value = saved.raw;
       log('ใส่ข้อมูลที่วางไว้ก่อนหน้าให้แล้ว — วิชา ' + (describePayload(saved.raw) || '(ไม่ระบุ)') + ' (จำไว้เมื่อ ' + new Date(saved.savedAt).toLocaleTimeString('th-TH') + ') ตรวจให้ตรงกับวิชาที่กำลังกรอก ถ้าไม่ตรงให้กดวางใหม่');
       try { checkSubject(JSON.parse(saved.raw), true); } catch (e) { /* ข้อมูลเสีย ไม่ต้องเช็ค */ }
-      let resumeAt = 0;
-      try { resumeAt = parseInt(localStorage.getItem(RESUME_KEY), 10) || 0; localStorage.removeItem(RESUME_KEY); } catch (e) { /* ไม่เป็นไร */ }
-      if (resumeAt && Date.now() - resumeAt < 60000) {
-        resumedOnce = true;
-        log('หน้ารีโหลดหลังปรับ "รายการ / หน้า" — กรอกต่อให้อัตโนมัติ');
+      let resume = null;
+      try { resume = JSON.parse(localStorage.getItem(RESUME_KEY)); localStorage.removeItem(RESUME_KEY); } catch (e) { /* ไม่เป็นไร */ }
+      if (resume && resume.ts && Date.now() - resume.ts < 60000) {
+        resumeStep = resume.step || 'pagesize';
+        log('หน้ารีโหลดหลัง' + (resumeStep === 'create' ? 'กด "สร้าง"' : 'ปรับ "รายการ / หน้า"') + ' — กรอกต่อให้อัตโนมัติ');
         setTimeout(() => document.getElementById('pp5-sgs-start').click(), 800);
       }
     }
