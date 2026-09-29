@@ -330,8 +330,49 @@
     try { const p = JSON.parse(raw); return ((p.subject_code || '') + ' ' + (p.subject_name || '')).trim(); } catch (e) { return ''; }
   }
 
+  // ── ตรวจรหัสวิชา: เทียบ subject_code ในข้อมูลที่วางกับวิชาที่หน้า SGS แสดงอยู่ ──
+  // นักเรียนห้องเดียวกันมีเลขประจำตัวชุดเดียวกันทุกวิชา ถ้าวางคะแนนผิดวิชาจะกรอกให้โดยไม่รู้ตัว จึงต้องเช็ค
+  // อ่านรหัสจาก 2 ที่: ตัวเลือกที่ถูกเลือกอยู่ในช่อง <select> (เช่น "รายวิชา") และเซลล์ตารางที่ขึ้นต้นด้วยรหัสวิชา
+  // (คอลัมน์ "วิชา") — ไม่อ่านทุกตัวเลือกใน select เพราะจะรวมรหัสวิชาอื่นทั้งหมดที่เลือกได้
+  const normCode = (v) => String(v || '').replace(/\s+/g, '').toUpperCase();
+  function pageSubjectCodes() {
+    const codes = new Set();
+    const add = (text) => { (String(text).match(/[A-Za-zก-ฮ]{1,3}\s?\d{4,6}/g) || []).forEach((c) => codes.add(normCode(c))); };
+    document.querySelectorAll('select').forEach((sel) => {
+      const opt = sel.options[sel.selectedIndex];
+      if (opt) add(opt.text);
+    });
+    document.querySelectorAll('td').forEach((td) => {
+      if (td.closest('#pp5-sgs-panel')) return;
+      const t = td.textContent.trim();
+      if (t.length <= 80 && /^[A-Za-zก-ฮ]{1,3}\s?\d{4,6}(\s|$)/.test(t)) add(t);
+    });
+    return codes;
+  }
+  // คืน true = กรอกต่อได้, false = ห้ามกรอก (รหัสวิชาไม่ตรง) — infoOnly = แค่แจ้งใน log ไม่บล็อก
+  function checkSubject(payload, infoOnly) {
+    const want = normCode(payload && payload.subject_code);
+    if (!want) {
+      if (!infoOnly) log('ข้อมูลที่วางไม่มีรหัสวิชา (คัดลอกจาก ปพ.5 รุ่นเก่า) — ข้ามการตรวจรหัสวิชา ตรวจวิชาเองก่อนกรอก', true);
+      return true;
+    }
+    const found = pageSubjectCodes();
+    const label = payload.subject_code + (payload.subject_name ? ' ' + payload.subject_name : '');
+    if (found.has(want)) { log('✓ รหัสวิชาตรงกัน: ' + label); return true; }
+    if (!found.size) {
+      log('⚠️ หารหัสวิชาในหน้า SGS นี้ไม่เจอ จึงเทียบไม่ได้ — ตรวจให้แน่ใจว่าเป็นวิชา ' + label + ' ก่อนกรอก', true);
+      return true;
+    }
+    const skip = document.getElementById('pp5-sgs-skipcode');
+    const skipped = !!(skip && skip.checked);
+    log('✗ รหัสวิชาไม่ตรง: ข้อมูลที่วางเป็นของ ' + label + ' แต่หน้า SGS เป็นวิชา ' + Array.from(found).join(', ') +
+      (infoOnly ? ' — ถ้าจะกรอกวิชานี้ ให้กดวางข้อมูลของวิชานี้ใหม่' : (skipped ? ' — ข้ามการตรวจตามที่เลือกไว้' : ' — ไม่กรอก เลือกวิชาใน SGS ให้ตรง หรือกดวางข้อมูลของวิชานี้ใหม่')), true);
+    return infoOnly || skipped;
+  }
+
   function buildUI() {
     const wrap = document.createElement('div');
+    wrap.id = 'pp5-sgs-panel';
     wrap.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:99999;background:#fff;border:2px solid #4f46e5;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.25);padding:12px;width:320px;font-family:sans-serif;font-size:13px;color:#111';
     wrap.innerHTML =
       '<div id="pp5-sgs-header" style="cursor:move;display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;user-select:none">' +
@@ -352,6 +393,7 @@
       '<details style="margin-bottom:6px">' +
       '<summary style="cursor:pointer;font-size:11px;color:#666;padding:2px 0">⚙️ ตัวเลือกเพิ่มเติม</summary>' +
       '<button id="pp5-sgs-scan" style="width:100%;margin-top:6px;padding:5px;background:#fff3cd;border:1px solid #ffc107;border-radius:6px;cursor:pointer;font-size:11px">🔍 สแกนโครงสร้างหน้านี้ (ถ้ากรอกแล้วไม่ขึ้นเลย)</button>' +
+      '<label style="display:flex;align-items:center;gap:6px;font-size:11px;margin-top:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-skipcode"> ไม่ตรวจรหัสวิชา (ใช้เมื่อรหัสใน SGS ต่างจาก ปพ.5)</label>' +
       '<button id="pp5-sgs-clearsaved" style="width:100%;margin-top:6px;padding:5px;background:#fee2e2;border:1px solid #fca5a5;border-radius:6px;cursor:pointer;font-size:11px">🗑️ ล้างข้อมูลที่จำไว้ (เปลี่ยนวิชา/เลิกใช้)</button>' +
       '</details>' +
       '<div id="pp5-sgs-log" style="max-height:160px;overflow-y:auto;background:#f5f5f5;border-radius:6px;padding:6px;font-size:11px;line-height:1.6"></div>' +
@@ -416,7 +458,7 @@
         const text = await navigator.clipboard.readText();
         if (!text.trim()) { log('คลิปบอร์ดว่างเปล่า — ไปกดปุ่ม "Autofill SGS" ในระบบ ปพ.5 เพื่อคัดลอกคะแนนก่อน', true); return; }
         document.getElementById('pp5-sgs-paste').value = text;
-        try { JSON.parse(text); saveData(text); log('วางข้อมูลจากคลิปบอร์ดแล้ว (จำไว้ให้ข้ามหน้า SGS) — ตรวจสอบว่าเป็นคะแนนถูกวิชาแล้วกด "เริ่มกรอกคอลัมน์ที่ติ๊กไว้"'); }
+        try { const parsed = JSON.parse(text); saveData(text); checkSubject(parsed, true); log('วางข้อมูลจากคลิปบอร์ดแล้ว (จำไว้ให้ข้ามหน้า SGS) — ตรวจสอบว่าเป็นคะแนนถูกวิชาแล้วกด "เริ่มกรอกคอลัมน์ที่ติ๊กไว้"'); }
         catch (e) { log('วางข้อมูลจากคลิปบอร์ดแล้ว แต่ไม่ใช่รูปแบบ JSON ที่ถูกต้อง — ตรวจสอบว่าคัดลอกมาจากปุ่ม "Autofill SGS" ในระบบ ปพ.5 จริงหรือไม่', true); }
       } catch (e) {
         log('วางจากคลิปบอร์ดอัตโนมัติไม่สำเร็จ (' + e.message + ') — วางเองด้วย Ctrl+V ในกล่องข้อความแทนได้', true);
@@ -430,6 +472,7 @@
       catch (e) { log('อ่าน JSON ไม่สำเร็จ: ' + e.message, true); return; }
       if (!payload.students) { log('รูปแบบข้อมูลไม่ถูกต้อง (ไม่พบ students)', true); return; }
       saveData(raw);
+      if (!checkSubject(payload)) return;
       if (isEval) runEvalFill(payload.students); else runFill(payload.students);
     };
     document.getElementById('pp5-sgs-stop').onclick = () => { stopRequested = true; };
@@ -442,6 +485,7 @@
     if (saved) {
       document.getElementById('pp5-sgs-paste').value = saved.raw;
       log('ใส่ข้อมูลที่วางไว้ก่อนหน้าให้แล้ว — วิชา ' + (describePayload(saved.raw) || '(ไม่ระบุ)') + ' (จำไว้เมื่อ ' + new Date(saved.savedAt).toLocaleTimeString('th-TH') + ') ตรวจให้ตรงกับวิชาที่กำลังกรอก ถ้าไม่ตรงให้กดวางใหม่');
+      try { checkSubject(JSON.parse(saved.raw), true); } catch (e) { /* ข้อมูลเสีย ไม่ต้องเช็ค */ }
     }
     document.getElementById('pp5-sgs-scan').onclick = () => (isEval ? scanEvalPage() : scanPage());
     document.getElementById('pp5-sgs-copylog').onclick = async () => {
