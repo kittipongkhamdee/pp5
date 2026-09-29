@@ -378,7 +378,7 @@
       <span style="font-weight:800;font-size:12.5px;letter-spacing:.03em;color:var(--txt2)">ระบบ</span>
     </div>
     <div class="ni" id="nav-school" data-sec="system" onclick="navSchoolReport()">
-      <span class="ic" id="ic-school"></span>รายงานทั้งโรงเรียน
+      <span class="ic" id="ic-school"></span>รายงานการติดตาม
     </div>
     <div class="ni" id="nav-info" data-sec="system" onclick="navInfoReport()">
       <span class="ic"></span>รายงานสารสนเทศ
@@ -940,7 +940,7 @@ async function _loadMenuPerms(){
 }
 function canAccessMenu(key){
   if(S.profile?.is_admin) return true;
-  // ผู้บริหาร (is_director) เห็น "รายงานทั้งโรงเรียน" เสมอ ไม่ต้องให้แอดมินตั้งสิทธิ์ทีละคน
+  // ผู้บริหาร (is_director) เห็น "รายงานการติดตาม" เสมอ ไม่ต้องให้แอดมินตั้งสิทธิ์ทีละคน
   if(S.profile?.is_director && key==='school_report') return true;
   return !!S.menuPerms?.has(key);
 }
@@ -950,7 +950,7 @@ function _applyMenuVisibility(){
   Object.entries(map).forEach(([id,key])=>{
     const el=$(id); if(el) el.style.display=canAccessMenu(key)?'':'none';
   });
-  // ผู้บริหาร (is_director) ไม่มีวิชาของตัวเอง — ซ่อนเมนูที่ผูกกับวิชา ให้ไปดู "รายงานทั้งโรงเรียน" แทน
+  // ผู้บริหาร (is_director) ไม่มีวิชาของตัวเอง — ซ่อนเมนูที่ผูกกับวิชา ให้ไปดู "รายงานการติดตาม" แทน
   const subjBoundIds=['nav-dashboard','nav-subjects','nav-evalplan','nav-attendance','nav-scores','nav-eval','nav-cover','nav-report','nav-watchlist'];
   const isDirectorOnly = !!S.profile?.is_director && !S.profile?.is_admin;
   subjBoundIds.forEach(id=>{ const el=$(id); if(el) el.style.display=isDirectorOnly?'none':''; });
@@ -1050,7 +1050,7 @@ function showApp(){
   if(_tbu) _tbu.style.display='none';
   _applyMenuVisibility();
   _applySidebarCollapse();
-  // ผู้บริหาร (is_director) ไม่มีวิชาสอนเอง — พาไปหน้ารายงานทั้งโรงเรียนแทนแดชบอร์ดว่างๆ
+  // ผู้บริหาร (is_director) ไม่มีวิชาสอนเอง — พาไปหน้ารายงานการติดตามแทนแดชบอร์ดว่างๆ
   if(S.profile?.is_director && !S.profile?.is_admin){ navSchoolReport(); }
   else { nav('dashboard'); }
   initPresence();
@@ -1789,7 +1789,7 @@ function _applyConcurrencyGuards(){
 // (ของโมดูลจะถูกห่อเพิ่มใน ensureModule หลังโหลดเสร็จ)
 _applyConcurrencyGuards();
 // ?v= กันแคชเก่าค้าง (modules/*.js แคชไว้ 1 วันตาม vercel.json) — แก้ไฟล์ใน modules/ เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย
-const MODULE_V='95';
+const MODULE_V='96';
 // ห่อฟังก์ชันของโมดูลหลังโหลดเสร็จด้วย (ตอนเริ่มระบบยังไม่มีฟังก์ชันเหล่านี้)
 function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V).then(()=>{ _applyConcurrencyGuards(); }); }
 function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
@@ -3471,7 +3471,7 @@ async function _loadMsBySubject(){
 }
 
 // รายงานนักเรียน มส (เวลาเรียนไม่ถึง 80%) เฉพาะวิชาของครูคนนี้ — รูปแบบเดียวกับ
-// "พิมพ์ มส" ในหน้ารายงานทั้งโรงเรียน (ดู printMsReport ใน modules/admin.js)
+// "พิมพ์ มส" ในหน้ารายงานการติดตาม (ดู printMsReport ใน modules/admin.js)
 // แต่กรองแค่ S.subjects (วิชาของครูที่ล็อกอินอยู่) และเพิ่มช่องลงชื่อครูผู้สอนท้ายหน้า
 // แยกหน้าเอกสารตามวิชา — เรียกจาก printAttendanceMsChoice()
 async function printAttendanceMsReport(){
@@ -6177,10 +6177,10 @@ function adminAuth(opts){
 
 // ════ SCHOOL REPORT ════════════════════════════════════════════
 async function navSchoolReport(){
-  if(!canAccessMenu('school_report')){ _denyMenuAccess('รายงานทั้งโรงเรียน'); return; }
+  if(!canAccessMenu('school_report')){ _denyMenuAccess('รายงานการติดตาม'); return; }
   document.querySelectorAll('.ni').forEach(e=>e.classList.remove('active'));
   const el=$('nav-school'); if(el) el.classList.add('active');
-  $('tbt').textContent='รายงานทั้งโรงเรียน';
+  $('tbt').textContent='รายงานการติดตาม';
   closeSidebar();
   try{ await ensureModule('admin'); }
   catch(e){ toast('โหลดหน้าไม่สำเร็จ: '+e.message,'er'); return; }

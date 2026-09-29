@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════
-// โมดูล admin.js — โหลดแบบ lazy เมื่อเข้าเมนู ตั้งค่า / IQA / คู่มือ / รายงานทั้งโรงเรียน เท่านั้น
+// โมดูล admin.js — โหลดแบบ lazy เมื่อเข้าเมนู ตั้งค่า / IQA / คู่มือ / รายงานการติดตาม เท่านั้น
 // (แยกออกจาก index-pp5.html เพื่อลดขนาดโค้ดที่ต้องโหลด/ประมวลผลตอนล็อกอินสำหรับครูทั่วไป)
 // ════════════════════════════════════════════════════════════════
 
@@ -896,7 +896,7 @@ async function pgSettings(){
       <div class="cb">
         <div class="alert al-in" style="margin-bottom:14px">
           <div class="alert-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
-          <span>ใช้สำหรับ: <strong>ดูรายงานทั้งโรงเรียน</strong> และ <strong>ลบนักเรียน</strong>${!cfg.admin_password?' (ค่าเริ่มต้น: <strong>1234</strong>)':''}</span>
+          <span>ใช้สำหรับ: <strong>ดูรายงานการติดตาม</strong> และ <strong>ลบนักเรียน</strong>${!cfg.admin_password?' (ค่าเริ่มต้น: <strong>1234</strong>)':''}</span>
         </div>
         <div class="fg" style="grid-template-columns:1fr;gap:12px">
           <div>
@@ -983,17 +983,17 @@ async function pgSettings(){
       </div>
       ${!_mpTeachers.length?`<div style="font-size:13px;color:var(--muted);text-align:center;padding:16px">ไม่มีครูที่ต้องตั้งค่า (มีแต่บัญชีแอดมิน)</div>`:`
       <div class="tw"><table>
-        <thead><tr><th class="tl">ครู</th><th>ตั้งค่าระบบ</th><th>รายงานทั้งโรงเรียน</th><th>นักเรียน</th><th>มาตรฐานและตัวชี้วัด</th><th>ผู้บริหาร</th></tr></thead>
+        <thead><tr><th class="tl">ครู</th><th>ตั้งค่าระบบ</th><th>รายงานการติดตาม</th><th>นักเรียน</th><th>มาตรฐานและตัวชี้วัด</th><th>ผู้บริหาร</th></tr></thead>
         <tbody>${_mpTeachers.map(t=>`<tr>
           <td class="tl">${esc(t.full_name||'')}</td>
           <td class="tc"><input type="checkbox" class="mp-cb" data-tid="${t.id}" data-key="settings" ${_mpGrants.has(t.id+'_settings')?'checked':''}></td>
           <td class="tc"><input type="checkbox" class="mp-cb" data-tid="${t.id}" data-key="school_report" ${_mpGrants.has(t.id+'_school_report')?'checked':''}></td>
           <td class="tc"><input type="checkbox" class="mp-cb" data-tid="${t.id}" data-key="students" ${_mpGrants.has(t.id+'_students')?'checked':''}></td>
           <td class="tc"><input type="checkbox" class="mp-cb" data-tid="${t.id}" data-key="standards" ${_mpGrants.has(t.id+'_standards')?'checked':''}></td>
-          <td class="tc"><input type="checkbox" class="mp-director-cb" data-tid="${t.id}" ${t.is_director?'checked':''} title="ผู้บริหาร: ล็อกอินแล้วพาไปหน้ารายงานทั้งโรงเรียนทันที ซ่อนเมนูบันทึกข้อมูล/แดชบอร์ดที่ผูกกับวิชา (เพราะไม่มีวิชาของตัวเอง) และเห็นรายงานทั้งโรงเรียนเสมอ"></td>
+          <td class="tc"><input type="checkbox" class="mp-director-cb" data-tid="${t.id}" ${t.is_director?'checked':''} title="ผู้บริหาร: ล็อกอินแล้วพาไปหน้ารายงานการติดตามทันที ซ่อนเมนูบันทึกข้อมูล/แดชบอร์ดที่ผูกกับวิชา (เพราะไม่มีวิชาของตัวเอง) และเห็นรายงานการติดตามเสมอ"></td>
         </tr>`).join('')}</tbody>
       </table></div>
-      <div style="font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.6">"ผู้บริหาร" — ล็อกอินแล้วพาไปหน้า "รายงานทั้งโรงเรียน" ทันที และซ่อนเมนูที่ผูกกับวิชา (บันทึกคะแนน/เวลาเรียน/ประเมิน ฯลฯ) เพราะไม่มีวิชาสอนเอง เหมาะสำหรับบัญชีผู้อำนวยการ/รองผู้อำนวยการ</div>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.6">"ผู้บริหาร" — ล็อกอินแล้วพาไปหน้า "รายงานการติดตาม" ทันที และซ่อนเมนูที่ผูกกับวิชา (บันทึกคะแนน/เวลาเรียน/ประเมิน ฯลฯ) เพราะไม่มีวิชาสอนเอง เหมาะสำหรับบัญชีผู้อำนวยการ/รองผู้อำนวยการ</div>
       <button class="btn bp" onclick="saveMenuPerms()" style="margin-top:14px;width:100%;justify-content:center">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
         บันทึกสิทธิ์การเข้าถึง
@@ -1282,7 +1282,7 @@ function _setAdminStatus(teacherId,teacherName,makeAdmin){
     title: makeAdmin?'ยืนยันแต่งตั้งแอดมิน':'ยืนยันถอดสิทธิ์แอดมิน',
     msg: makeAdmin
       ?'ให้ <strong>'+esc(teacherName)+'</strong> เป็นแอดมิน?<br><span style="font-size:12px;color:#dc2626">แอดมินเข้าได้ทุกเมนู รวมถึงล้างข้อมูลทั้งหมด — แต่งตั้งเฉพาะคนที่ไว้ใจได้จริงๆ</span>'
-      :'ถอดสิทธิ์แอดมินของ <strong>'+esc(teacherName)+'</strong>?<br><span style="font-size:12px;color:#8e8e93">จะกลายเป็นครูทั่วไป เข้าเมนูตั้งค่า/รายงานทั้งโรงเรียนไม่ได้ทันที เว้นแต่ให้สิทธิ์แยกไว้</span>',
+      :'ถอดสิทธิ์แอดมินของ <strong>'+esc(teacherName)+'</strong>?<br><span style="font-size:12px;color:#8e8e93">จะกลายเป็นครูทั่วไป เข้าเมนูตั้งค่า/รายงานการติดตามไม่ได้ทันที เว้นแต่ให้สิทธิ์แยกไว้</span>',
     type: makeAdmin?'warn':'danger',
     confirmText: makeAdmin?'แต่งตั้งเลย':'ถอดสิทธิ์เลย',
     cancelText:'ยกเลิก',
@@ -1357,9 +1357,9 @@ async function saveIQATargets(){
 }
 
 // ════ IQA REPORT ══════════════════════════════════════════════════
-// รายงานนี้เป็นข้อมูลระดับทั้งโรงเรียน เข้าถึงได้ผ่านปุ่มในหน้า "รายงานทั้งโรงเรียน" เท่านั้น — ใช้สิทธิ์ school_report เดียวกัน (ครูที่เข้าถึงหน้านี้ได้ แก้ค่าเป้าหมายได้ด้วย)
+// รายงานนี้เป็นข้อมูลระดับทั้งโรงเรียน เข้าถึงได้ผ่านปุ่มในหน้า "รายงานการติดตาม" เท่านั้น — ใช้สิทธิ์ school_report เดียวกัน (ครูที่เข้าถึงหน้านี้ได้ แก้ค่าเป้าหมายได้ด้วย)
 async function pgIQA(){
-  if(!canAccessMenu('school_report')){ _denyMenuAccess('รายงานทั้งโรงเรียน'); return; }
+  if(!canAccessMenu('school_report')){ _denyMenuAccess('รายงานการติดตาม'); return; }
   loading(true);
   try{
     const cfg=S.config;
@@ -2376,7 +2376,7 @@ async function pgSchoolReport(){
     $('pg').innerHTML=
       '<div class="ph">'+
         '<div>'+
-          '<div class="ptitle">รายงานทั้งโรงเรียน</div>'+
+          '<div class="ptitle">รายงานการติดตาม</div>'+
           '<div class="psub">'+esc(S.config.school_name||'')+'&nbsp;·&nbsp;ปีการศึกษา '+esc(S.config.academic_year||'')+'&nbsp;ภาค&nbsp;'+esc(S.config.semester||'')+'</div>'+
         '</div>'+
         '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'+
@@ -2969,7 +2969,7 @@ function printMsMemo(selectedIds){
 
 // ════ INFO REPORT (รายงานสารสนเทศ) ════════════════════════════════
 // สรุปผลสัมฤทธิ์ + ผลประเมินอ่านคิดวิเคราะห์เขียน + คุณลักษณะฯ แยกตามระดับชั้น ม.1-ม.6 ทั้งโรงเรียน
-// ใช้สิทธิ์ school_report เดียวกับ "รายงานทั้งโรงเรียน" (แอดมิน/ผู้บริหาร/ครูที่ได้รับสิทธิ์)
+// ใช้สิทธิ์ school_report เดียวกับ "รายงานการติดตาม" (แอดมิน/ผู้บริหาร/ครูที่ได้รับสิทธิ์)
 // นิยามที่ใช้ (ระบุไว้ท้ายรายงานด้วย): GPA = ผลรวม(เกรด×หน่วยกิต)/ผลรวมหน่วยกิต ของวิชาที่มีเกรดตัวเลข
 // (ไม่รวม ร/มส/มผ/ผ); "ไม่ผ่าน" = มีวิชาที่ได้ 0 หรือ ร/มส/มผ อย่างน้อยหนึ่งวิชา (ซ้อนกับช่วง GPA ได้);
 // ระดับอ่านคิดฯ/คุณลักษณะของนักเรียน = ค่าเฉลี่ยผลประเมินทุกวิชา ปัดขึ้นเป็นจำนวนเต็ม (3=ดีเยี่ยม 2=ดี 1=ผ่าน 0=ไม่ผ่าน)
@@ -3176,7 +3176,7 @@ function exportSchoolReport(){
     ]);
   });
   exportExcel(
-    [{name:'รายงานทั้งโรงเรียน',aoa,colWidths:[6,10,24,10,20,8,7,8,8,10,6]}],
-    'รายงานทั้งโรงเรียน_'+(S.config.academic_year||'')+'.xlsx'
+    [{name:'รายงานการติดตาม',aoa,colWidths:[6,10,24,10,20,8,7,8,8,10,6]}],
+    'รายงานการติดตาม_'+(S.config.academic_year||'')+'.xlsx'
   );
 }
