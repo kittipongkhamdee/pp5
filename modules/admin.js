@@ -2967,6 +2967,186 @@ function printMsMemo(selectedIds){
   w.document.close();
 }
 
+// ════ INFO REPORT (รายงานสารสนเทศ) ════════════════════════════════
+// สรุปผลสัมฤทธิ์ + ผลประเมินอ่านคิดวิเคราะห์เขียน + คุณลักษณะฯ แยกตามระดับชั้น ม.1-ม.6 ทั้งโรงเรียน
+// ใช้สิทธิ์ school_report เดียวกับ "รายงานทั้งโรงเรียน" (แอดมิน/ผู้บริหาร/ครูที่ได้รับสิทธิ์)
+// นิยามที่ใช้ (ระบุไว้ท้ายรายงานด้วย): GPA = ผลรวม(เกรด×หน่วยกิต)/ผลรวมหน่วยกิต ของวิชาที่มีเกรดตัวเลข
+// (ไม่รวม ร/มส/มผ/ผ); "ไม่ผ่าน" = มีวิชาที่ได้ 0 หรือ ร/มส/มผ อย่างน้อยหนึ่งวิชา (ซ้อนกับช่วง GPA ได้);
+// ระดับอ่านคิดฯ/คุณลักษณะของนักเรียน = ค่าเฉลี่ยผลประเมินทุกวิชา ปัดขึ้นเป็นจำนวนเต็ม (3=ดีเยี่ยม 2=ดี 1=ผ่าน 0=ไม่ผ่าน)
+window._infoGroup='';
+const _INFO_BUCKETS=[['4.00',4],['3.50-3.99',3.5],['3.00-3.49',3],['2.50-2.99',2.5],['2.00-2.49',2],['1.50-1.99',1.5],['1.00-1.49',1],['0.00-0.99',0]];
+async function pgInfoReport(){
+  if(!canAccessMenu('school_report')){ _denyMenuAccess('รายงานสารสนเทศ'); return; }
+  loading(true);
+  try{
+    const [subjects, sumRows, readRows, charRows, stus] = await Promise.all([
+      qAll(()=>sb.from('subjects').select('id,grade_level,room,credits,subject_group,score_final').order('id')),
+      qAll(()=>sb.from('score_summary').select('subject_id,student_id,grade,special_result,final_score').order('id')),
+      qAll(()=>sb.from('eval_read').select('subject_id,student_id,result').order('id')),
+      qAll(()=>sb.from('eval_char').select('subject_id,student_id,overall_result').order('id')),
+      qAll(()=>sb.from('students').select('id,grade_level,room').order('id')),
+    ]);
+    S._infoData={subjects,sumRows,readRows,charRows,stus};
+    _renderInfoReport();
+  }catch(e){ toast('โหลดรายงานสารสนเทศไม่สำเร็จ: '+e.message,'er'); }
+  finally{ loading(false); }
+}
+function _infoCompute(group){
+  const D=S._infoData;
+  const subs=D.subjects.filter(s=>!group||(s.subject_group||'')===group);
+  const subMap=new Map(subs.map(s=>[String(s.id),s]));
+  const rk=(g,r)=>g+'_'+r;
+  const rooms=new Set(subs.map(s=>rk(s.grade_level,s.room)));
+  const stuMap=new Map();
+  D.stus.forEach(st=>{
+    if(rooms.has(rk(st.grade_level,st.room)))
+      stuMap.set(String(st.id),{level:String(st.grade_level),key:rk(st.grade_level,st.room),gp:0,w:0,rows:0,risk:false,rd:[],ch:[]});
+  });
+  const own=(r)=>{
+    const sub=subMap.get(String(r.subject_id)); if(!sub) return null;
+    const st=stuMap.get(String(r.student_id)); if(!st||st.key!==rk(sub.grade_level,sub.room)) return null;
+    return {sub,st};
+  };
+  let pendingRows=0,totalRows=0;
+  D.sumRows.forEach(r=>{
+    const o=own(r); if(!o) return;
+    const {sub,st}=o;
+    st.rows++; totalRows++;
+    const finalMax=sub.score_final==null?30:(parseFloat(sub.score_final)||0);
+    if(finalMax>0&&!((parseFloat(r.final_score)||0)>0)) pendingRows++;
+    const sr=r.special_result||'';
+    if(['ร','มส','มผ'].includes(sr)){ st.risk=true; return; }
+    if(sr==='ผ') return;
+    const g=parseFloat(r.grade); if(isNaN(g)) return;
+    if(g===0) st.risk=true;
+    const w=parseFloat(sub.credits)||1;
+    st.gp+=g*w; st.w+=w;
+  });
+  D.readRows.forEach(r=>{ const o=own(r); if(o&&r.result!=null) o.st.rd.push(+r.result); });
+  D.charRows.forEach(r=>{ const o=own(r); if(o&&r.overall_result!=null) o.st.ch.push(+r.overall_result); });
+  const lv=a=>a.length?Math.min(3,Math.floor(a.reduce((x,y)=>x+y,0)/a.length+0.5)):null;
+  const blank=()=>({n:0,b:Array(8).fill(0),none:0,fail:0,rd:[0,0,0,0],ch:[0,0,0,0],gpa3:0,clean:0,rd2:0,ch2:0});
+  const byLevel={}, total=blank();
+  stuMap.forEach(st=>{
+    const rows=[total]; (byLevel[st.level]=byLevel[st.level]||blank()); rows.push(byLevel[st.level]);
+    const gpa=st.w>0?Math.floor(st.gp/st.w*100+1e-9)/100:null;
+    const bi=gpa==null?-1:_INFO_BUCKETS.findIndex(b=>gpa>=b[1]);
+    const rl=lv(st.rd), cl=lv(st.ch);
+    rows.forEach(c=>{
+      c.n++;
+      if(!st.rows) c.none++;
+      if(st.risk) c.fail++;
+      if(bi>=0) c.b[bi]++;
+      if(gpa!=null&&gpa>=3) c.gpa3++;
+      if(st.rows&&!st.risk) c.clean++;
+      if(rl!=null){ c.rd[3-rl]++; if(rl>=2) c.rd2++; }
+      if(cl!=null){ c.ch[3-cl]++; if(cl>=2) c.ch2++; }
+    });
+  });
+  const levels=Object.keys(byLevel).sort((a,b)=>(parseInt(a)||0)-(parseInt(b)||0));
+  return {levels,byLevel,total,pendingRows,totalRows};
+}
+function _infoTableHTML(R){
+  const T=R.total.n||0;
+  const cell=v=>'<td class="ir-n'+(v?'':' ir-z')+'">'+v+'</td>';
+  const pct=v=>'<td class="ir-p">'+(T?(v/T*100).toFixed(2):'0.00')+'</td>';
+  const cols=c=>[...c.b,c.none,c.fail,...c.rd,...c.ch];
+  const rowsHtml=R.levels.map(l=>{
+    const c=R.byLevel[l];
+    return '<tr><td class="ir-l">ม.'+esc(l)+'</td><td class="ir-n ir-cnt">'+c.n+'</td>'+cols(c).map(cell).join('')+'</tr>';
+  }).join('');
+  const tot=cols(R.total);
+  const head='<thead>'+
+    '<tr><th rowspan="3">ระดับชั้น</th><th rowspan="3">จำนวน<br>นักเรียน</th>'+
+      '<th colspan="10" class="ir-g1">ผลสัมฤทธิ์ทางการเรียน</th>'+
+      '<th colspan="4" class="ir-g2">อ่าน คิด วิเคราะห์ และเขียน</th>'+
+      '<th colspan="4" class="ir-g3">คุณลักษณะอันพึงประสงค์</th></tr>'+
+    '<tr><th colspan="8">ผ่านเกณฑ์ (GPA)</th><th rowspan="2">ยังไม่<br>มีผล</th><th rowspan="2" class="ir-bad">ไม่ผ่าน<br>(0,ร,มส)</th>'+
+      '<th rowspan="2">ดีเยี่ยม</th><th rowspan="2">ดี</th><th rowspan="2">ผ่าน</th><th rowspan="2" class="ir-bad">ไม่ผ่าน</th>'+
+      '<th rowspan="2">ดีเยี่ยม</th><th rowspan="2">ดี</th><th rowspan="2">ผ่าน</th><th rowspan="2" class="ir-bad">ไม่ผ่าน</th></tr>'+
+    '<tr>'+_INFO_BUCKETS.map(b=>'<th>'+b[0]+'</th>').join('')+'</tr></thead>';
+  const foot='<tr class="ir-sum"><td class="ir-l">รวม</td><td class="ir-n">'+T+'</td>'+tot.map(v=>'<td class="ir-n">'+v+'</td>').join('')+'</tr>'+
+    '<tr class="ir-pct"><td class="ir-l">ร้อยละ</td><td class="ir-p">'+(T?'100':'0')+'</td>'+tot.map(pct).join('')+'</tr>';
+  return '<table class="ir-table">'+head+'<tbody>'+rowsHtml+foot+'</tbody></table>';
+}
+const _INFO_CSS=`
+.ir-table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:1100px}
+.ir-table th,.ir-table td{border:1px solid var(--bdr,#e5e5ea);padding:8px 6px;text-align:center}
+.ir-table thead th{background:var(--card2,#f5f5f7);font-weight:700;color:var(--txt2,#48484a);font-size:12px}
+.ir-table thead th.ir-g1{color:#b45309}.ir-table thead th.ir-g2{color:#6d28d9}.ir-table thead th.ir-g3{color:#0f766e}
+.ir-table .ir-bad{color:#dc2626}
+.ir-table td.ir-l{font-weight:700}
+.ir-table td.ir-cnt{color:#0284c7;font-weight:600}
+.ir-table td.ir-z{color:#a1a1aa}
+.ir-table tr.ir-sum td{background:#1d1d1f;color:#fff;font-weight:700}
+.ir-table tr.ir-pct td{background:var(--card2,#f5f5f7)}
+.ir-note{font-size:11.5px;color:var(--muted,#8e8e93);line-height:1.7;padding:12px 16px 4px}
+`;
+function _renderInfoReport(){
+  const D=S._infoData; if(!D) return;
+  const group=window._infoGroup||'';
+  const R=_infoCompute(group);
+  const T=R.total, N=T.n||0;
+  const groups=[...new Set(D.subjects.map(s=>s.subject_group||'').filter(Boolean))].sort((a,b)=>a.localeCompare(b,'th'));
+  const cfg=S.config;
+  const p=v=>N?(v/N*100).toFixed(1):'0.0';
+  const kpi=(cls,icon,label,val,sub)=>'<div class="sc" style="align-items:flex-start"><div class="si '+cls+'">'+icon+'</div><div><div class="sl" style="margin:0 0 2px">'+label+'</div><div class="sv">'+val.toLocaleString('th-TH')+' <span style="font-size:12px;font-weight:500;color:var(--muted)">คน</span></div><div class="sl" style="font-size:11px;margin-top:4px">'+sub+'</div></div></div>';
+  const svg=d=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">'+d+'</svg>';
+  const warn=R.pendingRows>0
+    ?'<div style="margin:0 0 14px;padding:10px 14px;border-radius:12px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35);color:var(--warn-txt);font-size:12.5px">'+_ico.warning+' ยังไม่มีคะแนนสอบปลายภาค <strong>'+R.pendingRows+'</strong> จาก '+R.totalRows+' รายการ (นักเรียน×วิชา) — นักเรียนเหล่านี้อาจถูกนับเป็น "ไม่ผ่าน" ชั่วคราว ตัวเลขจะนิ่งเมื่อครูกรอกคะแนนปลายภาคครบ</div>':'';
+  $('pg').innerHTML=
+    '<style>'+_INFO_CSS+'</style>'+
+    '<div class="ph"><div><div class="ptitle">รายงานสารสนเทศ</div>'+
+      '<div class="psub">ผลสัมฤทธิ์ทางการเรียนและผลการประเมินนักเรียนแยกตามระดับชั้น · '+esc(cfg.school_name||'')+' · ภาคเรียนที่ '+esc(cfg.semester||'')+' ปีการศึกษา '+esc(cfg.academic_year||'')+'</div></div>'+
+      '<div class="no-print" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'+
+        '<select class="fs" style="width:auto;min-width:170px" onchange="window._infoGroup=this.value;_renderInfoReport()">'+
+          '<option value="">ทุกกลุ่มสาระ</option>'+groups.map(g=>'<option value="'+esc(g)+'"'+(g===group?' selected':'')+'>'+esc(g)+'</option>').join('')+
+        '</select>'+
+        '<button class="btn bp" onclick="printInfoReport()">พิมพ์ A4 (แนวนอน)</button>'+
+      '</div></div>'+
+    '<div class="sg" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">'+
+      kpi('bl',svg('<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'),'นักเรียนทั้งหมด',N,'นักเรียนในห้องที่มีรายวิชา'+(group?'กลุ่มสาระนี้':'ของทุกกลุ่มสาระ'))+
+      kpi('or',svg('<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>'),'เกรดเฉลี่ย ≥ 3.00',T.gpa3,p(T.gpa3)+'% ของนักเรียนทั้งหมด')+
+      kpi('gr',svg('<polyline points="20 6 9 17 4 12"/>'),'ปลอด 0, ร, มส',T.clean,p(T.clean)+'% ของนักเรียนทั้งหมด')+
+      kpi('bl',svg('<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>'),'อ่านคิดฯ ดีขึ้นไป',T.rd2,p(T.rd2)+'% (ระดับ ≥ 2)')+
+      kpi('gr',svg('<polygon points="12 2 15 9 22 9.5 17 14.5 18.5 22 12 18 5.5 22 7 14.5 2 9.5 9 9"/>'),'คุณลักษณะฯ ดีขึ้นไป',T.ch2,p(T.ch2)+'% (ระดับ ≥ 2)')+
+      kpi('or',svg('<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'),'ยังไม่มีผลการเรียน',T.none,p(T.none)+'% ของนักเรียนทั้งหมด')+
+    '</div>'+warn+
+    '<div class="card" style="margin-bottom:14px"><div class="ch"><div><div class="ct">ผลสัมฤทธิ์ทางการเรียนของนักเรียนทั้งโรงเรียน</div>'+
+      '<span style="font-size:11px;color:var(--muted);font-weight:400">ภาคเรียนที่ '+esc(cfg.semester||'')+' ปีการศึกษา '+esc(cfg.academic_year||'')+' · '+(group?esc(group):'ทุกกลุ่มสาระ')+'</span></div>'+
+      '<span style="font-size:11px;color:var(--muted)">ข้อมูล ณ '+new Date().toLocaleDateString('th-TH')+'</span></div>'+
+      '<div class="cb" style="padding:0"><div class="tw" style="overflow-x:auto">'+_infoTableHTML(R)+'</div>'+
+      '<div class="ir-note">หมายเหตุ: GPA คำนวณถ่วงน้ำหนักด้วยหน่วยกิตของวิชาที่มีเกรดตัวเลข (ไม่รวม ร/มส/มผ/ผ) · "ไม่ผ่าน (0,ร,มส)" นับนักเรียนที่มีวิชาได้ 0 หรือ ร/มส/มผ อย่างน้อยหนึ่งวิชา (ซ้อนกับช่วง GPA ได้) · "ยังไม่มีผล" คือยังไม่มีข้อมูลเกรดในวิชาใดเลย · ระดับอ่านคิดฯ/คุณลักษณะของนักเรียนคือค่าเฉลี่ยผลประเมินทุกวิชา ปัดเป็นจำนวนเต็ม · ผู้ที่ยังไม่มีผลประเมินไม่ถูกนับในคอลัมน์ประเมิน</div></div></div>';
+  window._infoLast=R;
+}
+function printInfoReport(){
+  const R=window._infoLast; if(!R){ toast('ยังไม่มีข้อมูลรายงาน','er'); return; }
+  const cfg=S.config, group=window._infoGroup||'';
+  const w=window.open('','_blank');
+  if(!w){ toast('เบราว์เซอร์บล็อก Popup — กรุณาอนุญาต Popup แล้วลองใหม่','er'); return; }
+  w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>รายงานสารสนเทศ</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;700&display=swap" rel="stylesheet">
+  <style>
+    @page{size:A4 landscape;margin:12mm}
+    body{font-family:'Sarabun','TH Sarabun New',sans-serif;color:#000;margin:0}
+    h1{font-size:18pt;margin:0 0 2px;text-align:center}.sub{text-align:center;font-size:11pt;margin-bottom:10px}
+    .ir-table{width:100%;border-collapse:collapse;font-size:9.5pt;min-width:0}
+    .ir-table th,.ir-table td{border:1px solid #000;padding:3px 2px;text-align:center}
+    .ir-table thead th{background:#eee;font-weight:700}
+    .ir-table tr.ir-sum td{background:#ddd;font-weight:700}
+    .ir-table td.ir-z{color:#777}
+    .note{font-size:8.5pt;margin-top:8px;line-height:1.5}
+    .bar{position:fixed;top:8px;right:8px}@media print{.bar{display:none}}
+  </style></head><body>
+  <div class="bar"><button onclick="document.fonts.ready.then(()=>window.print())">พิมพ์</button></div>
+  <h1>รายงานสารสนเทศผลสัมฤทธิ์ทางการเรียนและผลการประเมิน</h1>
+  <div class="sub">${esc(cfg.school_name||'')} · ภาคเรียนที่ ${esc(cfg.semester||'')} ปีการศึกษา ${esc(cfg.academic_year||'')} · ${group?esc(group):'ทุกกลุ่มสาระ'}</div>
+  ${_infoTableHTML(R)}
+  <div class="note">หมายเหตุ: GPA ถ่วงน้ำหนักด้วยหน่วยกิต (ไม่รวม ร/มส/มผ/ผ) · "ไม่ผ่าน (0,ร,มส)" นับนักเรียนที่มีวิชาได้ 0 หรือ ร/มส/มผ อย่างน้อยหนึ่งวิชา (ซ้อนกับช่วง GPA ได้) · ระดับอ่านคิดฯ/คุณลักษณะคือค่าเฉลี่ยผลประเมินทุกวิชา ปัดเป็นจำนวนเต็ม</div>
+  </body></html>`);
+  w.document.close();
+}
+
 function _toggleSchoolCard(cardId){
   const card=$(cardId); if(!card) return;
   const detail=card.querySelector('.school-detail');
