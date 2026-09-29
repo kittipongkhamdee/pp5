@@ -4170,8 +4170,9 @@ async function openOmrImportModal(){
         <div id="omr-scale-example" style="color:var(--muted);margin:4px 0 0 22px"></div>
         <div id="omr-round-box" style="display:none;margin:8px 0 0 22px">
           <div style="margin-bottom:4px">มี <strong id="omr-round-count">0</strong> คนที่แปลงแล้วได้คะแนนเป็นทศนิยม ต้องการ:</div>
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400"><input type="radio" name="omr-round" value="up" onchange="_omrRecomputeOverflow()">ปัดขึ้น</label>
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400"><input type="radio" name="omr-round" value="down" onchange="_omrRecomputeOverflow()">ปัดลง</label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400"><input type="radio" name="omr-round" value="half" checked onchange="_omrRecomputeOverflow()">ปัดตามหลัก (.50 ขึ้นไปปัดขึ้น ต่ำกว่าปัดลง)</label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400"><input type="radio" name="omr-round" value="up" onchange="_omrRecomputeOverflow()">ปัดขึ้นทั้งหมด</label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400"><input type="radio" name="omr-round" value="down" onchange="_omrRecomputeOverflow()">ปัดลงทั้งหมด</label>
         </div>
       </div>
       <div id="omr-preview" style="margin-top:12px;font-size:12.5px;color:var(--muted)">กำลังโหลดผลตรวจ...</div>
@@ -4311,7 +4312,8 @@ async function _omrLoadPreview(){
 // เช็คว่ามีนักเรียนคนไหนคะแนน OMR เกินคะแนนเต็มที่ตั้งไว้ตอนนี้ไหม — เรียกซ้ำได้ทุกครั้งที่แก้ช่อง "คะแนนเต็ม"
 // โดยไม่ต้องยิง query ใหม่ (ใช้ _omrCtx.scoreMap ที่โหลดไว้แล้ว)
 // แปลงคะแนนตามสัดส่วน: คะแนนดิบ × คะแนนเต็มที่นำเข้า ÷ คะแนนเต็มชุดข้อสอบ (เช่น 18/20 → 9/10)
-// ถ้าผลเป็นทศนิยม ให้ครูเลือกเองว่าปัดขึ้นหรือปัดลง — คืน null ถ้ายังไม่ได้เลือกวิธีปัด
+// ถ้าผลเป็นทศนิยม ปัดตามที่ครูเลือก: ตามหลัก (.50 ขึ้นไปปัดขึ้น — ค่าเริ่มต้น), ขึ้นทั้งหมด,
+// หรือลงทั้งหมด — คืน null ถ้ายังไม่ได้เลือกวิธีปัด
 function _omrScaleOn(){
   const src=_omrCtx.quizMax||0, mx=parseFloat($('omr-mx')?.value)||0;
   return !!($('omr-scale-on')?.checked && src>0 && mx>0 && src!==mx);
@@ -4322,6 +4324,7 @@ function _omrFinalScore(raw){
   const v=raw*(parseFloat($('omr-mx').value)||0)/_omrCtx.quizMax;
   if(!_omrIsFrac(v)) return Math.round(v);
   const mode=document.querySelector('input[name="omr-round"]:checked')?.value;
+  if(mode==='half') return Math.floor(v+0.5+1e-9);
   if(mode==='up') return Math.ceil(v-1e-9);
   if(mode==='down') return Math.floor(v+1e-9);
   return null;
@@ -4364,7 +4367,7 @@ async function importOmrScores(){
   const scaled=_omrScaleOn();
   const scaleNote=scaled?' (แปลงสัดส่วน '+_omrCtx.quizMax+' → '+mx+')':'';
   if(scaled && scStus.some(s=>byStudent[s.id] && _omrFinalScore(parseFloat(byStudent[s.id].score)||0)===null)){
-    toast('มีคะแนนที่แปลงแล้วเป็นทศนิยม — กรุณาเลือก "ปัดขึ้น" หรือ "ปัดลง" ก่อน','er'); return;
+    toast('มีคะแนนที่แปลงแล้วเป็นทศนิยม — กรุณาเลือกวิธีปัดคะแนนก่อน','er'); return;
   }
 
   // คะแนนสอบกลางภาค/ปลายภาค — แค่เติมค่าลงช่องกรอกในแท็บ "คะแนนสอบ" เหมือนฟีเจอร์ถ่ายรูปกรอกคะแนน
