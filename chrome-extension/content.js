@@ -358,6 +358,76 @@
     try { const p = JSON.parse(raw); return ((p.subject_code || '') + ' ' + (p.subject_name || '')).trim(); } catch (e) { return ''; }
   }
 
+  // ── ปรับช่อง "รายการ / หน้า" ให้แสดงนักเรียนครบทุกคนในหน้าเดียว ──
+  // SGS แบ่งหน้าละ 10 แถว (เช่น "1 ของ 3") ส่วนขยายกรอกได้เฉพาะแถวที่แสดงอยู่ ครูจึงต้องใส่ช่อง "รายการ / หน้า"
+  // ให้ ≥ จำนวนนักเรียนเอง — ตอนกดเริ่มกรอก ถ้าช่องนี้น้อยกว่าจำนวนรายการทั้งหมด จะปรับให้แล้วรอตารางอัปเดตก่อนกรอก
+  // ยังไม่ทราบ id จริงของช่อง/ปุ่มยืนยัน จึงหาหลายวิธี: id ที่มีคำว่า PageSize → ช่องข้อความที่อยู่ก่อนข้อความ "/ หน้า"
+  // ถ้าหน้ารีโหลดเต็มหน้า (ไม่ใช่อัปเดตบางส่วน) จะจำ flag ไว้แล้วกดเริ่มกรอกต่อให้เองหลังโหลดเสร็จ (ครั้งเดียว)
+  const RESUME_KEY = 'pp5SgsResume';
+  let resumedOnce = false;
+  function leafTexts(re) {
+    const out = [];
+    document.querySelectorAll('td, span, div, b, label').forEach((el) => {
+      if (el.closest('#pp5-sgs-panel')) return;
+      const t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+      if (t.length <= 30 && re.test(t)) out.push({ el, m: t.match(re) });
+    });
+    return out;
+  }
+  function findPageSizeInput() {
+    const inputs = Array.from(document.querySelectorAll('input[type="text"]')).filter((i) => !i.closest('#pp5-sgs-panel'));
+    const byId = inputs.find((i) => /PageSize/i.test(i.id) || /PageSize/i.test(i.name));
+    if (byId) return byId;
+    const label = leafTexts(/^\/\s*หน้า$/)[0];
+    if (!label) return null;
+    let found = null;
+    inputs.forEach((i) => { if (i.compareDocumentPosition(label.el) & Node.DOCUMENT_POSITION_FOLLOWING) found = i; });
+    return found;
+  }
+  function readTotalRecords() {
+    const r = leafTexts(/^(\d+)\s*รายการ$/)[0];
+    return r ? parseInt(r.m[1], 10) : 0;
+  }
+  function readTotalPages() {
+    const r = leafTexts(/^ของ\s*(\d+)$/)[0];
+    return r ? parseInt(r.m[1], 10) : 0;
+  }
+  function findPageSizeButton(inp) {
+    const byId = document.querySelector('[id*="PageSizeButton"], [id*="PageSizeOK"]');
+    if (byId) return byId;
+    const box = inp.closest('td, div');
+    return box ? box.querySelector('input[type="image"], input[type="submit"], input[type="button"], button') : null;
+  }
+  async function ensureFullPage(expectCount) {
+    const inp = findPageSizeInput();
+    const total = readTotalRecords() || expectCount || 0;
+    if (!inp || !total) { log('หาช่อง "รายการ / หน้า" หรือจำนวนรายการทั้งหมดไม่เจอ — ตรวจเองว่าช่องนี้ ≥ จำนวนนักเรียน (ไม่งั้นจะกรอกได้เฉพาะหน้าที่แสดงอยู่)', true); return true; }
+    const cur = parseInt(inp.value, 10) || 0;
+    if (cur >= total && readTotalPages() <= 1) return true;
+    if (resumedOnce) { log('ปรับช่อง "รายการ / หน้า" อัตโนมัติแล้วแต่ยังแสดงไม่ครบ — ปรับเองเป็น ' + total + ' แล้วกดเริ่มใหม่', true); return false; }
+    log('ช่อง "รายการ / หน้า" เป็น ' + cur + ' แต่มีนักเรียน ' + total + ' รายการ — กำลังปรับเป็น ' + total + ' ให้...');
+    try { localStorage.setItem(RESUME_KEY, String(Date.now())); } catch (e) { /* ไม่เป็นไร */ }
+    inp.focus();
+    setNativeValue(inp, String(Math.max(total, cur)));
+    const btn = findPageSizeButton(inp);
+    if (btn) btn.click();
+    else ['keydown', 'keypress', 'keyup'].forEach((t) => inp.dispatchEvent(new KeyboardEvent(t, { key: 'Enter', keyCode: 13, which: 13, bubbles: true })));
+    let changeSent = false;
+    for (let i = 0; i < 40; i++) {
+      await sleep(300);
+      if (readTotalPages() === 1) {
+        try { localStorage.removeItem(RESUME_KEY); } catch (e) { /* ไม่เป็นไร */ }
+        await sleep(400);
+        log('ปรับช่อง "รายการ / หน้า" เป็น ' + total + ' แล้ว');
+        return true;
+      }
+      if (i === 9 && !changeSent) { changeSent = true; const cur2 = findPageSizeInput(); if (cur2) fireEvent(cur2, 'change'); }
+    }
+    try { localStorage.removeItem(RESUME_KEY); } catch (e) { /* ไม่เป็นไร */ }
+    log('รอตารางอัปเดตหลังปรับ "รายการ / หน้า" ไม่สำเร็จ — ปรับช่องนี้เองเป็น ' + total + ' แล้วกดเริ่มใหม่', true);
+    return false;
+  }
+
   // ── ตรวจรหัสวิชา: เทียบ subject_code ในข้อมูลที่วางกับวิชาที่หน้า SGS แสดงอยู่ ──
   // นักเรียนห้องเดียวกันมีเลขประจำตัวชุดเดียวกันทุกวิชา ถ้าวางคะแนนผิดวิชาจะกรอกให้โดยไม่รู้ตัว จึงต้องเช็ค
   // อ่านรหัสจาก 2 ที่: ตัวเลือกที่ถูกเลือกอยู่ในช่อง <select> (เช่น "รายวิชา") และเซลล์ตารางที่ขึ้นต้นด้วยรหัสวิชา
@@ -506,7 +576,10 @@
       if (!payload.students) { log('รูปแบบข้อมูลไม่ถูกต้อง (ไม่พบ students)', true); return; }
       saveData(raw);
       if (!checkSubject(payload)) return;
-      if (isEval) runEvalFill(payload.students); else runFill(payload.students);
+      ensureFullPage(Object.keys(payload.students).length).then((ok) => {
+        if (!ok) return;
+        if (isEval) runEvalFill(payload.students); else runFill(payload.students);
+      });
     };
     document.getElementById('pp5-sgs-stop').onclick = () => { stopRequested = true; };
     document.getElementById('pp5-sgs-clearsaved').onclick = () => {
@@ -519,6 +592,13 @@
       document.getElementById('pp5-sgs-paste').value = saved.raw;
       log('ใส่ข้อมูลที่วางไว้ก่อนหน้าให้แล้ว — วิชา ' + (describePayload(saved.raw) || '(ไม่ระบุ)') + ' (จำไว้เมื่อ ' + new Date(saved.savedAt).toLocaleTimeString('th-TH') + ') ตรวจให้ตรงกับวิชาที่กำลังกรอก ถ้าไม่ตรงให้กดวางใหม่');
       try { checkSubject(JSON.parse(saved.raw), true); } catch (e) { /* ข้อมูลเสีย ไม่ต้องเช็ค */ }
+      let resumeAt = 0;
+      try { resumeAt = parseInt(localStorage.getItem(RESUME_KEY), 10) || 0; localStorage.removeItem(RESUME_KEY); } catch (e) { /* ไม่เป็นไร */ }
+      if (resumeAt && Date.now() - resumeAt < 60000) {
+        resumedOnce = true;
+        log('หน้ารีโหลดหลังปรับ "รายการ / หน้า" — กรอกต่อให้อัตโนมัติ');
+        setTimeout(() => document.getElementById('pp5-sgs-start').click(), 800);
+      }
     }
     document.getElementById('pp5-sgs-scan').onclick = () => (isEval ? scanEvalPage() : scanPage());
     document.getElementById('pp5-sgs-copylog').onclick = async () => {
