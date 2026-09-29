@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autofill SGS จากระบบ ปพ.5
 // @namespace    pp5-sgs-autofill
-// @version      2.18.0
+// @version      2.18.1
 // @description  วางคะแนนและผลประเมิน (อ่าน คิดวิเคราะห์ เขียน / คุณลักษณะอันพึงประสงค์) ที่คัดลอกจากระบบ ปพ.5 ลงหน้ากรอกคะแนน SGS (sgs.bopp-obec.info) ให้อัตโนมัติ
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts1-Table.aspx*
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts2-Table.aspx*
@@ -49,7 +49,7 @@
   const FIELD_ORDER = Object.keys(CHECKBOX_MAP);
 
   // เลขรุ่นที่แสดงในกล่อง (ต้องตรงกับ @version ด้านบน)
-  const APP_VERSION = 'สคริปต์ Tampermonkey v2.18.0';
+  const APP_VERSION = 'สคริปต์ Tampermonkey v2.18.1';
   const DEVELOPER = 'นายกิตติพงษ์ คำดี';
 
   let running = false;
@@ -150,7 +150,7 @@
   // ── กดปุ่ม "บันทึก" ของ SGS ให้ (ตัวเลือก ปิดไว้เป็นค่าเริ่มต้น) ──
   // ปุ่มบันทึกของ SGS คือ <input type="image" title="บันทึก" id="...SaveButton"> บันทึกทั้งหน้าที่แสดงอยู่
   // กดให้เฉพาะเมื่อ: รหัสวิชาตรง (ตรวจตอนกดเริ่มแล้ว) + ตรวจซ้ำแล้วทุกช่องค่ายังอยู่ + ไม่ได้กดหยุด
-  // และถามยืนยันก่อนทุกครั้ง (เว้นแต่ติ๊ก "ไม่ต้องถามยืนยัน") เพราะบันทึกลงระบบราชการแล้วย้อนยาก
+  // ไม่ถามยืนยันก่อนกด (ครูเลือกเปิด "กดปุ่มบันทึก" เองแล้ว) เพราะบันทึกลงระบบราชการแล้วย้อนยาก จึงยังต้องผ่านเงื่อนไขข้างบนครบ
   function findSaveButton() {
     const btns = Array.from(document.querySelectorAll('input[type="image"]'))
       .filter((b) => b.title === 'บันทึก' || /SaveButton$/.test(b.id));
@@ -163,11 +163,6 @@
     if (!verified) { log('ยังมีช่องที่ค่าไม่ติด หรือไม่ได้กรอกเลย — ไม่กดบันทึกให้ ตรวจตัวเลขแล้วกดบันทึกเอง', true); return; }
     const btn = findSaveButton();
     if (!btn) { log('หาปุ่มบันทึกของ SGS ไม่เจอ (หรือเจอมากกว่า 1 ปุ่ม) — กดบันทึกเอง', true); return; }
-    const noAsk = document.getElementById('pp5-sgs-noask');
-    if (!(noAsk && noAsk.checked) && !window.confirm('กรอกครบ ' + filledFields.length + ' ช่องแล้ว และตรวจซ้ำแล้วค่ายังอยู่ครบ\n\nต้องการให้กดปุ่ม "บันทึก" ของ SGS (บันทึกทั้งหน้านี้) เลยไหม?\n(ตรวจตัวเลขในตารางก่อนกด OK)')) {
-      log('ยกเลิก — ยังไม่ได้บันทึก กดบันทึกเองได้เมื่อตรวจแล้ว');
-      return;
-    }
     const chainCb = document.getElementById('pp5-sgs-chain');
     const isMid = isPage1 || isPage2;
     const willChain = (isMid || evalKind === 'char') && !!chainCb && chainCb.checked && !!(lastPayload && lastPayload.subject_code);
@@ -756,25 +751,21 @@
       '<button id="pp5-sgs-min" title="ย่อ/ขยายกล่องนี้ — ลากที่แถบหัวข้อเพื่อย้ายตำแหน่งได้" style="flex-shrink:0;background:#e6f0fa;border:1px solid #b3d1f0;border-radius:5px;cursor:pointer;font-size:13px;color:#0066cc;width:22px;height:22px;line-height:1;padding:0">–</button>' +
       '</div>' +
       '<div id="pp5-sgs-body">' +
-      (isEval
-        ? '<div style="font-size:11px;color:#555;margin-bottom:6px">1) ติ๊กช่อง "หัวข้อ" ด้านบนของหน้า SGS ที่จะกรอกก่อน 2) กดวางจากคลิปบอร์ด (หรือวางเอง) 3) กดเริ่มกรอก — ลากที่แถบหัวข้อด้านบนเพื่อย้ายกล่องนี้ให้พ้นตารางได้</div>'
-        : '<div style="font-size:11px;color:#555;margin-bottom:6px">1) ติ๊กกล่องเช็คบล็อกด้านบนคอลัมน์ที่จะกรอกในหน้า SGS เองก่อน 2) กดวางจากคลิปบอร์ด (หรือวางเอง) 3) กดเริ่มกรอก — ลากที่แถบหัวข้อด้านบนเพื่อย้ายกล่องนี้ให้พ้นตารางได้</div>') +
       '<textarea id="pp5-sgs-paste" placeholder="วาง JSON ที่คัดลอกจากปุ่ม &quot;Autofill SGS&quot; ในระบบ ปพ.5 ตรงนี้" style="width:100%;height:60px;font-size:11px;margin-bottom:6px;box-sizing:border-box"></textarea>' +
       '<button id="pp5-sgs-pasteclip" style="width:100%;margin-bottom:8px;padding:4px;background:#e6f0fa;color:#3730a3;border:1px solid #b3d1f0;border-radius:6px;cursor:pointer;font-size:11px;font-weight:500">📋 วางจากคลิปบอร์ด</button>' +
       '<div style="display:flex;gap:6px;margin-bottom:6px">' +
       '<button id="pp5-sgs-start" style="flex:1;padding:13px 8px;background:#0066cc;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:15px;font-weight:700;box-shadow:0 2px 6px rgba(79,70,229,.45)">เริ่มกรอกคอลัมน์ที่ติ๊กไว้</button>' +
       '<button id="pp5-sgs-stop" style="padding:13px 14px;background:#dc2626;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">หยุด</button>' +
       '</div>' +
-      '<label style="display:flex;align-items:flex-start;gap:6px;font-size:11px;margin-bottom:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-autosave" style="margin-top:2px"> กดปุ่ม "บันทึก" ของ SGS ให้หลังกรอกและตรวจซ้ำครบ (บันทึกทั้งหน้า)</label>' +
+      '<label style="display:flex;align-items:flex-start;gap:6px;font-size:11px;margin-bottom:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-autosave" style="margin-top:2px"> กดปุ่ม "บันทึก" ของ SGS</label>' +
       (isPage1 || isPage2
-        ? '<label style="display:flex;align-items:flex-start;gap:6px;font-size:11px;margin-bottom:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-chain" style="margin-top:2px"> เมื่อบันทึกหน้านี้เสร็จ ไปหน้า "คุณลักษณะอันพึงประสงค์" แล้ว "อ่าน คิดวิเคราะห์ และเขียน" ต่อให้เลย (เลือกรายวิชา/กลุ่มเดียวกัน แล้วกรอกให้)</label>'
+        ? '<label style="display:flex;align-items:flex-start;gap:6px;font-size:11px;margin-bottom:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-chain" style="margin-top:2px"> เมื่อบันทึกหน้านี้เสร็จ ไปหน้า "คุณลักษณะอันพึงประสงค์" แล้ว "อ่าน คิดวิเคราะห์ และเขียน" ต่อให้เลย</label>'
         : evalKind === 'char'
-        ? '<label style="display:flex;align-items:flex-start;gap:6px;font-size:11px;margin-bottom:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-chain" style="margin-top:2px"> เมื่อบันทึกหน้านี้เสร็จ ไปหน้า "อ่าน คิดวิเคราะห์ และเขียน" ต่อให้เลย (เลือกรายวิชา/กลุ่มเดียวกัน แล้วกรอกให้)</label>'
+        ? '<label style="display:flex;align-items:flex-start;gap:6px;font-size:11px;margin-bottom:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-chain" style="margin-top:2px"> เมื่อบันทึกหน้านี้เสร็จ ไปหน้า "อ่าน คิดวิเคราะห์ และเขียน" ต่อให้เลย</label>'
         : '') +
       '<details style="margin-bottom:6px">' +
       '<summary style="cursor:pointer;font-size:11px;color:#666;padding:2px 0">⚙️ ตัวเลือกเพิ่มเติม</summary>' +
       '<label style="display:flex;align-items:center;gap:6px;font-size:11px;margin-top:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-skipcode"> ไม่ตรวจรหัสวิชา (ใช้เมื่อรหัสใน SGS ต่างจาก ปพ.5)</label>' +
-      '<label style="display:flex;align-items:center;gap:6px;font-size:11px;margin-top:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-noask"> บันทึกเลยโดยไม่ถามยืนยัน (ใช้กับ "กดปุ่มบันทึกให้") — เอาติ๊กออกถ้าต้องการให้ถามก่อนทุกครั้ง</label>' +
       '<button id="pp5-sgs-clearsaved" style="width:100%;margin-top:6px;padding:5px;background:#fee2e2;border:1px solid #fca5a5;border-radius:6px;cursor:pointer;font-size:11px">🗑️ ล้างข้อมูลที่จำไว้ (เปลี่ยนวิชา/เลิกใช้)</button>' +
       '<button id="pp5-sgs-scan" style="width:100%;margin-top:6px;padding:5px;background:#fff3cd;border:1px solid #ffc107;border-radius:6px;cursor:pointer;font-size:11px">🔍 สแกนโครงสร้างหน้านี้ (ถ้ากรอกแล้วไม่ขึ้นเลย)</button>' +
       '<button id="pp5-sgs-copylog" style="width:100%;margin-top:6px;padding:5px;background:#eee;border:1px solid #ccc;border-radius:6px;cursor:pointer;font-size:11px">📄 คัดลอก log ทั้งหมด (ส่งให้ผู้พัฒนาช่วยตรวจ)</button>' +
@@ -830,13 +821,10 @@
     }
     applyCollapsed(!!savedState.collapsed);
     const autoSaveCb = document.getElementById('pp5-sgs-autosave');
-    // ค่าเริ่มต้นของทั้งสองช่อง = ติ๊กไว้ (กดบันทึกให้ + ไม่ถามยืนยัน) ตามที่ผู้ใช้กำหนด — ถ้าเอาติ๊กออกจะจำค่าที่เลือกไว้
+    // ค่าเริ่มต้น = ติ๊กไว้ (กดบันทึกให้ โดยไม่ถามยืนยัน) ตามที่ผู้ใช้กำหนด — ถ้าเอาติ๊กออกจะจำค่าที่เลือกไว้
     // การกดบันทึกยังต้องผ่านเงื่อนไขความปลอดภัยเดิมครบ: รหัสวิชาตรง + ตรวจซ้ำผ่าน + ไม่ได้กดหยุด + เจอปุ่มบันทึกปุ่มเดียว
-    const noAskCb = document.getElementById('pp5-sgs-noask');
     autoSaveCb.checked = savedState.autosave !== false;
-    noAskCb.checked = savedState.noask !== false;
     autoSaveCb.onchange = () => savePanelState(Object.assign(loadPanelState(), { autosave: autoSaveCb.checked }));
-    noAskCb.onchange = () => savePanelState(Object.assign(loadPanelState(), { noask: noAskCb.checked }));
     const chainCb = document.getElementById('pp5-sgs-chain');
     if (chainCb) {
       chainCb.checked = savedState.chain !== false;
