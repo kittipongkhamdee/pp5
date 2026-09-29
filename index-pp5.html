@@ -4915,15 +4915,32 @@ async function exportForSGS(){
   const sub=scSub;
   if(!sub){ toast('ไม่พบรายวิชา','er'); return; }
   if(!scStus.length){ toast('ไม่มีนักเรียนในวิชานี้','er'); return; }
+  // ผลประเมินสำหรับหน้า SGS "อ่าน คิดวิเคราะห์ และเขียน" (read: t1-t5) และ "คุณลักษณะอันพึงประสงค์" (char: r1-r8)
+  // ค่า 0-3 ตรงกับช่อง "ให้คะแนน" ของ SGS — ไม่มีข้อมูล = '' (ส่วนขยายจะข้ามช่องนั้น ไม่เขียนทับ)
+  let evReadRows=[], evCharRows=[];
+  try{
+    [evReadRows,evCharRows]=await Promise.all([
+      q(sb.from('eval_read').select('student_id,t1,t2,t3,t4,t5,result').eq('subject_id',S.selSub)),
+      q(sb.from('eval_char').select('student_id,r1,r2,r3,r4,r5,r6,r7,r8,overall_result').eq('subject_id',S.selSub)),
+    ]);
+  }catch(e){ /* ดึงผลประเมินไม่ได้ก็ยังส่งออกคะแนนได้ตามปกติ */ }
+  const evReadBy=Object.fromEntries(evReadRows.map(r=>[String(r.student_id),r]));
+  const evCharBy=Object.fromEntries(evCharRows.map(r=>[String(r.student_id),r]));
+  const nz=v=>v==null?'':v;
   const students={};
   scStus.forEach(s=>{
     const sm=gsum(s.id);
+    const er=evReadBy[String(s.id)], ec=evCharBy[String(s.id)];
     students[s.student_code]={
       name:s.student_name,
       before:scU.before.map(u=>gsc(s.id,'before',u.unit_number)??''),
       after:scU.after.map(u=>gsc(s.id,'after',u.unit_number)??''),
       mid:sm.mid_normal??'',
       final:sm.final_score??'',
+      read:['t1','t2','t3','t4','t5'].map(k=>nz(er?.[k])),
+      read_result:nz(er?.result),
+      char:['r1','r2','r3','r4','r5','r6','r7','r8'].map(k=>nz(ec?.[k])),
+      char_result:nz(ec?.overall_result),
     };
   });
   const payload={subject_code:sub.subject_code,subject_name:sub.subject_name,generated_at:new Date().toISOString(),students};
