@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autofill SGS จากระบบ ปพ.5
 // @namespace    pp5-sgs-autofill
-// @version      2.17.0
+// @version      2.18.0
 // @description  วางคะแนนและผลประเมิน (อ่าน คิดวิเคราะห์ เขียน / คุณลักษณะอันพึงประสงค์) ที่คัดลอกจากระบบ ปพ.5 ลงหน้ากรอกคะแนน SGS (sgs.bopp-obec.info) ให้อัตโนมัติ
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts1-Table.aspx*
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts2-Table.aspx*
@@ -49,7 +49,7 @@
   const FIELD_ORDER = Object.keys(CHECKBOX_MAP);
 
   // เลขรุ่นที่แสดงในกล่อง (ต้องตรงกับ @version ด้านบน)
-  const APP_VERSION = 'สคริปต์ Tampermonkey v2.17.0';
+  const APP_VERSION = 'สคริปต์ Tampermonkey v2.18.0';
   const DEVELOPER = 'นายกิตติพงษ์ คำดี';
 
   let running = false;
@@ -169,15 +169,16 @@
       return;
     }
     const chainCb = document.getElementById('pp5-sgs-chain');
-    const willChain = evalKind === 'char' && !!chainCb && chainCb.checked && !!(lastPayload && lastPayload.subject_code);
+    const isMid = isPage1 || isPage2;
+    const willChain = (isMid || evalKind === 'char') && !!chainCb && chainCb.checked && !!(lastPayload && lastPayload.subject_code);
     if (willChain) {
       const g = findGroupSelect();
       const go = g && g.options[g.selectedIndex];
-      saveChain({ step: 'goL', code: lastPayload.subject_code, group: go ? { value: go.value, text: go.text.trim() } : null, tries: 0 });
+      saveChain({ step: isMid ? 'goQ' : 'goL', code: lastPayload.subject_code, group: go ? { value: go.value, text: go.text.trim() } : null, tries: 0 });
     }
     log('กดปุ่มบันทึกของ SGS แล้ว — รอหน้ารีโหลด แล้วตรวจว่าค่าถูกบันทึกจริง (ข้อมูลที่วางยังจำไว้ให้ ไม่ต้องวางใหม่)');
     btn.click();
-    if (willChain) { await sleep(6000); afterSaveOnQ(); } // ถ้าหน้ารีโหลดเต็มหน้า สคริปต์นี้ตายก่อน หน้าใหม่จะเรียก afterSaveOnQ เอง
+    if (willChain) { await sleep(6000); if (isMid) afterSaveOnMid(); else afterSaveOnQ(); } // ถ้าหน้ารีโหลดเต็มหน้า สคริปต์นี้ตายก่อน หน้าใหม่จะเรียกขั้นต่อไปเอง
   }
 
   // หาเลขประจำตัวนักเรียนของแถวนั้นจากข้อความในตาราง (ไม่ใช่ช่องกรอก)
@@ -632,9 +633,13 @@
     try { localStorage.setItem(CHAIN_KEY, JSON.stringify(Object.assign({}, loadChain() || {}, c, { ts: Date.now() }))); } catch (e) { /* ไม่เป็นไร */ }
   }
   function clearChain() { try { localStorage.removeItem(CHAIN_KEY); } catch (e) { /* ไม่เป็นไร */ } }
-  function readPageUrl() {
-    return location.href.split('?')[0].replace(/TblTranscriptsQ\/Edit-TblTranscriptsQ-Table(\.\w+)$/, 'TblTranscriptsL/Edit-TblTranscriptsL-Table$1');
+  // URL ของหน้าถัดไปในสายต่อเนื่อง (ใช้โฮสต์/นามสกุลไฟล์เดียวกับหน้าปัจจุบัน)
+  function sgsPageUrl(kind) {
+    const dir = kind === 'Q' ? 'TblTranscriptsQ/Edit-TblTranscriptsQ-Table' : 'TblTranscriptsL/Edit-TblTranscriptsL-Table';
+    const ext = (location.pathname.match(/(\.\w+)$/) || ['', '.aspx'])[1];
+    return location.href.split('/sgs/')[0] + '/sgs/' + dir + ext;
   }
+  function readPageUrl() { return sgsPageUrl('L'); }
   // ช่องเลือก "กลุ่ม" = <select> แรกที่อยู่หลังข้อความ "กลุ่ม"
   function findGroupSelect() {
     const label = leafTexts(/^กลุ่ม$/)[0];
@@ -678,11 +683,40 @@
     await sleep(600);
     location.href = readPageUrl();
   }
+  // หลังบันทึกหน้ากลางภาค/หลังกลางภาค: เช็คว่าค่าคอลัมน์ Midterm/Final ที่ SGS โหลดกลับมาตรงกับที่กรอก แล้วไปหน้าคุณลักษณะฯ (Q)
+  function quickVerifyMid() {
+    const students = currentPayloadStudents();
+    if (!students) return null;
+    const key = isPage1 ? 'Midterm' : 'Final';
+    let checked = 0;
+    for (let i = 0; i < 60; i++) {
+      const rowIdx = String(i).padStart(2, '0');
+      const el = document.getElementById(REPEATER_PREFIX + rowIdx + '_' + key);
+      if (!el) continue;
+      const d = students[getRowStudentCode(rowIdx, key)];
+      const v = d && (isPage1 ? d.mid : d.final);
+      if (v === '' || v == null) continue;
+      checked++;
+      if (parseFloat(el.value) !== parseFloat(v)) return false;
+    }
+    return checked ? true : null;
+  }
+  async function afterSaveOnMid() {
+    const c = loadChain();
+    if (!c || c.step !== 'goQ') return;
+    const ok = quickVerifyMid();
+    if (ok === false) { clearChain(); log('หลังบันทึก ค่าในตารางไม่ตรงกับที่กรอก (อาจบันทึกไม่สำเร็จ) — ไม่ไปหน้าถัดไปให้ ตรวจแล้วทำต่อเอง', true); return; }
+    if (ok === null) log('ตรวจซ้ำค่าหลังบันทึกไม่ได้ (ตารางว่างหรือไม่ได้กรอกคอลัมน์ผลสอบ) — ไปหน้าถัดไปต่อ');
+    saveChain({ step: 'onQ', tries: 0 });
+    log('บันทึกหน้านี้แล้ว — ไปหน้า "คุณลักษณะอันพึงประสงค์" ต่อให้...');
+    await sleep(600);
+    location.href = sgsPageUrl('Q');
+  }
   async function advanceChainOnRead(chain) {
     const fail = (m) => { clearChain(); log(m, true); };
     if ((chain.tries || 0) > 5) return fail('เลือกรายวิชา/กลุ่มอัตโนมัติหลายรอบแล้วยังไม่สำเร็จ — เลือกเอง แล้วกดเริ่มกรอก');
     saveChain({ tries: (chain.tries || 0) + 1 });
-    log('ต่อจากหน้าคุณลักษณะฯ — กำลังเลือกรายวิชา ' + chain.code + (chain.group ? ' กลุ่ม ' + chain.group.text : '') + ' ให้...');
+    log('ต่อจากหน้าก่อนหน้า — กำลังเลือกรายวิชา ' + chain.code + (chain.group ? ' กลุ่ม ' + chain.group.text : '') + ' ให้...');
     await sleep(600);
     const want = normCode(chain.code);
     const subSel = Array.from(document.querySelectorAll('select')).find((sel) => !sel.closest('#pp5-sgs-panel') && Array.from(sel.options).some((o) => normCode(o.text).includes(want)));
@@ -732,7 +766,9 @@
       '<button id="pp5-sgs-stop" style="padding:13px 14px;background:#dc2626;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">หยุด</button>' +
       '</div>' +
       '<label style="display:flex;align-items:flex-start;gap:6px;font-size:11px;margin-bottom:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-autosave" style="margin-top:2px"> กดปุ่ม "บันทึก" ของ SGS ให้หลังกรอกและตรวจซ้ำครบ (บันทึกทั้งหน้า)</label>' +
-      (evalKind === 'char'
+      (isPage1 || isPage2
+        ? '<label style="display:flex;align-items:flex-start;gap:6px;font-size:11px;margin-bottom:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-chain" style="margin-top:2px"> เมื่อบันทึกหน้านี้เสร็จ ไปหน้า "คุณลักษณะอันพึงประสงค์" แล้ว "อ่าน คิดวิเคราะห์ และเขียน" ต่อให้เลย (เลือกรายวิชา/กลุ่มเดียวกัน แล้วกรอกให้)</label>'
+        : evalKind === 'char'
         ? '<label style="display:flex;align-items:flex-start;gap:6px;font-size:11px;margin-bottom:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-chain" style="margin-top:2px"> เมื่อบันทึกหน้านี้เสร็จ ไปหน้า "อ่าน คิดวิเคราะห์ และเขียน" ต่อให้เลย (เลือกรายวิชา/กลุ่มเดียวกัน แล้วกรอกให้)</label>'
         : '') +
       '<details style="margin-bottom:6px">' +
@@ -852,6 +888,8 @@
       const chain = loadChain();
       if (chain && evalKind === 'char' && chain.step === 'goL') afterSaveOnQ();
       else if (chain && evalKind === 'read' && chain.step === 'onL') advanceChainOnRead(chain);
+      else if (chain && (isPage1 || isPage2) && chain.step === 'goQ') afterSaveOnMid();
+      else if (chain && evalKind === 'char' && chain.step === 'onQ') advanceChainOnRead(chain);
       let resume = null;
       try { resume = JSON.parse(localStorage.getItem(RESUME_KEY)); localStorage.removeItem(RESUME_KEY); } catch (e) { /* ไม่เป็นไร */ }
       if (resume && resume.ts && Date.now() - resume.ts < 60000) {
