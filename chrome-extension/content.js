@@ -222,17 +222,65 @@
     return arr[idx];
   }
 
+  // ── ช่อง "Remark" (หมายเหตุ) ของ SGS — ใช้ใส่ "ผลพิเศษ" จากระบบ ปพ.5 (ร / มส / มผ / ผ) ──
+  // หาจากหัวคอลัมน์ที่เขียนว่า Remark (ไม่ผูกกับ id ตายตัว) และใช้กล่องเช็คบล็อกในหัวคอลัมน์เดียวกันเป็นตัวปลดล็อก
+  function findRemarkLayout() {
+    for (const tr of Array.from(document.querySelectorAll('tr'))) {
+      const cells = Array.from(tr.children).filter((c) => c.tagName === 'TD' || c.tagName === 'TH');
+      const texts = cells.map((c) => c.textContent.replace(/\s+/g, ' ').trim());
+      const codeIdx = texts.findIndex((t) => t === 'เลขประจำตัว' || t === 'รหัสนักเรียน');
+      const remIdx = texts.findIndex((t) => /^remark$/i.test(t));
+      if (codeIdx < 0 || remIdx < 0) continue;
+      return { headerRow: tr, table: tr.closest('table'), codeIdx, remIdx, checkbox: cells[remIdx].querySelector('input[type=checkbox]') };
+    }
+    return null;
+  }
+  let remarkInputSeq = 0;
+  async function fillRemarks(dataStudents) {
+    const lay = findRemarkLayout();
+    const hasSpecial = Object.keys(dataStudents).some((c) => dataStudents[c] && dataStudents[c].special);
+    if (!lay) { if (hasSpecial) log('มีผลพิเศษในข้อมูลที่วาง แต่ไม่พบคอลัมน์ Remark ในหน้านี้ — ข้าม', true); return; }
+    if (lay.checkbox && !lay.checkbox.checked) {
+      if (hasSpecial) log('มีผลพิเศษ (ร/มส/มผ/ผ) ในข้อมูลที่วาง — ติ๊กช่องเช็คบล็อกที่หัวคอลัมน์ Remark แล้วกดเริ่มใหม่ หากต้องการให้กรอก');
+      return;
+    }
+    log('กำลังกรอกคอลัมน์ Remark (ผลพิเศษ) ...');
+    let n = 0;
+    for (const tr of Array.from(lay.table.rows)) {
+      if (stopRequested) break;
+      if (tr === lay.headerRow) continue;
+      const cells = Array.from(tr.children).filter((c) => c.tagName === 'TD' || c.tagName === 'TH');
+      const codeCell = cells[lay.codeIdx];
+      const code = codeCell ? codeCell.textContent.trim() : '';
+      if (!/^\d+$/.test(code)) continue;
+      const data = dataStudents[code];
+      const val = data && data.special;
+      if (!val) continue; // ไม่มีผลพิเศษ = ไม่แตะช่อง Remark (ไม่เขียนทับหมายเหตุที่ครูพิมพ์ไว้)
+      const inp = evalCellInput(cells[lay.remIdx]);
+      if (!inp) { log('  [debug] ' + code + ' Remark: ไม่พบช่องกรอก', true); continue; }
+      if (inp.disabled || inp.readOnly) { log('  [debug] ' + code + ' Remark: ช่องยังถูกล็อกอยู่', true); continue; }
+      if (!inp.id) inp.id = 'pp5-rm-' + (remarkInputSeq++);
+      applyValue(inp, val);
+      filledFields.push({ id: inp.id, code, key: 'Remark', value: String(val) });
+      await sleep(60);
+      n++;
+    }
+    log('กรอก Remark (ผลพิเศษ) แล้ว ' + n + ' ช่อง');
+  }
+
   async function runFill(dataStudents) {
     if (running) { log('กำลังทำงานอยู่ รอให้เสร็จก่อน', true); return; }
     const activeKeys = FIELD_ORDER.filter(isColumnUnlocked);
-    if (!activeKeys.length) {
+    const remLay = findRemarkLayout();
+    const remarkOn = !!(remLay && remLay.checkbox && remLay.checkbox.checked);
+    if (!activeKeys.length && !remarkOn) {
       log('ยังไม่ได้ติ๊กช่องเช็คบล็อกของคอลัมน์ไหนเลย — ติ๊กคอลัมน์ที่ต้องการกรอกในหน้า SGS ก่อน แล้วกดเริ่มใหม่', true);
       return;
     }
     running = true;
     stopRequested = false;
     filledFields.length = 0;
-    log('พบคอลัมน์ที่ปลดล็อกแล้ว: ' + activeKeys.join(', '));
+    log('พบคอลัมน์ที่ปลดล็อกแล้ว: ' + activeKeys.concat(remarkOn ? ['Remark'] : []).join(', '));
     const MAX_ROWS = 60; // เผื่อตั้งจำนวนต่อหน้า (page size) ไว้มากกว่า 10 แถว
     for (const key of activeKeys) {
       if (stopRequested) break;
@@ -252,6 +300,7 @@
       }
       if (notFoundCount === MAX_ROWS) log('  [debug] ไม่พบช่องกรอกคอลัมน์ ' + key + ' เลยสักแถว (id ที่เดาไว้อาจไม่ตรงกับหน้านี้) — ลองกดปุ่ม "สแกนโครงสร้างหน้านี้" ดู', true);
     }
+    await fillRemarks(dataStudents);
     log(stopRequested ? 'หยุดกลางคัน — ตรวจสอบคะแนนที่กรอกไปแล้วให้ดี' : 'กรอกครบคอลัมน์ที่ติ๊กไว้แล้ว — ตรวจตัวเลขให้ครบก่อนไปขั้นถัดไป');
     const verified = await recheckFilledFields();
     running = false;
