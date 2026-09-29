@@ -1,5 +1,5 @@
 (function () {
-  const SGS_RE = /^https:\/\/sgs\.bopp-obec\.info\/sgs\/TblTranscripts\/Edit-TblTranscripts[12]-Table\.aspx/;
+  const SGS_RE = /^https:\/\/sgs\.bopp-obec\.info\/sgs\/(TblTranscripts\/Edit-TblTranscripts[12]|TblTranscriptsQ\/Edit-TblTranscriptsQ|TblTranscriptsL\/Edit-TblTranscriptsL)-Table\.aspx/;
 
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     const el = document.getElementById('status');
