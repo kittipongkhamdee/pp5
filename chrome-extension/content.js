@@ -311,6 +311,25 @@
     try { localStorage.setItem(POS_KEY, JSON.stringify(state)); } catch (e) { /* ไม่เป็นไร แค่จำตำแหน่งไม่ได้ */ }
   }
 
+  // ── จำข้อมูลที่วางไว้ข้ามหน้า SGS — ทุกหน้าอยู่โดเมนเดียวกัน (sgs.bopp-obec.info) จึงแชร์ localStorage กันได้
+  // สลับหน้ากลางภาค/หลังกลางภาค/อ่าน คิดฯ/คุณลักษณะฯ แล้วข้อมูลใส่กล่องให้เองไม่ต้องวางใหม่
+  // หมดอายุใน 12 ชั่วโมง กันข้อมูลวิชาเก่าค้างข้ามวัน และมีปุ่มล้างข้อมูลที่จำไว้ใน "ตัวเลือกเพิ่มเติม"
+  const DATA_KEY = 'pp5SgsPayload';
+  const DATA_TTL_MS = 12 * 60 * 60 * 1000;
+  function saveData(raw) {
+    try { localStorage.setItem(DATA_KEY, JSON.stringify({ raw, savedAt: Date.now() })); } catch (e) { /* จำไม่ได้ก็ไม่เป็นไร แค่ต้องวางใหม่ */ }
+  }
+  function loadSavedData() {
+    try {
+      const s = JSON.parse(localStorage.getItem(DATA_KEY));
+      if (!s || !s.raw || Date.now() - s.savedAt > DATA_TTL_MS) return null;
+      return s;
+    } catch (e) { return null; }
+  }
+  function describePayload(raw) {
+    try { const p = JSON.parse(raw); return ((p.subject_code || '') + ' ' + (p.subject_name || '')).trim(); } catch (e) { return ''; }
+  }
+
   function buildUI() {
     const wrap = document.createElement('div');
     wrap.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:99999;background:#fff;border:2px solid #4f46e5;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.25);padding:12px;width:320px;font-family:sans-serif;font-size:13px;color:#111';
@@ -333,6 +352,7 @@
       '<details style="margin-bottom:6px">' +
       '<summary style="cursor:pointer;font-size:11px;color:#666;padding:2px 0">⚙️ ตัวเลือกเพิ่มเติม</summary>' +
       '<button id="pp5-sgs-scan" style="width:100%;margin-top:6px;padding:5px;background:#fff3cd;border:1px solid #ffc107;border-radius:6px;cursor:pointer;font-size:11px">🔍 สแกนโครงสร้างหน้านี้ (ถ้ากรอกแล้วไม่ขึ้นเลย)</button>' +
+      '<button id="pp5-sgs-clearsaved" style="width:100%;margin-top:6px;padding:5px;background:#fee2e2;border:1px solid #fca5a5;border-radius:6px;cursor:pointer;font-size:11px">🗑️ ล้างข้อมูลที่จำไว้ (เปลี่ยนวิชา/เลิกใช้)</button>' +
       '</details>' +
       '<div id="pp5-sgs-log" style="max-height:160px;overflow-y:auto;background:#f5f5f5;border-radius:6px;padding:6px;font-size:11px;line-height:1.6"></div>' +
       '<button id="pp5-sgs-copylog" style="width:100%;margin-top:6px;padding:5px;background:#eee;border:1px solid #ccc;border-radius:6px;cursor:pointer;font-size:11px">คัดลอก log ทั้งหมด (ส่งให้ผู้พัฒนาช่วยตรวจ)</button>' +
@@ -396,7 +416,7 @@
         const text = await navigator.clipboard.readText();
         if (!text.trim()) { log('คลิปบอร์ดว่างเปล่า — ไปกดปุ่ม "Autofill SGS" ในระบบ ปพ.5 เพื่อคัดลอกคะแนนก่อน', true); return; }
         document.getElementById('pp5-sgs-paste').value = text;
-        try { JSON.parse(text); log('วางข้อมูลจากคลิปบอร์ดแล้ว — ตรวจสอบว่าเป็นคะแนนถูกวิชาแล้วกด "เริ่มกรอกคอลัมน์ที่ติ๊กไว้"'); }
+        try { JSON.parse(text); saveData(text); log('วางข้อมูลจากคลิปบอร์ดแล้ว (จำไว้ให้ข้ามหน้า SGS) — ตรวจสอบว่าเป็นคะแนนถูกวิชาแล้วกด "เริ่มกรอกคอลัมน์ที่ติ๊กไว้"'); }
         catch (e) { log('วางข้อมูลจากคลิปบอร์ดแล้ว แต่ไม่ใช่รูปแบบ JSON ที่ถูกต้อง — ตรวจสอบว่าคัดลอกมาจากปุ่ม "Autofill SGS" ในระบบ ปพ.5 จริงหรือไม่', true); }
       } catch (e) {
         log('วางจากคลิปบอร์ดอัตโนมัติไม่สำเร็จ (' + e.message + ') — วางเองด้วย Ctrl+V ในกล่องข้อความแทนได้', true);
@@ -409,9 +429,20 @@
       try { payload = JSON.parse(raw); }
       catch (e) { log('อ่าน JSON ไม่สำเร็จ: ' + e.message, true); return; }
       if (!payload.students) { log('รูปแบบข้อมูลไม่ถูกต้อง (ไม่พบ students)', true); return; }
+      saveData(raw);
       if (isEval) runEvalFill(payload.students); else runFill(payload.students);
     };
     document.getElementById('pp5-sgs-stop').onclick = () => { stopRequested = true; };
+    document.getElementById('pp5-sgs-clearsaved').onclick = () => {
+      try { localStorage.removeItem(DATA_KEY); } catch (e) { /* ignore */ }
+      document.getElementById('pp5-sgs-paste').value = '';
+      log('ล้างข้อมูลที่จำไว้แล้ว — วางข้อมูลใหม่จากระบบ ปพ.5 ได้เลย');
+    };
+    const saved = loadSavedData();
+    if (saved) {
+      document.getElementById('pp5-sgs-paste').value = saved.raw;
+      log('ใส่ข้อมูลที่วางไว้ก่อนหน้าให้แล้ว — วิชา ' + (describePayload(saved.raw) || '(ไม่ระบุ)') + ' (จำไว้เมื่อ ' + new Date(saved.savedAt).toLocaleTimeString('th-TH') + ') ตรวจให้ตรงกับวิชาที่กำลังกรอก ถ้าไม่ตรงให้กดวางใหม่');
+    }
     document.getElementById('pp5-sgs-scan').onclick = () => (isEval ? scanEvalPage() : scanPage());
     document.getElementById('pp5-sgs-copylog').onclick = async () => {
       const text = document.getElementById('pp5-sgs-log').innerText;
