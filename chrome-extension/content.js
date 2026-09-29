@@ -488,12 +488,12 @@
       '<button id="pp5-sgs-start" style="flex:1;padding:6px;background:#4f46e5;color:#fff;border:none;border-radius:6px;cursor:pointer">เริ่มกรอกคอลัมน์ที่ติ๊กไว้</button>' +
       '<button id="pp5-sgs-stop" style="padding:6px 10px;background:#dc2626;color:#fff;border:none;border-radius:6px;cursor:pointer">หยุด</button>' +
       '</div>' +
-      '<label style="display:flex;align-items:flex-start;gap:6px;font-size:11px;margin-bottom:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-autosave" style="margin-top:2px"> กดปุ่ม "บันทึก" ของ SGS ให้หลังกรอกและตรวจซ้ำครบ (บันทึกทั้งหน้า · ถามยืนยันก่อน)</label>' +
+      '<label style="display:flex;align-items:flex-start;gap:6px;font-size:11px;margin-bottom:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-autosave" style="margin-top:2px"> กดปุ่ม "บันทึก" ของ SGS ให้หลังกรอกและตรวจซ้ำครบ (บันทึกทั้งหน้า)</label>' +
       '<details style="margin-bottom:6px">' +
       '<summary style="cursor:pointer;font-size:11px;color:#666;padding:2px 0">⚙️ ตัวเลือกเพิ่มเติม</summary>' +
       '<button id="pp5-sgs-scan" style="width:100%;margin-top:6px;padding:5px;background:#fff3cd;border:1px solid #ffc107;border-radius:6px;cursor:pointer;font-size:11px">🔍 สแกนโครงสร้างหน้านี้ (ถ้ากรอกแล้วไม่ขึ้นเลย)</button>' +
       '<label style="display:flex;align-items:center;gap:6px;font-size:11px;margin-top:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-skipcode"> ไม่ตรวจรหัสวิชา (ใช้เมื่อรหัสใน SGS ต่างจาก ปพ.5)</label>' +
-      '<label style="display:flex;align-items:center;gap:6px;font-size:11px;margin-top:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-noask"> บันทึกเลยโดยไม่ถามยืนยัน (ใช้กับ "กดปุ่มบันทึกให้")</label>' +
+      '<label style="display:flex;align-items:center;gap:6px;font-size:11px;margin-top:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-noask"> บันทึกเลยโดยไม่ถามยืนยัน (ใช้กับ "กดปุ่มบันทึกให้") — เอาติ๊กออกถ้าต้องการให้ถามก่อนทุกครั้ง</label>' +
       '<button id="pp5-sgs-clearsaved" style="width:100%;margin-top:6px;padding:5px;background:#fee2e2;border:1px solid #fca5a5;border-radius:6px;cursor:pointer;font-size:11px">🗑️ ล้างข้อมูลที่จำไว้ (เปลี่ยนวิชา/เลิกใช้)</button>' +
       '</details>' +
       '<div id="pp5-sgs-log" style="max-height:160px;overflow-y:auto;background:#f5f5f5;border-radius:6px;padding:6px;font-size:11px;line-height:1.6"></div>' +
@@ -548,8 +548,13 @@
     }
     applyCollapsed(!!savedState.collapsed);
     const autoSaveCb = document.getElementById('pp5-sgs-autosave');
-    autoSaveCb.checked = !!savedState.autosave;
+    // ค่าเริ่มต้นของทั้งสองช่อง = ติ๊กไว้ (กดบันทึกให้ + ไม่ถามยืนยัน) ตามที่ผู้ใช้กำหนด — ถ้าเอาติ๊กออกจะจำค่าที่เลือกไว้
+    // การกดบันทึกยังต้องผ่านเงื่อนไขความปลอดภัยเดิมครบ: รหัสวิชาตรง + ตรวจซ้ำผ่าน + ไม่ได้กดหยุด + เจอปุ่มบันทึกปุ่มเดียว
+    const noAskCb = document.getElementById('pp5-sgs-noask');
+    autoSaveCb.checked = savedState.autosave !== false;
+    noAskCb.checked = savedState.noask !== false;
     autoSaveCb.onchange = () => savePanelState(Object.assign(loadPanelState(), { autosave: autoSaveCb.checked }));
+    noAskCb.onchange = () => savePanelState(Object.assign(loadPanelState(), { noask: noAskCb.checked }));
     minBtn.onclick = () => {
       const collapsed = body.style.display !== 'none';
       applyCollapsed(collapsed);
