@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autofill SGS จากระบบ ปพ.5
 // @namespace    pp5-sgs-autofill
-// @version      2.16.2
+// @version      2.16.3
 // @description  วางคะแนนและผลประเมิน (อ่าน คิดวิเคราะห์ เขียน / คุณลักษณะอันพึงประสงค์) ที่คัดลอกจากระบบ ปพ.5 ลงหน้ากรอกคะแนน SGS (sgs.bopp-obec.info) ให้อัตโนมัติ
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts1-Table.aspx*
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts2-Table.aspx*
@@ -49,7 +49,7 @@
   const FIELD_ORDER = Object.keys(CHECKBOX_MAP);
 
   // เลขรุ่นที่แสดงในกล่อง (ต้องตรงกับ @version ด้านบน)
-  const APP_VERSION = 'สคริปต์ Tampermonkey v2.16.2';
+  const APP_VERSION = 'สคริปต์ Tampermonkey v2.16.3';
   const DEVELOPER = 'นายกิตติพงษ์ คำดี';
 
   let running = false;
@@ -291,6 +291,7 @@
   function evalCellInput(cell) {
     return cell ? cell.querySelector('input:not([type=checkbox]):not([type=radio]):not([type=hidden])') : null;
   }
+  // ไม่กรอกช่อง "ผลการประเมิน" (ผลรวม) — SGS คำนวณเองจากคะแนนแต่ละหัวข้อ (ใช้หัวคอลัมน์นี้แค่ช่วยหาตำแหน่งตาราง)
   let evalInputSeq = 0;
   async function runEvalFill(dataStudents) {
     if (running) { log('กำลังทำงานอยู่ รอให้เสร็จก่อน', true); return; }
@@ -299,7 +300,6 @@
     running = true;
     stopRequested = false;
     filledFields.length = 0;
-    const withResult = document.getElementById('pp5-sgs-withresult').checked;
     const itemNos = Object.keys(layout.items).map(Number).sort((a, b) => a - b);
     const lockedItems = new Set();
     let students = 0;
@@ -315,9 +315,7 @@
       if (!data) { log('ไม่พบข้อมูลเลขประจำตัว ' + code + ' ในไฟล์ที่วาง — ข้าม', true); continue; }
       const arr = evalKind === 'char' ? data.char : data.read;
       if (!Array.isArray(arr)) { missingData = true; break; }
-      const resultVal = evalKind === 'char' ? data.char_result : data.read_result;
       const targets = itemNos.map((n) => ({ label: 'หัวข้อ ' + n, no: n, value: arr[n - 1], input: evalCellInput(cells[layout.items[n]]) }));
-      if (withResult) targets.push({ label: 'ผลการประเมิน', no: 0, value: resultVal, input: evalCellInput(cells[layout.resIdx]) });
       for (const t of targets) {
         if (t.value === undefined || t.value === null || t.value === '' || !t.input) continue;
         if (t.input.disabled || t.input.readOnly) { lockedItems.add(t.label); continue; }
@@ -676,8 +674,7 @@
       '</div>' +
       '<div id="pp5-sgs-body">' +
       (isEval
-        ? '<div style="font-size:11px;color:#555;margin-bottom:6px">1) ติ๊กช่อง "หัวข้อ" ด้านบนของหน้า SGS ที่จะกรอกก่อน 2) กดวางจากคลิปบอร์ด (หรือวางเอง) 3) กดเริ่มกรอก — ลากที่แถบหัวข้อด้านบนเพื่อย้ายกล่องนี้ให้พ้นตารางได้</div>' +
-          '<label style="display:flex;align-items:center;gap:6px;font-size:11px;margin-bottom:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-withresult" checked> กรอกช่อง "ผลการประเมิน" (ผลรวม) ด้วย</label>'
+        ? '<div style="font-size:11px;color:#555;margin-bottom:6px">1) ติ๊กช่อง "หัวข้อ" ด้านบนของหน้า SGS ที่จะกรอกก่อน 2) กดวางจากคลิปบอร์ด (หรือวางเอง) 3) กดเริ่มกรอก — ลากที่แถบหัวข้อด้านบนเพื่อย้ายกล่องนี้ให้พ้นตารางได้</div>'
         : '<div style="font-size:11px;color:#555;margin-bottom:6px">1) ติ๊กกล่องเช็คบล็อกด้านบนคอลัมน์ที่จะกรอกในหน้า SGS เองก่อน 2) กดวางจากคลิปบอร์ด (หรือวางเอง) 3) กดเริ่มกรอก — ลากที่แถบหัวข้อด้านบนเพื่อย้ายกล่องนี้ให้พ้นตารางได้</div>') +
       '<textarea id="pp5-sgs-paste" placeholder="วาง JSON ที่คัดลอกจากปุ่ม &quot;Autofill SGS&quot; ในระบบ ปพ.5 ตรงนี้" style="width:100%;height:60px;font-size:11px;margin-bottom:6px;box-sizing:border-box"></textarea>' +
       '<button id="pp5-sgs-pasteclip" style="width:100%;margin-bottom:8px;padding:4px;background:#e6f0fa;color:#3730a3;border:1px solid #b3d1f0;border-radius:6px;cursor:pointer;font-size:11px;font-weight:500">📋 วางจากคลิปบอร์ด</button>' +
