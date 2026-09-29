@@ -36,6 +36,10 @@
 
   const FIELD_ORDER = Object.keys(CHECKBOX_MAP);
 
+  // เลขรุ่นที่แสดงในกล่อง: ส่วนขยายอ่านจาก manifest.json (สคริปต์ Tampermonkey ถูกแทนที่บรรทัดนี้ตอนสร้างไฟล์)
+  const APP_VERSION = (() => { try { return 'ส่วนขยาย v' + chrome.runtime.getManifest().version; } catch (e) { return ''; } })();
+  const DEVELOPER = 'นายกิตติพงษ์ คำดี';
+
   let running = false;
   let stopRequested = false;
 
@@ -683,6 +687,7 @@
       '</details>' +
       '<div id="pp5-sgs-log" style="max-height:160px;overflow-y:auto;background:#f5f5f5;border-radius:6px;padding:6px;font-size:11px;line-height:1.6"></div>' +
       '<div style="font-size:10px;color:#888;margin-top:6px">⚠️ ทดสอบกับนักเรียน 1 คนก่อน แล้วรีเฟรชหน้าตรวจว่าคะแนนถูกบันทึกจริง ก่อนกรอกทั้งห้อง</div>' +
+      '<div id="pp5-sgs-credit" style="font-size:10px;color:#94a3b8;margin-top:8px;padding-top:6px;border-top:1px solid #e5e7eb;text-align:center">ผู้พัฒนา: ' + DEVELOPER + (APP_VERSION ? ' · ' + APP_VERSION : '') + '</div>' +
       '</div>';
     document.body.appendChild(wrap);
 

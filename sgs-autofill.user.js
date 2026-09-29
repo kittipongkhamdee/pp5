@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autofill SGS จากระบบ ปพ.5
 // @namespace    pp5-sgs-autofill
-// @version      2.16.0
+// @version      2.16.1
 // @description  วางคะแนนและผลประเมิน (อ่าน คิดวิเคราะห์ เขียน / คุณลักษณะอันพึงประสงค์) ที่คัดลอกจากระบบ ปพ.5 ลงหน้ากรอกคะแนน SGS (sgs.bopp-obec.info) ให้อัตโนมัติ
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts1-Table.aspx*
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts2-Table.aspx*
@@ -47,6 +47,10 @@
     : { S10: 'Check10', S11: 'Check11', S12: 'Check12', S13: 'Check13', S14: 'Check14', S15: 'Check15', S16: 'Check16', S17: 'Check17', S18: 'Check18', Final: 'CheckF' };
 
   const FIELD_ORDER = Object.keys(CHECKBOX_MAP);
+
+  // เลขรุ่นที่แสดงในกล่อง (ต้องตรงกับ @version ด้านบน)
+  const APP_VERSION = 'สคริปต์ Tampermonkey v2.16.1';
+  const DEVELOPER = 'นายกิตติพงษ์ คำดี';
 
   let running = false;
   let stopRequested = false;
@@ -695,6 +699,7 @@
       '</details>' +
       '<div id="pp5-sgs-log" style="max-height:160px;overflow-y:auto;background:#f5f5f5;border-radius:6px;padding:6px;font-size:11px;line-height:1.6"></div>' +
       '<div style="font-size:10px;color:#888;margin-top:6px">⚠️ ทดสอบกับนักเรียน 1 คนก่อน แล้วรีเฟรชหน้าตรวจว่าคะแนนถูกบันทึกจริง ก่อนกรอกทั้งห้อง</div>' +
+      '<div id="pp5-sgs-credit" style="font-size:10px;color:#94a3b8;margin-top:8px;padding-top:6px;border-top:1px solid #e5e7eb;text-align:center">ผู้พัฒนา: ' + DEVELOPER + (APP_VERSION ? ' · ' + APP_VERSION : '') + '</div>' +
       '</div>';
     document.body.appendChild(wrap);
 
