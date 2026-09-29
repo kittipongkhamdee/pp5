@@ -686,7 +686,6 @@
       '<button id="pp5-sgs-clearsaved" style="width:100%;margin-top:6px;padding:5px;background:#fee2e2;border:1px solid #fca5a5;border-radius:6px;cursor:pointer;font-size:11px">🗑️ ล้างข้อมูลที่จำไว้ (เปลี่ยนวิชา/เลิกใช้)</button>' +
       '</details>' +
       '<div id="pp5-sgs-log" style="max-height:160px;overflow-y:auto;background:#f5f5f5;border-radius:6px;padding:6px;font-size:11px;line-height:1.6"></div>' +
-      '<div style="font-size:10px;color:#888;margin-top:6px">⚠️ ทดสอบกับนักเรียน 1 คนก่อน แล้วรีเฟรชหน้าตรวจว่าคะแนนถูกบันทึกจริง ก่อนกรอกทั้งห้อง</div>' +
       '<div id="pp5-sgs-credit" style="font-size:10px;color:#94a3b8;margin-top:8px;padding-top:6px;border-top:1px solid #e5e7eb;text-align:center">ผู้พัฒนา: ' + DEVELOPER + (APP_VERSION ? ' · ' + APP_VERSION : '') + '</div>' +
       '</div>';
     document.body.appendChild(wrap);
