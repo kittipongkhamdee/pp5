@@ -2128,41 +2128,8 @@ async function pgSchoolReport(){
       const hasFinalExam = sumRows.some(r=>(parseFloat(r.final_score)||0)>0);
       // คะแนนเก็บ (ระหว่างภาค) — รวมจาก score_units ก่อน/หลังกลางภาค
       const hasCollectScore = sumRows.some(r=>(parseFloat(r.total_before_mid)||0)>0||(parseFloat(r.total_after_mid)||0)>0);
-      // ชุด id นักเรียนไม่ซ้ำต่อวิชา — การ์ดสรุปด้านบนใช้รวมข้ามวิชาเป็นจำนวน "คน" จริง (นักเรียนคนเดียวอยู่ได้หลายวิชา)
-      const isPassRow = r=>parseFloat(r.grade)>0&&!['ร','มส','มผ','ผ'].includes(r.special_result||'');
-      const passIds = new Set(sumRows.filter(isPassRow).map(r=>String(r.student_id)));
-      const failIds = new Set(sumRows.filter(r=>!isPassRow(r)).map(r=>String(r.student_id)));
-      const rIds = new Set(sumRows.filter(r=>r.special_result==='ร').map(r=>String(r.student_id)));
-      // มส ของการ์ดสรุป = เวลาเรียน <80% + ที่ครูตั้งผลเป็น มส ด้วยมือ (msStudentIds เดิมใช้กับหนังสือ/รายงาน มส จึงไม่แตะ)
-      const msAllIds = new Set([...msStudentIds.map(String), ...sumRows.filter(r=>r.special_result==='มส').map(r=>String(r.student_id))]);
-      // รายการที่ยังไม่มีคะแนนปลายภาค (นับเฉพาะวิชาที่มีสอบปลายภาค) — ผลผ่าน/ไม่ผ่านของรายการเหล่านี้ยังเป็นค่าชั่วคราว
-      const finalMax = sub.score_final==null ? 30 : (parseFloat(sub.score_final)||0);
-      const pendingFinal = finalMax>0 ? sumRows.filter(r=>!((parseFloat(r.final_score)||0)>0)).length : 0;
-      return {...sub,_stats:{total,pass:passNum,fail:failNum,avg,pct,msCount,teacherName,gradeCount,sumRows,stuIds,msStudentIds,attMap:stuAttMapSub,attTotalH:totalH,hasScore,hasAttendance,hasEval,hasMidExam,hasFinalExam,hasCollectScore,passIds,failIds,rIds,msAllIds,pendingFinal}};
+      return {...sub,_stats:{total,pass:passNum,fail:failNum,avg,pct,msCount,teacherName,gradeCount,sumRows,stuIds,msStudentIds,attMap:stuAttMapSub,attTotalH:totalH,hasScore,hasAttendance,hasEval,hasMidExam,hasFinalExam,hasCollectScore}};
     });
-
-    // ── รวมสถิติโรงเรียน ──
-    const schoolTotal = allSubjects.length;
-    const profileIdSet = new Set(allProfiles.map(p=>p.id));
-    const schoolTeachers = new Set(allSubjects.map(s=>s.user_id).filter(id=>profileIdSet.has(id))).size;
-    const allPassPcts = subjectsWithStats.filter(s=>s._stats.pass!==null).map(s=>parseFloat(s._stats.pct)||0);
-    const schoolPassAvg = allPassPcts.length>0?(allPassPcts.reduce((a,b)=>a+b,0)/allPassPcts.length).toFixed(1):'—';
-    const allAvgs = subjectsWithStats.filter(s=>s._stats.avg!=='—').map(s=>parseFloat(s._stats.avg)||0);
-    const schoolScoreAvg = allAvgs.length>0?(allAvgs.reduce((a,b)=>a+b,0)/allAvgs.length).toFixed(1):'—';
-    // ── สถิติเพิ่มเติม ──
-    const totalPassStudents = subjectsWithStats.reduce((a,s)=>a+(s._stats.pass||0),0);
-    const totalFailStudents = subjectsWithStats.reduce((a,s)=>a+(s._stats.fail||0),0);
-    const totalMsStudents   = subjectsWithStats.reduce((a,s)=>a+s._stats.msAllIds.size,0);
-    const noScoreSubjects   = subjectsWithStats.filter(s=>s._stats.pass===null).length;
-    const scoredSubjects    = schoolTotal - noScoreSubjects;
-    const aboveThreshold    = subjectsWithStats.filter(s=>s._stats.pass!==null&&parseFloat(s._stats.pct)>=80).length;
-    const totalRStudents    = subjectsWithStats.reduce((a,s)=>a+s._stats.rIds.size,0);
-    // จำนวนนักเรียนไม่ซ้ำข้ามวิชา (การ์ดด้านบนนับเป็นรายการ นักเรียน×วิชา)
-    const uniqStudents = key=>{ const set=new Set(); subjectsWithStats.forEach(s=>s._stats[key].forEach(v=>set.add(v))); return set.size; };
-    const uniqPass=uniqStudents('passIds'), uniqFail=uniqStudents('failIds'), uniqMs=uniqStudents('msAllIds'), uniqR=uniqStudents('rIds');
-    const pendingFinalRows = subjectsWithStats.reduce((a,s)=>a+s._stats.pendingFinal,0);
-    const totalScoreRows   = subjectsWithStats.reduce((a,s)=>a+s._stats.sumRows.length,0);
-    const _subLine = n=>'<div class="sl" style="font-size:10px;margin-top:1px">'+n+' คนไม่ซ้ำ</div>';
 
     // ── สรุปความคืบหน้ารายครู (คะแนน + เวลาเรียน + ประเมิน ต้องครบทั้ง 3 ถึงจะนับว่าวิชานั้นเสร็จ) ──
     const teacherProgress = {};
@@ -2183,7 +2150,6 @@ async function pgSchoolReport(){
       ...tp,
       pct: tp.total>0?Math.round((tp.collectDone+tp.attDone+tp.evalDone+tp.midDone+tp.finalDone)/(tp.total*5)*100):0,
     })).sort((a,b)=>a.pct-b.pct||a.teacher.localeCompare(b.teacher,'th'));
-    const teacherFullyDoneCount = teacherProgressList.filter(tp=>tp.pct===100).length;
 
     // เก็บไว้ใน state เพื่อให้ exportSchoolReport ใช้ได้
     S._schoolReport = subjectsWithStats;
@@ -2398,28 +2364,6 @@ async function pgSchoolReport(){
           '</button>'+
         '</div>'+
       '</div>'+
-
-      // summary stats — row 1
-      '<div class="sg" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr))">'+
-        '<div class="sc"><div class="si bl"><svg viewBox="0 0 24 24" fill="none" stroke="#007AFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div><div><div class="sv">'+schoolTotal+'</div><div class="sl">รายวิชา</div></div></div>'+
-        '<div class="sc"><div class="si gr"><svg viewBox="0 0 24 24" fill="none" stroke="#16803d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div><div class="sv">'+schoolTeachers+'</div><div class="sl">ครูผู้สอน</div></div></div>'+
-        '<div class="sc"><div class="si gr"><svg viewBox="0 0 24 24" fill="none" stroke="#16803d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg></div><div><div class="sv" style="color:#16803d">'+schoolPassAvg+'%</div><div class="sl">ผ่านเฉลี่ย</div></div></div>'+
-        '<div class="sc"><div class="si or"><svg viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div><div><div class="sv">'+schoolScoreAvg+'</div><div class="sl">คะแนนเฉลี่ย</div></div></div>'+
-        '<div class="sc"><div class="si gr"><svg viewBox="0 0 24 24" fill="none" stroke="#16803d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg></div><div><div class="sv" style="color:#16803d">'+teacherFullyDoneCount+'/'+teacherProgressList.length+'</div><div class="sl">ครูทำครบแล้ว</div></div></div>'+
-      '</div>'+
-      // summary stats — row 2
-      '<div class="sg" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-top:0">'+
-        '<div class="sc"><div class="si gr"><svg viewBox="0 0 24 24" fill="none" stroke="#16803d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg></div><div><div class="sv" style="color:#16803d">'+totalPassStudents+'</div><div class="sl">รายการผ่าน (นักเรียน×วิชา)</div>'+_subLine(uniqPass)+'</div></div>'+
-        '<div class="sc"><div class="si" style="background:rgba(220,38,38,.1)"><svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div><div><div class="sv" style="color:#dc2626">'+totalFailStudents+'</div><div class="sl">รายการไม่ผ่าน (นักเรียน×วิชา)</div>'+_subLine(uniqFail)+'</div></div>'+
-        '<div class="sc"><div class="si" style="background:rgba(255,59,48,.1)"><svg viewBox="0 0 24 24" fill="none" stroke="#FF3B30" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div><div class="sv" style="color:#FF3B30">'+totalMsStudents+'</div><div class="sl">รายการ มส (นักเรียน×วิชา)</div>'+_subLine(uniqMs)+'</div></div>'+
-        '<div class="sc"><div class="si" style="background:rgba(142,142,147,.12)"><svg viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div><div class="sv" style="color:#8e8e93">'+noScoreSubjects+'</div><div class="sl">วิชายังไม่มีคะแนน</div></div></div>'+
-        '<div class="sc"><div class="si bl"><svg viewBox="0 0 24 24" fill="none" stroke="#007AFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div><div><div class="sv" style="color:#007AFF">'+aboveThreshold+'/'+scoredSubjects+'</div><div class="sl">วิชาผ่านเกณฑ์ ≥80%</div><div class="sl" style="font-size:10px;margin-top:1px">จากวิชาที่มีคะแนน</div></div></div>'+
-        '<div class="sc"><div class="si or"><svg viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div><div class="sv" style="color:#b45309">'+totalRStudents+'</div><div class="sl">รายการ ร (รอผล)</div>'+_subLine(uniqR)+'</div></div>'+
-      '</div>'+
-      // เตือนว่าผลผ่าน/ไม่ผ่าน/คะแนนเฉลี่ย ยังไม่นิ่ง เพราะบางรายการยังไม่มีคะแนนปลายภาค
-      (pendingFinalRows>0
-        ? '<div style="margin:0 0 14px;padding:10px 14px;border-radius:12px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35);color:var(--warn-txt);font-size:12.5px">'+_ico.warning+' ยังไม่มีคะแนนสอบปลายภาค <strong>'+pendingFinalRows+'</strong> จาก '+totalScoreRows+' รายการ (นักเรียน×วิชา) — ผลผ่าน/ไม่ผ่าน ร้อยละผ่าน และคะแนนเฉลี่ยด้านบนเป็นค่าชั่วคราว จะนิ่งเมื่อครูกรอกคะแนนปลายภาคครบ</div>'
-        : '')+
 
       // สรุปความคืบหน้ารายครู
       renderTeacherProgressTable()+
