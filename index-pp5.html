@@ -4951,6 +4951,7 @@ async function exportForSGS(){
       after:scU.after.map(u=>gsc(s.id,'after',u.unit_number)??''),
       mid:sm.mid_normal??'',
       final:sm.final_score??'',
+      special:sm.special_result||'', // ผลพิเศษ (ร/มส/มผ/ผ) → ช่อง Remark ของ SGS
       read:['t1','t2','t3','t4','t5'].map(k=>nz(er?.[k])),
       read_result:nz(er?.result),
       char:['r1','r2','r3','r4','r5','r6','r7','r8'].map(k=>nz(ec?.[k])),
