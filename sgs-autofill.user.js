@@ -1,16 +1,21 @@
 // ==UserScript==
 // @name         Autofill SGS จากระบบ ปพ.5
 // @namespace    pp5-sgs-autofill
-// @version      2.7.0
-// @description  วางคะแนนที่คัดลอกจากระบบ ปพ.5 ลงหน้ากรอกคะแนน SGS (sgs.bopp-obec.info) ให้อัตโนมัติ
+// @version      2.8.0
+// @description  วางคะแนนและผลประเมิน (อ่าน คิดวิเคราะห์ เขียน / คุณลักษณะอันพึงประสงค์) ที่คัดลอกจากระบบ ปพ.5 ลงหน้ากรอกคะแนน SGS (sgs.bopp-obec.info) ให้อัตโนมัติ
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts1-Table.aspx*
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts2-Table.aspx*
+// @match        https://sgs.bopp-obec.info/sgs/TblTranscriptsQ/Edit-TblTranscriptsQ-Table.aspx*
+// @match        https://sgs.bopp-obec.info/sgs/TblTranscriptsL/Edit-TblTranscriptsL-Table.aspx*
 // @run-at       document-idle
 // @grant        none
 // @updateURL    https://pp5-ten.vercel.app/sgs-autofill.user.js
 // @downloadURL  https://pp5-ten.vercel.app/sgs-autofill.user.js
 // ==/UserScript==
 
+// รองรับ 4 หน้า: กลางภาค (TblTranscripts1) / หลังกลางภาค (TblTranscripts2) /
+// คุณลักษณะอันพึงประสงค์ (TblTranscriptsQ) / อ่าน คิดวิเคราะห์ และเขียน (TblTranscriptsL)
+//
 // วิธีใช้:
 // 1. ที่หน้า SGS ติ๊กกล่องเช็คบล็อกด้านบนคอลัมน์ที่ต้องการกรอกคะแนนด้วยตัวเองก่อน
 //    (เช่น ติ๊กช่อง "1" เพื่อปลดล็อกคอลัมน์ S1 — สคริปต์นี้จะไม่ติ๊กให้อัตโนมัติ
@@ -29,11 +34,15 @@
   const REPEATER_PREFIX = 'ctl00_PageContent_TblTranscriptsTableControlRepeater_ctl';
   const isPage1 = location.pathname.includes('TblTranscripts1'); // กลางภาค: S1-S9 + Midterm
   const isPage2 = location.pathname.includes('TblTranscripts2'); // หลังกลางภาค: S10-S18 + Final
-  if (!isPage1 && !isPage2) return;
+  // หน้าบันทึกผลประเมิน: Q = คุณลักษณะอันพึงประสงค์ (หัวข้อ 1-10), L = อ่าน คิดวิเคราะห์ และเขียน (หัวข้อ 1-5)
+  const evalKind = location.pathname.includes('TblTranscriptsQ') ? 'char'
+    : location.pathname.includes('TblTranscriptsL') ? 'read' : null;
+  const isEval = !!evalKind;
+  if (!isPage1 && !isPage2 && !isEval) return;
 
   // แต่ละคอลัมน์คะแนนมีกล่องเช็คบล็อกของตัวเอง (ctl00_PageContent_CheckX) ต้องติ๊กก่อนถึงจะกรอกช่องนั้นได้
   // key คือชื่อ field ต่อแถว (เช่น ctl00_..._ctl00_S1), value คือ id ของกล่องเช็คบล็อกระดับคอลัมน์
-  const CHECKBOX_MAP = isPage1
+  const CHECKBOX_MAP = isEval ? {} : isPage1
     ? { S1: 'Check1', S2: 'Check2', S3: 'Check3', S4: 'Check4', S5: 'Check5', S6: 'Check6', S7: 'Check7', S8: 'Check8', S9: 'Check9', Midterm: 'CheckM' }
     : { S10: 'Check10', S11: 'Check11', S12: 'Check12', S13: 'Check13', S14: 'Check14', S15: 'Check15', S16: 'Check16', S17: 'Check17', S18: 'Check18', Final: 'CheckF' };
 
@@ -80,7 +89,7 @@
       ' ขนาด=' + el.offsetWidth + 'x' + el.offsetHeight;
   }
 
-  // เติมค่าลงช่องเดียว — ไม่บังคับปลดล็อก ไม่จำลองกด Enter อีกต่อไป (ครูปลดล็อกคอลัมน์เองผ่านกล่องเช็คบล็อก
+  // เติมค่าลงช่องเดียว — ไม่บังคับปลดล็อก ไม่จำลองกด Enter (ครูปลดล็อกคอลัมน์เองผ่านกล่องเช็คบล็อก
   // ของ SGS โดยตรง ปลอดภัยกว่าเพราะใช้กลไกจริงของ SGS ไม่ใช่การเดาพฤติกรรม JS ของเขา)
   // เก็บทุกช่องที่กรอกไว้ใน filledFields เพื่อเช็คซ้ำอีกทีตอนจบรอบ (ดูว่าค่าที่ตั้งไป "ติด" จริงไหม
   // หรือถูกอะไรบางอย่างล้าง/ซ่อนทิ้งภายหลัง) โดยไม่ต้องให้ครูเปิด DevTools เอง
@@ -152,7 +161,7 @@
   }
 
   // สแกนหน้าเว็บจริงแบบอ่านอย่างเดียว (ไม่แก้ไขอะไร) เพื่อดูว่า id ของช่องกรอกจริงเป็นแบบไหน
-  // ใช้ตอนที่ id ที่สคริปต์เดาไว้ (REPEATER_PREFIX) หาช่องไม่เจอเลยสักช่อง
+  // ใช้ตอนที่ id ที่เดาไว้ (REPEATER_PREFIX) หาช่องไม่เจอเลยสักช่อง
   function scanPage() {
     log('=== ผลสแกนหน้านี้ ===');
     const allInputs = document.querySelectorAll('input.field_input');
@@ -168,7 +177,7 @@
       log('checkbox ' + key + ' (id=' + cbId + '): ' + (cb ? ('พบ, checked=' + cb.checked) : 'ไม่พบ'));
     });
 
-    // เช็คว่า element ตาม pattern ที่สคริปต์ใช้จริงมีไหม สำหรับแถว 00-05
+    // เช็คว่า element ตาม pattern ที่ใช้จริงมีไหม สำหรับแถว 00-05
     for (let i = 0; i < 6; i++) {
       const rowIdx = String(i).padStart(2, '0');
       const testId = REPEATER_PREFIX + rowIdx + '_' + FIELD_ORDER[0];
@@ -222,6 +231,89 @@
     running = false;
   }
 
+  // ══ โหมดผลประเมิน (หน้า Q คุณลักษณะฯ / หน้า L อ่าน คิดวิเคราะห์ และเขียน) ══
+  // ยังไม่ทราบ id จริงของช่องกรอกในสองหน้านี้ จึงอ่านโครงตารางแทน: หาแถวหัวตารางที่มี "ผลการประเมิน" กับ
+  // หัวคอลัมน์รหัสนักเรียน แล้วจับคู่ช่องกรอกด้วยตำแหน่งคอลัมน์ (หัวคอลัมน์ตัวเลข 1,2,3... = หัวข้อที่ 1,2,3...)
+  function evalCells(tr) {
+    return Array.from(tr.children).filter((c) => c.tagName === 'TD' || c.tagName === 'TH');
+  }
+  function evalTableLayout() {
+    for (const tr of Array.from(document.querySelectorAll('tr'))) {
+      const texts = evalCells(tr).map((c) => c.textContent.replace(/\s+/g, ' ').trim());
+      const codeIdx = texts.findIndex((t) => t === 'เลขประจำตัว' || t === 'รหัสนักเรียน');
+      const resIdx = texts.findIndex((t) => t === 'ผลการประเมิน');
+      if (codeIdx < 0 || resIdx < 0) continue;
+      const items = {};
+      texts.forEach((t, i) => { if (/^\d+$/.test(t)) items[parseInt(t, 10)] = i; });
+      return { headerRow: tr, table: tr.closest('table'), codeIdx, resIdx, items };
+    }
+    return null;
+  }
+  function evalCellInput(cell) {
+    return cell ? cell.querySelector('input:not([type=checkbox]):not([type=radio]):not([type=hidden])') : null;
+  }
+  let evalInputSeq = 0;
+  async function runEvalFill(dataStudents) {
+    if (running) { log('กำลังทำงานอยู่ รอให้เสร็จก่อน', true); return; }
+    const layout = evalTableLayout();
+    if (!layout) { log('ไม่พบตารางบันทึกผลในหน้านี้ (หาหัวคอลัมน์ "ผลการประเมิน" ไม่เจอ) — ลองกดปุ่ม "สแกนโครงสร้างหน้านี้"', true); return; }
+    running = true;
+    stopRequested = false;
+    filledFields.length = 0;
+    const withResult = document.getElementById('pp5-sgs-withresult').checked;
+    const itemNos = Object.keys(layout.items).map(Number).sort((a, b) => a - b);
+    const lockedItems = new Set();
+    let students = 0;
+    let missingData = false;
+    for (const tr of Array.from(layout.table.rows)) {
+      if (stopRequested) break;
+      if (tr === layout.headerRow) continue;
+      const cells = evalCells(tr);
+      const codeCell = cells[layout.codeIdx];
+      const code = codeCell ? codeCell.textContent.trim() : '';
+      if (!/^\d+$/.test(code)) continue;
+      const data = dataStudents[code];
+      if (!data) { log('ไม่พบข้อมูลเลขประจำตัว ' + code + ' ในไฟล์ที่วาง — ข้าม', true); continue; }
+      const arr = evalKind === 'char' ? data.char : data.read;
+      if (!Array.isArray(arr)) { missingData = true; break; }
+      const resultVal = evalKind === 'char' ? data.char_result : data.read_result;
+      const targets = itemNos.map((n) => ({ label: 'หัวข้อ ' + n, no: n, value: arr[n - 1], input: evalCellInput(cells[layout.items[n]]) }));
+      if (withResult) targets.push({ label: 'ผลการประเมิน', no: 0, value: resultVal, input: evalCellInput(cells[layout.resIdx]) });
+      for (const t of targets) {
+        if (t.value === undefined || t.value === null || t.value === '' || !t.input) continue;
+        if (t.input.disabled || t.input.readOnly) { lockedItems.add(t.label); continue; }
+        if (!t.input.id) t.input.id = 'pp5-ev-' + (evalInputSeq++);
+        applyValue(t.input, t.value);
+        filledFields.push({ id: t.input.id, code, key: t.label, value: String(t.value) });
+        await sleep(60);
+      }
+      students++;
+    }
+    if (missingData) log('ข้อมูลที่วางไม่มีผลประเมิน — ไปกดปุ่ม "Autofill SGS" ในระบบ ปพ.5 ใหม่ (ต้องเป็นเวอร์ชันล่าสุด) แล้ววางอีกครั้ง', true);
+    if (lockedItems.size) log('ช่องเหล่านี้ยังถูกล็อกอยู่ จึงไม่ได้กรอก: ' + Array.from(lockedItems).join(', ') + ' — ติ๊กที่ "หัวข้อ" ด้านบนของหน้า SGS ให้ตรงก่อน แล้วกดเริ่มใหม่', true);
+    log(stopRequested ? 'หยุดกลางคัน — ตรวจสอบค่าที่กรอกไปแล้วให้ดี' : ('กรอกแล้ว ' + filledFields.length + ' ช่อง จากนักเรียน ' + students + ' คน — ตรวจให้ครบก่อนกดบันทึก'));
+    await recheckFilledFields();
+    running = false;
+  }
+  function scanEvalPage() {
+    log('=== ผลสแกนหน้าผลประเมิน (' + (evalKind === 'char' ? 'คุณลักษณะฯ' : 'อ่าน คิดวิเคราะห์ เขียน') + ') ===');
+    const layout = evalTableLayout();
+    if (!layout) { log('ไม่พบแถวหัวตารางที่มี "ผลการประเมิน" และ "เลขประจำตัว/รหัสนักเรียน"', true); return; }
+    log('คอลัมน์รหัสนักเรียน = ลำดับที่ ' + (layout.codeIdx + 1) + ', ผลการประเมิน = ลำดับที่ ' + (layout.resIdx + 1));
+    log('หัวข้อที่พบ: ' + Object.keys(layout.items).join(', '));
+    const first = Array.from(layout.table.rows).find((tr) => tr !== layout.headerRow && /^\d+$/.test((evalCells(tr)[layout.codeIdx] || {}).textContent ? evalCells(tr)[layout.codeIdx].textContent.trim() : ''));
+    if (first) {
+      const cells = evalCells(first);
+      Object.keys(layout.items).forEach((n) => {
+        const el = evalCellInput(cells[layout.items[n]]);
+        log('  แถวแรก หัวข้อ ' + n + ': ' + (el ? 'พบช่อง disabled=' + el.disabled + ' readOnly=' + el.readOnly : 'ไม่พบช่องกรอก'));
+      });
+      const r = evalCellInput(cells[layout.resIdx]);
+      log('  แถวแรก ผลการประเมิน: ' + (r ? 'พบช่อง disabled=' + r.disabled + ' readOnly=' + r.readOnly : 'ไม่พบช่องกรอก'));
+    }
+    log('=== จบผลสแกน ===');
+  }
+
   // ── ตำแหน่ง/สถานะย่อ-ขยายของกล่อง — จำไว้ใน localStorage กันบังตารางคะแนนซ้ำทุกครั้งที่เปิดหน้าใหม่
   const POS_KEY = 'pp5SgsPanelPos';
   function loadPanelState() {
@@ -236,11 +328,14 @@
     wrap.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:99999;background:#fff;border:2px solid #0066cc;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.25);padding:12px;width:320px;font-family:sans-serif;font-size:13px;color:#111';
     wrap.innerHTML =
       '<div id="pp5-sgs-header" style="cursor:move;display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;user-select:none">' +
-      '<span style="font-weight:700;color:#0066cc">📋 Autofill SGS จาก ปพ.5 (' + (isPage1 ? 'กลางภาค' : 'หลังกลางภาค') + ')</span>' +
+      '<span style="font-weight:700;color:#0066cc">📋 Autofill SGS จาก ปพ.5 (' + (isEval ? (evalKind === 'char' ? 'คุณลักษณะฯ' : 'อ่าน คิดฯ เขียน') : (isPage1 ? 'กลางภาค' : 'หลังกลางภาค')) + ')</span>' +
       '<button id="pp5-sgs-min" title="ย่อ/ขยายกล่องนี้ — ลากที่แถบหัวข้อเพื่อย้ายตำแหน่งได้" style="flex-shrink:0;background:#e6f0fa;border:1px solid #b3d1f0;border-radius:5px;cursor:pointer;font-size:13px;color:#0066cc;width:22px;height:22px;line-height:1;padding:0">–</button>' +
       '</div>' +
       '<div id="pp5-sgs-body">' +
-      '<div style="font-size:11px;color:#555;margin-bottom:6px">1) ติ๊กกล่องเช็คบล็อกด้านบนคอลัมน์ที่จะกรอกในหน้า SGS เองก่อน 2) กดวางจากคลิปบอร์ด (หรือวางเอง) 3) กดเริ่มกรอก — ลากที่แถบหัวข้อด้านบนเพื่อย้ายกล่องนี้ให้พ้นตารางได้</div>' +
+      (isEval
+        ? '<div style="font-size:11px;color:#555;margin-bottom:6px">1) ติ๊กช่อง "หัวข้อ" ด้านบนของหน้า SGS ที่จะกรอกก่อน 2) กดวางจากคลิปบอร์ด (หรือวางเอง) 3) กดเริ่มกรอก — ลากที่แถบหัวข้อด้านบนเพื่อย้ายกล่องนี้ให้พ้นตารางได้</div>' +
+          '<label style="display:flex;align-items:center;gap:6px;font-size:11px;margin-bottom:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-withresult" checked> กรอกช่อง "ผลการประเมิน" (ผลรวม) ด้วย</label>'
+        : '<div style="font-size:11px;color:#555;margin-bottom:6px">1) ติ๊กกล่องเช็คบล็อกด้านบนคอลัมน์ที่จะกรอกในหน้า SGS เองก่อน 2) กดวางจากคลิปบอร์ด (หรือวางเอง) 3) กดเริ่มกรอก — ลากที่แถบหัวข้อด้านบนเพื่อย้ายกล่องนี้ให้พ้นตารางได้</div>') +
       '<textarea id="pp5-sgs-paste" placeholder="วาง JSON ที่คัดลอกจากปุ่ม &quot;Autofill SGS&quot; ในระบบ ปพ.5 ตรงนี้" style="width:100%;height:60px;font-size:11px;margin-bottom:6px;box-sizing:border-box"></textarea>' +
       '<button id="pp5-sgs-pasteclip" style="width:100%;margin-bottom:6px;padding:6px;background:#e0e7ff;color:#3730a3;border:1px solid #6366f1;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600">📋 วางจากคลิปบอร์ด</button>' +
       '<div style="display:flex;gap:6px;margin-bottom:6px">' +
@@ -326,10 +421,10 @@
       try { payload = JSON.parse(raw); }
       catch (e) { log('อ่าน JSON ไม่สำเร็จ: ' + e.message, true); return; }
       if (!payload.students) { log('รูปแบบข้อมูลไม่ถูกต้อง (ไม่พบ students)', true); return; }
-      runFill(payload.students);
+      if (isEval) runEvalFill(payload.students); else runFill(payload.students);
     };
     document.getElementById('pp5-sgs-stop').onclick = () => { stopRequested = true; };
-    document.getElementById('pp5-sgs-scan').onclick = () => scanPage();
+    document.getElementById('pp5-sgs-scan').onclick = () => (isEval ? scanEvalPage() : scanPage());
     document.getElementById('pp5-sgs-copylog').onclick = async () => {
       const text = document.getElementById('pp5-sgs-log').innerText;
       try { await navigator.clipboard.writeText(text); log('คัดลอก log แล้ว'); }
