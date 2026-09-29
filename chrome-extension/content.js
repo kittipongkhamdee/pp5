@@ -106,14 +106,14 @@
   // เรียกหลังกรอกครบทุกช่องในรอบนี้แล้ว รอสักพักแล้วเช็คซ้ำทุกช่องอีกครั้งว่ายัง "ติด" อยู่ไหม
   // ถ้าเจอช่องไหนค่าหาย จะลองกรอกซ้ำให้อัตโนมัติอีก 1 ครั้ง (เผื่อเป็นจังหวะเวลาแค่ชั่วคราว)
   async function recheckFilledFields() {
-    if (!filledFields.length) return;
+    if (!filledFields.length) return false;
     log('รอ 2 วินาทีแล้วตรวจสอบซ้ำทุกช่องที่กรอกไป...');
     await sleep(2000);
     const mismatches = filledFields.filter(({ id, value }) => {
       const el = document.getElementById(id);
       return !el || el.value !== value;
     });
-    if (!mismatches.length) { log('ตรวจซ้ำแล้ว ทุกช่องยังมีค่าติดอยู่ครบ (ถ้าจอยังไม่ขึ้นตัวเลข ให้ส่ง log นี้กลับมาดูเพิ่ม)'); return; }
+    if (!mismatches.length) { log('ตรวจซ้ำแล้ว ทุกช่องยังมีค่าติดอยู่ครบ (ถ้าจอยังไม่ขึ้นตัวเลข ให้ส่ง log นี้กลับมาดูเพิ่ม)'); return true; }
     log('พบ ' + mismatches.length + ' ช่องที่ค่าหายไปหลังรอ 2 วินาที — กำลังลองกรอกซ้ำอัตโนมัติ...', true);
     let fixedCount = 0;
     for (const { id, code, key, value } of mismatches) {
@@ -128,6 +128,32 @@
     log(fixedCount === mismatches.length
       ? 'ลองกรอกซ้ำสำเร็จครบทุกช่องแล้ว — ตรวจตัวเลขให้ครบอีกครั้งก่อนไปขั้นถัดไป'
       : ('ลองกรอกซ้ำแล้วยังเหลือ ' + (mismatches.length - fixedCount) + ' ช่องที่ยังไม่ติด — กรอกช่องนั้นด้วยมือ หรือคัดลอก log ส่งกลับมาดูเพิ่ม'));
+    return fixedCount === mismatches.length;
+  }
+
+  // ── กดปุ่ม "บันทึก" ของ SGS ให้ (ตัวเลือก ปิดไว้เป็นค่าเริ่มต้น) ──
+  // ปุ่มบันทึกของ SGS คือ <input type="image" title="บันทึก" id="...SaveButton"> บันทึกทั้งหน้าที่แสดงอยู่
+  // กดให้เฉพาะเมื่อ: รหัสวิชาตรง (ตรวจตอนกดเริ่มแล้ว) + ตรวจซ้ำแล้วทุกช่องค่ายังอยู่ + ไม่ได้กดหยุด
+  // และถามยืนยันก่อนทุกครั้ง (เว้นแต่ติ๊ก "ไม่ต้องถามยืนยัน") เพราะบันทึกลงระบบราชการแล้วย้อนยาก
+  function findSaveButton() {
+    const btns = Array.from(document.querySelectorAll('input[type="image"]'))
+      .filter((b) => b.title === 'บันทึก' || /SaveButton$/.test(b.id));
+    return btns.length === 1 ? btns[0] : null;
+  }
+  async function maybeAutoSave(verified) {
+    const cb = document.getElementById('pp5-sgs-autosave');
+    if (!cb || !cb.checked) return;
+    if (stopRequested) { log('หยุดกลางคัน — ไม่กดบันทึกให้', true); return; }
+    if (!verified) { log('ยังมีช่องที่ค่าไม่ติด หรือไม่ได้กรอกเลย — ไม่กดบันทึกให้ ตรวจตัวเลขแล้วกดบันทึกเอง', true); return; }
+    const btn = findSaveButton();
+    if (!btn) { log('หาปุ่มบันทึกของ SGS ไม่เจอ (หรือเจอมากกว่า 1 ปุ่ม) — กดบันทึกเอง', true); return; }
+    const noAsk = document.getElementById('pp5-sgs-noask');
+    if (!(noAsk && noAsk.checked) && !window.confirm('กรอกครบ ' + filledFields.length + ' ช่องแล้ว และตรวจซ้ำแล้วค่ายังอยู่ครบ\n\nต้องการให้กดปุ่ม "บันทึก" ของ SGS (บันทึกทั้งหน้านี้) เลยไหม?\n(ตรวจตัวเลขในตารางก่อนกด OK)')) {
+      log('ยกเลิก — ยังไม่ได้บันทึก กดบันทึกเองได้เมื่อตรวจแล้ว');
+      return;
+    }
+    log('กดปุ่มบันทึกของ SGS แล้ว — รอหน้ารีโหลด แล้วตรวจว่าค่าถูกบันทึกจริง (ข้อมูลที่วางยังจำไว้ให้ ไม่ต้องวางใหม่)');
+    btn.click();
   }
 
   // หาเลขประจำตัวนักเรียนของแถวนั้นจากข้อความในตาราง (ไม่ใช่ช่องกรอก)
@@ -215,8 +241,9 @@
       if (notFoundCount === MAX_ROWS) log('  [debug] ไม่พบช่องกรอกคอลัมน์ ' + key + ' เลยสักแถว (id ที่เดาไว้อาจไม่ตรงกับหน้านี้) — ลองกดปุ่ม "สแกนโครงสร้างหน้านี้" ดู', true);
     }
     log(stopRequested ? 'หยุดกลางคัน — ตรวจสอบคะแนนที่กรอกไปแล้วให้ดี' : 'กรอกครบคอลัมน์ที่ติ๊กไว้แล้ว — ตรวจตัวเลขให้ครบก่อนไปขั้นถัดไป');
-    await recheckFilledFields();
+    const verified = await recheckFilledFields();
     running = false;
+    await maybeAutoSave(verified);
   }
 
   // ══ โหมดผลประเมิน (หน้า Q คุณลักษณะฯ / หน้า L อ่าน คิดวิเคราะห์ และเขียน) ══
@@ -280,8 +307,9 @@
     if (missingData) log('ข้อมูลที่วางไม่มีผลประเมิน — ไปกดปุ่ม "Autofill SGS" ในระบบ ปพ.5 ใหม่ (ต้องเป็นเวอร์ชันล่าสุด) แล้ววางอีกครั้ง', true);
     if (lockedItems.size) log('ช่องเหล่านี้ยังถูกล็อกอยู่ จึงไม่ได้กรอก: ' + Array.from(lockedItems).join(', ') + ' — ติ๊กที่ "หัวข้อ" ด้านบนของหน้า SGS ให้ตรงก่อน แล้วกดเริ่มใหม่', true);
     log(stopRequested ? 'หยุดกลางคัน — ตรวจสอบค่าที่กรอกไปแล้วให้ดี' : ('กรอกแล้ว ' + filledFields.length + ' ช่อง จากนักเรียน ' + students + ' คน — ตรวจให้ครบก่อนกดบันทึก'));
-    await recheckFilledFields();
+    const verified = await recheckFilledFields();
     running = false;
+    await maybeAutoSave(verified);
   }
   function scanEvalPage() {
     log('=== ผลสแกนหน้าผลประเมิน (' + (evalKind === 'char' ? 'คุณลักษณะฯ' : 'อ่าน คิดวิเคราะห์ เขียน') + ') ===');
@@ -390,10 +418,12 @@
       '<button id="pp5-sgs-start" style="flex:1;padding:6px;background:#4f46e5;color:#fff;border:none;border-radius:6px;cursor:pointer">เริ่มกรอกคอลัมน์ที่ติ๊กไว้</button>' +
       '<button id="pp5-sgs-stop" style="padding:6px 10px;background:#dc2626;color:#fff;border:none;border-radius:6px;cursor:pointer">หยุด</button>' +
       '</div>' +
+      '<label style="display:flex;align-items:flex-start;gap:6px;font-size:11px;margin-bottom:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-autosave" style="margin-top:2px"> กดปุ่ม "บันทึก" ของ SGS ให้หลังกรอกและตรวจซ้ำครบ (บันทึกทั้งหน้า · ถามยืนยันก่อน)</label>' +
       '<details style="margin-bottom:6px">' +
       '<summary style="cursor:pointer;font-size:11px;color:#666;padding:2px 0">⚙️ ตัวเลือกเพิ่มเติม</summary>' +
       '<button id="pp5-sgs-scan" style="width:100%;margin-top:6px;padding:5px;background:#fff3cd;border:1px solid #ffc107;border-radius:6px;cursor:pointer;font-size:11px">🔍 สแกนโครงสร้างหน้านี้ (ถ้ากรอกแล้วไม่ขึ้นเลย)</button>' +
       '<label style="display:flex;align-items:center;gap:6px;font-size:11px;margin-top:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-skipcode"> ไม่ตรวจรหัสวิชา (ใช้เมื่อรหัสใน SGS ต่างจาก ปพ.5)</label>' +
+      '<label style="display:flex;align-items:center;gap:6px;font-size:11px;margin-top:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-noask"> บันทึกเลยโดยไม่ถามยืนยัน (ใช้กับ "กดปุ่มบันทึกให้")</label>' +
       '<button id="pp5-sgs-clearsaved" style="width:100%;margin-top:6px;padding:5px;background:#fee2e2;border:1px solid #fca5a5;border-radius:6px;cursor:pointer;font-size:11px">🗑️ ล้างข้อมูลที่จำไว้ (เปลี่ยนวิชา/เลิกใช้)</button>' +
       '</details>' +
       '<div id="pp5-sgs-log" style="max-height:160px;overflow-y:auto;background:#f5f5f5;border-radius:6px;padding:6px;font-size:11px;line-height:1.6"></div>' +
@@ -447,6 +477,9 @@
       wrap.style.width = collapsed ? 'auto' : '320px';
     }
     applyCollapsed(!!savedState.collapsed);
+    const autoSaveCb = document.getElementById('pp5-sgs-autosave');
+    autoSaveCb.checked = !!savedState.autosave;
+    autoSaveCb.onchange = () => savePanelState(Object.assign(loadPanelState(), { autosave: autoSaveCb.checked }));
     minBtn.onclick = () => {
       const collapsed = body.style.display !== 'none';
       applyCollapsed(collapsed);
