@@ -4091,7 +4091,7 @@ async function saveUnitSc(){
 // omr_quizzes (ตรวจกระดาษคำตอบ) หรือ online_exam_rounds (สอบออนไลน์ผ่าน PIN) —
 // ทุกฟังก์ชันด้านล่าง (_omrQuizMaxScore/_omrLoadPreview) แตกสาขาตาม source นี้
 // แต่คืนค่าอยู่ในรูป {student_id: {score}} เดียวกันเสมอ (score = คะแนนดิบที่ได้
-// ไม่ใช่ % — ตรงกับสเกลเดียวกับ omr_scan_results.score) ทำให้ importOmrScores/
+// ไม่ใช่ % — omr_scan_results.score เก็บเป็น % จึงต้องแปลงกลับก่อน) ทำให้ importOmrScores/
 // _omrRecomputeOverflow ที่เหลือใช้โค้ดร่วมกันได้โดยไม่ต้องรู้ว่ามาจากระบบไหน
 let _omrCtx={};
 async function openOmrImportModal(){
@@ -4283,13 +4283,22 @@ async function _omrLoadPreview(){
   const byStudent={};
   try{
     if(item?.source==='online'){
-      // earned_points (คะแนนดิบ) ไม่ใช่ score (%) — ให้สเกลตรงกับ omr_scan_results.score
-      // ที่ importOmrScores/_omrRecomputeOverflow ด้านล่างเทียบกับ "คะแนนเต็ม" อยู่แล้ว
+      // earned_points (คะแนนดิบ) ไม่ใช่ score (%) — importOmrScores/_omrRecomputeOverflow
+      // ด้านล่างเทียบกับ "คะแนนเต็ม" เป็นคะแนนดิบ
       const rows=await q(sb.from('online_exam_attempts').select('student_id,earned_points,submitted_at').eq('round_id',quizId).not('submitted_at','is',null).order('submitted_at',{ascending:false}));
       rows.forEach(r=>{ if(!(r.student_id in byStudent)) byStudent[r.student_id]={student_id:r.student_id, score:parseFloat(r.earned_points)||0, scanned_at:r.submitted_at}; });
     }else{
+      // omr_scan_results.score เก็บเป็น "ร้อยละ" (เช่น 86.7) ไม่ใช่คะแนนดิบ — เดิมนำ % มาใช้ตรงๆ
+      // ทำให้ได้ 26/30 ข้อกลายเป็น 86.7 คะแนน (เกินคะแนนเต็ม) ต้องแปลงกลับเป็นคะแนนดิบ:
+      // % × คะแนนเต็มของชุด ÷ 100 แล้วปัดเป็นทีละ 0.5 (คะแนนรายข้อในระบบสอบตั้งได้ทีละ 0.5
+      // และ % เก็บทศนิยม 1 ตำแหน่ง จึงปัดแล้วได้ค่าตรงเป๊ะเมื่อคะแนนเต็มไม่เกิน 100)
+      const quizMax=(await _omrQuizMaxScore(quizId))||item?.num_questions||0;
       const results=await q(sb.from('omr_scan_results').select('student_id,score,scanned_at').eq('quiz_id',quizId).order('scanned_at',{ascending:false}));
-      results.forEach(r=>{ if(!(r.student_id in byStudent)) byStudent[r.student_id]=r; }); // แถวแรกคือล่าสุด เพราะ sort desc แล้ว
+      results.forEach(r=>{ // แถวแรกคือล่าสุด เพราะ sort desc แล้ว
+        if(r.student_id in byStudent) return;
+        const raw=Math.round((parseFloat(r.score)||0)*quizMax/100*2)/2;
+        byStudent[r.student_id]={student_id:r.student_id, score:raw, scanned_at:r.scanned_at};
+      });
     }
   }catch(e){ if(prevEl) prevEl.textContent='โหลดผลตรวจไม่สำเร็จ: '+e.message; return; }
   _omrCtx.scoreMap=byStudent;
