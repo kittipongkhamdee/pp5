@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autofill SGS จากระบบ ปพ.5
 // @namespace    pp5-sgs-autofill
-// @version      2.21.3
+// @version      2.21.4
 // @description  วางคะแนนและผลประเมิน (อ่าน คิดวิเคราะห์ เขียน / คุณลักษณะอันพึงประสงค์) ที่คัดลอกจากระบบ ปพ.5 ลงหน้ากรอกคะแนน SGS (sgs.bopp-obec.info) ให้อัตโนมัติ
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts1-Table.aspx*
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts2-Table.aspx*
@@ -49,9 +49,12 @@
   const FIELD_ORDER = Object.keys(CHECKBOX_MAP);
 
   // เลขรุ่นที่แสดงในกล่อง (ต้องตรงกับ @version ด้านบน)
-  const APP_VERSION = 'สคริปต์ Tampermonkey v2.21.3';
+  const APP_VERSION = 'สคริปต์ Tampermonkey v2.21.4';
   const DEVELOPER = 'นายกิตติพงษ์ คำดี';
 
+  // หน่วงเวลาระหว่างช่อง: SGS บันทึกอัตโนมัติทุกครั้งที่ค่าเปลี่ยน ถ้ากรอกเร็วเกินคำขอบันทึกจะซ้อนกันจน SGS ฝั่งเซิร์ฟเวอร์ล้ม
+  // (เคยเด้ง "Object reference not set to an instance of an object") จึงกรอกช้าๆ ให้ SGS ตามทัน
+  const FILL_DELAY = 500;
   let running = false;
   let stopRequested = false;
 
@@ -114,7 +117,7 @@
     applyValue(el, value);
     const rightAfter = describeEl(el);
     filledFields.push({ id, code, key, value: String(value) });
-    await sleep(150);
+    await sleep(FILL_DELAY);
     log('  [debug] ' + code + ' ' + key + ' ตั้งค่า="' + value + '" → ' + rightAfter);
     return true;
   }
@@ -274,7 +277,7 @@
       if (!inp.id) inp.id = 'pp5-rm-' + (remarkInputSeq++);
       applyValue(inp, val);
       filledFields.push({ id: inp.id, code, key: 'Remark', value: String(val) });
-      await sleep(60);
+      await sleep(FILL_DELAY);
       n++;
     }
     log('กรอก Remark (ผลพิเศษ) แล้ว ' + n + ' ช่อง');
@@ -373,7 +376,7 @@
         if (!t.input.id) t.input.id = 'pp5-ev-' + (evalInputSeq++);
         applyValue(t.input, t.value);
         filledFields.push({ id: t.input.id, code, key: t.label, value: String(t.value) });
-        await sleep(60);
+        await sleep(FILL_DELAY);
       }
       students++;
     }
