@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autofill SGS จากระบบ ปพ.5
 // @namespace    pp5-sgs-autofill
-// @version      2.21.0
+// @version      2.21.1
 // @description  วางคะแนนและผลประเมิน (อ่าน คิดวิเคราะห์ เขียน / คุณลักษณะอันพึงประสงค์) ที่คัดลอกจากระบบ ปพ.5 ลงหน้ากรอกคะแนน SGS (sgs.bopp-obec.info) ให้อัตโนมัติ
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts1-Table.aspx*
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts2-Table.aspx*
@@ -49,7 +49,7 @@
   const FIELD_ORDER = Object.keys(CHECKBOX_MAP);
 
   // เลขรุ่นที่แสดงในกล่อง (ต้องตรงกับ @version ด้านบน)
-  const APP_VERSION = 'สคริปต์ Tampermonkey v2.21.0';
+  const APP_VERSION = 'สคริปต์ Tampermonkey v2.21.1';
   const DEVELOPER = 'นายกิตติพงษ์ คำดี';
 
   let running = false;
@@ -903,12 +903,29 @@
     const list = Object.values(p.students);
     const has = (fn) => list.some((d) => { const v = fn(d); return v !== '' && v != null; });
     const keys = [];
-    (isPage1 ? FIELD_ORDER : FIELD_ORDER).forEach((key) => {
+    FIELD_ORDER.forEach((key) => {
       if (key === 'Midterm') { if (has((d) => d.mid)) keys.push(key); return; }
       if (key === 'Final') { if (has((d) => d.final)) keys.push(key); return; }
       const idx = isPage1 ? parseInt(key.slice(1), 10) - 1 : parseInt(key.slice(1), 10) - 10;
       if (has((d) => (isPage1 ? d.before : d.after || [])[idx])) keys.push(key);
     });
+    // เทียบคะแนนเต็มที่ SGS ตั้งไว้ใต้ช่องติ๊กของแต่ละคอลัมน์ กับคะแนนเต็มจาก ปพ.5 — ไม่ตรงห้ามกรอก (กันคะแนนลงผิดคอลัมน์/ผิดสเกล)
+    const problems = [];
+    keys.forEach((key) => {
+      let want;
+      if (key === 'Midterm') want = p.mid_max;
+      else if (key === 'Final') want = p.final_max;
+      else { const idx = isPage1 ? parseInt(key.slice(1), 10) - 1 : parseInt(key.slice(1), 10) - 10; want = (isPage1 ? p.before_max : p.after_max || [])[idx]; }
+      const cb = document.getElementById('ctl00_PageContent_' + CHECKBOX_MAP[key]);
+      const cell = cb && cb.closest('td,th');
+      if (want === undefined || want === null || !cell) return; // ข้อมูลรุ่นเก่า/หาหัวคอลัมน์ไม่เจอ = เทียบไม่ได้
+      const nums = (cell.innerText.match(/\d+(?:\.\d+)?/g) || []).map(Number);
+      const isUnit = key !== 'Midterm' && key !== 'Final';
+      if (isUnit ? nums.length < 2 : nums.length < 1) return;
+      const sgs = nums[nums.length - 1];
+      if (Math.abs(sgs - parseFloat(want)) > 1e-9) problems.push('คอลัมน์ ' + (isUnit ? key.slice(1) : key === 'Midterm' ? 'กลางภาค' : 'ปลายภาค') + ': SGS = ' + sgs + ' แต่ ปพ.5 = ' + parseFloat(want));
+    });
+    if (problems.length) return problems;
     for (const key of keys) {
       const cb = document.getElementById('ctl00_PageContent_' + CHECKBOX_MAP[key]);
       if (cb && !cb.checked) { cb.click(); await sleep(250); }
@@ -918,11 +935,15 @@
       if (rl && rl.checkbox && !rl.checkbox.checked) { rl.checkbox.click(); await sleep(250); }
     }
     log('ติ๊กคอลัมน์ที่มีข้อมูลให้แล้ว: ' + keys.join(', '));
+    return [];
   }
   async function multiFill(p) {
     const st = loadMulti();
     lastPayload = p;
-    if (isPage1 || isPage2) await multiTickColumns(p);
+    if (isPage1 || isPage2) {
+      const problems = await multiTickColumns(p);
+      if (problems.length) { multiSkip('คะแนนเต็มไม่ตรงกับ SGS (' + problems.join('; ') + ') — แก้คะแนนเต็มให้ตรงกันแล้วทำวิชานี้ซ้ำ'); return; }
+    }
     if (!checkSubject(p, false, true)) { multiSkip('รหัสวิชาไม่ตรงกับหน้า SGS'); return; }
     log('กรอกวิชา ' + subjLabel(p).trim() + ' (' + Object.keys(p.students).length + ' คน)');
     const created = await ensureCreated(p.students);

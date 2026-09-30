@@ -4968,7 +4968,10 @@ async function _sgsBuildPayload(){
     };
   });
   // level/room ใช้จับคู่รายวิชาตอนกรอกหลายวิชา (รหัสวิชาเดียวกันอาจมีทั้ง ม.5 และ ม.6)
-  return {subject_code:sub.subject_code,subject_name:sub.subject_name,level:GRADE_PREFIX+sub.grade_level,grade_level:sub.grade_level,room:sub.room,generated_at:new Date().toISOString(),students};
+  // คะแนนเต็มของแต่ละหน่วย/กลางภาค/ปลายภาค — ส่วนขยายเทียบกับคะแนนเต็มที่ SGS ตั้งไว้ก่อนกรอก (ไม่ตรง = ไม่กรอกวิชานั้น)
+  return {subject_code:sub.subject_code,subject_name:sub.subject_name,level:GRADE_PREFIX+sub.grade_level,grade_level:sub.grade_level,room:sub.room,
+    before_max:scU.before.map(u=>u.max_score),after_max:scU.after.map(u=>u.max_score),mid_max:sub.score_mid,final_max:sub.score_final,
+    generated_at:new Date().toISOString(),students};
 }
 async function _sgsCopy(json,okMsg){
   try{
