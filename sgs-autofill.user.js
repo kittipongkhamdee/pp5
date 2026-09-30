@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autofill SGS จากระบบ ปพ.5
 // @namespace    pp5-sgs-autofill
-// @version      2.21.1
+// @version      2.21.2
 // @description  วางคะแนนและผลประเมิน (อ่าน คิดวิเคราะห์ เขียน / คุณลักษณะอันพึงประสงค์) ที่คัดลอกจากระบบ ปพ.5 ลงหน้ากรอกคะแนน SGS (sgs.bopp-obec.info) ให้อัตโนมัติ
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts1-Table.aspx*
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts2-Table.aspx*
@@ -49,7 +49,7 @@
   const FIELD_ORDER = Object.keys(CHECKBOX_MAP);
 
   // เลขรุ่นที่แสดงในกล่อง (ต้องตรงกับ @version ด้านบน)
-  const APP_VERSION = 'สคริปต์ Tampermonkey v2.21.1';
+  const APP_VERSION = 'สคริปต์ Tampermonkey v2.21.2';
   const DEVELOPER = 'นายกิตติพงษ์ คำดี';
 
   let running = false;
@@ -307,7 +307,9 @@
         if (!code) { log('  [debug] แถว ' + rowIdx + ' คอลัมน์ ' + key + ': เจอช่องกรอกแต่หาเลขประจำตัวไม่เจอ', true); continue; }
         const data = dataStudents[code];
         if (!data) { log('ไม่พบข้อมูลเลขประจำตัว ' + code + ' ในไฟล์ที่วาง — ข้าม', true); continue; }
-        const ok = await fillField(rowIdx, key, getValueForKey(data, key), code);
+        const v = getValueForKey(data, key);
+        if (v === '' || v === undefined || v === null || Number.isNaN(v)) continue; // ไม่มีคะแนน = ไม่แตะช่อง (ไม่เขียนทับค่าใน SGS และไม่ให้ SGS เด้งเตือนคะแนนว่าง)
+        const ok = await fillField(rowIdx, key, v, code);
         if (!ok) log('เลขประจำตัว ' + code + ' คอลัมน์ ' + key + ' ยังกรอกไม่ได้ (อาจยังไม่ปลดล็อก)', true);
       }
       if (notFoundCount === MAX_ROWS) log('  [debug] ไม่พบช่องกรอกคอลัมน์ ' + key + ' เลยสักแถว (id ที่เดาไว้อาจไม่ตรงกับหน้านี้) — ลองกดปุ่ม "สแกนโครงสร้างหน้านี้" ดู', true);
@@ -901,29 +903,34 @@
   // หน้ากลางภาค/หลังกลางภาค: ติ๊กเช็คบล็อกของคอลัมน์ที่มีข้อมูลให้เอง (หน้ารีโหลดแล้วติ๊กหายทุกครั้งที่เปลี่ยนวิชา)
   async function multiTickColumns(p) {
     const list = Object.values(p.students);
-    const has = (fn) => list.some((d) => { const v = fn(d); return v !== '' && v != null; });
-    const keys = [];
-    FIELD_ORDER.forEach((key) => {
-      if (key === 'Midterm') { if (has((d) => d.mid)) keys.push(key); return; }
-      if (key === 'Final') { if (has((d) => d.final)) keys.push(key); return; }
-      const idx = isPage1 ? parseInt(key.slice(1), 10) - 1 : parseInt(key.slice(1), 10) - 10;
-      if (has((d) => (isPage1 ? d.before : d.after || [])[idx])) keys.push(key);
-    });
-    // เทียบคะแนนเต็มที่ SGS ตั้งไว้ใต้ช่องติ๊กของแต่ละคอลัมน์ กับคะแนนเต็มจาก ปพ.5 — ไม่ตรงห้ามกรอก (กันคะแนนลงผิดคอลัมน์/ผิดสเกล)
-    const problems = [];
-    keys.forEach((key) => {
-      let want;
-      if (key === 'Midterm') want = p.mid_max;
-      else if (key === 'Final') want = p.final_max;
-      else { const idx = isPage1 ? parseInt(key.slice(1), 10) - 1 : parseInt(key.slice(1), 10) - 10; want = (isPage1 ? p.before_max : p.after_max || [])[idx]; }
+    const keyIdx = (key) => (isPage1 ? parseInt(key.slice(1), 10) - 1 : parseInt(key.slice(1), 10) - 10);
+    const isUnit = (key) => key !== 'Midterm' && key !== 'Final';
+    const valOf = (d, key) => (key === 'Midterm' ? d.mid : key === 'Final' ? d.final : (isPage1 ? d.before : d.after || [])[keyIdx(key)]);
+    const pmaxOf = (key) => (key === 'Midterm' ? p.mid_max : key === 'Final' ? p.final_max : (isPage1 ? p.before_max : p.after_max || [])[keyIdx(key)]);
+    // คะแนนเต็มที่ SGS ตั้งไว้ใต้ช่องติ๊กของคอลัมน์ (innerText ตามที่ตาเห็น: "10⏎15" = คอลัมน์ 10 คะแนนเต็ม 15) — อ่านไม่ได้ = NaN
+    const sgsMaxOf = (key) => {
       const cb = document.getElementById('ctl00_PageContent_' + CHECKBOX_MAP[key]);
       const cell = cb && cb.closest('td,th');
-      if (want === undefined || want === null || !cell) return; // ข้อมูลรุ่นเก่า/หาหัวคอลัมน์ไม่เจอ = เทียบไม่ได้
+      if (!cell) return NaN;
       const nums = (cell.innerText.match(/\d+(?:\.\d+)?/g) || []).map(Number);
-      const isUnit = key !== 'Midterm' && key !== 'Final';
-      if (isUnit ? nums.length < 2 : nums.length < 1) return;
-      const sgs = nums[nums.length - 1];
-      if (Math.abs(sgs - parseFloat(want)) > 1e-9) problems.push('คอลัมน์ ' + (isUnit ? key.slice(1) : key === 'Midterm' ? 'กลางภาค' : 'ปลายภาค') + ': SGS = ' + sgs + ' แต่ ปพ.5 = ' + parseFloat(want));
+      if (isUnit(key) ? nums.length < 2 : nums.length < 1) return NaN;
+      return nums[nums.length - 1];
+    };
+    const colName = (key) => (isUnit(key) ? 'คอลัมน์ ' + key.slice(1) : key === 'Midterm' ? 'กลางภาค' : 'ปลายภาค');
+    const keys = [];
+    const problems = [];
+    FIELD_ORDER.forEach((key) => {
+      const vals = list.map((d) => valOf(d, key)).filter((v) => v !== '' && v != null && !Number.isNaN(v));
+      if (!vals.length) return; // วิชานี้ไม่มีคะแนนคอลัมน์นี้ = ไม่ติ๊ก ไม่แตะ
+      const nonZero = vals.some((v) => parseFloat(v) !== 0);
+      const pm = pmaxOf(key);
+      const pmNum = pm === undefined || pm === null ? NaN : parseFloat(pm);
+      const sm = sgsMaxOf(key);
+      const unusedP = pmNum === 0, unusedS = sm === 0;
+      if (unusedP) return; // ปพ.5 คอลัมน์นี้คะแนนเต็ม 0 = ไม่ได้ใช้ (SGS จะใช้หรือไม่ก็ไม่กรอก)
+      if (unusedS) { if (nonZero || pmNum > 0) problems.push(colName(key) + ': SGS = 0 แต่ ปพ.5 = ' + (Number.isNaN(pmNum) ? 'มีคะแนน' : pmNum)); return; }
+      if (!Number.isNaN(pmNum) && !Number.isNaN(sm) && Math.abs(sm - pmNum) > 1e-9) { problems.push(colName(key) + ': SGS = ' + sm + ' แต่ ปพ.5 = ' + pmNum); return; }
+      keys.push(key);
     });
     if (problems.length) return problems;
     for (const key of keys) {
