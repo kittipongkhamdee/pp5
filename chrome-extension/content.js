@@ -1040,6 +1040,11 @@
       '<button id="pp5-sgs-stop" style="padding:13px 14px;background:#dc2626;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">หยุด</button>' +
       '<button id="pp5-sgs-clearsaved" title="ล้างข้อมูลที่จำไว้ (เปลี่ยนวิชา/เลิกใช้)" style="padding:13px 11px;background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;cursor:pointer;font-size:15px;line-height:1">🗑️</button>' +
       '</div>' +
+      '<div style="display:flex;align-items:center;gap:10px;font-size:11px;margin-bottom:6px;flex-wrap:wrap"><span style="color:#444">ความเร็วกรอก:</span>' +
+      '<label style="display:flex;align-items:center;gap:3px;cursor:pointer"><input type="radio" name="pp5-sgs-speed" value="fastest"> เร็วมาก</label>' +
+      '<label style="display:flex;align-items:center;gap:3px;cursor:pointer"><input type="radio" name="pp5-sgs-speed" value="fast"> เร็ว</label>' +
+      '<label style="display:flex;align-items:center;gap:3px;cursor:pointer"><input type="radio" name="pp5-sgs-speed" value="mid"> ปานกลาง</label>' +
+      '<label style="display:flex;align-items:center;gap:3px;cursor:pointer"><input type="radio" name="pp5-sgs-speed" value="slow"> ช้า</label></div>' +
       '<label style="display:flex;align-items:flex-start;gap:6px;font-size:11px;margin-bottom:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-autosave" style="margin-top:2px"> กดปุ่ม "บันทึก" ของ SGS</label>' +
       (isPage1 || isPage2
         ? '<label style="display:flex;align-items:flex-start;gap:6px;font-size:11px;margin-bottom:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-chain" style="margin-top:2px"> เมื่อบันทึกหน้านี้เสร็จ ไปหน้า "คุณลักษณะอันพึงประสงค์" แล้ว "อ่าน คิดวิเคราะห์ และเขียน" ต่อให้เลย</label>'
@@ -1047,11 +1052,6 @@
         ? '<label style="display:flex;align-items:flex-start;gap:6px;font-size:11px;margin-bottom:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-chain" style="margin-top:2px"> เมื่อบันทึกหน้านี้เสร็จ ไปหน้า "อ่าน คิดวิเคราะห์ และเขียน" ต่อให้เลย</label>'
         : '') +
       '<label style="display:flex;align-items:flex-start;gap:6px;font-size:11px;margin-bottom:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-skipcode" style="margin-top:2px"> ไม่ตรวจรหัสวิชา (ใช้เมื่อรหัสใน SGS ต่างจาก ปพ.5)</label>' +
-      '<div style="display:flex;align-items:center;gap:10px;font-size:11px;margin-bottom:6px;flex-wrap:wrap"><span style="color:#444">ความเร็วกรอก:</span>' +
-      '<label style="display:flex;align-items:center;gap:3px;cursor:pointer"><input type="radio" name="pp5-sgs-speed" value="fastest"> เร็วมาก</label>' +
-      '<label style="display:flex;align-items:center;gap:3px;cursor:pointer"><input type="radio" name="pp5-sgs-speed" value="fast"> เร็ว</label>' +
-      '<label style="display:flex;align-items:center;gap:3px;cursor:pointer"><input type="radio" name="pp5-sgs-speed" value="mid"> ปานกลาง</label>' +
-      '<label style="display:flex;align-items:center;gap:3px;cursor:pointer"><input type="radio" name="pp5-sgs-speed" value="slow"> ช้า</label></div>' +
       '<details style="margin-bottom:6px">' +
       '<summary style="cursor:pointer;font-size:11px;color:#666;padding:2px 0">⚙️ ตัวเลือกเพิ่มเติม</summary>' +
       '<button id="pp5-sgs-scan" style="width:100%;margin-top:6px;padding:5px;background:#fff3cd;border:1px solid #ffc107;border-radius:6px;cursor:pointer;font-size:11px">🔍 สแกนโครงสร้างหน้านี้ (ถ้ากรอกแล้วไม่ขึ้นเลย)</button>' +
