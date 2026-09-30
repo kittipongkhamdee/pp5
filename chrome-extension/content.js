@@ -42,7 +42,12 @@
 
   // หน่วงเวลาระหว่างช่อง: SGS บันทึกอัตโนมัติทุกครั้งที่ค่าเปลี่ยน ถ้ากรอกเร็วเกินคำขอบันทึกจะซ้อนกันจน SGS ฝั่งเซิร์ฟเวอร์ล้ม
   // (เคยเด้ง "Object reference not set to an instance of an object") จึงกรอกช้าๆ ให้ SGS ตามทัน
-  const FILL_DELAY = 500;
+  // ครูเลือกความเร็วได้ในกล่อง: เร็ว 0.15 (ค่าเริ่มต้น) / ปานกลาง 0.25 / ช้า 0.50 วินาทีต่อช่อง
+  const SPEEDS = { fast: 150, mid: 250, slow: 500 };
+  function fillDelay() {
+    const r = document.querySelector('input[name="pp5-sgs-speed"]:checked');
+    return SPEEDS[r ? r.value : 'fast'] || SPEEDS.fast;
+  }
   let running = false;
   let stopRequested = false;
 
@@ -105,7 +110,7 @@
     applyValue(el, value);
     const rightAfter = describeEl(el);
     filledFields.push({ id, code, key, value: String(value) });
-    await sleep(FILL_DELAY);
+    await sleep(fillDelay());
     log('  [debug] ' + code + ' ' + key + ' ตั้งค่า="' + value + '" → ' + rightAfter);
     return true;
   }
@@ -265,7 +270,7 @@
       if (!inp.id) inp.id = 'pp5-rm-' + (remarkInputSeq++);
       applyValue(inp, val);
       filledFields.push({ id: inp.id, code, key: 'Remark', value: String(val) });
-      await sleep(FILL_DELAY);
+      await sleep(fillDelay());
       n++;
     }
     log('กรอก Remark (ผลพิเศษ) แล้ว ' + n + ' ช่อง');
@@ -364,7 +369,7 @@
         if (!t.input.id) t.input.id = 'pp5-ev-' + (evalInputSeq++);
         applyValue(t.input, t.value);
         filledFields.push({ id: t.input.id, code, key: t.label, value: String(t.value) });
-        await sleep(FILL_DELAY);
+        await sleep(fillDelay());
       }
       students++;
     }
@@ -1041,6 +1046,10 @@
         : evalKind === 'char'
         ? '<label style="display:flex;align-items:flex-start;gap:6px;font-size:11px;margin-bottom:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-chain" style="margin-top:2px"> เมื่อบันทึกหน้านี้เสร็จ ไปหน้า "อ่าน คิดวิเคราะห์ และเขียน" ต่อให้เลย</label>'
         : '') +
+      '<div style="display:flex;align-items:center;gap:10px;font-size:11px;margin-bottom:6px;flex-wrap:wrap"><span style="color:#444">ความเร็วกรอก:</span>' +
+      '<label style="display:flex;align-items:center;gap:3px;cursor:pointer"><input type="radio" name="pp5-sgs-speed" value="fast"> เร็ว</label>' +
+      '<label style="display:flex;align-items:center;gap:3px;cursor:pointer"><input type="radio" name="pp5-sgs-speed" value="mid"> ปานกลาง</label>' +
+      '<label style="display:flex;align-items:center;gap:3px;cursor:pointer"><input type="radio" name="pp5-sgs-speed" value="slow"> ช้า</label></div>' +
       '<details style="margin-bottom:6px">' +
       '<summary style="cursor:pointer;font-size:11px;color:#666;padding:2px 0">⚙️ ตัวเลือกเพิ่มเติม</summary>' +
       '<label style="display:flex;align-items:center;gap:6px;font-size:11px;margin-top:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-skipcode"> ไม่ตรวจรหัสวิชา (ใช้เมื่อรหัสใน SGS ต่างจาก ปพ.5)</label>' +
@@ -1102,6 +1111,11 @@
     // การกดบันทึกยังต้องผ่านเงื่อนไขความปลอดภัยเดิมครบ: รหัสวิชาตรง + ตรวจซ้ำผ่าน + ไม่ได้กดหยุด + เจอปุ่มบันทึกปุ่มเดียว
     autoSaveCb.checked = savedState.autosave !== false;
     autoSaveCb.onchange = () => savePanelState(Object.assign(loadPanelState(), { autosave: autoSaveCb.checked }));
+    const speedSaved = SPEEDS[savedState.speed] ? savedState.speed : 'fast';
+    document.querySelectorAll('input[name="pp5-sgs-speed"]').forEach((r) => {
+      r.checked = r.value === speedSaved;
+      r.onchange = () => savePanelState(Object.assign(loadPanelState(), { speed: r.value }));
+    });
     const chainCb = document.getElementById('pp5-sgs-chain');
     if (chainCb) {
       // ค่าเริ่มต้นของช่องต่อเนื่อง: ติ๊กไว้ที่หน้าหลังกลางภาคและหน้า Q, ไม่ติ๊กที่หน้ากลางภาค — จำค่าแยกตามหน้า (ทำกลางภาคกับหลังกลางภาคคนละเวลา ไม่ต้องแก้ติ๊กไปมา)
