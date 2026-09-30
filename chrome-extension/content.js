@@ -405,9 +405,9 @@
 
   // ── จำข้อมูลที่วางไว้ข้ามหน้า SGS — ทุกหน้าอยู่โดเมนเดียวกัน (sgs.bopp-obec.info) จึงแชร์ localStorage กันได้
   // สลับหน้ากลางภาค/หลังกลางภาค/อ่าน คิดฯ/คุณลักษณะฯ แล้วข้อมูลใส่กล่องให้เองไม่ต้องวางใหม่
-  // หมดอายุใน 12 ชั่วโมง กันข้อมูลวิชาเก่าค้างข้ามวัน และมีปุ่มล้างข้อมูลที่จำไว้ใน "ตัวเลือกเพิ่มเติม"
+  // หมดอายุใน 1 ชั่วโมง กันข้อมูลวิชาเก่าค้างข้ามวัน และมีปุ่มล้างข้อมูลที่จำไว้ใน "ตัวเลือกเพิ่มเติม"
   const DATA_KEY = 'pp5SgsPayload';
-  const DATA_TTL_MS = 12 * 60 * 60 * 1000;
+  const DATA_TTL_MS = 60 * 60 * 1000;
   function saveData(raw) {
     try { localStorage.setItem(DATA_KEY, JSON.stringify({ raw, savedAt: Date.now() })); } catch (e) { /* จำไม่ได้ก็ไม่เป็นไร แค่ต้องวางใหม่ */ }
   }
@@ -785,7 +785,11 @@
   function loadMulti() {
     try { const c = JSON.parse(localStorage.getItem(MULTI_KEY)); return c && c.ts && Date.now() - c.ts < 300000 ? c : null; } catch (e) { return null; }
   }
+  function touchData() {
+    try { const s = JSON.parse(localStorage.getItem(DATA_KEY)); if (s && s.raw) { s.savedAt = Date.now(); localStorage.setItem(DATA_KEY, JSON.stringify(s)); } } catch (e) { /* ไม่เป็นไร */ }
+  }
   function saveMulti(c) {
+    touchData(); // วนกรอกหลายวิชานานเกินชั่วโมงได้ ต่ออายุข้อมูลทุกขั้น ไม่ให้หมดอายุกลางรอบ
     try { localStorage.setItem(MULTI_KEY, JSON.stringify(Object.assign({}, loadMulti() || {}, c, { ts: Date.now() }))); } catch (e) { /* ไม่เป็นไร */ }
   }
   function clearMulti() { try { localStorage.removeItem(MULTI_KEY); } catch (e) { /* ไม่เป็นไร */ } }
@@ -1029,6 +1033,7 @@
       '<div style="display:flex;gap:6px;margin-bottom:6px">' +
       '<button id="pp5-sgs-start" style="flex:1;padding:13px 8px;background:#4f46e5;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:15px;font-weight:700;box-shadow:0 2px 6px rgba(79,70,229,.45)">เริ่มกรอกคอลัมน์ที่ติ๊กไว้</button>' +
       '<button id="pp5-sgs-stop" style="padding:13px 14px;background:#dc2626;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">หยุด</button>' +
+      '<button id="pp5-sgs-clearsaved" title="ล้างข้อมูลที่จำไว้ (เปลี่ยนวิชา/เลิกใช้)" style="padding:13px 11px;background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;cursor:pointer;font-size:15px;line-height:1">🗑️</button>' +
       '</div>' +
       '<label style="display:flex;align-items:flex-start;gap:6px;font-size:11px;margin-bottom:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-autosave" style="margin-top:2px"> กดปุ่ม "บันทึก" ของ SGS</label>' +
       (isPage1 || isPage2
@@ -1039,7 +1044,6 @@
       '<details style="margin-bottom:6px">' +
       '<summary style="cursor:pointer;font-size:11px;color:#666;padding:2px 0">⚙️ ตัวเลือกเพิ่มเติม</summary>' +
       '<label style="display:flex;align-items:center;gap:6px;font-size:11px;margin-top:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-skipcode"> ไม่ตรวจรหัสวิชา (ใช้เมื่อรหัสใน SGS ต่างจาก ปพ.5)</label>' +
-      '<button id="pp5-sgs-clearsaved" style="width:100%;margin-top:6px;padding:5px;background:#fee2e2;border:1px solid #fca5a5;border-radius:6px;cursor:pointer;font-size:11px">🗑️ ล้างข้อมูลที่จำไว้ (เปลี่ยนวิชา/เลิกใช้)</button>' +
       '<button id="pp5-sgs-scan" style="width:100%;margin-top:6px;padding:5px;background:#fff3cd;border:1px solid #ffc107;border-radius:6px;cursor:pointer;font-size:11px">🔍 สแกนโครงสร้างหน้านี้ (ถ้ากรอกแล้วไม่ขึ้นเลย)</button>' +
       '<button id="pp5-sgs-copylog" style="width:100%;margin-top:6px;padding:5px;background:#eee;border:1px solid #ccc;border-radius:6px;cursor:pointer;font-size:11px">📄 คัดลอก log ทั้งหมด (ส่งให้ผู้พัฒนาช่วยตรวจ)</button>' +
       '</details>' +
