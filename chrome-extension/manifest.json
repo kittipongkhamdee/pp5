@@ -1,14 +1,16 @@
 {
   "manifest_version": 3,
   "name": "Autofill SGS จากระบบ ปพ.5",
-  "version": "1.9.4",
+  "version": "1.10.0",
   "description": "วางคะแนนและผลประเมินจากระบบ ปพ.5 ลงหน้าบันทึกผลของ SGS ให้อัตโนมัติ เฉพาะช่องที่ครูปลดล็อกเอง",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "permissions": ["activeTab"],
+  "permissions": [
+    "activeTab"
+  ],
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
@@ -23,9 +25,12 @@
         "https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts1-Table.aspx*",
         "https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts2-Table.aspx*",
         "https://sgs.bopp-obec.info/sgs/TblTranscriptsQ/Edit-TblTranscriptsQ-Table.aspx*",
-        "https://sgs.bopp-obec.info/sgs/TblTranscriptsL/Edit-TblTranscriptsL-Table.aspx*"
+        "https://sgs.bopp-obec.info/sgs/TblTranscriptsL/Edit-TblTranscriptsL-Table.aspx*",
+        "https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscriptsAct-Table.aspx*"
       ],
-      "js": ["content.js"],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_idle"
     }
   ]
