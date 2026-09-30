@@ -4167,12 +4167,12 @@ async function openOmrImportModal(){
         <div style="color:var(--info-txt);margin-bottom:6px">ชุดข้อสอบนี้คะแนนเต็ม <strong id="omr-scale-src">0</strong> แต่จะนำเข้าเป็นคะแนนเต็ม <strong id="omr-scale-dst">0</strong></div>
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:600"><input type="checkbox" id="omr-scale-on" onchange="_omrRecomputeOverflow()">แปลงคะแนนตามสัดส่วน</label>
         <div id="omr-scale-example" style="color:var(--muted);margin:4px 0 0 22px"></div>
-        <div id="omr-round-box" style="display:none;margin:8px 0 0 22px">
-          <div style="margin-bottom:4px">มี <strong id="omr-round-count">0</strong> คนที่แปลงแล้วได้คะแนนเป็นทศนิยม ต้องการ:</div>
+      </div>
+      <div id="omr-round-box" style="display:none;margin-top:10px;padding:10px 12px;background:var(--info-bg);border:1px solid var(--info-bdr);border-radius:10px;font-size:12px">
+          <div style="margin-bottom:4px">มี <strong id="omr-round-count">0</strong> คนที่<span id="omr-round-why">คะแนนเป็นทศนิยม</span> ต้องการ:</div>
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400"><input type="radio" name="omr-round" value="half" checked onchange="_omrRecomputeOverflow()">ปัดตามหลัก (.50 ขึ้นไปปัดขึ้น ต่ำกว่าปัดลง)</label>
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400"><input type="radio" name="omr-round" value="up" onchange="_omrRecomputeOverflow()">ปัดขึ้นทั้งหมด</label>
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400"><input type="radio" name="omr-round" value="down" onchange="_omrRecomputeOverflow()">ปัดลงทั้งหมด</label>
-        </div>
       </div>
       <div id="omr-preview" style="margin-top:12px;font-size:12.5px;color:var(--muted)">กำลังโหลดผลตรวจ...</div>
       <div id="omr-overflow-warn" style="display:none;margin-top:10px;padding:10px 12px;background:var(--err-bg);border:1px solid var(--err-bdr);border-radius:10px;font-size:12px">
@@ -4318,9 +4318,12 @@ function _omrScaleOn(){
   return !!($('omr-scale-on')?.checked && src>0 && mx>0 && src!==mx);
 }
 function _omrIsFrac(v){ return Math.abs(v-Math.round(v))>1e-9; }
+// ไม่ได้แปลงสัดส่วน (เช่น คะแนนเต็มชุดข้อสอบเท่ากับที่นำเข้า) แต่คะแนนดิบมีเศษ ก็ถามวิธีปัดเหมือนกัน
+function _omrPreRound(raw){
+  return _omrScaleOn()?raw*(parseFloat($('omr-mx').value)||0)/_omrCtx.quizMax:raw;
+}
 function _omrFinalScore(raw){
-  if(!_omrScaleOn()) return raw;
-  const v=raw*(parseFloat($('omr-mx').value)||0)/_omrCtx.quizMax;
+  const v=_omrPreRound(raw);
   if(!_omrIsFrac(v)) return Math.round(v);
   const mode=document.querySelector('input[name="omr-round"]:checked')?.value;
   if(mode==='half') return Math.floor(v+0.5+1e-9);
@@ -4329,20 +4332,29 @@ function _omrFinalScore(raw){
   return null;
 }
 function _omrUpdateScaleUI(){
-  const box=$('omr-scale-box'); if(!box) return;
   const src=_omrCtx.quizMax||0, mx=parseFloat($('omr-mx')?.value)||0;
-  if(!(src>0 && mx>0 && src!==mx)){ box.style.display='none'; return; }
-  box.style.display='block';
-  $('omr-scale-src').textContent=src; $('omr-scale-dst').textContent=mx;
   const on=_omrScaleOn();
   const byStudent=_omrCtx.scoreMap||{};
   const withScore=scStus.filter(s=>byStudent[s.id]);
-  const fmt=v=>String(Math.round(v*100)/100);
-  const exEl=$('omr-scale-example');
-  if(exEl) exEl.textContent='เช่น ได้ '+fmt(src)+' → '+fmt(mx)+', ได้ '+fmt(src*0.9)+' → '+fmt(mx*0.9)+(on?'':' (ถ้าไม่ติ๊ก จะนำเข้าคะแนนดิบตามเดิม)');
-  const fracCount=on?withScore.filter(s=>_omrIsFrac((parseFloat(byStudent[s.id].score)||0)*mx/src)).length:0;
+  const box=$('omr-scale-box');
+  if(box){
+    if(!(src>0 && mx>0 && src!==mx)) box.style.display='none';
+    else{
+      box.style.display='block';
+      $('omr-scale-src').textContent=src; $('omr-scale-dst').textContent=mx;
+      const fmt=v=>String(Math.round(v*100)/100);
+      const exEl=$('omr-scale-example');
+      if(exEl) exEl.textContent='เช่น ได้ '+fmt(src)+' → '+fmt(mx)+', ได้ '+fmt(src*0.9)+' → '+fmt(mx*0.9)+(on?'':' (ถ้าไม่ติ๊ก จะนำเข้าคะแนนดิบตามเดิม)');
+    }
+  }
+  // กล่องเลือกวิธีปัด: ขึ้นเมื่อมีคนที่คะแนน (หลังแปลงสัดส่วนถ้าติ๊ก) เป็นทศนิยม — ไม่ผูกกับการติ๊กแปลงสัดส่วน
+  const fracCount=withScore.filter(s=>_omrIsFrac(_omrPreRound(parseFloat(byStudent[s.id].score)||0))).length;
   const roundBox=$('omr-round-box');
-  if(roundBox){ roundBox.style.display=fracCount?'block':'none'; const c=$('omr-round-count'); if(c) c.textContent=fracCount; }
+  if(roundBox){
+    roundBox.style.display=fracCount?'block':'none';
+    const c=$('omr-round-count'); if(c) c.textContent=fracCount;
+    const w=$('omr-round-why'); if(w) w.textContent=on?'แปลงแล้วได้คะแนนเป็นทศนิยม':'คะแนนเป็นทศนิยม';
+  }
 }
 function _omrRecomputeOverflow(){
   _omrUpdateScaleUI();
@@ -4365,8 +4377,8 @@ async function importOmrScores(){
   const byStudent=_omrCtx.scoreMap||{};
   const scaled=_omrScaleOn();
   const scaleNote=scaled?' (แปลงสัดส่วน '+_omrCtx.quizMax+' → '+mx+')':'';
-  if(scaled && scStus.some(s=>byStudent[s.id] && _omrFinalScore(parseFloat(byStudent[s.id].score)||0)===null)){
-    toast('มีคะแนนที่แปลงแล้วเป็นทศนิยม — กรุณาเลือกวิธีปัดคะแนนก่อน','er'); return;
+  if(scStus.some(s=>byStudent[s.id] && _omrFinalScore(parseFloat(byStudent[s.id].score)||0)===null)){
+    toast('มีคะแนนที่เป็นทศนิยม — กรุณาเลือกวิธีปัดคะแนนก่อน','er'); return;
   }
 
   // คะแนนสอบกลางภาค/ปลายภาค — แค่เติมค่าลงช่องกรอกในแท็บ "คะแนนสอบ" เหมือนฟีเจอร์ถ่ายรูปกรอกคะแนน
