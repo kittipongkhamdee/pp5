@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autofill SGS จากระบบ ปพ.5
 // @namespace    pp5-sgs-autofill
-// @version      2.20.0
+// @version      2.20.1
 // @description  วางคะแนนและผลประเมิน (อ่าน คิดวิเคราะห์ เขียน / คุณลักษณะอันพึงประสงค์) ที่คัดลอกจากระบบ ปพ.5 ลงหน้ากรอกคะแนน SGS (sgs.bopp-obec.info) ให้อัตโนมัติ
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts1-Table.aspx*
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts2-Table.aspx*
@@ -49,7 +49,7 @@
   const FIELD_ORDER = Object.keys(CHECKBOX_MAP);
 
   // เลขรุ่นที่แสดงในกล่อง (ต้องตรงกับ @version ด้านบน)
-  const APP_VERSION = 'สคริปต์ Tampermonkey v2.20.0';
+  const APP_VERSION = 'สคริปต์ Tampermonkey v2.20.1';
   const DEVELOPER = 'นายกิตติพงษ์ คำดี';
 
   let running = false;
@@ -593,12 +593,12 @@
     document.querySelectorAll('td').forEach((td) => {
       if (td.closest('#pp5-sgs-panel')) return;
       const t = td.textContent.trim();
-      if (t.length <= 80 && /^[A-Za-zก-ฮ]{1,3}\s?\d{4,6}(\s|$)/.test(t)) add(t);
+      if (t.length <= 80 && /^[A-Za-zก-ฮ]{1,3}\s?\d{5,6}(\s|$)/.test(t)) add(t);
     });
     return codes;
   }
   // คืน true = กรอกต่อได้, false = ห้ามกรอก (รหัสวิชาไม่ตรง) — infoOnly = แค่แจ้งใน log ไม่บล็อก
-  function checkSubject(payload, infoOnly) {
+  function checkSubject(payload, infoOnly, noPopup) {
     const want = normCode(payload && payload.subject_code);
     if (!want) {
       if (!infoOnly) log('ข้อมูลที่วางไม่มีรหัสวิชา (คัดลอกจาก ปพ.5 รุ่นเก่า) — ข้ามการตรวจรหัสวิชา ตรวจวิชาเองก่อนกรอก', true);
@@ -613,7 +613,7 @@
     }
     const skip = document.getElementById('pp5-sgs-skipcode');
     const skipped = !!(skip && skip.checked);
-    if (!skipped) {
+    if (!skipped && !noPopup) {
       showModal(false, 'รหัสวิชาไม่ตรงกัน',
         'ข้อมูลที่วางเป็นของวิชา <b>' + label.replace(/[<>&]/g, '') + '</b><br>แต่หน้า SGS นี้เป็นวิชา <b>' + Array.from(found).join(', ').replace(/[<>&]/g, '') + '</b><br>' +
         (infoOnly ? 'ถ้าจะกรอกวิชานี้ ให้กดวางข้อมูลของวิชานี้ใหม่จากระบบ ปพ.5' : 'ยังไม่ได้กรอกอะไร — เลือกวิชาใน SGS ให้ตรง หรือวางข้อมูลของวิชานี้ใหม่'));
@@ -913,7 +913,8 @@
     if (saved) {
       document.getElementById('pp5-sgs-paste').value = saved.raw;
       log('ใส่ข้อมูลที่วางไว้ก่อนหน้าให้แล้ว — วิชา ' + (describePayload(saved.raw) || '(ไม่ระบุ)') + ' (จำไว้เมื่อ ' + new Date(saved.savedAt).toLocaleTimeString('th-TH') + ') ตรวจให้ตรงกับวิชาที่กำลังกรอก ถ้าไม่ตรงให้กดวางใหม่');
-      try { checkSubject(JSON.parse(saved.raw), true); } catch (e) { /* ข้อมูลเสีย ไม่ต้องเช็ค */ }
+      // กำลังต่อเนื่องข้ามหน้า: ส่วนขยายกำลังจะเลือกรายวิชา/กลุ่มให้เอง จึงยังไม่เตือนป๊อปอัป (ถ้าเลือกแล้วยังไม่ตรงตอนกดเริ่มกรอก ค่อยเตือน)
+      try { checkSubject(JSON.parse(saved.raw), true, !!loadChain()); } catch (e) { /* ข้อมูลเสีย ไม่ต้องเช็ค */ }
       const chain = loadChain();
       if (chain && evalKind === 'char' && chain.step === 'goL') afterSaveOnQ();
       else if (chain && evalKind === 'read' && chain.step === 'onL') advanceChainOnRead(chain);
