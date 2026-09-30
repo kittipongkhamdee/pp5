@@ -662,7 +662,7 @@
   // ── ป๊อปอัปแจ้งผลเมื่อบันทึกหน้าสุดท้ายเสร็จ (หน้ารีโหลดหลังกดบันทึก จึงจดธงไว้ใน localStorage แล้วแสดงในหน้าใหม่) ──
   const DONE_KEY = 'pp5SgsDone';
   // ป๊อปอัปกลางจอ (ไม่ใช่ alert เพราะหน้ารีโหลดได้ และไม่บล็อกเบราว์เซอร์) — ใช้ทั้งแจ้งบันทึกเสร็จและแจ้งรหัสวิชาไม่ตรง
-  function showModal(ok, title, detail) {
+  function showModal(ok, title, detail, extra) {
     const old = document.getElementById('pp5-sgs-done'); if (old) old.remove();
     const ov = document.createElement('div');
     ov.id = 'pp5-sgs-done';
@@ -673,14 +673,26 @@
       '<div style="font-size:20px;font-weight:700;color:' + color + ';margin:10px 0 4px">' + title + '</div>' +
       (detail ? '<div style="font-size:13px;color:#475569;margin-bottom:6px;line-height:1.5">' + detail + '</div>' : '') +
       '<div style="height:12px"></div>' +
-      '<button id="pp5-sgs-done-ok" style="padding:9px 28px;background:' + color + ';color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">ตกลง</button></div>';
+      '<div style="display:flex;gap:8px;justify-content:center">' +
+      '<button id="pp5-sgs-done-ok" style="padding:9px 28px;background:' + color + ';color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">ตกลง</button>' +
+      (extra ? '<button id="pp5-sgs-done-extra" style="padding:9px 20px;background:#4f46e5;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">' + extra.label + '</button>' : '') +
+      '</div></div>';
     document.body.appendChild(ov);
     const close = () => ov.remove();
     document.getElementById('pp5-sgs-done-ok').onclick = close;
+    if (extra) document.getElementById('pp5-sgs-done-extra').onclick = () => { close(); extra.onClick(); };
     ov.onclick = (e) => { if (e.target === ov) close(); };
   }
+  // หน้ากลางภาค/หลังกลางภาคทำเสร็จ → ปุ่ม "บันทึกกิจกรรม" พาไปหน้ากิจกรรมแล้วให้กล่องกิจกรรมทำต่ออัตโนมัติ
+  const ACT_AUTO_KEY = 'pp5SgsActAuto';
+  function goActivity() {
+    try { localStorage.setItem(ACT_AUTO_KEY, JSON.stringify({ ts: Date.now() })); } catch (e) { /* ไม่เป็นไร */ }
+    const ext = (location.pathname.match(/(\.\w+)$/) || ['', '.aspx'])[1];
+    location.href = location.href.split('/sgs/')[0] + '/sgs/TblTranscripts/Edit-TblTranscriptsAct-Table' + ext;
+  }
+  const actExtra = () => ((isPage1 || isPage2) ? { label: 'บันทึกกิจกรรม', onClick: goActivity } : null);
   function showDonePopup(ok) {
-    showModal(ok, ok ? 'บันทึกทั้งหมดเรียบร้อย' : 'บันทึกอาจไม่สำเร็จ', ok ? '' : 'ค่าในตารางไม่ตรงกับที่กรอก — ตรวจตัวเลขแล้วกดบันทึกเองอีกครั้ง');
+    showModal(ok, ok ? 'บันทึกทั้งหมดเรียบร้อย' : 'บันทึกอาจไม่สำเร็จ', ok ? '' : 'ค่าในตารางไม่ตรงกับที่กรอก — ตรวจตัวเลขแล้วกดบันทึกเองอีกครั้ง', ok ? actExtra() : null);
   }
   function showDoneIfPending() {
     let f = null;
@@ -829,7 +841,8 @@
     log((stopped ? 'หยุดกลางคัน: ' : 'จบการวนกรอก: ') + 'สำเร็จ ' + ok + ' วิชา' + (bad.length ? ', ต้องตรวจ ' + bad.length + ' วิชา' : ''), !!bad.length);
     bad.forEach((r) => log('  - ' + r.label + ': ' + r.note, true));
     showModal(!stopped && !bad.length, stopped ? 'หยุดกลางคัน' : (bad.length ? 'ทำเสร็จ แต่มีวิชาที่ต้องตรวจ' : 'บันทึกทั้งหมดเรียบร้อย'),
-      'สำเร็จ ' + ok + ' วิชา' + (bad.length ? ' · ต้องตรวจ ' + bad.length + ' วิชา<br><div style="text-align:left;margin-top:8px;font-size:12px">' + list + '</div>' : ''));
+      'สำเร็จ ' + ok + ' วิชา' + (bad.length ? ' · ต้องตรวจ ' + bad.length + ' วิชา<br><div style="text-align:left;margin-top:8px;font-size:12px">' + list + '</div>' : ''),
+      !stopped && !bad.length ? actExtra() : null);
   }
   function multiFindSubject(p) {
     const want = normCode(p.subject_code);
@@ -1241,14 +1254,26 @@
       return /ปกติ/.test(lab) && !/แก้ตัว/.test(lab);
     }) || null;
   }
+  // SGS ถาม confirm ("ต้องการ บันทึก รายการที่เลือก...") ตอนกดบันทึก — ตอบตกลงให้เองเฉพาะตอนส่วนขยายกำลังทำงานหน้ากิจกรรม
+  // content script อยู่ใน isolated world แก้ window.confirm ของหน้าไม่ได้ จึงฉีดสคริปต์เล็กๆ เข้าหน้า (อ่านธงจาก attribute ของ <html>)
+  function installAutoConfirm() {
+    try {
+      const s = document.createElement('script');
+      s.textContent = "(function(){if(window.__pp5ConfirmHook)return;window.__pp5ConfirmHook=1;var oc=window.confirm;window.confirm=function(m){try{if(document.documentElement.getAttribute('data-pp5-auto')==='1')return true;}catch(e){}return oc.apply(this,arguments);};})();";
+      (document.head || document.documentElement).appendChild(s);
+      s.remove();
+    } catch (e) { /* ไม่เป็นไร ถ้าฉีดไม่ได้ ครูกดตกลงเองได้ */ }
+  }
+  function setAutoConfirm(on) { try { document.documentElement.setAttribute('data-pp5-auto', on ? '1' : '0'); } catch (e) { /* ไม่เป็นไร */ } }
   function actCountPass() {
+    // นับเฉพาะช่อง "ปกติ" (ช่อง select แรกที่มีตัวเลือก ผ ในแต่ละแถว) — ช่อง "แก้ตัว" ไม่นับ
     let pass = 0, total = 0;
-    document.querySelectorAll('table select').forEach((s) => {
-      if (s.closest('#pp5-sgs-panel')) return;
-      const hasPass = Array.from(s.options).some((o) => o.text.trim() === 'ผ');
-      if (!hasPass) return;
+    document.querySelectorAll('tr').forEach((tr) => {
+      if (tr.closest('#pp5-sgs-panel') || tr.querySelector('tr')) return;
+      const sels = Array.from(tr.querySelectorAll('select')).filter((s) => Array.from(s.options).some((o) => o.text.trim() === 'ผ'));
+      if (!sels.length) return;
       total++;
-      const o = s.options[s.selectedIndex];
+      const o = sels[0].options[sels[0].selectedIndex];
       if (o && o.text.trim() === 'ผ') pass++;
     });
     return { pass, total };
@@ -1276,6 +1301,7 @@
   async function actRun() {
     if (actBusy) return;
     actBusy = true;
+    setAutoConfirm(true);
     try {
       for (let guard = 0; guard < 400; guard++) {
         const st = loadAct();
@@ -1313,6 +1339,9 @@
           continue;
         }
         if (st.phase === 'apply') {
+          // ตารางแสดงทีละ 10 แถว → ปรับ "รายการ / หน้า" ให้แสดงครบทุกคนก่อนกด "บันทึกผ่าน" (ไม่งั้นได้แค่หน้าแรก)
+          if (!(await ensureFullPage(0))) { actPush('bad', 'ปรับ "รายการ / หน้า" ให้แสดงนักเรียนครบไม่สำเร็จ'); continue; }
+          clearResume();
           const radio = actRadioNormal();
           if (radio && !radio.checked) { radio.click(); await sleep(400); }
           const btn = actClickable(/บันทึกผ่าน/);
@@ -1330,6 +1359,8 @@
         }
         if (st.phase === 'saved') {
           await sleep(800);
+          await ensureFullPage(0); // หลังบันทึกหน้าอาจกลับไปแสดงทีละ 10 แถว ขยายให้ครบก่อนนับผล
+          clearResume();
           const { pass, total } = actCountPass();
           if (total && pass === total) { log('✓ ' + st.curLabel + ': ผ่านครบ ' + pass + ' คน'); actPush('ok'); }
           else if (total) { log('✗ ' + st.curLabel + ': ผ่าน ' + pass + '/' + total + ' คน', true); actPush('bad', 'หลังบันทึกเป็น ผ แค่ ' + pass + ' จาก ' + total + ' คน'); }
@@ -1338,7 +1369,7 @@
         }
         return;
       }
-    } finally { actBusy = false; }
+    } finally { actBusy = false; if (!loadAct()) setAutoConfirm(false); }
   }
   function buildActUI() {
     const wrap = document.createElement('div');
@@ -1353,7 +1384,7 @@
       '<div id="pp5-sgs-log" style="max-height:170px;overflow:auto;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:6px;font-size:11px;line-height:1.5;margin-bottom:6px"></div>' +
       '<div id="pp5-sgs-credit" style="border-top:1px solid #e5e7eb;padding-top:6px;font-size:10px;color:#94a3b8;text-align:center">ผู้พัฒนา: ' + DEVELOPER + ' · ' + APP_VERSION + '</div>';
     document.body.appendChild(wrap);
-    document.getElementById('pp5-sgs-act-start').onclick = () => {
+    const startAct = () => {
       const subj = actSelectAfter(/^รายวิชา$/);
       const vals = actRealOptions(subj).map((o) => o.value);
       if (!subj || !vals.length) { log('ไม่พบรายวิชากิจกรรมในช่อง "รายวิชา" (เลือก ชั้น ด้านบนก่อน) ', true); return; }
@@ -1362,7 +1393,13 @@
       log('เริ่ม: พบกิจกรรม ' + vals.length + ' รายวิชา (ชั้นที่เลือกอยู่ด้านบน) — อย่าปิดแท็บ หน้าจะรีโหลดหลายรอบ กดหยุดได้ตลอด');
       actRun();
     };
-    document.getElementById('pp5-sgs-act-stop').onclick = () => { stopRequested = true; if (loadAct()) { clearAct(); log('หยุดแล้ว'); } };
+    document.getElementById('pp5-sgs-act-start').onclick = startAct;
+    document.getElementById('pp5-sgs-act-stop').onclick = () => { stopRequested = true; if (loadAct()) { clearAct(); log('หยุดแล้ว'); } setAutoConfirm(false); };
+    installAutoConfirm();
+    // มาจากปุ่ม "บันทึกกิจกรรม" ในป๊อปอัปหน้ากลางภาค/หลังกลางภาค → เริ่มทำอัตโนมัติ
+    let auto = null;
+    try { auto = JSON.parse(localStorage.getItem(ACT_AUTO_KEY)); localStorage.removeItem(ACT_AUTO_KEY); } catch (e) { /* ไม่เป็นไร */ }
+    if (auto && auto.ts && Date.now() - auto.ts < 120000 && !loadAct()) { log('มาจากปุ่ม "บันทึกกิจกรรม" — เริ่มให้อัตโนมัติ'); setTimeout(startAct, 1500); return; }
     if (loadAct()) { log('พบงานค้างจากรอบก่อน — ทำต่อให้'); setTimeout(actRun, 1200); }
   }
 
