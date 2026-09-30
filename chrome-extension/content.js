@@ -40,6 +40,9 @@
   const APP_VERSION = (() => { try { return 'ส่วนขยาย v' + chrome.runtime.getManifest().version; } catch (e) { return ''; } })();
   const DEVELOPER = 'นายกิตติพงษ์ คำดี';
 
+  // หน่วงเวลาระหว่างช่อง: SGS บันทึกอัตโนมัติทุกครั้งที่ค่าเปลี่ยน ถ้ากรอกเร็วเกินคำขอบันทึกจะซ้อนกันจน SGS ฝั่งเซิร์ฟเวอร์ล้ม
+  // (เคยเด้ง "Object reference not set to an instance of an object") จึงกรอกช้าๆ ให้ SGS ตามทัน
+  const FILL_DELAY = 500;
   let running = false;
   let stopRequested = false;
 
@@ -102,7 +105,7 @@
     applyValue(el, value);
     const rightAfter = describeEl(el);
     filledFields.push({ id, code, key, value: String(value) });
-    await sleep(150);
+    await sleep(FILL_DELAY);
     log('  [debug] ' + code + ' ' + key + ' ตั้งค่า="' + value + '" → ' + rightAfter);
     return true;
   }
@@ -262,7 +265,7 @@
       if (!inp.id) inp.id = 'pp5-rm-' + (remarkInputSeq++);
       applyValue(inp, val);
       filledFields.push({ id: inp.id, code, key: 'Remark', value: String(val) });
-      await sleep(60);
+      await sleep(FILL_DELAY);
       n++;
     }
     log('กรอก Remark (ผลพิเศษ) แล้ว ' + n + ' ช่อง');
@@ -361,7 +364,7 @@
         if (!t.input.id) t.input.id = 'pp5-ev-' + (evalInputSeq++);
         applyValue(t.input, t.value);
         filledFields.push({ id: t.input.id, code, key: t.label, value: String(t.value) });
-        await sleep(60);
+        await sleep(FILL_DELAY);
       }
       students++;
     }
