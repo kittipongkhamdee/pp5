@@ -1219,11 +1219,18 @@
     return found;
   }
   function actRealOptions(sel) { return sel ? Array.from(sel.options).filter((o) => o.value !== '' && !/\*\*/.test(o.text)) : []; }
+  // ปุ่มของ SGS เป็น <table class="buttonPadding" onclick="clickLinkButtonText(this, event)"> ที่มีข้อความอยู่ในเซลล์ (ไม่ใช่ <a>/<button>)
+  // จึงหาจากตารางปุ่มก่อน แล้วค่อยหาแบบทั่วไป (ปุ่ม/ลิงก์/เซลล์ที่มีข้อความตรง) — คลิกที่ตัวข้อความข้างใน ให้คลิกไหลขึ้นไปถึง onclick ของตาราง
   function actClickable(re) {
-    const cands = Array.from(document.querySelectorAll('a,button,input[type=submit],input[type=button],input[type=image],img,span,div'));
+    const norm = (s) => String(s || '').replace(/\s+/g, '');
+    for (const tb of Array.from(document.querySelectorAll('table.buttonPadding'))) {
+      if (tb.closest('#pp5-sgs-panel')) continue;
+      if (re.test(norm(tb.innerText || tb.textContent))) return tb.querySelector('a,input,button') || tb.querySelector('td') || tb;
+    }
+    const cands = Array.from(document.querySelectorAll('a,button,input[type=submit],input[type=button],input[type=image],img,span,div,td'));
     for (const el of cands) {
       if (el.closest('#pp5-sgs-panel')) continue;
-      const t = (el.value || el.title || el.alt || (el.children.length ? '' : el.textContent) || '').replace(/\s+/g, '');
+      const t = norm(el.value || el.title || el.alt || (el.children.length ? '' : el.textContent));
       if (re.test(t) && t.length <= 20) return el.closest('a,button,input') || el;
     }
     return null;

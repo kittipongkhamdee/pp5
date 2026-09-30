@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autofill SGS จากระบบ ปพ.5
 // @namespace    pp5-sgs-autofill
-// @version      2.23.0
+// @version      2.23.1
 // @description  วางคะแนนและผลประเมิน (อ่าน คิดวิเคราะห์ เขียน / คุณลักษณะอันพึงประสงค์) ที่คัดลอกจากระบบ ปพ.5 ลงหน้ากรอกคะแนน SGS (sgs.bopp-obec.info) ให้อัตโนมัติ
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts1-Table.aspx*
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts2-Table.aspx*
@@ -52,7 +52,7 @@
   const FIELD_ORDER = Object.keys(CHECKBOX_MAP);
 
   // เลขรุ่นที่แสดงในกล่อง (ต้องตรงกับ @version ด้านบน)
-  const APP_VERSION = 'สคริปต์ Tampermonkey v2.23.0';
+  const APP_VERSION = 'สคริปต์ Tampermonkey v2.23.1';
   const DEVELOPER = 'นายกิตติพงษ์ คำดี';
 
   // หน่วงเวลาระหว่างช่อง: SGS บันทึกอัตโนมัติทุกครั้งที่ค่าเปลี่ยน ถ้ากรอกเร็วเกินคำขอบันทึกจะซ้อนกันจน SGS ฝั่งเซิร์ฟเวอร์ล้ม
@@ -1232,11 +1232,18 @@
     return found;
   }
   function actRealOptions(sel) { return sel ? Array.from(sel.options).filter((o) => o.value !== '' && !/\*\*/.test(o.text)) : []; }
+  // ปุ่มของ SGS เป็น <table class="buttonPadding" onclick="clickLinkButtonText(this, event)"> ที่มีข้อความอยู่ในเซลล์ (ไม่ใช่ <a>/<button>)
+  // จึงหาจากตารางปุ่มก่อน แล้วค่อยหาแบบทั่วไป (ปุ่ม/ลิงก์/เซลล์ที่มีข้อความตรง) — คลิกที่ตัวข้อความข้างใน ให้คลิกไหลขึ้นไปถึง onclick ของตาราง
   function actClickable(re) {
-    const cands = Array.from(document.querySelectorAll('a,button,input[type=submit],input[type=button],input[type=image],img,span,div'));
+    const norm = (s) => String(s || '').replace(/\s+/g, '');
+    for (const tb of Array.from(document.querySelectorAll('table.buttonPadding'))) {
+      if (tb.closest('#pp5-sgs-panel')) continue;
+      if (re.test(norm(tb.innerText || tb.textContent))) return tb.querySelector('a,input,button') || tb.querySelector('td') || tb;
+    }
+    const cands = Array.from(document.querySelectorAll('a,button,input[type=submit],input[type=button],input[type=image],img,span,div,td'));
     for (const el of cands) {
       if (el.closest('#pp5-sgs-panel')) continue;
-      const t = (el.value || el.title || el.alt || (el.children.length ? '' : el.textContent) || '').replace(/\s+/g, '');
+      const t = norm(el.value || el.title || el.alt || (el.children.length ? '' : el.textContent));
       if (re.test(t) && t.length <= 20) return el.closest('a,button,input') || el;
     }
     return null;
