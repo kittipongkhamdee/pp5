@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autofill SGS จากระบบ ปพ.5
 // @namespace    pp5-sgs-autofill
-// @version      2.24.0
+// @version      2.25.0
 // @description  วางคะแนนและผลประเมิน (อ่าน คิดวิเคราะห์ เขียน / คุณลักษณะอันพึงประสงค์) ที่คัดลอกจากระบบ ปพ.5 ลงหน้ากรอกคะแนน SGS (sgs.bopp-obec.info) ให้อัตโนมัติ
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts1-Table.aspx*
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts2-Table.aspx*
@@ -52,7 +52,7 @@
   const FIELD_ORDER = Object.keys(CHECKBOX_MAP);
 
   // เลขรุ่นที่แสดงในกล่อง (ต้องตรงกับ @version ด้านบน)
-  const APP_VERSION = 'สคริปต์ Tampermonkey v2.24.0';
+  const APP_VERSION = 'สคริปต์ Tampermonkey v2.25.0';
   const DEVELOPER = 'นายกิตติพงษ์ คำดี';
 
   // หน่วงเวลาระหว่างช่อง: SGS บันทึกอัตโนมัติทุกครั้งที่ค่าเปลี่ยน ถ้ากรอกเร็วเกินคำขอบันทึกจะซ้อนกันจน SGS ฝั่งเซิร์ฟเวอร์ล้ม
@@ -185,7 +185,7 @@
     }
     log('กดปุ่มบันทึกของ SGS แล้ว — รอหน้ารีโหลด แล้วตรวจว่าค่าถูกบันทึกจริง (ข้อมูลที่วางยังจำไว้ให้ ไม่ต้องวางใหม่)');
     // ไม่มีหน้าถัดไปในสาย = หน้านี้คือหน้าสุดท้าย: จดไว้ให้หน้าที่รีโหลดกลับมาขึ้นป๊อปอัปแจ้ง "บันทึกทั้งหมดเรียบร้อย"
-    if (!willChain) { try { localStorage.setItem(DONE_KEY, JSON.stringify({ ts: Date.now() })); } catch (e) { /* ไม่เป็นไร */ } }
+    if (!willChain) { try { localStorage.setItem(DONE_KEY, JSON.stringify({ ts: Date.now(), act: getActAfter() })); } catch (e) { /* ไม่เป็นไร */ } }
     btn.click();
     if (!willChain) { await sleep(6000); showDoneIfPending(); } // ถ้าหน้ารีโหลดเต็มหน้า สคริปต์นี้ตายก่อน หน้าใหม่จะเรียกเอง
     if (willChain) { await sleep(6000); if (isMid) afterSaveOnMid(); else afterSaveOnQ(); } // ถ้าหน้ารีโหลดเต็มหน้า สคริปต์นี้ตายก่อน หน้าใหม่จะเรียกขั้นต่อไปเอง
@@ -698,6 +698,11 @@
   }
   // หน้ากลางภาค/หลังกลางภาคทำเสร็จ → ปุ่ม "บันทึกกิจกรรม" พาไปหน้ากิจกรรมแล้วให้กล่องกิจกรรมทำต่ออัตโนมัติ
   const ACT_AUTO_KEY = 'pp5SgsActAuto';
+  // ช่องติ๊ก "แล้วบันทึกกิจกรรมต่อให้เลย": จดไว้ตอนกดเริ่ม (เฉพาะการกดของครูเอง ไม่นับการกดอัตโนมัติของสายต่อเนื่อง) แล้วหน้าสุดท้ายของสายอ่านธงนี้
+  const ACT_AFTER_KEY = 'pp5SgsActAfter';
+  function setActAfter(on) { try { if (on) localStorage.setItem(ACT_AFTER_KEY, JSON.stringify({ ts: Date.now() })); else localStorage.removeItem(ACT_AFTER_KEY); } catch (e) { /* ไม่เป็นไร */ } }
+  function clearActAfter() { setActAfter(false); }
+  function getActAfter() { try { const a = JSON.parse(localStorage.getItem(ACT_AFTER_KEY)); return !!(a && a.ts && Date.now() - a.ts < 1800000); } catch (e) { return false; } }
   function goActivity() {
     try { localStorage.setItem(ACT_AUTO_KEY, JSON.stringify({ ts: Date.now() })); } catch (e) { /* ไม่เป็นไร */ }
     const ext = (location.pathname.match(/(\.\w+)$/) || ['', '.aspx'])[1];
@@ -712,6 +717,8 @@
     try { f = JSON.parse(localStorage.getItem(DONE_KEY)); localStorage.removeItem(DONE_KEY); } catch (e) { /* ไม่เป็นไร */ }
     if (!f || !f.ts || Date.now() - f.ts > 60000) return;
     const v = isEval ? quickVerifySaved() : quickVerifyMid();
+    if (f.act && v !== false) { clearActAfter(); log('บันทึกเรียบร้อย — ไปหน้ากิจกรรมต่อให้...'); setTimeout(goActivity, 800); return; }
+    if (v === false) clearActAfter();
     showDonePopup(v !== false);
   }
   // หลังบันทึกหน้า Q/L: ถ้าตารางยังมีแถว เช็คว่าค่าข้อ 1 ตรงกับที่กรอก (true/false) ถ้าตารางว่างเช็คไม่ได้ (null)
@@ -818,6 +825,7 @@
     try { const c = JSON.parse(localStorage.getItem(MULTI_KEY)); return c && c.ts && Date.now() - c.ts < 300000 ? c : null; } catch (e) { return null; }
   }
   function touchData() {
+    if (getActAfter()) setActAfter(true);
     try { const s = JSON.parse(localStorage.getItem(DATA_KEY)); if (s && s.raw) { s.savedAt = Date.now(); localStorage.setItem(DATA_KEY, JSON.stringify(s)); } } catch (e) { /* ไม่เป็นไร */ }
   }
   function saveMulti(c) {
@@ -849,6 +857,8 @@
     const res = st.results || [];
     const ok = res.filter((r) => r.status === 'ok').length;
     const bad = res.filter((r) => r.status !== 'ok');
+    if (!stopped && !bad.length && getActAfter()) { clearActAfter(); log('จบการวนกรอก: สำเร็จ ' + ok + ' วิชา — ไปหน้ากิจกรรมต่อให้...'); setTimeout(goActivity, 800); return; }
+    clearActAfter();
     const esc = (t) => String(t).replace(/[<>&]/g, '');
     const list = bad.slice(0, 8).map((r) => '• ' + esc(r.label) + ' — ' + esc(r.note)).join('<br>') + (bad.length > 8 ? '<br>และอีก ' + (bad.length - 8) + ' วิชา' : '');
     log((stopped ? 'หยุดกลางคัน: ' : 'จบการวนกรอก: ') + 'สำเร็จ ' + ok + ' วิชา' + (bad.length ? ', ต้องตรวจ ' + bad.length + ' วิชา' : ''), !!bad.length);
@@ -1086,6 +1096,7 @@
         : evalKind === 'char'
         ? '<label style="display:flex;align-items:flex-start;gap:6px;font-size:11px;margin-bottom:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-chain" style="margin-top:2px"> เมื่อบันทึกหน้านี้เสร็จ ไปหน้า "อ่าน คิดวิเคราะห์ และเขียน" ต่อให้เลย</label>'
         : '') +
+      '<label style="display:flex;align-items:flex-start;gap:6px;font-size:11px;margin-bottom:6px;cursor:pointer" title="ตั้ง ผ ให้ทุกกิจกรรมของชั้นที่เลือกอยู่ด้านบน"><input type="checkbox" id="pp5-sgs-actchain" style="margin-top:2px"> แล้วบันทึกกิจกรรมต่อให้เลย</label>' +
       '<label style="display:flex;align-items:flex-start;gap:6px;font-size:11px;margin-bottom:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-skipcode" style="margin-top:2px"> ไม่ตรวจรหัสวิชา (ใช้เมื่อรหัสใน SGS ต่างจาก ปพ.5)</label>' +
       '<details style="margin-bottom:6px">' +
       '<summary style="cursor:pointer;font-size:11px;color:#666;padding:2px 0">⚙️ ตัวเลือกเพิ่มเติม</summary>' +
@@ -1152,6 +1163,12 @@
       r.checked = r.value === speedSaved;
       r.onchange = () => savePanelState(Object.assign(loadPanelState(), { speed: r.value }));
     });
+    const actCb = document.getElementById('pp5-sgs-actchain');
+    if (actCb) {
+      const actKey = 'act_' + pageKindKey();
+      actCb.checked = savedState[actKey] === true; // ตั้งต้นไม่ติ๊ก: กิจกรรมตั้ง ผ ให้ทุกคนทั้งชั้น ให้ครูเลือกเอง
+      actCb.onchange = () => savePanelState(Object.assign(loadPanelState(), { [actKey]: actCb.checked }));
+    }
     const chainCb = document.getElementById('pp5-sgs-chain');
     if (chainCb) {
       // ค่าเริ่มต้นของช่องต่อเนื่อง: ติ๊กไว้ที่หน้าหลังกลางภาคและหน้า Q, ไม่ติ๊กที่หน้ากลางภาค — จำค่าแยกตามหน้า (ทำกลางภาคกับหลังกลางภาคคนละเวลา ไม่ต้องแก้ติ๊กไปมา)
@@ -1177,6 +1194,7 @@
       }
     };
     document.getElementById('pp5-sgs-start').onclick = (ev) => {
+      if (!(ev && ev.isTrusted === false)) { const ac = document.getElementById('pp5-sgs-actchain'); setActAfter(!!(ac && ac.checked)); }
       const raw = document.getElementById('pp5-sgs-paste').value.trim();
       if (!raw) { log('กรุณาวาง JSON ก่อน', true); return; }
       let payload;
@@ -1192,7 +1210,7 @@
         if (isEval) runEvalFill(payload.students); else runFill(payload.students);
       });
     };
-    document.getElementById('pp5-sgs-stop').onclick = () => { stopRequested = true; if (loadMulti()) { clearMulti(); log('หยุดแล้ว — ยกเลิกการวนกรอกหลายวิชา'); } };
+    document.getElementById('pp5-sgs-stop').onclick = () => { stopRequested = true; clearActAfter(); if (loadMulti()) { clearMulti(); log('หยุดแล้ว — ยกเลิกการวนกรอกหลายวิชา'); } };
     document.getElementById('pp5-sgs-clearsaved').onclick = () => {
       try { localStorage.removeItem(DATA_KEY); } catch (e) { /* ignore */ }
       document.getElementById('pp5-sgs-paste').value = '';
@@ -1408,6 +1426,7 @@
     };
     document.getElementById('pp5-sgs-act-start').onclick = startAct;
     document.getElementById('pp5-sgs-act-stop').onclick = () => { stopRequested = true; if (loadAct()) { clearAct(); log('หยุดแล้ว'); } setAutoConfirm(false); };
+    clearActAfter();
     installAutoConfirm();
     // มาจากปุ่ม "บันทึกกิจกรรม" ในป๊อปอัปหน้ากลางภาค/หลังกลางภาค → เริ่มทำอัตโนมัติ
     let auto = null;
