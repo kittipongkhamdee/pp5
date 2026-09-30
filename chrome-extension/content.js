@@ -42,8 +42,8 @@
 
   // หน่วงเวลาระหว่างช่อง: SGS บันทึกอัตโนมัติทุกครั้งที่ค่าเปลี่ยน ถ้ากรอกเร็วเกินคำขอบันทึกจะซ้อนกันจน SGS ฝั่งเซิร์ฟเวอร์ล้ม
   // (เคยเด้ง "Object reference not set to an instance of an object") จึงกรอกช้าๆ ให้ SGS ตามทัน
-  // ครูเลือกความเร็วได้ในกล่อง: เร็ว 0.15 (ค่าเริ่มต้น) / ปานกลาง 0.25 / ช้า 0.50 วินาทีต่อช่อง
-  const SPEEDS = { fast: 150, mid: 250, slow: 500 };
+  // ครูเลือกความเร็วได้ในกล่อง: เร็วมาก 0.06 / เร็ว 0.15 (ค่าเริ่มต้น) / ปานกลาง 0.25 / ช้า 0.50 วินาทีต่อช่อง
+  const SPEEDS = { fastest: 60, fast: 150, mid: 250, slow: 500 };
   function fillDelay() {
     const r = document.querySelector('input[name="pp5-sgs-speed"]:checked');
     return SPEEDS[r ? r.value : 'fast'] || SPEEDS.fast;
@@ -1047,6 +1047,7 @@
         ? '<label style="display:flex;align-items:flex-start;gap:6px;font-size:11px;margin-bottom:6px;cursor:pointer"><input type="checkbox" id="pp5-sgs-chain" style="margin-top:2px"> เมื่อบันทึกหน้านี้เสร็จ ไปหน้า "อ่าน คิดวิเคราะห์ และเขียน" ต่อให้เลย</label>'
         : '') +
       '<div style="display:flex;align-items:center;gap:10px;font-size:11px;margin-bottom:6px;flex-wrap:wrap"><span style="color:#444">ความเร็วกรอก:</span>' +
+      '<label style="display:flex;align-items:center;gap:3px;cursor:pointer"><input type="radio" name="pp5-sgs-speed" value="fastest"> เร็วมาก</label>' +
       '<label style="display:flex;align-items:center;gap:3px;cursor:pointer"><input type="radio" name="pp5-sgs-speed" value="fast"> เร็ว</label>' +
       '<label style="display:flex;align-items:center;gap:3px;cursor:pointer"><input type="radio" name="pp5-sgs-speed" value="mid"> ปานกลาง</label>' +
       '<label style="display:flex;align-items:center;gap:3px;cursor:pointer"><input type="radio" name="pp5-sgs-speed" value="slow"> ช้า</label></div>' +
