@@ -943,13 +943,20 @@
       keys.push(key);
     });
     if (problems.length) return problems;
+    // เอาติ๊กที่ค้างจากวิชาก่อนหน้าออก (SGS อาจจำติ๊กไว้ข้ามวิชา) — เหลือติ๊กเฉพาะคอลัมน์ที่วิชานี้มีคะแนน
+    for (const key of FIELD_ORDER) {
+      if (keys.indexOf(key) >= 0) continue;
+      const cb = document.getElementById('ctl00_PageContent_' + CHECKBOX_MAP[key]);
+      if (cb && cb.checked) { cb.click(); await sleep(250); }
+    }
     for (const key of keys) {
       const cb = document.getElementById('ctl00_PageContent_' + CHECKBOX_MAP[key]);
       if (cb && !cb.checked) { cb.click(); await sleep(250); }
     }
-    if (list.some((d) => d.special)) {
+    {
       const rl = findRemarkLayout();
-      if (rl && rl.checkbox && !rl.checkbox.checked) { rl.checkbox.click(); await sleep(250); }
+      const needRemark = list.some((d) => d.special);
+      if (rl && rl.checkbox && rl.checkbox.checked !== needRemark) { rl.checkbox.click(); await sleep(250); }
     }
     log('ติ๊กคอลัมน์ที่มีข้อมูลให้แล้ว: ' + keys.join(', '));
     return [];

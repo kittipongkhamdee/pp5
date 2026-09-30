@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Autofill SGS จากระบบ ปพ.5",
-  "version": "1.9.3",
+  "version": "1.9.4",
   "description": "วางคะแนนและผลประเมินจากระบบ ปพ.5 ลงหน้าบันทึกผลของ SGS ให้อัตโนมัติ เฉพาะช่องที่ครูปลดล็อกเอง",
   "icons": {
     "16": "icons/icon16.png",

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autofill SGS จากระบบ ปพ.5
 // @namespace    pp5-sgs-autofill
-// @version      2.22.3
+// @version      2.22.4
 // @description  วางคะแนนและผลประเมิน (อ่าน คิดวิเคราะห์ เขียน / คุณลักษณะอันพึงประสงค์) ที่คัดลอกจากระบบ ปพ.5 ลงหน้ากรอกคะแนน SGS (sgs.bopp-obec.info) ให้อัตโนมัติ
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts1-Table.aspx*
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts2-Table.aspx*
@@ -49,7 +49,7 @@
   const FIELD_ORDER = Object.keys(CHECKBOX_MAP);
 
   // เลขรุ่นที่แสดงในกล่อง (ต้องตรงกับ @version ด้านบน)
-  const APP_VERSION = 'สคริปต์ Tampermonkey v2.22.3';
+  const APP_VERSION = 'สคริปต์ Tampermonkey v2.22.4';
   const DEVELOPER = 'นายกิตติพงษ์ คำดี';
 
   // หน่วงเวลาระหว่างช่อง: SGS บันทึกอัตโนมัติทุกครั้งที่ค่าเปลี่ยน ถ้ากรอกเร็วเกินคำขอบันทึกจะซ้อนกันจน SGS ฝั่งเซิร์ฟเวอร์ล้ม
@@ -955,13 +955,20 @@
       keys.push(key);
     });
     if (problems.length) return problems;
+    // เอาติ๊กที่ค้างจากวิชาก่อนหน้าออก (SGS อาจจำติ๊กไว้ข้ามวิชา) — เหลือติ๊กเฉพาะคอลัมน์ที่วิชานี้มีคะแนน
+    for (const key of FIELD_ORDER) {
+      if (keys.indexOf(key) >= 0) continue;
+      const cb = document.getElementById('ctl00_PageContent_' + CHECKBOX_MAP[key]);
+      if (cb && cb.checked) { cb.click(); await sleep(250); }
+    }
     for (const key of keys) {
       const cb = document.getElementById('ctl00_PageContent_' + CHECKBOX_MAP[key]);
       if (cb && !cb.checked) { cb.click(); await sleep(250); }
     }
-    if (list.some((d) => d.special)) {
+    {
       const rl = findRemarkLayout();
-      if (rl && rl.checkbox && !rl.checkbox.checked) { rl.checkbox.click(); await sleep(250); }
+      const needRemark = list.some((d) => d.special);
+      if (rl && rl.checkbox && rl.checkbox.checked !== needRemark) { rl.checkbox.click(); await sleep(250); }
     }
     log('ติ๊กคอลัมน์ที่มีข้อมูลให้แล้ว: ' + keys.join(', '));
     return [];
