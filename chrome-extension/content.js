@@ -601,6 +601,11 @@
     }
     const skip = document.getElementById('pp5-sgs-skipcode');
     const skipped = !!(skip && skip.checked);
+    if (!skipped) {
+      showModal(false, 'รหัสวิชาไม่ตรงกัน',
+        'ข้อมูลที่วางเป็นของวิชา <b>' + label.replace(/[<>&]/g, '') + '</b><br>แต่หน้า SGS นี้เป็นวิชา <b>' + Array.from(found).join(', ').replace(/[<>&]/g, '') + '</b><br>' +
+        (infoOnly ? 'ถ้าจะกรอกวิชานี้ ให้กดวางข้อมูลของวิชานี้ใหม่จากระบบ ปพ.5' : 'ยังไม่ได้กรอกอะไร — เลือกวิชาใน SGS ให้ตรง หรือวางข้อมูลของวิชานี้ใหม่'));
+    }
     log('✗ รหัสวิชาไม่ตรง: ข้อมูลที่วางเป็นของ ' + label + ' แต่หน้า SGS เป็นวิชา ' + Array.from(found).join(', ') +
       (infoOnly ? ' — ถ้าจะกรอกวิชานี้ ให้กดวางข้อมูลของวิชานี้ใหม่' : (skipped ? ' — ข้ามการตรวจตามที่เลือกไว้' : ' — ไม่กรอก เลือกวิชาใน SGS ให้ตรง หรือกดวางข้อมูลของวิชานี้ใหม่')), true);
     return infoOnly || skipped;
@@ -641,22 +646,26 @@
   }
   // ── ป๊อปอัปแจ้งผลเมื่อบันทึกหน้าสุดท้ายเสร็จ (หน้ารีโหลดหลังกดบันทึก จึงจดธงไว้ใน localStorage แล้วแสดงในหน้าใหม่) ──
   const DONE_KEY = 'pp5SgsDone';
-  function showDonePopup(ok) {
+  // ป๊อปอัปกลางจอ (ไม่ใช่ alert เพราะหน้ารีโหลดได้ และไม่บล็อกเบราว์เซอร์) — ใช้ทั้งแจ้งบันทึกเสร็จและแจ้งรหัสวิชาไม่ตรง
+  function showModal(ok, title, detail) {
     const old = document.getElementById('pp5-sgs-done'); if (old) old.remove();
     const ov = document.createElement('div');
     ov.id = 'pp5-sgs-done';
     ov.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;font-family:sans-serif';
     const color = ok ? '#059669' : '#dc2626';
-    ov.innerHTML = '<div style="background:#fff;border-radius:16px;padding:28px 36px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.35);max-width:340px">' +
+    ov.innerHTML = '<div style="background:#fff;border-radius:16px;padding:28px 36px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.35);max-width:380px">' +
       '<div style="font-size:52px;line-height:1">' + (ok ? '✅' : '⚠️') + '</div>' +
-      '<div style="font-size:20px;font-weight:700;color:' + color + ';margin:10px 0 4px">' + (ok ? 'บันทึกทั้งหมดเรียบร้อย' : 'บันทึกอาจไม่สำเร็จ') + '</div>' +
-      (ok ? '' : '<div style="font-size:13px;color:#475569;margin-bottom:6px">ค่าในตารางไม่ตรงกับที่กรอก — ตรวจตัวเลขแล้วกดบันทึกเองอีกครั้ง</div>') +
+      '<div style="font-size:20px;font-weight:700;color:' + color + ';margin:10px 0 4px">' + title + '</div>' +
+      (detail ? '<div style="font-size:13px;color:#475569;margin-bottom:6px;line-height:1.5">' + detail + '</div>' : '') +
       '<div style="height:12px"></div>' +
       '<button id="pp5-sgs-done-ok" style="padding:9px 28px;background:' + color + ';color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">ตกลง</button></div>';
     document.body.appendChild(ov);
     const close = () => ov.remove();
     document.getElementById('pp5-sgs-done-ok').onclick = close;
     ov.onclick = (e) => { if (e.target === ov) close(); };
+  }
+  function showDonePopup(ok) {
+    showModal(ok, ok ? 'บันทึกทั้งหมดเรียบร้อย' : 'บันทึกอาจไม่สำเร็จ', ok ? '' : 'ค่าในตารางไม่ตรงกับที่กรอก — ตรวจตัวเลขแล้วกดบันทึกเองอีกครั้ง');
   }
   function showDoneIfPending() {
     let f = null;
