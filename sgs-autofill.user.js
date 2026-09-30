@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autofill SGS จากระบบ ปพ.5
 // @namespace    pp5-sgs-autofill
-// @version      2.19.0
+// @version      2.19.1
 // @description  วางคะแนนและผลประเมิน (อ่าน คิดวิเคราะห์ เขียน / คุณลักษณะอันพึงประสงค์) ที่คัดลอกจากระบบ ปพ.5 ลงหน้ากรอกคะแนน SGS (sgs.bopp-obec.info) ให้อัตโนมัติ
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts1-Table.aspx*
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts2-Table.aspx*
@@ -49,7 +49,7 @@
   const FIELD_ORDER = Object.keys(CHECKBOX_MAP);
 
   // เลขรุ่นที่แสดงในกล่อง (ต้องตรงกับ @version ด้านบน)
-  const APP_VERSION = 'สคริปต์ Tampermonkey v2.19.0';
+  const APP_VERSION = 'สคริปต์ Tampermonkey v2.19.1';
   const DEVELOPER = 'นายกิตติพงษ์ คำดี';
 
   let running = false;
@@ -653,9 +653,6 @@
   }
   // ── ป๊อปอัปแจ้งผลเมื่อบันทึกหน้าสุดท้ายเสร็จ (หน้ารีโหลดหลังกดบันทึก จึงจดธงไว้ใน localStorage แล้วแสดงในหน้าใหม่) ──
   const DONE_KEY = 'pp5SgsDone';
-  function pageLabel() {
-    return isEval ? (evalKind === 'char' ? 'คุณลักษณะอันพึงประสงค์' : 'อ่าน คิดวิเคราะห์ และเขียน') : (isPage1 ? 'กลางภาค' : 'หลังกลางภาค');
-  }
   function showDonePopup(ok) {
     const old = document.getElementById('pp5-sgs-done'); if (old) old.remove();
     const ov = document.createElement('div');
@@ -665,7 +662,8 @@
     ov.innerHTML = '<div style="background:#fff;border-radius:16px;padding:28px 36px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.35);max-width:340px">' +
       '<div style="font-size:52px;line-height:1">' + (ok ? '✅' : '⚠️') + '</div>' +
       '<div style="font-size:20px;font-weight:700;color:' + color + ';margin:10px 0 4px">' + (ok ? 'บันทึกทั้งหมดเรียบร้อย' : 'บันทึกอาจไม่สำเร็จ') + '</div>' +
-      '<div style="font-size:13px;color:#475569;margin-bottom:16px">' + (ok ? 'หน้า' + pageLabel() : 'ค่าในตารางไม่ตรงกับที่กรอก — ตรวจตัวเลขแล้วกดบันทึกเองอีกครั้ง') + '</div>' +
+      (ok ? '' : '<div style="font-size:13px;color:#475569;margin-bottom:6px">ค่าในตารางไม่ตรงกับที่กรอก — ตรวจตัวเลขแล้วกดบันทึกเองอีกครั้ง</div>') +
+      '<div style="height:12px"></div>' +
       '<button id="pp5-sgs-done-ok" style="padding:9px 28px;background:' + color + ';color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">ตกลง</button></div>';
     document.body.appendChild(ov);
     const close = () => ov.remove();
