@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autofill SGS จากระบบ ปพ.5
 // @namespace    pp5-sgs-autofill
-// @version      2.20.1
+// @version      2.21.0
 // @description  วางคะแนนและผลประเมิน (อ่าน คิดวิเคราะห์ เขียน / คุณลักษณะอันพึงประสงค์) ที่คัดลอกจากระบบ ปพ.5 ลงหน้ากรอกคะแนน SGS (sgs.bopp-obec.info) ให้อัตโนมัติ
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts1-Table.aspx*
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts2-Table.aspx*
@@ -49,7 +49,7 @@
   const FIELD_ORDER = Object.keys(CHECKBOX_MAP);
 
   // เลขรุ่นที่แสดงในกล่อง (ต้องตรงกับ @version ด้านบน)
-  const APP_VERSION = 'สคริปต์ Tampermonkey v2.20.1';
+  const APP_VERSION = 'สคริปต์ Tampermonkey v2.21.0';
   const DEVELOPER = 'นายกิตติพงษ์ คำดี';
 
   let running = false;
@@ -157,6 +157,7 @@
     return btns.length === 1 ? btns[0] : null;
   }
   async function maybeAutoSave(verified) {
+    if (multiCurrent()) return multiSaveStep(verified);
     const cb = document.getElementById('pp5-sgs-autosave');
     if (!cb || !cb.checked) return;
     if (stopRequested) { log('หยุดกลางคัน — ไม่กดบันทึกให้', true); return; }
@@ -425,7 +426,7 @@
     } catch (e) { return null; }
   }
   function describePayload(raw) {
-    try { const p = JSON.parse(raw); return ((p.subject_code || '') + ' ' + (p.subject_name || '')).trim(); } catch (e) { return ''; }
+    try { const p = JSON.parse(raw); if (Array.isArray(p.subjects)) return 'ข้อมูลหลายวิชา ' + p.subjects.length + ' วิชา'; return ((p.subject_code || '') + ' ' + (p.subject_name || '')).trim(); } catch (e) { return ''; }
   }
 
   // ── หน้าคุณลักษณะฯ / อ่าน คิดฯ เขียน: ต้องติ๊ก "หัวข้อ" แล้วกดปุ่ม "สร้าง" ก่อน ตารางถึงจะมีแถวนักเรียนให้กรอก ──
@@ -654,6 +655,8 @@
     return found;
   }
   function currentPayloadStudents() {
+    const mc = multiCurrent();
+    if (mc) return mc.students || null;
     try { return JSON.parse(document.getElementById('pp5-sgs-paste').value).students || null; } catch (e) { return null; }
   }
   // ── ป๊อปอัปแจ้งผลเมื่อบันทึกหน้าสุดท้ายเสร็จ (หน้ารีโหลดหลังกดบันทึก จึงจดธงไว้ใน localStorage แล้วแสดงในหน้าใหม่) ──
@@ -780,6 +783,207 @@
     document.getElementById('pp5-sgs-start').click();
   }
 
+  // ── กรอกหลายวิชาในรอบเดียว (วนเฉพาะหน้าที่เปิดอยู่: กลางภาค / หลังกลางภาค / Q / L) ──
+  // ข้อมูลจากปุ่ม "Autofill SGS ทุกวิชา" = { multi:true, subjects:[{subject_code, level, room, students}, ...] }
+  // ต่อวิชา: เลือกรายวิชา/กลุ่มใน SGS → (หน้ากลางภาค/หลังกลางภาค ติ๊กคอลัมน์ให้) → กรอก → บันทึก → ตรวจซ้ำ → วิชาถัดไป
+  // SGS รีโหลดหน้าทุกครั้งที่เลือกวิชา/บันทึก สคริปต์จึงตายทุกครั้ง — สถานะทั้งหมดเก็บใน localStorage แล้วทำต่อในหน้าใหม่
+  // (phase: select = ต้องเลือกวิชา/กลุ่ม, fill = กำลังกรอก, saved = กดบันทึกแล้วรอตรวจหลังรีโหลด)
+  const MULTI_KEY = 'pp5SgsMulti';
+  function loadMulti() {
+    try { const c = JSON.parse(localStorage.getItem(MULTI_KEY)); return c && c.ts && Date.now() - c.ts < 300000 ? c : null; } catch (e) { return null; }
+  }
+  function saveMulti(c) {
+    try { localStorage.setItem(MULTI_KEY, JSON.stringify(Object.assign({}, loadMulti() || {}, c, { ts: Date.now() }))); } catch (e) { /* ไม่เป็นไร */ }
+  }
+  function clearMulti() { try { localStorage.removeItem(MULTI_KEY); } catch (e) { /* ไม่เป็นไร */ } }
+  function pageKindKey() { return isPage1 ? 'mid1' : isPage2 ? 'mid2' : evalKind === 'char' ? 'Q' : 'L'; }
+  function multiPayload() {
+    try { const p = JSON.parse(document.getElementById('pp5-sgs-paste').value); return p && Array.isArray(p.subjects) ? p : null; } catch (e) { return null; }
+  }
+  function multiCurrent() {
+    const st = loadMulti();
+    if (!st || st.kind !== pageKindKey()) return null;
+    const p = multiPayload();
+    return (p && p.subjects[st.idx]) || null;
+  }
+  function subjLabel(p) { return (p.subject_code || '') + ' ' + (p.subject_name || '') + ' ' + (p.level || '') + (p.room ? '/' + p.room : ''); }
+  function multiPushResult(status, note) {
+    const st = loadMulti(); const p = multiCurrent();
+    if (!st || !p) return;
+    const results = (st.results || []).concat([{ label: subjLabel(p).trim(), status, note: note || '' }]);
+    saveMulti({ results, idx: st.idx + 1, phase: 'select', tries: 0, gTried: [] });
+  }
+  function multiSkip(note) { log('✗ ข้ามวิชา ' + (multiCurrent() ? subjLabel(multiCurrent()).trim() : '') + ' — ' + note, true); multiPushResult('skip', note); }
+  function multiFinish(stopped) {
+    const st = loadMulti(); clearMulti();
+    if (!st) return;
+    const res = st.results || [];
+    const ok = res.filter((r) => r.status === 'ok').length;
+    const bad = res.filter((r) => r.status !== 'ok');
+    const esc = (t) => String(t).replace(/[<>&]/g, '');
+    const list = bad.slice(0, 8).map((r) => '• ' + esc(r.label) + ' — ' + esc(r.note)).join('<br>') + (bad.length > 8 ? '<br>และอีก ' + (bad.length - 8) + ' วิชา' : '');
+    log((stopped ? 'หยุดกลางคัน: ' : 'จบการวนกรอก: ') + 'สำเร็จ ' + ok + ' วิชา' + (bad.length ? ', ต้องตรวจ ' + bad.length + ' วิชา' : ''), !!bad.length);
+    bad.forEach((r) => log('  - ' + r.label + ': ' + r.note, true));
+    showModal(!stopped && !bad.length, stopped ? 'หยุดกลางคัน' : (bad.length ? 'ทำเสร็จ แต่มีวิชาที่ต้องตรวจ' : 'บันทึกทั้งหมดเรียบร้อย'),
+      'สำเร็จ ' + ok + ' วิชา' + (bad.length ? ' · ต้องตรวจ ' + bad.length + ' วิชา<br><div style="text-align:left;margin-top:8px;font-size:12px">' + list + '</div>' : ''));
+  }
+  function multiFindSubject(p) {
+    const want = normCode(p.subject_code);
+    const lv = String(p.level || '').replace(/\s+/g, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const lvRe = lv ? new RegExp(lv + '(?!\\d)') : null;
+    for (const sel of Array.from(document.querySelectorAll('select'))) {
+      if (sel.closest('#pp5-sgs-panel')) continue;
+      let opts = Array.from(sel.options).filter((o) => normCode(o.text).includes(want));
+      if (!opts.length) continue;
+      if (opts.length > 1 && lvRe) { const f = opts.filter((o) => lvRe.test(String(o.text).replace(/\s+/g, ''))); if (f.length) opts = f; }
+      return { sel, opt: opts[0] };
+    }
+    return null;
+  }
+  // เลขประจำตัวนักเรียนที่เห็นในตารางตอนนี้ (เซลล์ที่มีแต่ตัวเลข 4-6 หลัก)
+  function pageStudentCodes() {
+    const codes = new Set();
+    document.querySelectorAll('td').forEach((td) => {
+      if (td.closest('#pp5-sgs-panel')) return;
+      const t = td.textContent.trim();
+      if (/^\d{4,6}$/.test(t)) codes.add(t);
+    });
+    return codes;
+  }
+  function groupCandidates(g) {
+    return Array.from(g.options).filter((o) => o.value !== '' && !/\*\*/.test(o.text));
+  }
+  // คืน 'fill' = เลือกวิชา/กลุ่มถูกแล้ว พร้อมกรอก, 'again' = สั่งเปลี่ยนแล้ว รอรีโหลดแล้วเช็คใหม่, 'skip' = ข้ามวิชานี้
+  async function multiSelect(p, st) {
+    const tries = (st.tries || 0) + 1;
+    if (tries > 10) { multiSkip('เลือกรายวิชา/กลุ่มใน SGS ไม่สำเร็จหลายรอบ'); return 'skip'; }
+    saveMulti({ tries });
+    const f = multiFindSubject(p);
+    if (!f) { multiSkip('ไม่พบรายวิชานี้ในรายการของ SGS'); return 'skip'; }
+    if (f.sel.selectedIndex !== f.opt.index) {
+      log('เลือกรายวิชา ' + subjLabel(p).trim() + ' ...');
+      f.sel.value = f.opt.value; fireEvent(f.sel, 'change');
+      await sleep(3000);
+      return 'again';
+    }
+    const g = findGroupSelect();
+    if (g) {
+      const cand = groupCandidates(g);
+      const mine = Object.keys(p.students);
+      const codes = pageStudentCodes();
+      const overlap = mine.filter((c) => codes.has(c)).length;
+      const tried = st.gTried || [];
+      if (codes.size && overlap > 0) return 'fill';
+      const cur = g.options[g.selectedIndex];
+      const curVal = cur ? cur.value : '';
+      const nextTried = tried.indexOf(curVal) >= 0 ? tried : tried.concat([curVal]);
+      if (!codes.size) {
+        // ตารางยังว่าง (หน้า Q/L ที่ยังไม่กด "สร้าง"): ลองกลุ่มที่ชื่อตรงกับห้องก่อน แล้วค่อยกรอกตามปกติ
+        const roomOpt = cand.find((o) => o.text.trim() === String(p.room));
+        if (roomOpt && curVal !== roomOpt.value && tried.indexOf('room') < 0) {
+          saveMulti({ gTried: nextTried.concat(['room']) });
+          g.value = roomOpt.value; fireEvent(g, 'change'); await sleep(3000);
+          return 'again';
+        }
+        return 'fill';
+      }
+      // ตารางมีนักเรียนแต่ไม่ใช่ห้องนี้ → ลองกลุ่มอื่นที่ยังไม่เคยลอง (ให้กลุ่มที่ชื่อตรงกับห้องก่อน)
+      const untried = cand.filter((o) => nextTried.indexOf(o.value) < 0);
+      const pick = untried.find((o) => o.text.trim() === String(p.room)) || untried[0];
+      if (!pick) { multiSkip('ไม่พบนักเรียนของวิชานี้ในกลุ่มใดของ SGS เลย'); return 'skip'; }
+      saveMulti({ gTried: nextTried });
+      log('กลุ่มนี้ไม่มีนักเรียนของวิชานี้ — ลองกลุ่ม ' + pick.text.trim() + ' ...');
+      g.value = pick.value; fireEvent(g, 'change'); await sleep(3000);
+      return 'again';
+    }
+    return 'fill';
+  }
+  // หน้ากลางภาค/หลังกลางภาค: ติ๊กเช็คบล็อกของคอลัมน์ที่มีข้อมูลให้เอง (หน้ารีโหลดแล้วติ๊กหายทุกครั้งที่เปลี่ยนวิชา)
+  async function multiTickColumns(p) {
+    const list = Object.values(p.students);
+    const has = (fn) => list.some((d) => { const v = fn(d); return v !== '' && v != null; });
+    const keys = [];
+    (isPage1 ? FIELD_ORDER : FIELD_ORDER).forEach((key) => {
+      if (key === 'Midterm') { if (has((d) => d.mid)) keys.push(key); return; }
+      if (key === 'Final') { if (has((d) => d.final)) keys.push(key); return; }
+      const idx = isPage1 ? parseInt(key.slice(1), 10) - 1 : parseInt(key.slice(1), 10) - 10;
+      if (has((d) => (isPage1 ? d.before : d.after || [])[idx])) keys.push(key);
+    });
+    for (const key of keys) {
+      const cb = document.getElementById('ctl00_PageContent_' + CHECKBOX_MAP[key]);
+      if (cb && !cb.checked) { cb.click(); await sleep(250); }
+    }
+    if (list.some((d) => d.special)) {
+      const rl = findRemarkLayout();
+      if (rl && rl.checkbox && !rl.checkbox.checked) { rl.checkbox.click(); await sleep(250); }
+    }
+    log('ติ๊กคอลัมน์ที่มีข้อมูลให้แล้ว: ' + keys.join(', '));
+  }
+  async function multiFill(p) {
+    const st = loadMulti();
+    lastPayload = p;
+    if (isPage1 || isPage2) await multiTickColumns(p);
+    if (!checkSubject(p, false, true)) { multiSkip('รหัสวิชาไม่ตรงกับหน้า SGS'); return; }
+    log('กรอกวิชา ' + subjLabel(p).trim() + ' (' + Object.keys(p.students).length + ' คน)');
+    const created = await ensureCreated(p.students);
+    const okPage = created ? await ensureFullPage(Object.keys(p.students).length) : false;
+    if (!okPage) {
+      await sleep(6000); // ถ้าหน้ารีโหลด สคริปต์ตายตรงนี้ หน้าใหม่จะกรอกต่อเอง (ผ่านระบบ resume)
+      multiSkip('เตรียมตาราง (สร้างแถว/จำนวนรายการต่อหน้า) ไม่สำเร็จ');
+      return;
+    }
+    if (isEval) await runEvalFill(p.students); else await runFill(p.students);
+    const st2 = loadMulti();
+    if (st2 && st2.idx === st.idx && st2.phase === 'fill') multiSkip('ไม่มีข้อมูลให้กรอกในหน้านี้ หรือยังไม่ได้ปลดล็อกคอลัมน์');
+  }
+  async function multiSaveStep(verified) {
+    const p = multiCurrent();
+    if (stopRequested) return;
+    if (!verified) { multiSkip('กรอกไม่ครบหรือค่าไม่ติด (ไม่ได้บันทึกวิชานี้)'); return; }
+    const btn = findSaveButton();
+    if (!btn) { multiSkip('หาปุ่มบันทึกของ SGS ไม่เจอ'); return; }
+    saveMulti({ phase: 'saved', tries: 0 });
+    log('กดปุ่มบันทึกของ SGS แล้ว (' + subjLabel(p).trim() + ') — รอหน้ารีโหลดแล้วตรวจต่อ');
+    btn.click();
+    await sleep(8000); // ถ้าหน้ารีโหลด สคริปต์ตายตรงนี้ หน้าใหม่ทำต่อ; ถ้าไม่รีโหลด วนกลับไปตรวจต่อเลย
+  }
+  async function multiAfterSave(p) {
+    await sleep(800);
+    const v = isEval ? quickVerifySaved() : quickVerifyMid();
+    if (v === false) { log('✗ ' + subjLabel(p).trim() + ': ค่าหลังบันทึกไม่ตรงกับที่กรอก — ตรวจวิชานี้ด้วยมือ', true); multiPushResult('bad', 'ค่าหลังบันทึกไม่ตรงกับที่กรอก (อาจบันทึกไม่สำเร็จ)'); }
+    else { log('✓ บันทึกวิชา ' + subjLabel(p).trim() + ' แล้ว'); multiPushResult('ok'); }
+  }
+  let multiBusy = false;
+  async function multiRun() {
+    if (multiBusy) return;
+    multiBusy = true;
+    try {
+      for (let guard = 0; guard < 500; guard++) {
+        const st = loadMulti();
+        const payload = multiPayload();
+        if (!st || !payload || st.kind !== pageKindKey()) return;
+        if (stopRequested) { multiFinish(true); return; }
+        if (st.idx >= payload.subjects.length) { multiFinish(false); return; }
+        const p = payload.subjects[st.idx];
+        if (st.phase === 'saved') { await multiAfterSave(p); continue; }
+        if (st.phase === 'fill') { await multiFill(p); continue; }
+        const r = await multiSelect(p, st);
+        if (r === 'fill') saveMulti({ phase: 'fill', tries: 0 });
+      }
+    } finally { multiBusy = false; }
+  }
+  function multiStart(payload, fresh) {
+    const auto = document.getElementById('pp5-sgs-autosave');
+    if (!auto || !auto.checked) { log('การกรอกหลายวิชาต้องติ๊ก "กดปุ่มบันทึก" ของ SGS ไว้ (เพื่อให้ไปวิชาถัดไปได้)', true); return; }
+    const st = loadMulti();
+    if (fresh || !st || st.kind !== pageKindKey()) {
+      stopRequested = false;
+      saveMulti({ kind: pageKindKey(), idx: 0, phase: 'select', results: [], tries: 0, gTried: [] });
+      log('เริ่มวนกรอก ' + payload.subjects.length + ' วิชา (หน้า' + (isEval ? (evalKind === 'char' ? 'คุณลักษณะฯ' : 'อ่าน คิดฯ เขียน') : (isPage1 ? 'กลางภาค' : 'หลังกลางภาค')) + ') — อย่าปิดแท็บ หน้าจะรีโหลดหลายรอบ กดหยุดได้ตลอด');
+    }
+    multiRun();
+  }
+
   function buildUI() {
     const wrap = document.createElement('div');
     wrap.id = 'pp5-sgs-panel';
@@ -882,18 +1086,19 @@
         const text = await navigator.clipboard.readText();
         if (!text.trim()) { log('คลิปบอร์ดว่างเปล่า — ไปกดปุ่ม "Autofill SGS" ในระบบ ปพ.5 เพื่อคัดลอกคะแนนก่อน', true); return; }
         document.getElementById('pp5-sgs-paste').value = text;
-        try { const parsed = JSON.parse(text); saveData(text); checkSubject(parsed, true); log('วางข้อมูลจากคลิปบอร์ดแล้ว (จำไว้ให้ข้ามหน้า SGS) — ตรวจสอบว่าเป็นคะแนนถูกวิชาแล้วกด "เริ่มกรอกคอลัมน์ที่ติ๊กไว้"'); }
+        try { const parsed = JSON.parse(text); saveData(text); checkSubject(parsed, true); if (Array.isArray(parsed.subjects)) { log('วางข้อมูลหลายวิชาแล้ว: ' + parsed.subjects.length + ' วิชา — กด "เริ่มกรอกคอลัมน์ที่ติ๊กไว้" เพื่อวนกรอกทุกวิชาในหน้านี้'); return; } log('วางข้อมูลจากคลิปบอร์ดแล้ว (จำไว้ให้ข้ามหน้า SGS) — ตรวจสอบว่าเป็นคะแนนถูกวิชาแล้วกด "เริ่มกรอกคอลัมน์ที่ติ๊กไว้"'); }
         catch (e) { log('วางข้อมูลจากคลิปบอร์ดแล้ว แต่ไม่ใช่รูปแบบ JSON ที่ถูกต้อง — ตรวจสอบว่าคัดลอกมาจากปุ่ม "Autofill SGS" ในระบบ ปพ.5 จริงหรือไม่', true); }
       } catch (e) {
         log('วางจากคลิปบอร์ดอัตโนมัติไม่สำเร็จ (' + e.message + ') — วางเองด้วย Ctrl+V ในกล่องข้อความแทนได้', true);
       }
     };
-    document.getElementById('pp5-sgs-start').onclick = () => {
+    document.getElementById('pp5-sgs-start').onclick = (ev) => {
       const raw = document.getElementById('pp5-sgs-paste').value.trim();
       if (!raw) { log('กรุณาวาง JSON ก่อน', true); return; }
       let payload;
       try { payload = JSON.parse(raw); }
       catch (e) { log('อ่าน JSON ไม่สำเร็จ: ' + e.message, true); return; }
+      if (Array.isArray(payload.subjects)) { saveData(raw); multiStart(payload, !(ev && ev.isTrusted === false)); return; }
       if (!payload.students) { log('รูปแบบข้อมูลไม่ถูกต้อง (ไม่พบ students)', true); return; }
       saveData(raw);
       lastPayload = payload;
@@ -903,7 +1108,7 @@
         if (isEval) runEvalFill(payload.students); else runFill(payload.students);
       });
     };
-    document.getElementById('pp5-sgs-stop').onclick = () => { stopRequested = true; };
+    document.getElementById('pp5-sgs-stop').onclick = () => { stopRequested = true; if (loadMulti()) { clearMulti(); log('หยุดแล้ว — ยกเลิกการวนกรอกหลายวิชา'); } };
     document.getElementById('pp5-sgs-clearsaved').onclick = () => {
       try { localStorage.removeItem(DATA_KEY); } catch (e) { /* ignore */ }
       document.getElementById('pp5-sgs-paste').value = '';
@@ -928,6 +1133,7 @@
         setTimeout(() => document.getElementById('pp5-sgs-start').click(), 800);
       }
     }
+    setTimeout(() => { if (multiCurrent() || (loadMulti() && loadMulti().kind === pageKindKey() && multiPayload())) multiRun(); }, 1200); // หน้ารีโหลดกลางการวนกรอกหลายวิชา → ทำต่อ
     setTimeout(showDoneIfPending, 800); // หน้าที่รีโหลดหลังกดบันทึกหน้าสุดท้าย → ขึ้นป๊อปอัปแจ้งผล
     document.getElementById('pp5-sgs-scan').onclick = () => (isEval ? scanEvalPage() : scanPage());
     document.getElementById('pp5-sgs-copylog').onclick = async () => {
