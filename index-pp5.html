@@ -1789,7 +1789,7 @@ function _applyConcurrencyGuards(){
 // (ของโมดูลจะถูกห่อเพิ่มใน ensureModule หลังโหลดเสร็จ)
 _applyConcurrencyGuards();
 // ?v= กันแคชเก่าค้าง (modules/*.js แคชไว้ 1 วันตาม vercel.json) — แก้ไฟล์ใน modules/ เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย
-const MODULE_V='98';
+const MODULE_V='99';
 // ห่อฟังก์ชันของโมดูลหลังโหลดเสร็จด้วย (ตอนเริ่มระบบยังไม่มีฟังก์ชันเหล่านี้)
 function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V).then(()=>{ _applyConcurrencyGuards(); }); }
 function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
@@ -4935,20 +4935,16 @@ function exportScores(){
 // ── ส่งออกคะแนนเป็น JSON สำหรับสคริปต์ Autofill SGS (Tampermonkey) — คัดลอกเข้าคลิปบอร์ด ──
 // before[]/after[] เรียงตาม unit_number ตรงกับคอลัมน์ S1-S9 / S10-S18 ในหน้า SGS
 // mid/final = คะแนนสอบกลางภาค/ปลายภาคจากแท็บ "สรุปผล" (score_summary.mid_normal / final_score)
-async function exportForSGS(){
-  // เรียกได้จากหน้ารายงานผลการเรียนด้วย — โหลดข้อมูลคะแนนของวิชาที่เลือกเองก่อนเสมอ (ใช้แคช ไม่หนัก)
-  if(!S.selSub){ toast('ไม่พบรายวิชา','er'); return; }
-  await loadScData();
+// สร้าง payload ของวิชาที่โหลดอยู่ใน scSub/scStus/scU (ต้องเรียก loadScData() ก่อน) — ใช้ทั้งปุ่มวิชาเดียวและปุ่มทุกวิชา
+async function _sgsBuildPayload(){
   const sub=scSub;
-  if(!sub){ toast('ไม่พบรายวิชา','er'); return; }
-  if(!scStus.length){ toast('ไม่มีนักเรียนในวิชานี้','er'); return; }
   // ผลประเมินสำหรับหน้า SGS "อ่าน คิดวิเคราะห์ และเขียน" (read: t1-t5) และ "คุณลักษณะอันพึงประสงค์" (char: r1-r8)
   // ค่า 0-3 ตรงกับช่อง "ให้คะแนน" ของ SGS — ไม่มีข้อมูล = '' (ส่วนขยายจะข้ามช่องนั้น ไม่เขียนทับ)
   let evReadRows=[], evCharRows=[];
   try{
     [evReadRows,evCharRows]=await Promise.all([
-      q(sb.from('eval_read').select('student_id,t1,t2,t3,t4,t5,result').eq('subject_id',S.selSub)),
-      q(sb.from('eval_char').select('student_id,r1,r2,r3,r4,r5,r6,r7,r8,overall_result').eq('subject_id',S.selSub)),
+      q(sb.from('eval_read').select('student_id,t1,t2,t3,t4,t5,result').eq('subject_id',sub.id)),
+      q(sb.from('eval_char').select('student_id,r1,r2,r3,r4,r5,r6,r7,r8,overall_result').eq('subject_id',sub.id)),
     ]);
   }catch(e){ /* ดึงผลประเมินไม่ได้ก็ยังส่งออกคะแนนได้ตามปกติ */ }
   const evReadBy=Object.fromEntries(evReadRows.map(r=>[String(r.student_id),r]));
@@ -4971,14 +4967,48 @@ async function exportForSGS(){
       char_result:nz(ec?.overall_result),
     };
   });
-  const payload={subject_code:sub.subject_code,subject_name:sub.subject_name,generated_at:new Date().toISOString(),students};
-  const json=JSON.stringify(payload);
+  // level/room ใช้จับคู่รายวิชาตอนกรอกหลายวิชา (รหัสวิชาเดียวกันอาจมีทั้ง ม.5 และ ม.6)
+  return {subject_code:sub.subject_code,subject_name:sub.subject_name,level:GRADE_PREFIX+sub.grade_level,grade_level:sub.grade_level,room:sub.room,generated_at:new Date().toISOString(),students};
+}
+async function _sgsCopy(json,okMsg){
   try{
     await navigator.clipboard.writeText(json);
-    toast('คัดลอกข้อมูลคะแนนสำหรับ Autofill SGS แล้ว — ไปวางที่หน้า SGS ได้เลย');
+    toast(okMsg);
   }catch(e){
     _showSgsExportFallback(json);
   }
+}
+async function exportForSGS(){
+  // เรียกได้จากหน้ารายงานผลการเรียนด้วย — โหลดข้อมูลคะแนนของวิชาที่เลือกเองก่อนเสมอ (ใช้แคช ไม่หนัก)
+  if(!S.selSub){ toast('ไม่พบรายวิชา','er'); return; }
+  await loadScData();
+  if(!scSub){ toast('ไม่พบรายวิชา','er'); return; }
+  if(!scStus.length){ toast('ไม่มีนักเรียนในวิชานี้','er'); return; }
+  const payload=await _sgsBuildPayload();
+  await _sgsCopy(JSON.stringify(payload),'คัดลอกข้อมูลคะแนนสำหรับ Autofill SGS แล้ว — ไปวางที่หน้า SGS ได้เลย');
+}
+// คัดลอกทุกรายวิชาในภาคเรียนนี้เป็นก้อนเดียว: {multi:true, subjects:[payload,...]} — ส่วนขยายวนกรอกทีละวิชาให้เอง
+async function exportAllForSGS(){
+  const list=S.subjects||[];
+  if(!list.length){ toast('ยังไม่มีรายวิชา','er'); return; }
+  const prev=S.selSub;
+  const subjects=[]; let noStu=0;
+  try{
+    for(let i=0;i<list.length;i++){
+      S.selSub=list[i].id;
+      toast('กำลังรวบรวมข้อมูล '+(i+1)+'/'+list.length+' วิชา...');
+      await loadScData();
+      if(!scSub||!scStus.length){ noStu++; continue; }
+      subjects.push(await _sgsBuildPayload());
+    }
+  }catch(e){
+    S.selSub=prev; toast('รวบรวมข้อมูลไม่สำเร็จ: '+e.message,'er'); return;
+  }
+  S.selSub=prev;
+  try{ await loadScData(); }catch(e){ /* คืนสถานะวิชาเดิม ถ้าไม่ได้ก็ไม่เป็นไร */ }
+  if(!subjects.length){ toast('ไม่มีวิชาที่มีนักเรียน','er'); return; }
+  const payload={multi:true,generated_at:new Date().toISOString(),subjects};
+  await _sgsCopy(JSON.stringify(payload),'คัดลอกข้อมูล '+subjects.length+' วิชาสำหรับ Autofill SGS แล้ว'+(noStu?' (ข้าม '+noStu+' วิชาที่ไม่มีนักเรียน)':'')+' — ไปวางที่หน้า SGS ได้เลย');
 }
 function _showSgsExportFallback(json){
   alert2({
