@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autofill SGS จากระบบ ปพ.5
 // @namespace    pp5-sgs-autofill
-// @version      2.19.1
+// @version      2.19.2
 // @description  วางคะแนนและผลประเมิน (อ่าน คิดวิเคราะห์ เขียน / คุณลักษณะอันพึงประสงค์) ที่คัดลอกจากระบบ ปพ.5 ลงหน้ากรอกคะแนน SGS (sgs.bopp-obec.info) ให้อัตโนมัติ
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts1-Table.aspx*
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts2-Table.aspx*
@@ -49,7 +49,7 @@
   const FIELD_ORDER = Object.keys(CHECKBOX_MAP);
 
   // เลขรุ่นที่แสดงในกล่อง (ต้องตรงกับ @version ด้านบน)
-  const APP_VERSION = 'สคริปต์ Tampermonkey v2.19.1';
+  const APP_VERSION = 'สคริปต์ Tampermonkey v2.19.2';
   const DEVELOPER = 'นายกิตติพงษ์ คำดี';
 
   let running = false;
@@ -857,8 +857,10 @@
     autoSaveCb.onchange = () => savePanelState(Object.assign(loadPanelState(), { autosave: autoSaveCb.checked }));
     const chainCb = document.getElementById('pp5-sgs-chain');
     if (chainCb) {
-      chainCb.checked = savedState.chain !== false;
-      chainCb.onchange = () => savePanelState(Object.assign(loadPanelState(), { chain: chainCb.checked }));
+      // ค่าเริ่มต้นของช่องต่อเนื่อง: ติ๊กไว้ที่หน้าหลังกลางภาคและหน้า Q, ไม่ติ๊กที่หน้ากลางภาค — จำค่าแยกตามหน้า (ทำกลางภาคกับหลังกลางภาคคนละเวลา ไม่ต้องแก้ติ๊กไปมา)
+      const chainKey = isPage1 ? 'chain1' : isPage2 ? 'chain2' : 'chain';
+      chainCb.checked = isPage1 ? savedState[chainKey] === true : savedState[chainKey] !== false;
+      chainCb.onchange = () => savePanelState(Object.assign(loadPanelState(), { [chainKey]: chainCb.checked }));
     }
     minBtn.onclick = () => {
       const collapsed = body.style.display !== 'none';
