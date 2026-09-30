@@ -160,7 +160,10 @@
       saveChain({ step: isMid ? 'goQ' : 'goL', code: lastPayload.subject_code, group: go ? { value: go.value, text: go.text.trim() } : null, tries: 0 });
     }
     log('กดปุ่มบันทึกของ SGS แล้ว — รอหน้ารีโหลด แล้วตรวจว่าค่าถูกบันทึกจริง (ข้อมูลที่วางยังจำไว้ให้ ไม่ต้องวางใหม่)');
+    // ไม่มีหน้าถัดไปในสาย = หน้านี้คือหน้าสุดท้าย: จดไว้ให้หน้าที่รีโหลดกลับมาขึ้นป๊อปอัปแจ้ง "บันทึกทั้งหมดเรียบร้อย"
+    if (!willChain) { try { localStorage.setItem(DONE_KEY, JSON.stringify({ ts: Date.now() })); } catch (e) { /* ไม่เป็นไร */ } }
     btn.click();
+    if (!willChain) { await sleep(6000); showDoneIfPending(); } // ถ้าหน้ารีโหลดเต็มหน้า สคริปต์นี้ตายก่อน หน้าใหม่จะเรียกเอง
     if (willChain) { await sleep(6000); if (isMid) afterSaveOnMid(); else afterSaveOnQ(); } // ถ้าหน้ารีโหลดเต็มหน้า สคริปต์นี้ตายก่อน หน้าใหม่จะเรียกขั้นต่อไปเอง
   }
 
@@ -636,7 +639,35 @@
   function currentPayloadStudents() {
     try { return JSON.parse(document.getElementById('pp5-sgs-paste').value).students || null; } catch (e) { return null; }
   }
-  // หลังบันทึกหน้า Q: ถ้าตารางยังมีแถว เช็คว่าค่าข้อ 1 ตรงกับที่กรอก (true/false) ถ้าตารางว่างเช็คไม่ได้ (null)
+  // ── ป๊อปอัปแจ้งผลเมื่อบันทึกหน้าสุดท้ายเสร็จ (หน้ารีโหลดหลังกดบันทึก จึงจดธงไว้ใน localStorage แล้วแสดงในหน้าใหม่) ──
+  const DONE_KEY = 'pp5SgsDone';
+  function pageLabel() {
+    return isEval ? (evalKind === 'char' ? 'คุณลักษณะอันพึงประสงค์' : 'อ่าน คิดวิเคราะห์ และเขียน') : (isPage1 ? 'กลางภาค' : 'หลังกลางภาค');
+  }
+  function showDonePopup(ok) {
+    const old = document.getElementById('pp5-sgs-done'); if (old) old.remove();
+    const ov = document.createElement('div');
+    ov.id = 'pp5-sgs-done';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;font-family:sans-serif';
+    const color = ok ? '#059669' : '#dc2626';
+    ov.innerHTML = '<div style="background:#fff;border-radius:16px;padding:28px 36px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.35);max-width:340px">' +
+      '<div style="font-size:52px;line-height:1">' + (ok ? '✅' : '⚠️') + '</div>' +
+      '<div style="font-size:20px;font-weight:700;color:' + color + ';margin:10px 0 4px">' + (ok ? 'บันทึกทั้งหมดเรียบร้อย' : 'บันทึกอาจไม่สำเร็จ') + '</div>' +
+      '<div style="font-size:13px;color:#475569;margin-bottom:16px">' + (ok ? 'หน้า' + pageLabel() : 'ค่าในตารางไม่ตรงกับที่กรอก — ตรวจตัวเลขแล้วกดบันทึกเองอีกครั้ง') + '</div>' +
+      '<button id="pp5-sgs-done-ok" style="padding:9px 28px;background:' + color + ';color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">ตกลง</button></div>';
+    document.body.appendChild(ov);
+    const close = () => ov.remove();
+    document.getElementById('pp5-sgs-done-ok').onclick = close;
+    ov.onclick = (e) => { if (e.target === ov) close(); };
+  }
+  function showDoneIfPending() {
+    let f = null;
+    try { f = JSON.parse(localStorage.getItem(DONE_KEY)); localStorage.removeItem(DONE_KEY); } catch (e) { /* ไม่เป็นไร */ }
+    if (!f || !f.ts || Date.now() - f.ts > 60000) return;
+    const v = isEval ? quickVerifySaved() : quickVerifyMid();
+    showDonePopup(v !== false);
+  }
+  // หลังบันทึกหน้า Q/L: ถ้าตารางยังมีแถว เช็คว่าค่าข้อ 1 ตรงกับที่กรอก (true/false) ถ้าตารางว่างเช็คไม่ได้ (null)
   function quickVerifySaved() {
     const students = currentPayloadStudents();
     const layout = evalTableLayout();
@@ -647,11 +678,12 @@
       const cells = evalCells(tr);
       const code = cells[layout.codeIdx] ? cells[layout.codeIdx].textContent.trim() : '';
       const d = students[code];
-      if (!d || !Array.isArray(d.char) || d.char[0] === '' || d.char[0] == null) continue;
+      const arr = d && (evalKind === 'char' ? d.char : d.read);
+      if (!Array.isArray(arr) || arr[0] === '' || arr[0] == null) continue;
       const inp = evalCellInput(cells[layout.items[1]]);
       if (!inp) continue;
       checked++;
-      if (inp.value !== String(d.char[0])) return false;
+      if (inp.value !== String(arr[0])) return false;
     }
     return checked ? true : null;
   }
@@ -874,6 +906,7 @@
         setTimeout(() => document.getElementById('pp5-sgs-start').click(), 800);
       }
     }
+    setTimeout(showDoneIfPending, 800); // หน้าที่รีโหลดหลังกดบันทึกหน้าสุดท้าย → ขึ้นป๊อปอัปแจ้งผล
     document.getElementById('pp5-sgs-scan').onclick = () => (isEval ? scanEvalPage() : scanPage());
     document.getElementById('pp5-sgs-copylog').onclick = async () => {
       const text = document.getElementById('pp5-sgs-log').innerText;
