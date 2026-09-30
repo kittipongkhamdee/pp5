@@ -4795,7 +4795,7 @@ function renderSumTab(){
           <td class="tr2"><strong>${tot||'-'}</strong></td>
           <td class="tc" id="grade-cell-${s.id}">${(()=>{const _sr=sm.special_result||'';const _ov=['ร','มส','มผ','ผ'];const _dg=_ov.includes(_sr)?_sr:g;const _c=_ov.includes(_sr)?'color:var(--err)':'';return '<span class="'+(_ov.includes(_sr)?'':gcls(g))+'" style="font-size:15px;font-weight:700;'+_c+'">'+_dg+'</span>';})()}</td>
           <td class="tc">
-            <select class="es" id="res-${s.id}" onchange="updEsColor(this);_updateGradeCell(this,'${s.id}',${tot||0});_markExamDirty()">
+            <select class="es ${ES_CLS[sm.special_result]||''}" id="res-${s.id}" onchange="updEsColor(this);_updateGradeCell(this,'${s.id}',${tot||0});_markExamDirty()">
               ${RESULTS.map(r=>`<option ${sm.special_result===r?'selected':''}>${r}</option>`).join('')}
             </select>
           </td></tr>`;
@@ -4806,7 +4806,8 @@ function renderSumTab(){
     </div>
   </div></div>`;
 }
-function updEsColor(el){el.className='es'+({'ร':'ev0','มส':'ev0','มผ':'ev0','ผ':'ev2'}[el.value]||'');}
+const ES_CLS={'ร':'ev0','มส':'ev0','มผ':'ev0','ผ':'ev2'};
+function updEsColor(el){el.className='es '+(ES_CLS[el.value]||'');}
 // อัปเซลล์เกรดทันทีเมื่อเปลี่ยน ผลพิเศษ
 function _updateGradeCell(sel,sid,tot){
   const sr=sel.value;
