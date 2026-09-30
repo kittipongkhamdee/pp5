@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name         Autofill SGS จากระบบ ปพ.5
 // @namespace    pp5-sgs-autofill
-// @version      2.22.4
+// @version      2.23.0
 // @description  วางคะแนนและผลประเมิน (อ่าน คิดวิเคราะห์ เขียน / คุณลักษณะอันพึงประสงค์) ที่คัดลอกจากระบบ ปพ.5 ลงหน้ากรอกคะแนน SGS (sgs.bopp-obec.info) ให้อัตโนมัติ
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts1-Table.aspx*
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts2-Table.aspx*
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscriptsQ/Edit-TblTranscriptsQ-Table.aspx*
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscriptsL/Edit-TblTranscriptsL-Table.aspx*
+// @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscriptsAct-Table.aspx*
 // @run-at       document-idle
 // @grant        none
 // @updateURL    https://pp5-ten.vercel.app/sgs-autofill.user.js
@@ -38,7 +39,9 @@
   const evalKind = location.pathname.includes('TblTranscriptsQ') ? 'char'
     : location.pathname.includes('TblTranscriptsL') ? 'read' : null;
   const isEval = !!evalKind;
-  if (!isPage1 && !isPage2 && !isEval) return;
+  // หน้ากิจกรรม (TblTranscriptsAct): ไม่มีข้อมูลจาก ปพ.5 — ปุ่ม "กิจกรรม (ผ่าน)" วนทุกรายวิชา/กลุ่ม ติ๊ก "ปกติ" กด "บันทึกผ่าน" แล้วบันทึก
+  const isAct = location.pathname.includes('TblTranscriptsAct');
+  if (!isPage1 && !isPage2 && !isEval && !isAct) return;
 
   // แต่ละคอลัมน์คะแนนมีกล่องเช็คบล็อกของตัวเอง (ctl00_PageContent_CheckX) ต้องติ๊กก่อนถึงจะกรอกช่องนั้นได้
   // key คือชื่อ field ต่อแถว (เช่น ctl00_..._ctl00_S1), value คือ id ของกล่องเช็คบล็อกระดับคอลัมน์
@@ -49,7 +52,7 @@
   const FIELD_ORDER = Object.keys(CHECKBOX_MAP);
 
   // เลขรุ่นที่แสดงในกล่อง (ต้องตรงกับ @version ด้านบน)
-  const APP_VERSION = 'สคริปต์ Tampermonkey v2.22.4';
+  const APP_VERSION = 'สคริปต์ Tampermonkey v2.23.0';
   const DEVELOPER = 'นายกิตติพงษ์ คำดี';
 
   // หน่วงเวลาระหว่างช่อง: SGS บันทึกอัตโนมัติทุกครั้งที่ค่าเปลี่ยน ถ้ากรอกเร็วเกินคำขอบันทึกจะซ้อนกันจน SGS ฝั่งเซิร์ฟเวอร์ล้ม
@@ -1211,6 +1214,165 @@
     };
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', buildUI);
-  else buildUI();
+
+  // ── หน้ากิจกรรม: วนทุกรายวิชา × ทุกกลุ่ม → ติ๊ก "ปกติ" → กด "บันทึกผ่าน" → กดบันทึก ──
+  // SGS รีโหลดหน้าทุกครั้งที่เลือกวิชา/กลุ่ม/บันทึก สคริปต์จึงตายบ่อย — สถานะเก็บใน localStorage แล้วทำต่อในหน้าใหม่
+  // phase: selsubj = เลือกรายวิชา, selgroup = เลือกกลุ่ม, apply = ติ๊กปกติ+กดบันทึกผ่าน, saveclick = กดบันทึก, saved = ตรวจผลแล้วไปกลุ่มถัดไป
+  const ACT_KEY = 'pp5SgsAct';
+  function loadAct() { try { const c = JSON.parse(localStorage.getItem(ACT_KEY)); return c && c.ts && Date.now() - c.ts < 300000 ? c : null; } catch (e) { return null; } }
+  function saveAct(c) { try { localStorage.setItem(ACT_KEY, JSON.stringify(Object.assign({}, loadAct() || {}, c, { ts: Date.now() }))); } catch (e) { /* ไม่เป็นไร */ } }
+  function clearAct() { try { localStorage.removeItem(ACT_KEY); } catch (e) { /* ไม่เป็นไร */ } }
+  function actSelectAfter(labelRe) {
+    const label = leafTexts(labelRe)[0];
+    if (!label) return null;
+    let found = null;
+    Array.from(document.querySelectorAll('select')).forEach((sel) => {
+      if (!found && !sel.closest('#pp5-sgs-panel') && (label.el.compareDocumentPosition(sel) & Node.DOCUMENT_POSITION_FOLLOWING)) found = sel;
+    });
+    return found;
+  }
+  function actRealOptions(sel) { return sel ? Array.from(sel.options).filter((o) => o.value !== '' && !/\*\*/.test(o.text)) : []; }
+  function actClickable(re) {
+    const cands = Array.from(document.querySelectorAll('a,button,input[type=submit],input[type=button],input[type=image],img,span,div'));
+    for (const el of cands) {
+      if (el.closest('#pp5-sgs-panel')) continue;
+      const t = (el.value || el.title || el.alt || (el.children.length ? '' : el.textContent) || '').replace(/\s+/g, '');
+      if (re.test(t) && t.length <= 20) return el.closest('a,button,input') || el;
+    }
+    return null;
+  }
+  function actRadioNormal() {
+    return Array.from(document.querySelectorAll('input[type=radio]')).find((r) => {
+      const lab = (r.labels && r.labels[0] && r.labels[0].textContent) || (r.nextSibling && r.nextSibling.textContent) || (r.parentElement && r.parentElement.textContent) || '';
+      return /ปกติ/.test(lab) && !/แก้ตัว/.test(lab);
+    }) || null;
+  }
+  function actCountPass() {
+    let pass = 0, total = 0;
+    document.querySelectorAll('table select').forEach((s) => {
+      if (s.closest('#pp5-sgs-panel')) return;
+      const hasPass = Array.from(s.options).some((o) => o.text.trim() === 'ผ');
+      if (!hasPass) return;
+      total++;
+      const o = s.options[s.selectedIndex];
+      if (o && o.text.trim() === 'ผ') pass++;
+    });
+    return { pass, total };
+  }
+  function actPush(status, note) {
+    const st = loadAct(); if (!st) return;
+    const results = (st.results || []).concat([{ label: st.curLabel || '', status, note: note || '' }]);
+    const gi = (st.gi || 0) + 1;
+    if (gi >= (st.gValues || []).length) saveAct({ results, si: (st.si || 0) + 1, phase: 'selsubj', gValues: null, gi: 0, tries: 0 });
+    else saveAct({ results, gi, phase: 'selgroup', tries: 0 });
+  }
+  function actFinish(stopped) {
+    const st = loadAct(); clearAct();
+    if (!st) return;
+    const res = st.results || [];
+    const ok = res.filter((r) => r.status === 'ok');
+    const bad = res.filter((r) => r.status !== 'ok');
+    const esc = (t) => String(t).replace(/[<>&]/g, '');
+    const list = bad.slice(0, 8).map((r) => '• ' + esc(r.label) + ' — ' + esc(r.note)).join('<br>');
+    log((stopped ? 'หยุดกลางคัน: ' : 'จบ: ') + 'บันทึกแล้ว ' + ok.length + ' รายการ' + (bad.length ? ', ต้องตรวจ ' + bad.length : ''), !!bad.length);
+    showModal(!stopped && !bad.length, stopped ? 'หยุดกลางคัน' : (bad.length ? 'ทำเสร็จ แต่มีรายการที่ต้องตรวจ' : 'บันทึกกิจกรรมทั้งหมดเรียบร้อย'),
+      'บันทึกแล้ว ' + ok.length + ' รายการ' + (bad.length ? ' · ต้องตรวจ ' + bad.length + '<div style="text-align:left;margin-top:8px;font-size:12px">' + list + '</div>' : ''));
+  }
+  let actBusy = false;
+  async function actRun() {
+    if (actBusy) return;
+    actBusy = true;
+    try {
+      for (let guard = 0; guard < 400; guard++) {
+        const st = loadAct();
+        if (!st) return;
+        if (stopRequested) { actFinish(true); return; }
+        const subjSel = actSelectAfter(/^รายวิชา$/);
+        if (!subjSel) { log('หาช่องเลือก "รายวิชา" ในหน้านี้ไม่เจอ — หยุด', true); clearAct(); return; }
+        if ((st.si || 0) >= st.subjValues.length) { actFinish(false); return; }
+        const tries = (st.tries || 0) + 1;
+        if (tries > 12) { actPush('bad', 'ลองหลายรอบแล้วไม่สำเร็จ (' + st.phase + ')'); continue; }
+        saveAct({ tries });
+        const sv = st.subjValues[st.si];
+        if (st.phase === 'selsubj') {
+          if (subjSel.value !== sv) {
+            const opt = Array.from(subjSel.options).find((o) => o.value === sv);
+            if (!opt) { saveAct({ si: st.si + 1, tries: 0 }); continue; }
+            log('เลือกรายวิชา ' + opt.text.trim() + ' ...');
+            subjSel.value = sv; fireEvent(subjSel, 'change'); await sleep(3000); continue;
+          }
+          const cur = subjSel.options[subjSel.selectedIndex];
+          const g = findGroupSelect();
+          const gv = actRealOptions(g).map((o) => o.value);
+          saveAct({ phase: 'selgroup', gValues: gv.length ? gv : [''], gi: 0, tries: 0, curSubj: cur ? cur.text.trim() : '' });
+          continue;
+        }
+        const gv = st.gValues[st.gi || 0];
+        const g = findGroupSelect();
+        if (st.phase === 'selgroup') {
+          if (gv !== '' && g && g.value !== gv) {
+            log('เลือกกลุ่ม ' + ((Array.from(g.options).find((o) => o.value === gv) || {}).text || gv).trim() + ' ...');
+            g.value = gv; fireEvent(g, 'change'); await sleep(3000); continue;
+          }
+          const go = g && g.options[g.selectedIndex];
+          saveAct({ phase: 'apply', tries: 0, curLabel: (st.curSubj || '') + (go && gv !== '' ? ' กลุ่ม ' + go.text.trim() : '') });
+          continue;
+        }
+        if (st.phase === 'apply') {
+          const radio = actRadioNormal();
+          if (radio && !radio.checked) { radio.click(); await sleep(400); }
+          const btn = actClickable(/บันทึกผ่าน/);
+          if (!btn) { actPush('bad', 'หาปุ่ม "บันทึกผ่าน" ไม่เจอ'); continue; }
+          saveAct({ phase: 'saveclick', tries: 0 });
+          log('กด "บันทึกผ่าน" — ' + (st.curLabel || ''));
+          btn.click(); await sleep(3500); continue;
+        }
+        if (st.phase === 'saveclick') {
+          const sb = findSaveButton();
+          if (!sb) { actPush('bad', 'หาปุ่มบันทึก (ไอคอนแผ่นดิสก์) ไม่เจอ'); continue; }
+          saveAct({ phase: 'saved', tries: 0 });
+          log('กดบันทึก — ' + (st.curLabel || ''));
+          sb.click(); await sleep(6000); continue;
+        }
+        if (st.phase === 'saved') {
+          await sleep(800);
+          const { pass, total } = actCountPass();
+          if (total && pass === total) { log('✓ ' + st.curLabel + ': ผ่านครบ ' + pass + ' คน'); actPush('ok'); }
+          else if (total) { log('✗ ' + st.curLabel + ': ผ่าน ' + pass + '/' + total + ' คน', true); actPush('bad', 'หลังบันทึกเป็น ผ แค่ ' + pass + ' จาก ' + total + ' คน'); }
+          else { log('? ' + st.curLabel + ': ตรวจผลไม่ได้ (ไม่พบช่อง ผ ในตาราง) — ตรวจเอง', true); actPush('bad', 'ตรวจผลหลังบันทึกไม่ได้'); }
+          continue;
+        }
+        return;
+      }
+    } finally { actBusy = false; }
+  }
+  function buildActUI() {
+    const wrap = document.createElement('div');
+    wrap.id = 'pp5-sgs-panel';
+    wrap.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:99999;background:#fff;border:2px solid #0066cc;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.25);padding:12px;width:300px;font-family:sans-serif;font-size:13px;color:#111';
+    wrap.innerHTML =
+      '<div style="font-weight:700;color:#0066cc;margin-bottom:8px">📋 Autofill SGS จาก ปพ.5 (กิจกรรม)</div>' +
+      '<div style="display:flex;gap:6px;margin-bottom:6px">' +
+      '<button id="pp5-sgs-act-start" style="flex:1;padding:13px 8px;background:#0066cc;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:15px;font-weight:700;box-shadow:0 2px 6px rgba(79,70,229,.45)">กิจกรรม (ผ่าน)</button>' +
+      '<button id="pp5-sgs-act-stop" style="padding:13px 14px;background:#dc2626;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">หยุด</button>' +
+      '</div>' +
+      '<div id="pp5-sgs-log" style="max-height:170px;overflow:auto;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:6px;font-size:11px;line-height:1.5;margin-bottom:6px"></div>' +
+      '<div id="pp5-sgs-credit" style="border-top:1px solid #e5e7eb;padding-top:6px;font-size:10px;color:#94a3b8;text-align:center">ผู้พัฒนา: ' + DEVELOPER + ' · ' + APP_VERSION + '</div>';
+    document.body.appendChild(wrap);
+    document.getElementById('pp5-sgs-act-start').onclick = () => {
+      const subj = actSelectAfter(/^รายวิชา$/);
+      const vals = actRealOptions(subj).map((o) => o.value);
+      if (!subj || !vals.length) { log('ไม่พบรายวิชากิจกรรมในช่อง "รายวิชา" (เลือก ชั้น ด้านบนก่อน) ', true); return; }
+      stopRequested = false;
+      saveAct({ subjValues: vals, si: 0, phase: 'selsubj', gValues: null, gi: 0, results: [], tries: 0, curLabel: '', curSubj: '' });
+      log('เริ่ม: พบกิจกรรม ' + vals.length + ' รายวิชา (ชั้นที่เลือกอยู่ด้านบน) — อย่าปิดแท็บ หน้าจะรีโหลดหลายรอบ กดหยุดได้ตลอด');
+      actRun();
+    };
+    document.getElementById('pp5-sgs-act-stop').onclick = () => { stopRequested = true; if (loadAct()) { clearAct(); log('หยุดแล้ว'); } };
+    if (loadAct()) { log('พบงานค้างจากรอบก่อน — ทำต่อให้'); setTimeout(actRun, 1200); }
+  }
+
+  const buildFn = isAct ? buildActUI : buildUI;
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', buildFn);
+  else buildFn();
 })();

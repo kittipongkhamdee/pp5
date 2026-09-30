@@ -1,6 +1,6 @@
 (function () {
   try { document.getElementById('ver').textContent = 'เวอร์ชัน ' + chrome.runtime.getManifest().version; } catch (e) { /* ไม่เป็นไร */ }
-  const SGS_RE = /^https:\/\/sgs\.bopp-obec\.info\/sgs\/(TblTranscripts\/Edit-TblTranscripts[12]|TblTranscriptsQ\/Edit-TblTranscriptsQ|TblTranscriptsL\/Edit-TblTranscriptsL)-Table\.aspx/;
+  const SGS_RE = /^https:\/\/sgs\.bopp-obec\.info\/sgs\/(TblTranscripts\/Edit-TblTranscripts(?:[12]|Act)|TblTranscriptsQ\/Edit-TblTranscriptsQ|TblTranscriptsL\/Edit-TblTranscriptsL)-Table\.aspx/;
 
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     const el = document.getElementById('status');
