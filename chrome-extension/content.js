@@ -796,7 +796,7 @@
     const p = multiPayload();
     return (p && p.subjects[st.idx]) || null;
   }
-  function subjLabel(p) { return (p.subject_code || '') + ' ' + (p.subject_name || '') + ' ' + (p.level || '') + (p.room ? '/' + p.room : ''); }
+  function subjLabel(p) { return (p.subject_code || '') + ' ' + (p.subject_name || '') + ' ' + (p.level || '') + (Number(p.room) > 0 ? '/' + p.room : ''); }
   function multiPushResult(status, note) {
     const st = loadMulti(); const p = multiCurrent();
     if (!st || !p) return;
@@ -867,9 +867,19 @@
       const cur = g.options[g.selectedIndex];
       const curVal = cur ? cur.value : '';
       const nextTried = tried.indexOf(curVal) >= 0 ? tried : tried.concat([curVal]);
+      const curIsPlaceholder = !cur || cur.value === '' || /\*\*/.test(cur.text);
+      const roomKey = Number(p.room) > 0 ? String(p.room) : null;
+      if (!codes.size && curIsPlaceholder && cand.length && tried.indexOf('pick') < 0) {
+        // ช่อง "กลุ่ม" ยังเป็น "** โปรดเลือก **" ตารางจึงว่าง → เลือกกลุ่มที่ชื่อตรงกับห้องก่อน ไม่มีก็เลือกกลุ่มแรก (ถ้าไม่ใช่กลุ่มนี้ ขั้นล่างจะลองกลุ่มอื่นให้)
+        const first = (roomKey && cand.find((o) => o.text.trim() === roomKey)) || cand[0];
+        saveMulti({ gTried: nextTried.concat(['pick', first.value]) });
+        log('เลือกกลุ่ม ' + first.text.trim() + ' ...');
+        g.value = first.value; fireEvent(g, 'change'); await sleep(3000);
+        return 'again';
+      }
       if (!codes.size) {
         // ตารางยังว่าง (หน้า Q/L ที่ยังไม่กด "สร้าง"): ลองกลุ่มที่ชื่อตรงกับห้องก่อน แล้วค่อยกรอกตามปกติ
-        const roomOpt = cand.find((o) => o.text.trim() === String(p.room));
+        const roomOpt = roomKey && cand.find((o) => o.text.trim() === roomKey);
         if (roomOpt && curVal !== roomOpt.value && tried.indexOf('room') < 0) {
           saveMulti({ gTried: nextTried.concat(['room']) });
           g.value = roomOpt.value; fireEvent(g, 'change'); await sleep(3000);
@@ -879,7 +889,7 @@
       }
       // ตารางมีนักเรียนแต่ไม่ใช่ห้องนี้ → ลองกลุ่มอื่นที่ยังไม่เคยลอง (ให้กลุ่มที่ชื่อตรงกับห้องก่อน)
       const untried = cand.filter((o) => nextTried.indexOf(o.value) < 0);
-      const pick = untried.find((o) => o.text.trim() === String(p.room)) || untried[0];
+      const pick = (roomKey && untried.find((o) => o.text.trim() === roomKey)) || untried[0];
       if (!pick) { multiSkip('ไม่พบนักเรียนของวิชานี้ในกลุ่มใดของ SGS เลย'); return 'skip'; }
       saveMulti({ gTried: nextTried });
       log('กลุ่มนี้ไม่มีนักเรียนของวิชานี้ — ลองกลุ่ม ' + pick.text.trim() + ' ...');
@@ -935,6 +945,7 @@
   async function multiFill(p) {
     const st = loadMulti();
     lastPayload = p;
+    if ((isPage1 || isPage2) && !pageStudentCodes().size) { multiSkip('ตารางไม่มีรายชื่อนักเรียน (ยังไม่ได้เลือกกลุ่ม หรือวิชานี้ไม่มีนักเรียนใน SGS)'); return; }
     if (isPage1 || isPage2) {
       const problems = await multiTickColumns(p);
       if (problems.length) { multiSkip('คะแนนเต็มไม่ตรงกับ SGS (' + problems.join('; ') + ') — แก้คะแนนเต็มให้ตรงกันแล้วทำวิชานี้ซ้ำ'); return; }
