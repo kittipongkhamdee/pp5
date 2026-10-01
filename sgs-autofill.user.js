@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autofill SGS จากระบบ ปพ.5
 // @namespace    pp5-sgs-autofill
-// @version      2.26.0
+// @version      2.27.0
 // @description  วางคะแนนและผลประเมิน (อ่าน คิดวิเคราะห์ เขียน / คุณลักษณะอันพึงประสงค์) ที่คัดลอกจากระบบ ปพ.5 ลงหน้ากรอกคะแนน SGS (sgs.bopp-obec.info) ให้อัตโนมัติ
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts1-Table.aspx*
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts2-Table.aspx*
@@ -52,7 +52,7 @@
   const FIELD_ORDER = Object.keys(CHECKBOX_MAP);
 
   // เลขรุ่นที่แสดงในกล่อง (ต้องตรงกับ @version ด้านบน)
-  const APP_VERSION = 'สคริปต์ Tampermonkey v2.26.0';
+  const APP_VERSION = 'สคริปต์ Tampermonkey v2.27.0';
   const DEVELOPER = 'นายกิตติพงษ์ คำดี';
 
   // หน่วงเวลาระหว่างช่อง: SGS บันทึกอัตโนมัติทุกครั้งที่ค่าเปลี่ยน ถ้ากรอกเร็วเกินคำขอบันทึกจะซ้อนกันจน SGS ฝั่งเซิร์ฟเวอร์ล้ม
@@ -882,9 +882,56 @@
     saveMulti({ results, order, att, pos, idx: pos < order.length ? order[pos] : n, phase: 'select', tries: 0, gTried: [], settle: 0 });
   }
   function multiSkip(note, noRetry) { log('✗ วิชา ' + (multiCurrent() ? subjLabel(multiCurrent()).trim() : '') + ' — ' + note, true); multiPushResult('skip', note, noRetry); }
+  // ── ทำต่อเนื่องหลายหน้าในโหมดทุกวิชา (กลางภาค/หลังกลางภาค → คุณลักษณะฯ → อ่าน คิดฯ → กิจกรรม) ──
+  // ไม่แจ้งรายการที่ต้องตรวจระหว่างทาง เก็บสะสมไว้ใน pp5SgsMultiAcc แล้วแจ้งรวมครั้งเดียวตอนจบหน้าสุดท้าย
+  const ACC_KEY = 'pp5SgsMultiAcc';
+  const MULTI_AUTO_KEY = 'pp5SgsMultiAuto';
+  function loadAcc() { try { const a = JSON.parse(localStorage.getItem(ACC_KEY)); return a && a.ts && Date.now() - a.ts < 3600000 ? a : null; } catch (e) { return null; } }
+  function saveAcc(a) { try { localStorage.setItem(ACC_KEY, JSON.stringify(Object.assign({}, loadAcc() || {}, a, { ts: Date.now() }))); } catch (e) { /* ไม่เป็นไร */ } }
+  function clearAcc() { try { localStorage.removeItem(ACC_KEY); } catch (e) { /* ไม่เป็นไร */ } }
+  function pageName() { return isPage1 ? 'กลางภาค' : isPage2 ? 'หลังกลางภาค' : evalKind === 'char' ? 'คุณลักษณะฯ' : evalKind === 'read' ? 'อ่าน คิดฯ เขียน' : 'กิจกรรม'; }
+  // ครูกดเริ่มเอง (โหมดทุกวิชา): ดูช่องติ๊กว่าต้องไปหน้าไหนต่อบ้าง
+  function startAcc() {
+    const plan = [];
+    const ch = document.getElementById('pp5-sgs-chain');
+    const ac = document.getElementById('pp5-sgs-actchain');
+    if (ch && ch.checked) { if (isPage1 || isPage2) plan.push('Q', 'L'); else if (evalKind === 'char') plan.push('L'); }
+    if (ac && ac.checked) plan.push('ACT');
+    if (plan.length) saveAcc({ plan, results: [] }); else clearAcc();
+  }
+  function goNext(next) {
+    if (next === 'ACT') { goActivity(); return; }
+    try { localStorage.setItem(MULTI_AUTO_KEY, JSON.stringify({ ts: Date.now() })); } catch (e) { /* ไม่เป็นไร */ }
+    location.href = sgsPageUrl(next);
+  }
+  function showFinalReport(results, stopped) {
+    const ok = results.filter((r) => r.status === 'ok').length;
+    const bad = results.filter((r) => r.status !== 'ok');
+    const esc = (t) => String(t).replace(/[<>&]/g, '');
+    const list = bad.slice(0, 10).map((r) => '• ' + esc(r.label) + ' — ' + esc(r.note)).join('<br>') + (bad.length > 10 ? '<br>และอีก ' + (bad.length - 10) + ' รายการ' : '');
+    log((stopped ? 'หยุดกลางคัน: ' : 'จบทั้งหมด: ') + 'สำเร็จ ' + ok + ' รายการ' + (bad.length ? ', ต้องตรวจ ' + bad.length + ' รายการ' : ''), !!bad.length);
+    bad.forEach((r) => log('  - ' + r.label + ': ' + r.note, true));
+    showModal(!stopped && !bad.length, stopped ? 'หยุดกลางคัน' : (bad.length ? 'ทำเสร็จ แต่มีรายการที่ต้องตรวจ' : 'บันทึกทั้งหมดเรียบร้อย'),
+      'สำเร็จ ' + ok + ' รายการ' + (bad.length ? ' · ต้องตรวจ ' + bad.length + ' รายการ<br><div style="text-align:left;margin-top:8px;font-size:12px">' + list + '</div>' : ''));
+  }
   function multiFinish(stopped) {
     const st = loadMulti(); clearMulti();
     if (!st) return;
+    const acc = loadAcc();
+    if (acc) {
+      const here = (st.results || []).map((r) => Object.assign({}, r, { label: pageName() + ': ' + r.label }));
+      const results = (acc.results || []).concat(here);
+      const plan = acc.plan || [];
+      if (!stopped && plan.length) {
+        saveAcc({ results, plan: plan.slice(1) });
+        log('จบหน้า' + pageName() + ' — ไปหน้าถัดไปต่อให้ (รายการที่ต้องตรวจจะแจ้งรวมตอนจบทั้งหมด)');
+        setTimeout(() => goNext(plan[0]), 800);
+        return;
+      }
+      clearAcc(); clearActAfter();
+      showFinalReport(results, stopped);
+      return;
+    }
     const res = st.results || [];
     const ok = res.filter((r) => r.status === 'ok').length;
     const bad = res.filter((r) => r.status !== 'ok');
@@ -1250,13 +1297,13 @@
       }
     };
     document.getElementById('pp5-sgs-start').onclick = (ev) => {
-      if (!(ev && ev.isTrusted === false)) { const ac = document.getElementById('pp5-sgs-actchain'); setActAfter(!!(ac && ac.checked)); }
+      if (!(ev && ev.isTrusted === false)) { const ac = document.getElementById('pp5-sgs-actchain'); setActAfter(!!(ac && ac.checked)); clearAcc(); }
       const raw = document.getElementById('pp5-sgs-paste').value.trim();
       if (!raw) { log('กรุณาวาง JSON ก่อน', true); return; }
       let payload;
       try { payload = JSON.parse(raw); }
       catch (e) { log('อ่าน JSON ไม่สำเร็จ: ' + e.message, true); return; }
-      if (Array.isArray(payload.subjects)) { saveData(raw); multiStart(payload, !(ev && ev.isTrusted === false)); return; }
+      if (Array.isArray(payload.subjects)) { saveData(raw); if (!(ev && ev.isTrusted === false)) startAcc(); multiStart(payload, !(ev && ev.isTrusted === false)); return; }
       if (!payload.students) { log('รูปแบบข้อมูลไม่ถูกต้อง (ไม่พบ students)', true); return; }
       saveData(raw);
       lastPayload = payload;
@@ -1266,7 +1313,7 @@
         if (isEval) runEvalFill(payload.students); else runFill(payload.students);
       });
     };
-    document.getElementById('pp5-sgs-stop').onclick = () => { stopRequested = true; clearActAfter(); if (loadMulti()) { clearMulti(); log('หยุดแล้ว — ยกเลิกการวนกรอกหลายวิชา'); } };
+    document.getElementById('pp5-sgs-stop').onclick = () => { stopRequested = true; clearActAfter(); clearAcc(); if (loadMulti()) { clearMulti(); log('หยุดแล้ว — ยกเลิกการวนกรอกหลายวิชา'); } };
     document.getElementById('pp5-sgs-clearsaved').onclick = () => {
       try { localStorage.removeItem(DATA_KEY); } catch (e) { /* ignore */ }
       document.getElementById('pp5-sgs-paste').value = '';
@@ -1292,6 +1339,12 @@
       }
     }
     setTimeout(() => { if (multiCurrent() || (loadMulti() && loadMulti().kind === pageKindKey() && multiPayload())) multiRun(); }, 1200); // หน้ารีโหลดกลางการวนกรอกหลายวิชา → ทำต่อ
+    {
+      let ma = null;
+      try { ma = JSON.parse(localStorage.getItem(MULTI_AUTO_KEY)); localStorage.removeItem(MULTI_AUTO_KEY); } catch (e) { /* ไม่เป็นไร */ }
+      const pl = ma && ma.ts && Date.now() - ma.ts < 120000 ? multiPayload() : null;
+      if (pl) { log('ทำต่อเนื่องจากหน้าก่อนหน้า — เริ่มวนกรอกทุกวิชาหน้า' + pageName() + ' ให้อัตโนมัติ'); setTimeout(() => multiStart(pl, true), 1500); }
+    }
     setTimeout(showDoneIfPending, 800); // หน้าที่รีโหลดหลังกดบันทึกหน้าสุดท้าย → ขึ้นป๊อปอัปแจ้งผล
     document.getElementById('pp5-sgs-scan').onclick = () => (isEval ? scanEvalPage() : scanPage());
     document.getElementById('pp5-sgs-copylog').onclick = async () => {
@@ -1388,6 +1441,12 @@
     const st = loadAct(); clearAct();
     if (!st) return;
     const res = st.results || [];
+    const acc = loadAcc();
+    if (acc) { // มาจากสายทำต่อเนื่องของโหมดทุกวิชา → แจ้งรวมทั้งสายตรงนี้
+      clearAcc(); clearActAfter();
+      showFinalReport((acc.results || []).concat(res.map((r) => Object.assign({}, r, { label: 'กิจกรรม: ' + r.label }))), stopped);
+      return;
+    }
     const ok = res.filter((r) => r.status === 'ok');
     const bad = res.filter((r) => r.status !== 'ok');
     const esc = (t) => String(t).replace(/[<>&]/g, '');
@@ -1486,7 +1545,8 @@
       '<div id="pp5-sgs-log" style="max-height:170px;overflow:auto;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:6px;font-size:11px;line-height:1.5;margin-bottom:6px"></div>' +
       '<div id="pp5-sgs-credit" style="border-top:1px solid #e5e7eb;padding-top:6px;font-size:10px;color:#94a3b8;text-align:center">ผู้พัฒนา: ' + DEVELOPER + ' · ' + APP_VERSION + '</div>';
     document.body.appendChild(wrap);
-    const startAct = () => {
+    const startAct = (ev) => {
+      if (ev && ev.isTrusted) clearAcc();
       const subj = actSelectAfter(/^รายวิชา$/);
       const vals = actRealOptions(subj).map((o) => o.value);
       if (!subj || !vals.length) { log('ไม่พบรายวิชากิจกรรมในช่อง "รายวิชา" (เลือก ชั้น ด้านบนก่อน) ', true); return; }
@@ -1496,7 +1556,7 @@
       actRun();
     };
     document.getElementById('pp5-sgs-act-start').onclick = startAct;
-    document.getElementById('pp5-sgs-act-stop').onclick = () => { stopRequested = true; if (loadAct()) { clearAct(); log('หยุดแล้ว'); } setAutoConfirm(false); };
+    document.getElementById('pp5-sgs-act-stop').onclick = () => { stopRequested = true; clearAcc(); if (loadAct()) { clearAct(); log('หยุดแล้ว'); } setAutoConfirm(false); };
     clearActAfter();
     installAutoConfirm();
     // มาจากปุ่ม "บันทึกกิจกรรม" ในป๊อปอัปหน้ากลางภาค/หลังกลางภาค → เริ่มทำอัตโนมัติ
