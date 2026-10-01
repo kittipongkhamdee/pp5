@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autofill SGS จากระบบ ปพ.5
 // @namespace    pp5-sgs-autofill
-// @version      2.25.3
+// @version      2.26.0
 // @description  วางคะแนนและผลประเมิน (อ่าน คิดวิเคราะห์ เขียน / คุณลักษณะอันพึงประสงค์) ที่คัดลอกจากระบบ ปพ.5 ลงหน้ากรอกคะแนน SGS (sgs.bopp-obec.info) ให้อัตโนมัติ
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts1-Table.aspx*
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts2-Table.aspx*
@@ -52,7 +52,7 @@
   const FIELD_ORDER = Object.keys(CHECKBOX_MAP);
 
   // เลขรุ่นที่แสดงในกล่อง (ต้องตรงกับ @version ด้านบน)
-  const APP_VERSION = 'สคริปต์ Tampermonkey v2.25.3';
+  const APP_VERSION = 'สคริปต์ Tampermonkey v2.26.0';
   const DEVELOPER = 'นายกิตติพงษ์ คำดี';
 
   // หน่วงเวลาระหว่างช่อง: SGS บันทึกอัตโนมัติทุกครั้งที่ค่าเปลี่ยน ถ้ากรอกเร็วเกินคำขอบันทึกจะซ้อนกันจน SGS ฝั่งเซิร์ฟเวอร์ล้ม
@@ -859,13 +859,29 @@
     return (p && p.subjects[st.idx]) || null;
   }
   function subjLabel(p) { return (p.subject_code || '') + ' ' + (p.subject_name || '') + ' ' + (p.level || '') + (Number(p.room) > 0 ? '/' + p.room : ''); }
-  function multiPushResult(status, note) {
+  // วิชาที่ไม่สำเร็จ: ไม่แจ้งทันที แต่เอาไปต่อท้ายคิวให้ทำอีกรอบหลังวิชาอื่น (ลองซ้ำได้อีก MULTI_RETRY ครั้ง) ถ้ายังไม่สำเร็จค่อยแจ้งในสรุปท้ายรอบ
+  // noRetry = ความผิดที่ลองกี่ครั้งก็เหมือนเดิม (ไม่พบวิชาใน SGS / คะแนนเต็มไม่ตรง / รหัสวิชาไม่ตรง)
+  const MULTI_RETRY = 2;
+  function multiPushResult(status, note, noRetry) {
     const st = loadMulti(); const p = multiCurrent();
     if (!st || !p) return;
-    const results = (st.results || []).concat([{ label: subjLabel(p).trim(), status, note: note || '' }]);
-    saveMulti({ results, idx: st.idx + 1, phase: 'select', tries: 0, gTried: [], settle: 0 });
+    const n = multiPayload().subjects.length;
+    const order = (st.order || Array.from({ length: n }, (_, i) => i)).slice();
+    const att = Object.assign({}, st.att || {});
+    const cur = st.idx;
+    att[cur] = (att[cur] || 0) + 1;
+    let results = (st.results || []).slice();
+    const label = subjLabel(p).trim();
+    if (status !== 'ok' && !noRetry && att[cur] <= MULTI_RETRY) {
+      order.push(cur);
+      log('↻ ' + label + ' ไม่สำเร็จ (' + note + ') — จะกลับมาทำอีกครั้งหลังวิชาอื่น (รอบที่ ' + (att[cur] + 1) + '/' + (MULTI_RETRY + 1) + ')');
+    } else {
+      results = results.concat([{ label, status, note: (note || '') + (att[cur] > 1 ? ' (ลองแล้ว ' + att[cur] + ' ครั้ง)' : '') }]);
+    }
+    const pos = (st.pos != null ? st.pos : st.idx) + 1;
+    saveMulti({ results, order, att, pos, idx: pos < order.length ? order[pos] : n, phase: 'select', tries: 0, gTried: [], settle: 0 });
   }
-  function multiSkip(note) { log('✗ ข้ามวิชา ' + (multiCurrent() ? subjLabel(multiCurrent()).trim() : '') + ' — ' + note, true); multiPushResult('skip', note); }
+  function multiSkip(note, noRetry) { log('✗ วิชา ' + (multiCurrent() ? subjLabel(multiCurrent()).trim() : '') + ' — ' + note, true); multiPushResult('skip', note, noRetry); }
   function multiFinish(stopped) {
     const st = loadMulti(); clearMulti();
     if (!st) return;
@@ -938,7 +954,7 @@
     if (tries > 10) { multiSkip('เลือกรายวิชา/กลุ่มใน SGS ไม่สำเร็จหลายรอบ'); return 'skip'; }
     saveMulti({ tries });
     const f = multiFindSubject(p);
-    if (!f) { multiSkip('ไม่พบรายวิชานี้ในรายการของ SGS'); return 'skip'; }
+    if (!f) { multiSkip('ไม่พบรายวิชานี้ในรายการของ SGS', true); return 'skip'; }
     if (f.sel.selectedIndex !== f.opt.index) {
       log('เลือกรายวิชา ' + subjLabel(p).trim() + ' ...');
       f.sel.value = f.opt.value; fireEvent(f.sel, 'change');
@@ -1048,9 +1064,9 @@
     if ((isPage1 || isPage2) && !pageStudentCodes().size) { multiSkip('ตารางไม่มีรายชื่อนักเรียน (ยังไม่ได้เลือกกลุ่ม หรือวิชานี้ไม่มีนักเรียนใน SGS)'); return; }
     if (isPage1 || isPage2) {
       const problems = await multiTickColumns(p);
-      if (problems.length) { multiSkip('คะแนนเต็มไม่ตรงกับ SGS (' + problems.join('; ') + ') — แก้คะแนนเต็มให้ตรงกันแล้วทำวิชานี้ซ้ำ'); return; }
+      if (problems.length) { multiSkip('คะแนนเต็มไม่ตรงกับ SGS (' + problems.join('; ') + ') — แก้คะแนนเต็มให้ตรงกันแล้วทำวิชานี้ซ้ำ', true); return; }
     }
-    if (!checkSubject(p, false, true)) { multiSkip('รหัสวิชาไม่ตรงกับหน้า SGS'); return; }
+    if (!checkSubject(p, false, true)) { multiSkip('รหัสวิชาไม่ตรงกับหน้า SGS', true); return; }
     log('กรอกวิชา ' + subjLabel(p).trim() + ' (' + Object.keys(p.students).length + ' คน)');
     const created = await ensureCreated(p.students);
     if (!created) { await sleep(6000); multiSkip('สร้างแถวนักเรียน (กด "สร้าง") ไม่สำเร็จ'); return; } // ถ้าหน้ารีโหลด สคริปต์ตายตรงนี้ หน้าใหม่จะกรอกต่อเอง (ผ่านระบบ resume)
@@ -1102,7 +1118,7 @@
     const st = loadMulti();
     if (fresh || !st || st.kind !== pageKindKey()) {
       stopRequested = false;
-      saveMulti({ kind: pageKindKey(), idx: 0, phase: 'select', results: [], tries: 0, gTried: [] });
+      saveMulti({ kind: pageKindKey(), idx: 0, order: Array.from({ length: payload.subjects.length }, (_, i) => i), pos: 0, att: {}, phase: 'select', results: [], tries: 0, gTried: [] });
       log('เริ่มวนกรอก ' + payload.subjects.length + ' วิชา (หน้า' + (isEval ? (evalKind === 'char' ? 'คุณลักษณะฯ' : 'อ่าน คิดฯ เขียน') : (isPage1 ? 'กลางภาค' : 'หลังกลางภาค')) + ') — อย่าปิดแท็บ หน้าจะรีโหลดหลายรอบ กดหยุดได้ตลอด');
     }
     multiRun();
@@ -1349,12 +1365,24 @@
     });
     return { pass, total };
   }
+  // รายการ (วิชา × กลุ่ม) ที่ไม่สำเร็จ: เก็บไว้ทำอีกรอบหลังทำครบทุกรายการ (ลองซ้ำได้อีก 2 ครั้ง) ไม่สำเร็จจริงค่อยแจ้งในสรุป
   function actPush(status, note) {
     const st = loadAct(); if (!st) return;
-    const results = (st.results || []).concat([{ label: st.curLabel || '', status, note: note || '' }]);
+    const gv = (st.gValues || [])[st.gi || 0] || '';
+    const key = st.si + '|' + gv;
+    const att = Object.assign({}, st.att || {});
+    att[key] = (att[key] || 0) + 1;
+    let results = (st.results || []).slice();
+    const redo = (st.redo || []).slice();
+    if (status !== 'ok' && att[key] <= 2) {
+      redo.push({ si: st.si, gv });
+      log('↻ ' + (st.curLabel || '') + ' ไม่สำเร็จ (' + (note || '') + ') — จะกลับมาทำอีกครั้งหลังรายการอื่น (รอบที่ ' + (att[key] + 1) + '/3)');
+    } else {
+      results = results.concat([{ label: st.curLabel || '', status, note: (note || '') + (att[key] > 1 ? ' (ลองแล้ว ' + att[key] + ' ครั้ง)' : '') }]);
+    }
     const gi = (st.gi || 0) + 1;
-    if (gi >= (st.gValues || []).length) saveAct({ results, si: (st.si || 0) + 1, phase: 'selsubj', gValues: null, gi: 0, tries: 0 });
-    else saveAct({ results, gi, phase: 'selgroup', tries: 0 });
+    if (gi >= (st.gValues || []).length) saveAct({ results, redo, att, si: st.inRedo ? st.subjValues.length : (st.si || 0) + 1, phase: 'selsubj', gValues: null, gi: 0, tries: 0, only: null });
+    else saveAct({ results, redo, att, gi, phase: 'selgroup', tries: 0 });
   }
   function actFinish(stopped) {
     const st = loadAct(); clearAct();
@@ -1380,7 +1408,10 @@
         if (stopRequested) { actFinish(true); return; }
         const subjSel = actSelectAfter(/^รายวิชา$/);
         if (!subjSel) { log('หาช่องเลือก "รายวิชา" ในหน้านี้ไม่เจอ — หยุด', true); clearAct(); return; }
-        if ((st.si || 0) >= st.subjValues.length) { actFinish(false); return; }
+        if ((st.si || 0) >= st.subjValues.length) {
+          if ((st.redo || []).length) { const it = st.redo[0]; saveAct({ si: it.si, only: it.gv, inRedo: true, redo: st.redo.slice(1), phase: 'selsubj', gValues: null, gi: 0, tries: 0 }); continue; }
+          actFinish(false); return;
+        }
         const tries = (st.tries || 0) + 1;
         if (tries > 12) { actPush('bad', 'ลองหลายรอบแล้วไม่สำเร็จ (' + st.phase + ')'); continue; }
         saveAct({ tries });
@@ -1395,7 +1426,7 @@
           const cur = subjSel.options[subjSel.selectedIndex];
           const g = findGroupSelect();
           const gv = actRealOptions(g).map((o) => o.value);
-          saveAct({ phase: 'selgroup', gValues: gv.length ? gv : [''], gi: 0, tries: 0, curSubj: cur ? cur.text.trim() : '' });
+          saveAct({ phase: 'selgroup', gValues: st.only != null ? [st.only] : (gv.length ? gv : ['']), gi: 0, tries: 0, curSubj: cur ? cur.text.trim() : '' });
           continue;
         }
         const gv = st.gValues[st.gi || 0];
@@ -1460,7 +1491,7 @@
       const vals = actRealOptions(subj).map((o) => o.value);
       if (!subj || !vals.length) { log('ไม่พบรายวิชากิจกรรมในช่อง "รายวิชา" (เลือก ชั้น ด้านบนก่อน) ', true); return; }
       stopRequested = false;
-      saveAct({ subjValues: vals, si: 0, phase: 'selsubj', gValues: null, gi: 0, results: [], tries: 0, curLabel: '', curSubj: '' });
+      saveAct({ subjValues: vals, si: 0, phase: 'selsubj', gValues: null, gi: 0, results: [], redo: [], att: {}, only: null, inRedo: false, tries: 0, curLabel: '', curSubj: '' });
       log('เริ่ม: พบกิจกรรม ' + vals.length + ' รายวิชา (ชั้นที่เลือกอยู่ด้านบน) — อย่าปิดแท็บ หน้าจะรีโหลดหลายรอบ กดหยุดได้ตลอด');
       actRun();
     };
