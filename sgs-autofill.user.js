@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autofill SGS จากระบบ ปพ.5
 // @namespace    pp5-sgs-autofill
-// @version      2.25.1
+// @version      2.25.2
 // @description  วางคะแนนและผลประเมิน (อ่าน คิดวิเคราะห์ เขียน / คุณลักษณะอันพึงประสงค์) ที่คัดลอกจากระบบ ปพ.5 ลงหน้ากรอกคะแนน SGS (sgs.bopp-obec.info) ให้อัตโนมัติ
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts1-Table.aspx*
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts2-Table.aspx*
@@ -52,7 +52,7 @@
   const FIELD_ORDER = Object.keys(CHECKBOX_MAP);
 
   // เลขรุ่นที่แสดงในกล่อง (ต้องตรงกับ @version ด้านบน)
-  const APP_VERSION = 'สคริปต์ Tampermonkey v2.25.1';
+  const APP_VERSION = 'สคริปต์ Tampermonkey v2.25.2';
   const DEVELOPER = 'นายกิตติพงษ์ คำดี';
 
   // หน่วงเวลาระหว่างช่อง: SGS บันทึกอัตโนมัติทุกครั้งที่ค่าเปลี่ยน ถ้ากรอกเร็วเกินคำขอบันทึกจะซ้อนกันจน SGS ฝั่งเซิร์ฟเวอร์ล้ม
@@ -562,22 +562,37 @@
     const box = inp.closest('td, div');
     return box ? box.querySelector('input[type="image"], input[type="submit"], input[type="button"], button') : null;
   }
+  // ส่งปุ่ม Enter แบบมี keyCode จริง (KeyboardEvent ที่สร้างเองมี keyCode = 0 ทำให้ onkeypress ของ SGS ที่เช็ค keyCode == 13 ไม่ทำงาน)
+  function pressEnter(el) {
+    ['keydown', 'keypress', 'keyup'].forEach((t) => {
+      const e = new KeyboardEvent(t, { key: 'Enter', code: 'Enter', bubbles: true, cancelable: true });
+      ['keyCode', 'which', 'charCode'].forEach((k) => { try { Object.defineProperty(e, k, { get: () => 13 }); } catch (err) { /* ไม่เป็นไร */ } });
+      el.dispatchEvent(e);
+    });
+  }
   async function ensureFullPage(expectCount) {
     const inp = findPageSizeInput();
     const total = readTotalRecords() || expectCount || 0;
     if (!inp || !total) { log('หาช่อง "รายการ / หน้า" หรือจำนวนรายการทั้งหมดไม่เจอ — ตรวจเองว่าช่องนี้ ≥ จำนวนนักเรียน (ไม่งั้นจะกรอกได้เฉพาะหน้าที่แสดงอยู่)', true); return true; }
     const cur = parseInt(inp.value, 10) || 0;
     if (cur >= total && readTotalPages() <= 1) return true;
-    if (resumeStep === 'pagesize') { log('ปรับช่อง "รายการ / หน้า" อัตโนมัติแล้วแต่ยังแสดงไม่ครบ — ปรับเองเป็น ' + total + ' แล้วกดเริ่มใหม่', true); return false; }
-    log('ช่อง "รายการ / หน้า" เป็น ' + cur + ' แต่มีนักเรียน ' + total + ' รายการ — กำลังปรับเป็น ' + total + ' ให้...');
+    if (resumeStep === 'pagesize') { log('ปรับช่อง "รายการ / หน้า" อัตโนมัติแล้วแต่ยังแสดงไม่ครบ — ปรับเองเป็น ' + total + ' แล้วกดเริ่มใหม่', true); clearResume(); return false; }
+    const btn = findPageSizeButton(inp);
+    log('ช่อง "รายการ / หน้า" เป็น ' + cur + ' แต่มีนักเรียน ' + total + ' รายการ — กำลังปรับเป็น ' + total + ' ให้... (ช่อง id=' + (inp.id || '-') + ' ปุ่ม=' + (btn ? (btn.id || btn.tagName) : 'ไม่พบ ใช้ปุ่ม Enter') + ')');
     setResume('pagesize');
     inp.focus();
     setNativeValue(inp, String(Math.max(total, cur)));
-    const btn = findPageSizeButton(inp);
-    if (btn) btn.click();
-    else ['keydown', 'keypress', 'keyup'].forEach((t) => inp.dispatchEvent(new KeyboardEvent(t, { key: 'Enter', keyCode: 13, which: 13, bubbles: true })));
-    let changeSent = false;
-    for (let i = 0; i < 40; i++) {
+    fireEvent(inp, 'input');
+    // ลำดับวิธี: (1) กดปุ่มของช่อง (ถ้าเจอ) (2) ปุ่ม Enter (3) change+blur — ทำทีละวิธี รอผลก่อนลองวิธีถัดไป
+    const tries = [
+      () => { if (btn) btn.click(); else pressEnter(inp); },
+      () => { const e = findPageSizeInput(); if (e) pressEnter(e); },
+      () => { const e = findPageSizeInput(); if (e) { fireEvent(e, 'change'); fireEvent(e, 'blur'); } },
+      () => { const e = findPageSizeInput(); const b = e && findPageSizeButton(e); if (b) b.click(); },
+    ];
+    let step = 0;
+    tries[step++]();
+    for (let i = 0; i < 70; i++) {
       await sleep(300);
       if (readTotalPages() === 1) {
         clearResume();
@@ -585,7 +600,7 @@
         log('ปรับช่อง "รายการ / หน้า" เป็น ' + total + ' แล้ว');
         return true;
       }
-      if (i === 9 && !changeSent) { changeSent = true; const cur2 = findPageSizeInput(); if (cur2) fireEvent(cur2, 'change'); }
+      if (i % 12 === 11 && step < tries.length) { log('ตารางยังไม่อัปเดต — ลองส่งคำสั่งอีกวิธี (' + (step + 1) + '/' + tries.length + ')'); tries[step++](); }
     }
     clearResume();
     log('รอตารางอัปเดตหลังปรับ "รายการ / หน้า" ไม่สำเร็จ — ปรับช่องนี้เองเป็น ' + total + ' แล้วกดเริ่มใหม่', true);
@@ -1010,12 +1025,9 @@
     if (!checkSubject(p, false, true)) { multiSkip('รหัสวิชาไม่ตรงกับหน้า SGS'); return; }
     log('กรอกวิชา ' + subjLabel(p).trim() + ' (' + Object.keys(p.students).length + ' คน)');
     const created = await ensureCreated(p.students);
-    const okPage = created ? await ensureFullPage(Object.keys(p.students).length) : false;
-    if (!okPage) {
-      await sleep(6000); // ถ้าหน้ารีโหลด สคริปต์ตายตรงนี้ หน้าใหม่จะกรอกต่อเอง (ผ่านระบบ resume)
-      multiSkip('เตรียมตาราง (สร้างแถว/จำนวนรายการต่อหน้า) ไม่สำเร็จ');
-      return;
-    }
+    if (!created) { await sleep(6000); multiSkip('สร้างแถวนักเรียน (กด "สร้าง") ไม่สำเร็จ'); return; } // ถ้าหน้ารีโหลด สคริปต์ตายตรงนี้ หน้าใหม่จะกรอกต่อเอง (ผ่านระบบ resume)
+    const okPage = await ensureFullPage(Object.keys(p.students).length);
+    if (!okPage) { await sleep(6000); multiSkip('ปรับ "รายการ / หน้า" ให้แสดงนักเรียนครบไม่สำเร็จ'); return; }
     if (isEval) await runEvalFill(p.students); else await runFill(p.students);
     const st2 = loadMulti();
     if (st2 && st2.idx === st.idx && st2.phase === 'fill') multiSkip('ไม่มีข้อมูลให้กรอกในหน้านี้ หรือยังไม่ได้ปลดล็อกคอลัมน์');
