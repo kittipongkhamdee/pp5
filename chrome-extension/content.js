@@ -850,7 +850,7 @@
     const st = loadMulti(); const p = multiCurrent();
     if (!st || !p) return;
     const results = (st.results || []).concat([{ label: subjLabel(p).trim(), status, note: note || '' }]);
-    saveMulti({ results, idx: st.idx + 1, phase: 'select', tries: 0, gTried: [] });
+    saveMulti({ results, idx: st.idx + 1, phase: 'select', tries: 0, gTried: [], settle: 0 });
   }
   function multiSkip(note) { log('✗ ข้ามวิชา ' + (multiCurrent() ? subjLabel(multiCurrent()).trim() : '') + ' — ' + note, true); multiPushResult('skip', note); }
   function multiFinish(stopped) {
@@ -892,6 +892,30 @@
     });
     return codes;
   }
+  // รอให้ SGS โหลดตารางจริงหลังเลือกวิชา/กลุ่ม (เดิมรอ 3 วินาทีตายตัว — เน็ตช้าตารางยังเป็นของกลุ่มก่อนหน้า ทำให้สรุปว่าไม่พบนักเรียน)
+  // ถ้าหน้ารีโหลดเต็มหน้า สคริปต์จะตายระหว่างรอ แล้วหน้าใหม่ทำต่อเอง
+  function tableSig() { return Array.from(pageStudentCodes()).sort().join(','); }
+  async function waitTableChange(before, maxMs) {
+    const start = Date.now();
+    await sleep(1200);
+    while (Date.now() - start < maxMs) {
+      const now = tableSig();
+      if (now !== '' && now !== before) { await sleep(600); return true; }
+      await sleep(300);
+    }
+    return false;
+  }
+  // หลังเลือกวิชา: รอให้ช่อง "กลุ่ม" มีรายการให้เลือก
+  async function waitGroupOptions(maxMs) {
+    const start = Date.now();
+    await sleep(1200);
+    while (Date.now() - start < maxMs) {
+      const g = findGroupSelect();
+      if (g && groupCandidates(g).length) { await sleep(600); return true; }
+      await sleep(300);
+    }
+    return false;
+  }
   function groupCandidates(g) {
     return Array.from(g.options).filter((o) => o.value !== '' && !/\*\*/.test(o.text));
   }
@@ -905,7 +929,7 @@
     if (f.sel.selectedIndex !== f.opt.index) {
       log('เลือกรายวิชา ' + subjLabel(p).trim() + ' ...');
       f.sel.value = f.opt.value; fireEvent(f.sel, 'change');
-      await sleep(3000);
+      await waitGroupOptions(25000);
       return 'again';
     }
     const g = findGroupSelect();
@@ -926,7 +950,7 @@
         const first = (roomKey && cand.find((o) => o.text.trim() === roomKey)) || cand[0];
         saveMulti({ gTried: nextTried.concat(['pick', first.value]) });
         log('เลือกกลุ่ม ' + first.text.trim() + ' ...');
-        g.value = first.value; fireEvent(g, 'change'); await sleep(3000);
+        { const sig0 = tableSig(); g.value = first.value; fireEvent(g, 'change'); await waitTableChange(sig0, isEval ? 8000 : 25000); }
         return 'again';
       }
       if (!codes.size) {
@@ -934,7 +958,7 @@
         const roomOpt = roomKey && cand.find((o) => o.text.trim() === roomKey);
         if (roomOpt && curVal !== roomOpt.value && tried.indexOf('room') < 0) {
           saveMulti({ gTried: nextTried.concat(['room']) });
-          g.value = roomOpt.value; fireEvent(g, 'change'); await sleep(3000);
+          { const sig0 = tableSig(); g.value = roomOpt.value; fireEvent(g, 'change'); await waitTableChange(sig0, isEval ? 8000 : 25000); }
           return 'again';
         }
         return 'fill';
@@ -942,10 +966,14 @@
       // ตารางมีนักเรียนแต่ไม่ใช่ห้องนี้ → ลองกลุ่มอื่นที่ยังไม่เคยลอง (ให้กลุ่มที่ชื่อตรงกับห้องก่อน)
       const untried = cand.filter((o) => nextTried.indexOf(o.value) < 0);
       const pick = (roomKey && untried.find((o) => o.text.trim() === roomKey)) || untried[0];
-      if (!pick) { multiSkip('ไม่พบนักเรียนของวิชานี้ในกลุ่มใดของ SGS เลย'); return 'skip'; }
+      if (!pick) {
+        // ก่อนสรุปว่าไม่พบ: เน็ตช้าอาจทำให้ตารางยังเป็นของกลุ่มก่อนหน้า — รอแล้วตรวจอีกรอบหนึ่ง
+        if ((st.settle || 0) < 2) { saveMulti({ settle: (st.settle || 0) + 1 }); log('ยังไม่พบนักเรียนที่ตรงกัน — รอตารางโหลดอีกครั้ง...'); await sleep(8000); return 'again'; }
+        multiSkip('ไม่พบนักเรียนของวิชานี้ในกลุ่มใดของ SGS เลย (ตรวจซ้ำแล้ว)'); return 'skip';
+      }
       saveMulti({ gTried: nextTried });
       log('กลุ่มนี้ไม่มีนักเรียนของวิชานี้ — ลองกลุ่ม ' + pick.text.trim() + ' ...');
-      g.value = pick.value; fireEvent(g, 'change'); await sleep(3000);
+      { const sig0 = tableSig(); g.value = pick.value; fireEvent(g, 'change'); await waitTableChange(sig0, isEval ? 8000 : 25000); }
       return 'again';
     }
     return 'fill';
@@ -1051,7 +1079,7 @@
         if (st.phase === 'saved') { await multiAfterSave(p); continue; }
         if (st.phase === 'fill') { await multiFill(p); continue; }
         const r = await multiSelect(p, st);
-        if (r === 'fill') saveMulti({ phase: 'fill', tries: 0 });
+        if (r === 'fill') saveMulti({ phase: 'fill', tries: 0, settle: 0 });
       }
     } finally { multiBusy = false; }
   }
@@ -1349,7 +1377,7 @@
             const opt = Array.from(subjSel.options).find((o) => o.value === sv);
             if (!opt) { saveAct({ si: st.si + 1, tries: 0 }); continue; }
             log('เลือกรายวิชา ' + opt.text.trim() + ' ...');
-            subjSel.value = sv; fireEvent(subjSel, 'change'); await sleep(3000); continue;
+            subjSel.value = sv; fireEvent(subjSel, 'change'); await waitGroupOptions(25000); continue;
           }
           const cur = subjSel.options[subjSel.selectedIndex];
           const g = findGroupSelect();
@@ -1362,7 +1390,7 @@
         if (st.phase === 'selgroup') {
           if (gv !== '' && g && g.value !== gv) {
             log('เลือกกลุ่ม ' + ((Array.from(g.options).find((o) => o.value === gv) || {}).text || gv).trim() + ' ...');
-            g.value = gv; fireEvent(g, 'change'); await sleep(3000); continue;
+            { const sig0 = tableSig(); g.value = gv; fireEvent(g, 'change'); await waitTableChange(sig0, 25000); } continue;
           }
           const go = g && g.options[g.selectedIndex];
           saveAct({ phase: 'apply', tries: 0, curLabel: (st.curSubj || '') + (go && gv !== '' ? ' กลุ่ม ' + go.text.trim() : '') });
