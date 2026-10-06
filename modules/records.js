@@ -2101,8 +2101,9 @@ async function pgCover(){
 
   $('pg').innerHTML=`
   <div class="ph no-print"><div class="ptitle">ปก ปพ.5</div>
+    <div style="flex:1;display:flex;justify-content:center;gap:8px;flex-wrap:wrap">
     <button class="btn bs no-print" onclick="printCover()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>พิมพ์ปก</button>
-      <button class="btn no-print" style="background:linear-gradient(135deg,#1d1d1f,#3a3a3c);color:#fff;border:none;font-weight:600" onclick="printAllPP5()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>พิมพ์ทั้งหมด</button></div>
+      <button class="btn no-print" style="background:linear-gradient(135deg,#1d1d1f,#3a3a3c);color:#fff;border:none;font-weight:600" onclick="printAllPP5()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>พิมพ์เล่มปพ.5</button></div></div>
   <div style="display:flex;gap:10px;margin-bottom:14px" class="no-print">
     <select class="fs" style="max-width:310px" onchange="changeCvrSub(this.value)">
       ${S.subjects.map(s=>`<option value="${s.id}" ${s.id===S.selSub?'selected':''}>${s.subject_name} ${grm(s.grade_level,s.room)}</option>`).join('')}
