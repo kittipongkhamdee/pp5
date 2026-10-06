@@ -3826,10 +3826,11 @@ function renderUnitTab(period,maxTotal){
         <tbody>${scStus.length===0
           ?`<tr><td colspan="${units.length+3}" class="tc" style="padding:20px;color:var(--muted)">${_ico.warning} ไม่พบนักเรียน</td></tr>`
           :scStus.map((s,i)=>{
-            let tot=0;
+            let tot=0, hasAny=false; // hasAny = มีคะแนนบันทึกไว้อย่างน้อย 1 หน่วย (รวมที่ได้ 0) → ช่องรวมแสดง 0 ได้ ไม่ใช่ "-"
             const cells=units.map(u=>{
               const sc=gsc(s.id,period,u.unit_number);
               tot+=sc??0;
+              if(sc!=null&&!isNaN(sc)) hasAny=true;
               const display=sc!=null?sc:'-';
               return`<td class="tr2" style="cursor:pointer" onclick="quickEditScore('${period}',${u.unit_number},${u.max_score},'${s.id}',${sc??'null'})" title="คลิกเพื่อแก้ไข">${display}</td>`;
             });
@@ -3837,7 +3838,7 @@ function renderUnitTab(period,maxTotal){
               <td class="tc" data-freeze="a">${i+1}</td>
               <td data-freeze="b" style="white-space:nowrap">${esc(s.student_name)}${flexBadge(s.id)}</td>
               ${cells.join('')}
-              <td class="tr2"><strong>${tot>0?tot:'-'}</strong></td>
+              <td class="tr2"><strong>${hasAny?tot:'-'}</strong></td>
             </tr>`;
           }).join('')}
         </tbody>
@@ -5065,8 +5066,8 @@ function printScores(){
     scStus.forEach((s,i)=>{
       body+=`<tr><td>${i+1}</td><td>${esc(s.student_code)}</td><td class="l">${esc(s.student_name)}</td>`;
       cols.forEach(u=>{ const sc=gsc(s.id,u.period,u.unit_number); body+=`<td>${sc!=null?sc:''}</td>`; });
-      if(isLastBef){ const bef=scU.before.reduce((a,u)=>a+(gsc(s.id,'before',u.unit_number)??0),0); body+=`<td><strong>${bef||''}</strong></td>`; }
-      if(isLastAft){ const aft=scU.after.reduce((a,u)=>a+(gsc(s.id,'after',u.unit_number)??0),0); body+=`<td><strong>${aft||''}</strong></td>`; }
+      if(isLastBef){ const bef=scU.before.reduce((a,u)=>a+(gsc(s.id,'before',u.unit_number)??0),0); const hb=scU.before.some(u=>gsc(s.id,'before',u.unit_number)!=null); body+=`<td><strong>${hb?bef:''}</strong></td>`; } // ได้ 0 จริงพิมพ์ 0 ยังไม่มีคะแนนเลยพิมพ์ว่าง
+      if(isLastAft){ const aft=scU.after.reduce((a,u)=>a+(gsc(s.id,'after',u.unit_number)??0),0); const ha=scU.after.some(u=>gsc(s.id,'after',u.unit_number)!=null); body+=`<td><strong>${ha?aft:''}</strong></td>`; }
       body+=`</tr>`;
     });
     body+=`</tbody></table></div>`;
@@ -5090,11 +5091,18 @@ function printScores(){
     const fin=parseFloat(sm.final_score)||0;
     const tot=sm.total_score!=null?parseFloat(sm.total_score):(bef+aft+midUsed+fin);
     const g=sm.grade!=null&&sm.grade!==''?sm.grade:(tot>0?calcGrade(tot):'-');
+    // มีข้อมูลจริงหรือไม่ — ได้ 0 จริงให้พิมพ์ 0, ยังไม่มีข้อมูลเลยค่อยพิมพ์ว่าง
+    const hv=v=>v!=null&&v!==''&&!isNaN(parseFloat(v));
+    const hasBef=hv(sm.total_before_mid)||scUnits.some(u=>u.period==='before'&&String(u.student_id)===sid&&hv(u.score));
+    const hasAft=hv(sm.total_after_mid)||scUnits.some(u=>u.period==='after'&&String(u.student_id)===sid&&hv(u.score));
+    const hasMid=hv(sm.mid_normal)||hv(sm.mid_retake)||hv(sm.mid_repeat);
+    const hasFin=hv(sm.final_score);
+    const hasTot=hv(sm.total_score)||hasBef||hasAft||hasMid||hasFin;
     body+=`<tr>
       <td>${i+1}</td><td>${esc(s.student_code)}</td><td class="l">${esc(s.student_name)}</td>
-      <td>${bef||''}</td><td>${aft||''}</td>
-      <td>${midUsed||''}</td><td>${bef+aft+midUsed||''}</td>
-      <td>${fin||''}</td><td><strong>${tot||''}</strong></td>
+      <td>${hasBef?bef:''}</td><td>${hasAft?aft:''}</td>
+      <td>${hasMid?midUsed:''}</td><td>${(hasBef||hasAft||hasMid)?bef+aft+midUsed:''}</td>
+      <td>${hasFin?fin:''}</td><td><strong>${hasTot?tot:''}</strong></td>
       <td><strong>${['ร','มส','มผ','ผ'].includes(sm.special_result||'')?sm.special_result:g}</strong></td>
     </tr>`;
   });
