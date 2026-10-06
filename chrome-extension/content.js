@@ -557,6 +557,26 @@
       el.dispatchEvent(e);
     });
   }
+  // หน้ากลางภาค/หลังกลางภาค โหมดวิชาเดียว: ถ้าตารางยังไม่มีรายชื่อ (0 รายการ) เพราะช่อง "กลุ่ม" ยังเป็น "** โปรดเลือก **" → เลือกกลุ่มให้ก่อน
+  // (ที่ผ่านมาข้ามไปปรับ "รายการ / หน้า" และกรอกบนตารางว่าง จึงไม่มีอะไรถูกกรอกเลย) ถ้าเลือกแล้วหน้ารีโหลด สคริปต์ตาย หน้าใหม่ทำต่อผ่านระบบ resume
+  async function ensureRows(p) {
+    if (isEval) return true; // หน้า Q/L สร้างแถวด้วยปุ่ม "สร้าง" (ensureCreated)
+    if (pageStudentCodes().size) return true;
+    const g = findGroupSelect();
+    const cand = g ? groupCandidates(g) : [];
+    if (g && cand.length && resumeStep !== 'group') {
+      const roomKey = Number(p.room) > 0 ? String(p.room) : null;
+      const pick = (roomKey && cand.find((o) => o.text.trim() === roomKey)) || cand[0];
+      log('ตารางยังไม่มีรายชื่อนักเรียน — เลือกกลุ่ม ' + pick.text.trim() + ' ให้...');
+      setResume('group');
+      const sig = tableSig();
+      g.value = pick.value; fireEvent(g, 'change');
+      if (await waitTableChange(sig, 25000)) { clearResume(); return true; }
+    }
+    clearResume();
+    log('ตารางไม่มีรายชื่อนักเรียน (0 รายการ) — เลือก "รายวิชา" และ "กลุ่ม" ใน SGS ให้มีรายชื่อก่อน แล้วกดเริ่มใหม่', true);
+    return false;
+  }
   async function ensureFullPage(expectCount) {
     const inp = findPageSizeInput();
     const total = readTotalRecords() || expectCount || 0;
@@ -1295,7 +1315,7 @@
       saveData(raw);
       lastPayload = payload;
       if (!checkSubject(payload)) return;
-      ensureCreated(payload.students).then((created) => (created ? ensureFullPage(Object.keys(payload.students).length) : false)).then((ok) => {
+      ensureRows(payload).then((rowsOk) => (rowsOk ? ensureCreated(payload.students) : false)).then((created) => (created ? ensureFullPage(Object.keys(payload.students).length) : false)).then((ok) => {
         if (!ok) return;
         if (isEval) runEvalFill(payload.students); else runFill(payload.students);
       });
@@ -1321,7 +1341,7 @@
       try { resume = JSON.parse(localStorage.getItem(RESUME_KEY)); localStorage.removeItem(RESUME_KEY); } catch (e) { /* ไม่เป็นไร */ }
       if (resume && resume.ts && Date.now() - resume.ts < 60000) {
         resumeStep = resume.step || 'pagesize';
-        log('หน้ารีโหลดหลัง' + (resumeStep === 'create' ? 'กด "สร้าง"' : 'ปรับ "รายการ / หน้า"') + ' — กรอกต่อให้อัตโนมัติ');
+        log('หน้ารีโหลดหลัง' + (resumeStep === 'create' ? 'กด "สร้าง"' : resumeStep === 'group' ? 'เลือกกลุ่ม' : 'ปรับ "รายการ / หน้า"') + ' — กรอกต่อให้อัตโนมัติ');
         setTimeout(() => document.getElementById('pp5-sgs-start').click(), 800);
       }
     }
