@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autofill SGS จากระบบ ปพ.5
 // @namespace    pp5-sgs-autofill
-// @version      2.27.1
+// @version      2.27.2
 // @description  วางคะแนนและผลประเมิน (อ่าน คิดวิเคราะห์ เขียน / คุณลักษณะอันพึงประสงค์) ที่คัดลอกจากระบบ ปพ.5 ลงหน้ากรอกคะแนน SGS (sgs.bopp-obec.info) ให้อัตโนมัติ
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts1-Table.aspx*
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts2-Table.aspx*
@@ -52,7 +52,7 @@
   const FIELD_ORDER = Object.keys(CHECKBOX_MAP);
 
   // เลขรุ่นที่แสดงในกล่อง (ต้องตรงกับ @version ด้านบน)
-  const APP_VERSION = 'สคริปต์ Tampermonkey v2.27.1';
+  const APP_VERSION = 'สคริปต์ Tampermonkey v2.27.2';
   const DEVELOPER = 'นายกิตติพงษ์ คำดี';
 
   // หน่วงเวลาระหว่างช่อง: SGS บันทึกอัตโนมัติทุกครั้งที่ค่าเปลี่ยน ถ้ากรอกเร็วเกินคำขอบันทึกจะซ้อนกันจน SGS ฝั่งเซิร์ฟเวอร์ล้ม
@@ -559,6 +559,14 @@
   function findPageSizeButton(inp) {
     const byId = document.querySelector('[id*="PageSizeButton"], [id*="PageSizeOK"]');
     if (byId) return byId;
+    // ปุ่มของ SGS เป็น <table class="buttonPadding" onclick="clickLinkButtonText(...)"> ที่มีข้อความอยู่ในเซลล์ — ข้อความ "/ หน้า" ข้างช่องจำนวนรายการ
+    // น่าจะเป็นปุ่มปรับจำนวนรายการต่อหน้า (ไม่ใช่แค่ป้ายข้อความ) จึงหาจากตารางปุ่มที่มีข้อความนี้ก่อน
+    for (const m of leafTexts(/^\/\s*หน้า$/)) {
+      const tb = m.el.closest('table.buttonPadding') || m.el.querySelector('table.buttonPadding');
+      if (tb) return tb.querySelector('a,input,button') || tb.querySelector('td') || tb;
+      const a = m.el.closest('a,button,input[type="image"],input[type="submit"],input[type="button"]');
+      if (a) return a;
+    }
     const box = inp.closest('td, div');
     return box ? box.querySelector('input[type="image"], input[type="submit"], input[type="button"], button') : null;
   }
