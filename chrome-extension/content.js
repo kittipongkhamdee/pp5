@@ -546,6 +546,14 @@
   function findPageSizeButton(inp) {
     const byId = document.querySelector('[id*="PageSizeButton"], [id*="PageSizeOK"]');
     if (byId) return byId;
+    // ปุ่มของ SGS เป็น <table class="buttonPadding" onclick="clickLinkButtonText(...)"> ที่มีข้อความอยู่ในเซลล์ — ข้อความ "/ หน้า" ข้างช่องจำนวนรายการ
+    // น่าจะเป็นปุ่มปรับจำนวนรายการต่อหน้า (ไม่ใช่แค่ป้ายข้อความ) จึงหาจากตารางปุ่มที่มีข้อความนี้ก่อน
+    for (const m of leafTexts(/^\/\s*หน้า$/)) {
+      const tb = m.el.closest('table.buttonPadding') || m.el.querySelector('table.buttonPadding');
+      if (tb) return tb.querySelector('a,input,button') || tb.querySelector('td') || tb;
+      const a = m.el.closest('a,button,input[type="image"],input[type="submit"],input[type="button"]');
+      if (a) return a;
+    }
     const box = inp.closest('td, div');
     return box ? box.querySelector('input[type="image"], input[type="submit"], input[type="button"], button') : null;
   }
