@@ -841,6 +841,12 @@ function printHTML(title, bodyHTML, orient='portrait', hideHeader=false){
       .action-bar{display:flex;gap:10px;justify-content:center;padding:14px;margin-top:20px;background:#f5f5f7;border-radius:10px;position:sticky;bottom:0;}
       .btn-print{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#1d1d1f;color:#fff;font-weight:600;}
       @media print{.action-bar{display:none!important;}#pbody{width:100%;padding:0;}}
+    
+      @media screen{
+        body{background:#6b7280!important;padding:16px 0 90px;}
+        #pbody{width:${orient==='landscape'?'297mm':'210mm'};min-height:${orient==='landscape'?'210mm':'297mm'};margin:0 auto;padding:12mm 14mm;background:#fff;box-shadow:0 2px 14px rgba(0,0,0,.45);}
+        .action-bar{width:${orient==='landscape'?'297mm':'210mm'};max-width:100%;margin:16px auto 0;}
+      }
     </style>
     </head><body>
     <div id="pbody">
@@ -855,7 +861,7 @@ function printHTML(title, bodyHTML, orient='portrait', hideHeader=false){
     <div class="action-bar">
       <button class="btn-print" onclick="document.fonts.ready.then(()=>window.print())"><svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> พิมพ์</button>
     </div>
-    </body></html>`);
+    <script>(function(){function f(){var w=${orient==='landscape'?297:210}*96/25.4+8;document.body.style.zoom=innerWidth<w?(innerWidth/w):1;}f();addEventListener('resize',f);})();<\/script></body></html>`);
   w.document.close();
 }
 
@@ -1789,7 +1795,7 @@ function _applyConcurrencyGuards(){
 // (ของโมดูลจะถูกห่อเพิ่มใน ensureModule หลังโหลดเสร็จ)
 _applyConcurrencyGuards();
 // ?v= กันแคชเก่าค้าง (modules/*.js แคชไว้ 1 วันตาม vercel.json) — แก้ไฟล์ใน modules/ เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย
-const MODULE_V='101';
+const MODULE_V='102';
 // ห่อฟังก์ชันของโมดูลหลังโหลดเสร็จด้วย (ตอนเริ่มระบบยังไม่มีฟังก์ชันเหล่านี้)
 function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V).then(()=>{ _applyConcurrencyGuards(); }); }
 function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
@@ -3404,12 +3410,18 @@ function printAttendance(){
       .btn-print{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#1d1d1f;color:#fff;font-weight:600;}
       @media print{.action-bar{display:none!important;}.att-page{page-break-inside:avoid;}#pbody{width:100%;padding:1cm 1.2cm;}}
       .att-page+.att-page{padding-top:12mm;}
+    
+      @media screen{
+        body{background:#6b7280!important;padding:16px 0 90px;}
+        #pbody{width:210mm;min-height:297mm;margin:0 auto;padding:12mm 14mm;background:#fff;box-shadow:0 2px 14px rgba(0,0,0,.45);}
+        .action-bar{width:210mm;max-width:100%;margin:16px auto 0;}
+      }
     </style></head><body>
     <div id="pbody">${body}</div>
     <div class="action-bar">
       <button class="btn-print" onclick="document.fonts.ready.then(()=>window.print())"><svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> พิมพ์</button>
     </div>
-    </body></html>`);
+    <script>(function(){function f(){var w=210*96/25.4+8;document.body.style.zoom=innerWidth<w?(innerWidth/w):1;}f();addEventListener('resize',f);})();<\/script></body></html>`);
   w.document.close();
 }
 
@@ -5133,12 +5145,18 @@ function printScores(){
       .action-bar{display:flex;gap:10px;justify-content:center;padding:14px;margin-top:20px;background:#f5f5f7;border-radius:10px;position:sticky;bottom:0;}
       .btn-print{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#1d1d1f;color:#fff;font-weight:600;}
       @media print{.action-bar{display:none!important;}.sc-page{page-break-inside:avoid;}#pbody{width:100%;padding:1cm 1.2cm;}}
+    
+      @media screen{
+        body{background:#6b7280!important;padding:16px 0 90px;}
+        #pbody{width:210mm;min-height:297mm;margin:0 auto;padding:12mm 14mm;background:#fff;box-shadow:0 2px 14px rgba(0,0,0,.45);}
+        .action-bar{width:210mm;max-width:100%;margin:16px auto 0;}
+      }
     </style></head><body>
     <div id="pbody">${body}</div>
     <div class="action-bar">
       <button class="btn-print" onclick="document.fonts.ready.then(()=>window.print())"><svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> พิมพ์</button>
     </div>
-    </body></html>`);
+    <script>(function(){function f(){var w=210*96/25.4+8;document.body.style.zoom=innerWidth<w?(innerWidth/w):1;}f();addEventListener('resize',f);})();<\/script></body></html>`);
   w.document.close();
 }
 
