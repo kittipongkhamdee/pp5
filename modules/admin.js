@@ -3081,12 +3081,16 @@ function printInfoReport(){
     .ir-table td.ir-z{color:#777}
     .note{font-size:8.5pt;margin-top:8px;line-height:1.5}
     .bar{position:fixed;top:8px;right:8px}@media print{.bar{display:none}}
+    @media screen{body{background:#6b7280;padding:16px 0 40px}#pbody{width:297mm;min-height:210mm;margin:0 auto;padding:12mm;background:#fff;box-shadow:0 2px 14px rgba(0,0,0,.45)}}
   </style></head><body>
   <div class="bar"><button onclick="document.fonts.ready.then(()=>window.print())">พิมพ์</button></div>
+  <div id="pbody">
   <h1>รายงานสารสนเทศผลสัมฤทธิ์ทางการเรียนและผลการประเมิน</h1>
   <div class="sub">${esc(cfg.school_name||'')} · ภาคเรียนที่ ${esc(cfg.semester||'')} ปีการศึกษา ${esc(cfg.academic_year||'')} · ${group?esc(group):'ทุกกลุ่มสาระ'}</div>
   ${_infoTableHTML(R)}
   <div class="note">หมายเหตุ: GPA ถ่วงน้ำหนักด้วยหน่วยกิต (ไม่รวม ร/มส/มผ/ผ) · "ไม่ผ่าน (0,ร,มส)" นับนักเรียนที่มีวิชาได้ 0 หรือ ร/มส/มผ อย่างน้อยหนึ่งวิชา (ซ้อนกับช่วง GPA ได้) · ระดับอ่านคิดฯ/คุณลักษณะคือค่าเฉลี่ยผลประเมินทุกวิชา ปัดเป็นจำนวนเต็ม</div>
+  </div>
+  <script>(function(){function f(){var w=297*96/25.4+8;document.body.style.zoom=innerWidth<w?(innerWidth/w):1;}f();addEventListener('resize',f);})();<\/script>
   </body></html>`);
   w.document.close();
 }

@@ -1761,6 +1761,12 @@ function printReport(){
       .action-bar{display:flex;gap:10px;justify-content:center;padding:14px;margin-top:20px;background:#f5f5f7;border-radius:10px;position:sticky;bottom:0;}
       .btn-print{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#1d1d1f;color:#fff;font-weight:600;}
       @media print{.action-bar{display:none!important;}}
+    
+      @media screen{
+        body{background:#6b7280!important;padding:16px 0 90px;}
+        #pbody{width:297mm;min-height:210mm;margin:0 auto;padding:10mm;background:#fff;box-shadow:0 2px 14px rgba(0,0,0,.45);}
+        .action-bar{width:297mm;max-width:100%;margin:16px auto 0;}
+      }
     </style></head><body>
     <div id="pbody">
       <div class="ph">
@@ -1789,7 +1795,7 @@ function printReport(){
     <div class="action-bar">
       <button class="btn-print" onclick="document.fonts.ready.then(()=>window.print())"><svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> พิมพ์</button>
     </div>
-    </body></html>`);
+    <script>(function(){function f(){var w=297*96/25.4+8;document.body.style.zoom=innerWidth<w?(innerWidth/w):1;}f();addEventListener('resize',f);})();<\/script></body></html>`);
   w.document.close();
 }
 
