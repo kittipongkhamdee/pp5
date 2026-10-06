@@ -561,6 +561,11 @@
   // จึงสั่งโค้ด javascript: นั้นในบริบทของหน้าเว็บโดยตรง (ฉีด <script>) ถ้าฉีดไม่ได้ค่อยคลิกธรรมดา
   function activate(el) {
     const href = (el.getAttribute && el.getAttribute('href')) || '';
+    // ส่วนขยาย Chrome: page-bridge.js (world MAIN) คลิกให้ในบริบทหน้าเว็บ — ใช้ได้แม้หน้าเว็บมี CSP ห้ามสคริปต์ฉีด
+    if (el.id && document.documentElement.getAttribute('data-pp5-bridge') === '1') {
+      document.dispatchEvent(new CustomEvent('pp5-click', { detail: el.id }));
+      return;
+    }
     if (/^\s*javascript:/i.test(href)) {
       try {
         const s = document.createElement('script');
