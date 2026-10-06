@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Autofill SGS จากระบบ ปพ.5
 // @namespace    pp5-sgs-autofill
-// @version      2.27.2
+// @version      2.27.3
 // @description  วางคะแนนและผลประเมิน (อ่าน คิดวิเคราะห์ เขียน / คุณลักษณะอันพึงประสงค์) ที่คัดลอกจากระบบ ปพ.5 ลงหน้ากรอกคะแนน SGS (sgs.bopp-obec.info) ให้อัตโนมัติ
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts1-Table.aspx*
 // @match        https://sgs.bopp-obec.info/sgs/TblTranscripts/Edit-TblTranscripts2-Table.aspx*
@@ -52,7 +52,7 @@
   const FIELD_ORDER = Object.keys(CHECKBOX_MAP);
 
   // เลขรุ่นที่แสดงในกล่อง (ต้องตรงกับ @version ด้านบน)
-  const APP_VERSION = 'สคริปต์ Tampermonkey v2.27.2';
+  const APP_VERSION = 'สคริปต์ Tampermonkey v2.27.3';
   const DEVELOPER = 'นายกิตติพงษ์ คำดี';
 
   // หน่วงเวลาระหว่างช่อง: SGS บันทึกอัตโนมัติทุกครั้งที่ค่าเปลี่ยน ถ้ากรอกเร็วเกินคำขอบันทึกจะซ้อนกันจน SGS ฝั่งเซิร์ฟเวอร์ล้ม
@@ -570,6 +570,21 @@
     const box = inp.closest('td, div');
     return box ? box.querySelector('input[type="image"], input[type="submit"], input[type="button"], button') : null;
   }
+  // ปุ่ม "/ หน้า" ของ SGS เป็นลิงก์ href="javascript:__doPostBack(...)" — element.click() จาก content script (isolated world) ไม่ทำให้ postback ทำงาน
+  // จึงสั่งโค้ด javascript: นั้นในบริบทของหน้าเว็บโดยตรง (ฉีด <script>) ถ้าฉีดไม่ได้ค่อยคลิกธรรมดา
+  function activate(el) {
+    const href = (el.getAttribute && el.getAttribute('href')) || '';
+    if (/^\s*javascript:/i.test(href)) {
+      try {
+        const s = document.createElement('script');
+        s.textContent = href.replace(/^\s*javascript:/i, '');
+        (document.head || document.documentElement).appendChild(s);
+        s.remove();
+        return;
+      } catch (e) { /* ฉีดไม่ได้ → คลิกธรรมดา */ }
+    }
+    el.click();
+  }
   // ส่งปุ่ม Enter แบบมี keyCode จริง (KeyboardEvent ที่สร้างเองมี keyCode = 0 ทำให้ onkeypress ของ SGS ที่เช็ค keyCode == 13 ไม่ทำงาน)
   function pressEnter(el) {
     ['keydown', 'keypress', 'keyup'].forEach((t) => {
@@ -613,10 +628,10 @@
     fireEvent(inp, 'input');
     // ลำดับวิธี: (1) กดปุ่มของช่อง (ถ้าเจอ) (2) ปุ่ม Enter (3) change+blur — ทำทีละวิธี รอผลก่อนลองวิธีถัดไป
     const tries = [
-      () => { if (btn) btn.click(); else pressEnter(inp); },
+      () => { if (btn) activate(btn); else pressEnter(inp); },
       () => { const e = findPageSizeInput(); if (e) pressEnter(e); },
       () => { const e = findPageSizeInput(); if (e) { fireEvent(e, 'change'); fireEvent(e, 'blur'); } },
-      () => { const e = findPageSizeInput(); const b = e && findPageSizeButton(e); if (b) b.click(); },
+      () => { const e = findPageSizeInput(); const b = e && findPageSizeButton(e); if (b) activate(b); },
     ];
     let step = 0;
     tries[step++]();
