@@ -1900,8 +1900,8 @@ ${cvTh('รายการประเมิน','text-align:left;padding-left:6
     stus.forEach((s,i)=>{
       body+=`<tr><td>${i+1}</td><td>${esc(s.student_code||'')}</td><td class="l">${esc(s.student_name)}</td>`;
       cols.forEach(u=>{ const v=gscA(s.id,u.period,u.unit_number); body+=`<td>${v!=null?v:''}</td>`; });
-      if(lB){ const t=uBef.reduce((a,u)=>a+(gscA(s.id,'before',u.unit_number)??0),0); body+=`<td><strong>${t||''}</strong></td>`; }
-      if(lA){ const t=uAft.reduce((a,u)=>a+(gscA(s.id,'after',u.unit_number)??0),0); body+=`<td><strong>${t||''}</strong></td>`; }
+      if(lB){ const t=uBef.reduce((a,u)=>a+(gscA(s.id,'before',u.unit_number)??0),0); const h=uBef.some(u=>gscA(s.id,'before',u.unit_number)!=null); body+=`<td><strong>${h?t:''}</strong></td>`; } // ได้ 0 จริงพิมพ์ 0 ยังไม่มีคะแนนเลยพิมพ์ว่าง
+      if(lA){ const t=uAft.reduce((a,u)=>a+(gscA(s.id,'after',u.unit_number)??0),0); const h=uAft.some(u=>gscA(s.id,'after',u.unit_number)!=null); body+=`<td><strong>${h?t:''}</strong></td>`; }
       body+=`</tr>`;
     });
     body+=`</tbody></table></div>`;
@@ -1913,7 +1913,12 @@ ${cvTh('รายการประเมิน','text-align:left;padding-left:6
     const aft=sm.total_after_mid??uAft.reduce((a,u)=>a+(gscA(s.id,'after',u.unit_number)??0),0);
     const mid=parseFloat(sm.mid_normal)||0, fin=parseFloat(sm.final_score)||0;
     const disp=['ร','มส','มผ','ผ'].includes(sm.special_result||'')?sm.special_result:(sm.grade??'-');
-    body+=`<tr><td>${i+1}</td><td>${esc(s.student_code||'')}</td><td class="l">${esc(s.student_name)}</td><td>${bef||''}</td><td>${aft||''}</td><td>${mid||''}</td><td>${(parseFloat(bef)+parseFloat(aft)+mid)||''}</td><td>${fin||''}</td><td><strong>${sm.total_score??0}</strong></td><td><strong>${disp}</strong></td></tr>`;
+    // มีข้อมูลจริงหรือไม่ — ได้ 0 จริงให้พิมพ์ 0, ยังไม่มีข้อมูลเลยค่อยพิมพ์ว่าง
+    const hv=v=>v!=null&&v!==''&&!isNaN(parseFloat(v));
+    const hasBef=hv(sm.total_before_mid)||uBef.some(u=>gscA(s.id,'before',u.unit_number)!=null);
+    const hasAft=hv(sm.total_after_mid)||uAft.some(u=>gscA(s.id,'after',u.unit_number)!=null);
+    const hasMid=hv(sm.mid_normal), hasFin=hv(sm.final_score);
+    body+=`<tr><td>${i+1}</td><td>${esc(s.student_code||'')}</td><td class="l">${esc(s.student_name)}</td><td>${hasBef?bef:''}</td><td>${hasAft?aft:''}</td><td>${hasMid?mid:''}</td><td>${(hasBef||hasAft||hasMid)?(parseFloat(bef)||0)+(parseFloat(aft)||0)+mid:''}</td><td>${hasFin?fin:''}</td><td><strong>${sm.total_score??0}</strong></td><td><strong>${disp}</strong></td></tr>`;
   });
   body+=`</tbody></table></div>`;
 
