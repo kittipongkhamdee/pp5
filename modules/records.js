@@ -1609,7 +1609,7 @@ async function pgReport(){
   const pass=stuSumRows.filter(s=>s.grade!=null&&s.grade!==''&&parseFloat(s.grade)>0).length;
   const avg=stuSumRows.length>0?(stuSumRows.reduce((a,b)=>a+(parseFloat(b.total_score)||0),0)/stuSumRows.length).toFixed(1):0;
   const gradeCount={4:0,3.5:0,3:0,2.5:0,2:0,1.5:0,1:0,0:0};
-  stuSumRows.forEach(s=>{const g=parseFloat(s.grade);if(gradeCount[g]!==undefined)gradeCount[g]++;});
+  stuSumRows.forEach(s=>{const g=parseFloat(s.grade);if(!['ร','มส','มผ','ผ'].includes(s.special_result||'')&&gradeCount[g]!==undefined)gradeCount[g]++;});
   const pct=stus.length>0?((pass/stus.length)*100).toFixed(1):0;
 
   $('pg').innerHTML=`
@@ -1811,7 +1811,7 @@ function _buildPP5Body(sub,cfg,stus,sumMap,erMap,ecMap,scUnitsAll,attRows,attMap
   const totalN=stus.length;
   const stuIds=new Set(stus.map(s=>String(s.id)));
   const gc={4:0,3.5:0,3:0,2.5:0,2:0,1.5:0,1:0,0:0};let rC=0,msC=0;
-  Object.entries(sumMap).forEach(([sid,s])=>{if(!stuIds.has(String(sid)))return;const g=parseFloat(s.grade);if(gc[g]!==undefined)gc[g]++;if(s.special_result==='ร')rC++;if(s.special_result==='มส')msC++;});
+  Object.entries(sumMap).forEach(([sid,s])=>{if(!stuIds.has(String(sid)))return;const g=parseFloat(s.grade);if(!['ร','มส','มผ','ผ'].includes(s.special_result||'')&&gc[g]!==undefined)gc[g]++;if(s.special_result==='ร')rC++;if(s.special_result==='มส')msC++;});
   const cvErLv={3:0,2:0,1:0,0:0};let cvErTotal=0;
   Object.entries(erMap).filter(([sid])=>stuIds.has(String(sid))).forEach(([,e])=>{cvErTotal++;const v=parseInt(e.result);if(v in cvErLv)cvErLv[v]++;});
   const cvEcLv={3:0,2:0,1:0,0:0};let cvEcTotal=0;
@@ -2078,7 +2078,7 @@ async function pgCover(){
   let rC=0,msC=0;
   sumRows.filter(s=>cvStuIds.has(String(s.student_id))).forEach(s=>{
     const g=parseFloat(s.grade);
-    if(gc[g]!==undefined) gc[g]++;
+    if(!['ร','มส','มผ','ผ'].includes(s.special_result||'')&&gc[g]!==undefined) gc[g]++;
     if(s.special_result==='ร')  rC++;
     if(s.special_result==='มส') msC++;
   });

@@ -2118,7 +2118,7 @@ async function pgSchoolReport(){
       const passNum = sumRows.length>0?pass:null;
       const failNum = sumRows.length>0?sumRows.length-pass:null;
       const gradeCount={4:0,3.5:0,3:0,2.5:0,2:0,1.5:0,1:0,0:0};
-      sumRows.forEach(r=>{ const g=parseFloat(r.grade); if(gradeCount[g]!==undefined)gradeCount[g]++; });
+      sumRows.forEach(r=>{ const g=parseFloat(r.grade); if(!['ร','มส','มผ','ผ'].includes(r.special_result||'')&&gradeCount[g]!==undefined)gradeCount[g]++; });
       // ความคืบหน้า ปพ.5 ต้องครบ 3 อย่าง: คะแนน + เวลาเรียน + ประเมิน (อ่าน/คิด/เขียน และ คุณลักษณะ ต้องมีทั้งคู่)
       const hasScore = sumRows.length>0;
       const hasAttendance = (attBySubj[sub.id]||[]).length>0;
