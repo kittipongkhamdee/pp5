@@ -2036,14 +2036,14 @@ async function printAllPP5(){
       .legend{font-size:9.5px;margin-top:4px;color:#555;}
       .action-bar{display:flex;gap:10px;justify-content:center;padding:14px;margin-top:20px;background:#f5f5f7;border-radius:10px;position:sticky;bottom:0;}
       .btn-print{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#1d1d1f;color:#fff;font-weight:600;}
-      @media print{.action-bar{display:none!important;}}
+      @media print{.action-bar{display:none!important;}.sec[data-fit]{zoom:var(--fit);}}
       @media screen{
         body{background:#6b7280;padding:16px 0 90px;}
-        .sec{width:210mm;min-height:297mm;margin:0 auto 16px;padding:12mm 14mm;background:#fff;box-shadow:0 2px 14px rgba(0,0,0,.45);}
+        .sec{width:210mm;min-height:297mm;margin:0 auto 16px;padding:12mm 14mm;background:#fff;overflow-x:auto;box-shadow:0 2px 14px rgba(0,0,0,.45);}
         .action-bar{width:210mm;max-width:100%;margin:0 auto;}
       }
     `;
-    const fitA4=`<script>(function(){function f(){var w=210*96/25.4+8;document.body.style.zoom=innerWidth<w?(innerWidth/w):1;}f();addEventListener('resize',f);var st=document.createElement('style');st.textContent='@media print{body{zoom:1!important}}';document.head.appendChild(st);})();<\/script>`;
+    const fitA4=`<script>(function(){function fit(){document.querySelectorAll('.sec').forEach(function(s){s.removeAttribute('data-fit');s.style.removeProperty('--fit');var cs=getComputedStyle(s),pl=parseFloat(cs.paddingLeft)||0,pr=parseFloat(cs.paddingRight)||0,avail=s.clientWidth-pl-pr,need=s.scrollWidth-pl;if(s.scrollWidth>s.clientWidth+1&&need>avail){s.setAttribute('data-fit','1');s.style.setProperty('--fit',(avail/need).toFixed(4));}});}fit();addEventListener('load',fit);addEventListener('beforeprint',fit);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit);function f(){var w=210*96/25.4+8;document.body.style.zoom=innerWidth<w?(innerWidth/w):1;}f();addEventListener('resize',f);var st=document.createElement('style');st.textContent='@media print{body{zoom:1!important}}';document.head.appendChild(st);})();<\/script>`;
     const w=window.open('','_blank');
     if(!w){ toast('เบราว์เซอร์บล็อก Popup — กรุณาอนุญาต Popup แล้วลองใหม่','er'); return; }
     w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>ปพ.5 ทั้งหมด — ${esc(sub.subject_name)} ${grm(sub.grade_level,sub.room)}</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet"><style>${css}</style></head><body><div id="pbody">${body}</div><div class="action-bar"><button class="btn-print" onclick="document.fonts.ready.then(()=>window.print())"><svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> พิมพ์ ปพ.5 ทั้งหมด</button></div>${fitA4}</body></html>`);
