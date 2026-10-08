@@ -861,7 +861,7 @@ function printHTML(title, bodyHTML, orient='portrait', hideHeader=false){
     <div class="action-bar">
       <button class="btn-print" onclick="document.fonts.ready.then(()=>window.print())"><svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> พิมพ์</button>
     </div>
-    <script>(function(){function f(){var w=${orient==='landscape'?297:210}*96/25.4+8;document.body.style.zoom=innerWidth<w?(innerWidth/w):1;}f();addEventListener('resize',f);})();<\/script></body></html>`);
+    <script>(function(){function f(){var w=${orient==='landscape'?297:210}*96/25.4+8;document.body.style.zoom=innerWidth<w?(innerWidth/w):1;}f();addEventListener('resize',f);var st=document.createElement('style');st.textContent='@media print{body{zoom:1!important}}';document.head.appendChild(st);})();<\/script></body></html>`);
   w.document.close();
 }
 
@@ -1795,7 +1795,7 @@ function _applyConcurrencyGuards(){
 // (ของโมดูลจะถูกห่อเพิ่มใน ensureModule หลังโหลดเสร็จ)
 _applyConcurrencyGuards();
 // ?v= กันแคชเก่าค้าง (modules/*.js แคชไว้ 1 วันตาม vercel.json) — แก้ไฟล์ใน modules/ เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย
-const MODULE_V='104';
+const MODULE_V='105';
 // ห่อฟังก์ชันของโมดูลหลังโหลดเสร็จด้วย (ตอนเริ่มระบบยังไม่มีฟังก์ชันเหล่านี้)
 function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V).then(()=>{ _applyConcurrencyGuards(); }); }
 function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
@@ -3421,7 +3421,7 @@ function printAttendance(){
     <div class="action-bar">
       <button class="btn-print" onclick="document.fonts.ready.then(()=>window.print())"><svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> พิมพ์</button>
     </div>
-    <script>(function(){function f(){var w=210*96/25.4+8;document.body.style.zoom=innerWidth<w?(innerWidth/w):1;}f();addEventListener('resize',f);})();<\/script></body></html>`);
+    <script>(function(){function f(){var w=210*96/25.4+8;document.body.style.zoom=innerWidth<w?(innerWidth/w):1;}f();addEventListener('resize',f);var st=document.createElement('style');st.textContent='@media print{body{zoom:1!important}}';document.head.appendChild(st);})();<\/script></body></html>`);
   w.document.close();
 }
 
@@ -5156,7 +5156,7 @@ function printScores(){
     <div class="action-bar">
       <button class="btn-print" onclick="document.fonts.ready.then(()=>window.print())"><svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> พิมพ์</button>
     </div>
-    <script>(function(){function f(){var w=210*96/25.4+8;document.body.style.zoom=innerWidth<w?(innerWidth/w):1;}f();addEventListener('resize',f);})();<\/script></body></html>`);
+    <script>(function(){function f(){var w=210*96/25.4+8;document.body.style.zoom=innerWidth<w?(innerWidth/w):1;}f();addEventListener('resize',f);var st=document.createElement('style');st.textContent='@media print{body{zoom:1!important}}';document.head.appendChild(st);})();<\/script></body></html>`);
   w.document.close();
 }
 

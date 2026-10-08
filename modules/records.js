@@ -1795,7 +1795,7 @@ function printReport(){
     <div class="action-bar">
       <button class="btn-print" onclick="document.fonts.ready.then(()=>window.print())"><svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> พิมพ์</button>
     </div>
-    <script>(function(){function f(){var w=297*96/25.4+8;document.body.style.zoom=innerWidth<w?(innerWidth/w):1;}f();addEventListener('resize',f);})();<\/script></body></html>`);
+    <script>(function(){function f(){var w=297*96/25.4+8;document.body.style.zoom=innerWidth<w?(innerWidth/w):1;}f();addEventListener('resize',f);var st=document.createElement('style');st.textContent='@media print{body{zoom:1!important}}';document.head.appendChild(st);})();<\/script></body></html>`);
   w.document.close();
 }
 
@@ -2043,7 +2043,7 @@ async function printAllPP5(){
         .action-bar{width:210mm;max-width:100%;margin:0 auto;}
       }
     `;
-    const fitA4=`<script>(function(){function f(){var w=210*96/25.4+8;document.body.style.zoom=innerWidth<w?(innerWidth/w):1;}f();addEventListener('resize',f);})();<\/script>`;
+    const fitA4=`<script>(function(){function f(){var w=210*96/25.4+8;document.body.style.zoom=innerWidth<w?(innerWidth/w):1;}f();addEventListener('resize',f);var st=document.createElement('style');st.textContent='@media print{body{zoom:1!important}}';document.head.appendChild(st);})();<\/script>`;
     const w=window.open('','_blank');
     if(!w){ toast('เบราว์เซอร์บล็อก Popup — กรุณาอนุญาต Popup แล้วลองใหม่','er'); return; }
     w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>ปพ.5 ทั้งหมด — ${esc(sub.subject_name)} ${grm(sub.grade_level,sub.room)}</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet"><style>${css}</style></head><body><div id="pbody">${body}</div><div class="action-bar"><button class="btn-print" onclick="document.fonts.ready.then(()=>window.print())"><svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> พิมพ์ ปพ.5 ทั้งหมด</button></div>${fitA4}</body></html>`);
