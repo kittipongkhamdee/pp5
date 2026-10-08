@@ -3090,7 +3090,7 @@ function printInfoReport(){
   ${_infoTableHTML(R)}
   <div class="note">หมายเหตุ: GPA ถ่วงน้ำหนักด้วยหน่วยกิต (ไม่รวม ร/มส/มผ/ผ) · "ไม่ผ่าน (0,ร,มส)" นับนักเรียนที่มีวิชาได้ 0 หรือ ร/มส/มผ อย่างน้อยหนึ่งวิชา (ซ้อนกับช่วง GPA ได้) · ระดับอ่านคิดฯ/คุณลักษณะคือค่าเฉลี่ยผลประเมินทุกวิชา ปัดเป็นจำนวนเต็ม</div>
   </div>
-  <script>(function(){function f(){var w=297*96/25.4+8;document.body.style.zoom=innerWidth<w?(innerWidth/w):1;}f();addEventListener('resize',f);})();<\/script>
+  <script>(function(){function f(){var w=297*96/25.4+8;document.body.style.zoom=innerWidth<w?(innerWidth/w):1;}f();addEventListener('resize',f);var st=document.createElement('style');st.textContent='@media print{body{zoom:1!important}}';document.head.appendChild(st);})();<\/script>
   </body></html>`);
   w.document.close();
 }
