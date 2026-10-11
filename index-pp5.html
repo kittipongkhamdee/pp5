@@ -1799,7 +1799,7 @@ function _applyConcurrencyGuards(){
 // (ของโมดูลจะถูกห่อเพิ่มใน ensureModule หลังโหลดเสร็จ)
 _applyConcurrencyGuards();
 // ?v= กันแคชเก่าค้าง (modules/*.js แคชไว้ 1 วันตาม vercel.json) — แก้ไฟล์ใน modules/ เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย
-const MODULE_V='108';
+const MODULE_V='109';
 // ห่อฟังก์ชันของโมดูลหลังโหลดเสร็จด้วย (ตอนเริ่มระบบยังไม่มีฟังก์ชันเหล่านี้)
 function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V).then(()=>{ _applyConcurrencyGuards(); }); }
 function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
@@ -3778,7 +3778,55 @@ async function loadScData(){
   ]);
   await loadScPlanUnits(S.selSub);
   rebuildUnits();
+  await _syncMsLock();
   loading(false);
+}
+
+// ผลพิเศษ "มส" ตามเวลาเรียน: นักเรียนที่เวลาเรียนไม่ถึง 80% ล็อกช่องผลพิเศษเป็น มส (แก้เองไม่ได้)
+// พอเวลาเรียนครบ (>=80%) จะยกเลิก มส ให้อัตโนมัติและเปิดให้แก้ได้ — ซิงก์ลง score_summary ทุกครั้งที่เปิดหน้านี้
+let scMsIds=new Set();
+async function _calcMsIdsOfSubject(){
+  const all=await loadTeacherAtt();
+  const rows=all.filter(a=>String(a.subject_id)===String(S.selSub));
+  const totalH=attHeldHours(rows);
+  const ids=new Set();
+  if(!(totalH>0)) return ids;
+  const att={};
+  rows.forEach(a=>{
+    if(a.status==='present'||a.status==='leave') att[String(a.student_id)]=(att[String(a.student_id)]||0)+(parseInt(a.periods)||1);
+  });
+  scStus.forEach(s=>{ if(((att[String(s.id)]||0)/totalH*100)<80) ids.add(String(s.id)); });
+  return ids;
+}
+async function _syncMsLock(){
+  scMsIds=new Set();
+  try{
+    scMsIds=await _calcMsIdsOfSubject();
+    const rows=[]; let locked=0, released=0;
+    scStus.forEach(s=>{
+      const sid=String(s.id), sm=gsum(sid), cur=sm.special_result||'';
+      let sr=null;
+      if(scMsIds.has(sid)){ if(cur!=='มส'){ sr='มส'; locked++; } }
+      else if(cur==='มส'){ sr=''; released++; }
+      if(sr===null) return;
+      const grade=sr==='มส'?0:calcGrade(parseFloat(sm.total_score)||0);
+      rows.push({
+        subject_id:S.selSub, student_id:s.id,
+        total_before_mid:sm.total_before_mid??0, total_after_mid:sm.total_after_mid??0,
+        total_unit:sm.total_unit??0, mid_normal:sm.mid_normal??0,
+        mid_retake:sm.mid_retake??0, mid_repeat:sm.mid_repeat??0,
+        final_score:sm.final_score??0, total_score:sm.total_score??0,
+        special_result:sr, grade, note:sm.note||''
+      });
+    });
+    if(!rows.length) return;
+    invalidateSc();
+    await q(sb.from('score_summary').upsert(rows,{onConflict:'subject_id,student_id'}));
+    scSum=await q(sb.from('score_summary').select('*').eq('subject_id',S.selSub));
+    if(!patchTeacherSum(S.selSub, rows)) invalidateTeacherAgg();
+    updateWatchlistBadge();
+    toast((locked?'ล็อกผลพิเศษเป็น มส '+locked+' คน (เวลาเรียนไม่ถึง 80%)':'')+(locked&&released?' · ':'')+(released?'ยกเลิก มส อัตโนมัติ '+released+' คน (เวลาเรียนครบแล้ว)':''),'in');
+  }catch(e){ console.warn('ซิงก์ผลพิเศษ มส ไม่สำเร็จ',e); }
 }
 async function loadScPlanUnits(sid){
   try{
@@ -4920,9 +4968,10 @@ function renderSumTab(){
           <td class="tr2"><strong>${tot||'-'}</strong></td>
           <td class="tc" id="grade-cell-${s.id}">${(()=>{const _sr=sm.special_result||'';const _ov=['ร','มส','มผ','ผ'];const _dg=_ov.includes(_sr)?_sr:g;const _c=_ov.includes(_sr)?'color:var(--err)':'';return '<span class="'+(_ov.includes(_sr)?'':gcls(g))+'" style="font-size:15px;font-weight:700;'+_c+'">'+_dg+'</span>';})()}</td>
           <td class="tc">
-            <select class="es ${ES_CLS[sm.special_result]||''}" id="res-${s.id}" onchange="updEsColor(this);_updateGradeCell(this,'${s.id}',${tot||0});_markExamDirty()">
-              ${RESULTS.map(r=>`<option ${sm.special_result===r?'selected':''}>${r}</option>`).join('')}
-            </select>
+            ${(()=>{const _lk=scMsIds.has(String(s.id)); const _v=_lk?'มส':(sm.special_result||'');
+              return `<select class="es ${ES_CLS[_v]||''}" id="res-${s.id}" ${_lk?'disabled title="ล็อกเป็น มส เพราะเวลาเรียนไม่ถึง 80% — จะยกเลิกอัตโนมัติเมื่อเวลาเรียนครบ"':''} onchange="updEsColor(this);_updateGradeCell(this,'${s.id}',${tot||0});_markExamDirty()">
+              ${RESULTS.map(r=>`<option ${_v===r?'selected':''}>${r}</option>`).join('')}
+            </select>${_lk?'<span title="ล็อกเป็น มส ตามเวลาเรียน" style="margin-left:4px;font-size:12px">🔒</span>':''}`;})()}
           </td></tr>`;
       }).join('')}</tbody>
     </table></div>
