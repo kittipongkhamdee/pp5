@@ -2074,6 +2074,11 @@ async function pgSchoolReport(){
       qAll(()=>sb.from('eval_char').select('subject_id')),
       qAll(()=>sb.from('students').select('id,grade_level,room,student_name,student_code').order('grade_level').order('room').order('student_code')),
     ]);
+    // รายการ มส ที่ครูประกาศไว้แล้ว (ยังไม่ถูกยกเลิก) — รวมในรายงานแม้ภายหลังเวลาเรียนเกิน 80%
+    let allMsAnn=[];
+    try{ allMsAnn=await qAll(()=>sb.from('ms_announcements').select('*').is('cancelled_at',null)); }catch(e){ console.warn('โหลดรายการประกาศ มส ไม่สำเร็จ',e); }
+    const msAnnBySubj={};
+    allMsAnn.forEach(r=>{ (msAnnBySubj[r.subject_id]=msAnnBySubj[r.subject_id]||{})[String(r.student_id)]=r; });
 
     // สร้าง map
     const profileMap = Object.fromEntries(allProfiles.map(p=>[p.id,p.full_name||'']));
@@ -2108,11 +2113,17 @@ async function pgSchoolReport(){
         if(a.status==='present'||a.status==='leave')stuAttMapSub[sid].attended+=p;
       });
       const totalH = attHeldHours(attRows);
-      const msStudentIds = stuIds.filter(sid=>{
+      const msCalcIds = stuIds.filter(sid=>{
         const m=stuAttMapSub[String(sid)];
         if(!m) return false;
         return totalH>0&&(m.attended/totalH*100)<80;
       });
+      // msInfo = ตัวเลขที่ใช้พิมพ์: คนที่ประกาศแล้วใช้ตัวเลข ณ วันประกาศ ที่เหลือใช้ตัวเลขปัจจุบัน
+      const msAnn = msAnnBySubj[sub.id]||{};
+      const msInfo = {};
+      msCalcIds.forEach(sid=>{ const m=stuAttMapSub[String(sid)]; msInfo[String(sid)]={attended:m.attended,totalH,pct:m.attended/totalH*100,announced:false}; });
+      Object.entries(msAnn).forEach(([sid,r])=>{ msInfo[sid]={attended:+r.attended_hours,totalH:+r.total_hours,pct:+r.pct,announced:true,announcedAt:r.announced_at}; });
+      const msStudentIds = Object.keys(msInfo);
       const msCount = msStudentIds.length;
       const teacherName = profileMap[sub.user_id] || sub.teacher_name || '—';
       const passNum = sumRows.length>0?pass:null;
@@ -2128,7 +2139,7 @@ async function pgSchoolReport(){
       const hasFinalExam = sumRows.some(r=>(parseFloat(r.final_score)||0)>0);
       // คะแนนเก็บ (ระหว่างภาค) — รวมจาก score_units ก่อน/หลังกลางภาค
       const hasCollectScore = sumRows.some(r=>(parseFloat(r.total_before_mid)||0)>0||(parseFloat(r.total_after_mid)||0)>0);
-      return {...sub,_stats:{total,pass:passNum,fail:failNum,avg,pct,msCount,teacherName,gradeCount,sumRows,stuIds,msStudentIds,attMap:stuAttMapSub,attTotalH:totalH,hasScore,hasAttendance,hasEval,hasMidExam,hasFinalExam,hasCollectScore}};
+      return {...sub,_stats:{total,pass:passNum,fail:failNum,avg,pct,msCount,teacherName,gradeCount,sumRows,stuIds,msStudentIds,attMap:stuAttMapSub,attTotalH:totalH,msInfo,hasScore,hasAttendance,hasEval,hasMidExam,hasFinalExam,hasCollectScore}};
     });
 
     // ── สรุปความคืบหน้ารายครู (คะแนน + เวลาเรียน + ประเมิน ต้องครบทั้ง 3 ถึงจะนับว่าวิชานั้นเสร็จ) ──
@@ -2521,15 +2532,16 @@ function printMsReport(){
         <tbody>
           ${sorted.map((sid,j)=>{
             const stu=stuMap[String(sid)];
-            const att=st.attMap?.[String(sid)];
-            const attended=att?.attended||0;
-            const pct=totalH>0?(attended/totalH*100).toFixed(0):0;
+            const mi=st.msInfo?.[String(sid)];
+            const attended=mi?mi.attended:(st.attMap?.[String(sid)]?.attended||0);
+            const rowH=mi?mi.totalH:totalH;
+            const pct=mi?Math.round(mi.pct):(totalH>0?(attended/totalH*100).toFixed(0):0);
             return `<tr style="border-bottom:1px solid #eee">
               <td style="text-align:center;padding:4px 6px;border:1px solid #ddd">${j+1}</td>
               <td style="text-align:center;padding:4px 8px;border:1px solid #ddd">${esc(stu?.student_code||'')}</td>
               <td style="text-align:left;padding:4px 8px;border:1px solid #ddd;white-space:nowrap">${esc(stu?.student_name||'(ไม่พบชื่อ)')}</td>
               <td style="text-align:center;padding:4px 6px;border:1px solid #ddd">${attended}</td>
-              <td style="text-align:center;padding:4px 6px;border:1px solid #ddd">${totalH}</td>
+              <td style="text-align:center;padding:4px 6px;border:1px solid #ddd">${rowH}</td>
               <td style="text-align:center;padding:4px 6px;border:1px solid #ddd;color:#dc2626;font-weight:700">${pct}%</td>
             </tr>`;
           }).join('')}
