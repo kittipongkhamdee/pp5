@@ -1799,7 +1799,7 @@ function _applyConcurrencyGuards(){
 // (ของโมดูลจะถูกห่อเพิ่มใน ensureModule หลังโหลดเสร็จ)
 _applyConcurrencyGuards();
 // ?v= กันแคชเก่าค้าง (modules/*.js แคชไว้ 1 วันตาม vercel.json) — แก้ไฟล์ใน modules/ เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย
-const MODULE_V='107';
+const MODULE_V='108';
 // ห่อฟังก์ชันของโมดูลหลังโหลดเสร็จด้วย (ตอนเริ่มระบบยังไม่มีฟังก์ชันเหล่านี้)
 function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V).then(()=>{ _applyConcurrencyGuards(); }); }
 function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
@@ -3450,6 +3450,7 @@ function printAttendanceMsChoice(){
       '<div style="border-top:0.5px solid rgba(0,0,0,.1)">'+
         '<button id="'+id+'-combined" style="width:100%;padding:15px;font-size:15px;font-weight:700;color:#007AFF;background:none;border:none;border-bottom:0.5px solid rgba(0,0,0,.1);cursor:pointer;font-family:var(--font)">รวมทุกวิชาในตารางเดียว</button>'+
         '<button id="'+id+'-bysubject" style="width:100%;padding:15px;font-size:15px;font-weight:600;color:#1d1d1f;background:none;border:none;border-bottom:0.5px solid rgba(0,0,0,.1);cursor:pointer;font-family:var(--font)">แยกหน้าตามวิชา</button>'+
+        '<button id="'+id+'-manage" style="width:100%;padding:15px;font-size:15px;font-weight:700;color:#dc2626;background:none;border:none;border-bottom:0.5px solid rgba(0,0,0,.1);cursor:pointer;font-family:var(--font)">ประกาศ มส / จัดการรายชื่อที่ประกาศแล้ว</button>'+
         '<button id="'+id+'-cancel" style="width:100%;padding:15px;font-size:15px;font-weight:400;color:#8e8e93;background:none;border:none;cursor:pointer;font-family:var(--font)">ยกเลิก</button>'+
       '</div>'+
     '</div>';
@@ -3460,6 +3461,7 @@ function printAttendanceMsChoice(){
   }
   document.getElementById(id+'-combined').onclick=()=>{close();printAttendanceMsReportCombined();};
   document.getElementById(id+'-bysubject').onclick=()=>{close();printAttendanceMsReport();};
+  document.getElementById(id+'-manage').onclick=()=>{close();openMsManage();};
   document.getElementById(id+'-cancel').onclick=close;
 }
 
@@ -3468,7 +3470,14 @@ function printAttendanceMsChoice(){
 async function _loadMsBySubject(){
   const [allAtt, allStu]=await Promise.all([loadTeacherAtt(), loadAllStudentsBasic()]);
   const stuMap=Object.fromEntries(allStu.map(s=>[String(s.id),s]));
-  const subjectsWithMs=[];
+  // รายการที่ครู "ประกาศ มส" ไว้แล้ว (ยังไม่ถูกยกเลิก) — คงอยู่แม้ภายหลังนักเรียนมาเรียนจนเกิน 80%
+  let anns=[];
+  try{
+    anns=await q(sb.from('ms_announcements').select('*').in('subject_id',S.subjects.map(s=>s.id)).is('cancelled_at',null));
+  }catch(e){ console.warn('โหลดรายการประกาศ มส ไม่สำเร็จ',e); }
+  const annBy={};
+  anns.forEach(a=>{ (annBy[a.subject_id]=annBy[a.subject_id]||{})[String(a.student_id)]=a; });
+  const subjectsWithMs=[], allSubjects=[];
   S.subjects.forEach(sub=>{
     const stuOfSub=studentsOfSubject(allStu,sub);
     const attForSubj=allAtt.filter(a=>String(a.subject_id)===String(sub.id));
@@ -3480,10 +3489,106 @@ async function _loadMsBySubject(){
       const p=parseInt(a.periods)||1;
       if(a.status==='present'||a.status==='leave') m.attended+=p;
     });
-    const msIds=Object.keys(attMap).filter(sid=>totalH>0 && (attMap[sid].attended/totalH*100)<80);
-    if(msIds.length) subjectsWithMs.push({sub,totalH,msIds,attMap});
+    const annMap=annBy[sub.id]||{};
+    // เข้าเกณฑ์ มส ตอนนี้ (คำนวณสด)
+    const calcIds=Object.keys(attMap).filter(sid=>totalH>0 && (attMap[sid].attended/totalH*100)<80);
+    // rowInfo = ตัวเลขที่ใช้พิมพ์รายงาน: คนที่ประกาศแล้วใช้ตัวเลข ณ วันประกาศ ที่เหลือใช้ตัวเลขปัจจุบัน
+    const rowInfo={};
+    calcIds.forEach(sid=>{
+      rowInfo[sid]={attended:attMap[sid].attended,totalH,pct:attMap[sid].attended/totalH*100,announced:false};
+    });
+    Object.entries(annMap).forEach(([sid,a])=>{
+      rowInfo[sid]={attended:+a.attended_hours,totalH:+a.total_hours,pct:+a.pct,announced:true,announcedAt:a.announced_at,annId:a.id};
+    });
+    const msIds=Object.keys(rowInfo);
+    const item={sub,totalH,msIds,attMap,rowInfo,annMap,calcIds};
+    allSubjects.push(item);
+    if(msIds.length) subjectsWithMs.push(item);
   });
-  return {subjectsWithMs, stuMap};
+  return {subjectsWithMs, stuMap, allSubjects};
+}
+
+const _msDate=v=>v?new Date(v).toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'2-digit'}):'-';
+
+// จัดการประกาศ มส: เลือกนักเรียนที่เข้าเกณฑ์ (<80%) แล้วกด "ประกาศ" เพื่อบันทึกผล ณ วันนั้น
+// รายการที่ประกาศแล้วจะคงอยู่ในรายงาน มส แม้ภายหลังนักเรียนกลับมาเรียนเกิน 80% — ครูยกเลิกเองได้
+async function openMsManage(){
+  if(!S.subjects.length){toast('ยังไม่มีรายวิชา','er');return;}
+  loading(true);
+  let data;
+  try{ data=await _loadMsBySubject(); }
+  catch(e){ loading(false); toast('โหลดข้อมูลไม่สำเร็จ: '+e.message,'er'); return; }
+  loading(false);
+  window._msMng=data;
+  rmModal('msMngMod');
+  const {allSubjects,stuMap}=data;
+  const byCode=(a,b)=>(stuMap[a]?.student_code||'').localeCompare(stuMap[b]?.student_code||'','th');
+  const cards=allSubjects.map(it=>{
+    const pending=it.calcIds.filter(sid=>!it.annMap[sid]).sort(byCode);
+    const done=Object.keys(it.annMap).sort(byCode);
+    if(!pending.length&&!done.length) return '';
+    const sub=it.sub;
+    const pendHtml=pending.length?`
+      <div style="font-weight:600;font-size:12.5px;margin:10px 0 4px;color:#b45309">เข้าเกณฑ์ มส (เวลาเรียนไม่ถึง 80%) — ยังไม่ได้ประกาศ</div>
+      ${pending.map(sid=>{const r=it.rowInfo[sid];return `<label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;cursor:pointer">
+        <input type="checkbox" class="msm-chk" data-sub="${sub.id}" data-sid="${sid}" checked>
+        <span style="min-width:62px;color:var(--muted)">${esc(stuMap[sid]?.student_code||'')}</span>
+        <span style="flex:1">${esc(stuMap[sid]?.student_name||'(ไม่พบชื่อ)')}</span>
+        <span style="color:#dc2626;font-weight:600">${r.attended}/${r.totalH} · ${Math.round(r.pct)}%</span></label>`;}).join('')}
+      <button class="btn bp" style="margin-top:8px;font-size:12.5px" onclick="msAnnounce('${sub.id}')">ประกาศ มส รายการที่เลือก</button>`:'';
+    const doneHtml=done.length?`
+      <div style="font-weight:600;font-size:12.5px;margin:12px 0 4px;color:#dc2626">ประกาศ มส แล้ว</div>
+      ${done.map(sid=>{
+        const a=it.annMap[sid];
+        const cur=it.attMap[sid]&&it.totalH>0?it.attMap[sid].attended/it.totalH*100:null;
+        const over=cur!==null&&cur>=80;
+        return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13px;border-top:1px solid #f1f1f4;flex-wrap:wrap">
+          <span style="min-width:62px;color:var(--muted)">${esc(stuMap[sid]?.student_code||'')}</span>
+          <span style="flex:1;min-width:140px">${esc(stuMap[sid]?.student_name||'(ไม่พบชื่อ)')}</span>
+          <span style="font-size:12px;color:var(--muted)">ประกาศ ${_msDate(a.announced_at)} · ${Math.round(+a.pct)}%</span>
+          ${cur!==null?`<span style="font-size:12px;${over?'color:#16803d;font-weight:600':'color:var(--muted)'}">ปัจจุบัน ${Math.round(cur)}%${over?' (เกิน 80% แล้ว)':''}</span>`:''}
+          <button class="btn bs" style="font-size:11.5px;padding:3px 9px" onclick="msCancelAnn('${a.id}')">ยกเลิก มส</button></div>`;}).join('')}`:'';
+    return `<div style="border:1px solid var(--bdr);border-radius:12px;padding:12px 14px;margin-bottom:12px">
+      <div style="font-weight:700;font-size:14px">${esc(sub.subject_name)} (${esc(sub.subject_code)}) ${grm(sub.grade_level,sub.room)}</div>
+      ${pendHtml}${doneHtml}</div>`;
+  }).join('');
+  document.body.insertAdjacentHTML('beforeend',`
+  <div class="mo" id="msMngMod"><div class="md md-lg">
+    <div class="mh"><div class="mt">ประกาศ มส</div><button class="mx" onclick="rmModal('msMngMod')">✕</button></div>
+    <div class="mb" style="max-height:70vh;overflow:auto">
+      <div style="font-size:12.5px;color:var(--muted);line-height:1.6;margin-bottom:12px">กด "ประกาศ" เพื่อบันทึกรายชื่อ มส ณ วันนี้ — รายชื่อที่ประกาศแล้วจะคงอยู่ในรายงาน มส แม้นักเรียนมาเรียนจนเกิน 80% ในภายหลัง และครูยกเลิกได้เมื่อพิจารณาแล้ว</div>
+      ${cards||'<div class="empty" style="padding:24px 0">ไม่มีนักเรียนเข้าเกณฑ์ มส และไม่มีรายการที่ประกาศไว้</div>'}
+    </div>
+    <div class="mf"><button class="btn bs" onclick="rmModal('msMngMod')">ปิด</button></div>
+  </div></div>`);
+}
+async function msAnnounce(subId){
+  const it=(window._msMng?.allSubjects||[]).find(x=>String(x.sub.id)===String(subId));
+  if(!it) return;
+  const chk=Array.from(document.querySelectorAll('.msm-chk')).filter(c=>c.dataset.sub===String(subId)&&c.checked);
+  if(!chk.length){ toast('กรุณาเลือกนักเรียนอย่างน้อย 1 คน','er'); return; }
+  const rows=chk.map(c=>{
+    const r=it.rowInfo[c.dataset.sid];
+    return {subject_id:subId,student_id:c.dataset.sid,attended_hours:r.attended,total_hours:r.totalH,pct:Math.round(r.pct*10)/10};
+  });
+  loading(true);
+  try{
+    await q(sb.from('ms_announcements').insert(rows));
+    toast('ประกาศ มส '+rows.length+' คน เรียบร้อย','ok');
+  }catch(e){ loading(false); toast('บันทึกไม่สำเร็จ: '+e.message,'er'); return; }
+  loading(false);
+  openMsManage();
+}
+function msCancelAnn(id){
+  confirm2({title:'ยกเลิก มส',msg:'ต้องการยกเลิกการประกาศ มส ของนักเรียนคนนี้?<br><span style="font-size:12px;color:#6e6e73">รายชื่อจะหายจากรายงาน มส ที่ประกาศแล้ว (ถ้าเวลาเรียนยังไม่ถึง 80% จะกลับไปอยู่ในกลุ่ม "ยังไม่ได้ประกาศ")</span>',type:'warn',confirmText:'ยกเลิก มส',cancelText:'ไม่ยกเลิก',onConfirm:async()=>{
+    loading(true);
+    try{
+      await q(sb.from('ms_announcements').update({cancelled_at:new Date().toISOString(),cancelled_by:S.user.id}).eq('id',id));
+      toast('ยกเลิก มส แล้ว','ok');
+    }catch(e){ loading(false); toast('ไม่สำเร็จ: '+e.message,'er'); return; }
+    loading(false);
+    openMsManage();
+  }});
 }
 
 // รายงานนักเรียน มส (เวลาเรียนไม่ถึง 80%) เฉพาะวิชาของครูคนนี้ — รูปแบบเดียวกับ
@@ -3511,7 +3616,7 @@ async function printAttendanceMsReport(){
 
   let pages='';
   subjectsWithMs.forEach((item,i)=>{
-    const {sub,totalH,msIds,attMap}=item;
+    const {sub,totalH,msIds,attMap,rowInfo}=item;
     const sorted=[...msIds].sort((a,b)=>{
       const sa=stuMap[String(a)]?.student_code||'';
       const sb2=stuMap[String(b)]?.student_code||'';
@@ -3533,19 +3638,22 @@ async function printAttendanceMsReport(){
             <th style="width:76px;padding:5px 6px;border:1px solid #ccc;text-align:center">ชั่วโมงที่มา</th>
             <th style="width:88px;padding:5px 6px;border:1px solid #ccc;text-align:center">ชั่วโมงที่เช็คชื่อ</th>
             <th style="width:62px;padding:5px 6px;border:1px solid #ccc;text-align:center;color:#dc2626">%เวลา</th>
+            <th style="width:78px;padding:5px 6px;border:1px solid #ccc;text-align:center">วันที่ประกาศ</th>
           </tr>
         </thead>
         <tbody>
           ${sorted.map((sid,j)=>{
-            const attended=attMap[sid]?.attended||0;
-            const pct=totalH>0?(attended/totalH*100).toFixed(0):0;
+            const ri=rowInfo[sid];
+            const attended=ri.attended, tH=ri.totalH;
+            const pct=Math.round(ri.pct);
             return `<tr style="border-bottom:1px solid #eee">
               <td style="text-align:center;padding:4px 6px;border:1px solid #ddd">${j+1}</td>
               <td style="text-align:center;padding:4px 8px;border:1px solid #ddd">${esc(stuMap[sid]?.student_code||'')}</td>
               <td style="text-align:left;padding:4px 8px;border:1px solid #ddd;white-space:nowrap">${esc(stuMap[sid]?.student_name||'(ไม่พบชื่อ)')}</td>
               <td style="text-align:center;padding:4px 6px;border:1px solid #ddd">${attended}</td>
-              <td style="text-align:center;padding:4px 6px;border:1px solid #ddd">${totalH}</td>
+              <td style="text-align:center;padding:4px 6px;border:1px solid #ddd">${tH}</td>
               <td style="text-align:center;padding:4px 6px;border:1px solid #ddd;color:#dc2626;font-weight:700">${pct}%</td>
+              <td style="text-align:center;padding:4px 6px;border:1px solid #ddd;font-size:12px">${ri.announced?_msDate(ri.announcedAt):'-'}</td>
             </tr>`;
           }).join('')}
         </tbody>
@@ -3580,9 +3688,9 @@ async function printAttendanceMsReportCombined(){
 
   // จัดกลุ่มเป็นรายนักเรียน → รายวิชาที่ มส (นักเรียนคนเดียวอาจ มส หลายวิชา)
   const bySid={};
-  subjectsWithMs.forEach(({sub,totalH,msIds,attMap})=>{
+  subjectsWithMs.forEach(({sub,msIds,rowInfo})=>{
     msIds.forEach(sid=>{
-      (bySid[sid]=bySid[sid]||[]).push({sub,totalH,attended:attMap[sid]?.attended||0});
+      (bySid[sid]=bySid[sid]||[]).push({sub,totalH:rowInfo[sid].totalH,attended:rowInfo[sid].attended});
     });
   });
   const sidList=Object.keys(bySid).sort((a,b)=>{
@@ -5975,6 +6083,12 @@ async function _computeWatchlistRows(){
     const [allSum,allAtt,allStu]=await Promise.all([
       loadTeacherSum(), loadTeacherAtt(), loadAllStudentsBasic()
     ]);
+    // นักเรียนที่ครูประกาศ มส ไว้แล้ว — ยังอยู่ในรายการติดตามแม้ภายหลังเวลาเรียนเกิน 80%
+    const msAnnSet=new Set();
+    try{
+      const anns=await q(sb.from('ms_announcements').select('subject_id,student_id').in('subject_id',subjIds).is('cancelled_at',null));
+      anns.forEach(r=>msAnnSet.add(r.subject_id+'|'+r.student_id));
+    }catch(e){ console.warn('โหลดรายการประกาศ มส ไม่สำเร็จ',e); }
     const sumBySub={}, attBySub={};
     allSum.forEach(r=>{ (sumBySub[r.subject_id]=sumBySub[r.subject_id]||[]).push(r); });
     allAtt.forEach(r=>{ (attBySub[r.subject_id]=attBySub[r.subject_id]||[]).push(r); });
@@ -6025,8 +6139,9 @@ async function _computeWatchlistRows(){
         }
         const attended=attBySt[String(stu.id)]||0;
         const pct=totalH>0?Math.round(attended/totalH*100):null;
-        if(totalH>0&&pct<80) reasons.push('ms');
-        if(reasons.length) rows.push({stu,sub,reasons,gradeDisp,totalScore:sr?.total_score,pct});
+        const msAnnounced=msAnnSet.has(sub.id+'|'+stu.id);
+        if((totalH>0&&pct<80)||msAnnounced) reasons.push('ms');
+        if(reasons.length) rows.push({stu,sub,reasons,gradeDisp,totalScore:sr?.total_score,pct,msAnnounced});
       });
     });
   S._watchlistRows=rows;
@@ -6075,7 +6190,7 @@ function renderWatchlistPage(){
     let h='';
     if(r.reasons.includes('fail')) h+=`<span class="badge bg-r" style="margin-right:4px">ไม่ผ่าน</span>`;
     if(r.reasons.includes('fail_risk')) h+=`<span class="badge" style="background:rgba(255,204,0,.2);color:#8a6d00;margin-right:4px">แนวโน้มไม่ผ่าน</span>`;
-    if(r.reasons.includes('ms')) h+=`<span class="badge" style="background:rgba(255,149,0,.15);color:#b45309">เสี่ยง มส</span>`;
+    if(r.reasons.includes('ms')) h+=r.msAnnounced?`<span class="badge" style="background:rgba(220,38,38,.12);color:#dc2626">ประกาศ มส แล้ว</span>`:`<span class="badge" style="background:rgba(255,149,0,.15);color:#b45309">เสี่ยง มส</span>`;
     return h;
   };
   $('pg').innerHTML=`
