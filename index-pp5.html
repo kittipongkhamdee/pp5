@@ -814,8 +814,12 @@ async function exportExcel(sheets, fileName){
 }
 
 // printHTML: เปิดหน้าต่างใหม่ พิมพ์ตาราง พร้อม header โรงเรียน
-function printHTML(title, bodyHTML, orient='portrait', hideHeader=false){
-  const cfg=S.config;
+// ปี/ภาคเรียนของรายวิชา (ใช้พิมพ์หัวกระดาษ) — ถ้าวิชาไม่มีค่า (สร้างก่อนมีฟิลด์นี้) ใช้ค่าตั้งต้นของระบบ
+// เพื่อให้พิมพ์วิชาภาค 1 ย้อนหลังหลังเปลี่ยนค่าตั้งต้นเป็นภาค 2 แล้วหัวกระดาษไม่เปลี่ยนตาม
+function subYS(sub){ const c=S.config||{}; return {y:(sub&&sub.academic_year)||c.academic_year||'', s:(sub&&sub.semester)||c.semester||''}; }
+function termCfg(cfg,sub){ const t=subYS(sub); return Object.assign({},cfg,{academic_year:t.y,semester:t.s}); }
+function printHTML(title, bodyHTML, orient='portrait', hideHeader=false, sub=null){
+  const cfg=termCfg(S.config,sub);
   const schoolName=schoolNameWithPrefix(cfg.school_name);
   const w=window.open('','_blank');
   if(!w){toast('เบราว์เซอร์บล็อก Popup — กรุณาอนุญาต Popup แล้วลองใหม่','er');return;}
@@ -1795,7 +1799,7 @@ function _applyConcurrencyGuards(){
 // (ของโมดูลจะถูกห่อเพิ่มใน ensureModule หลังโหลดเสร็จ)
 _applyConcurrencyGuards();
 // ?v= กันแคชเก่าค้าง (modules/*.js แคชไว้ 1 วันตาม vercel.json) — แก้ไฟล์ใน modules/ เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย
-const MODULE_V='106';
+const MODULE_V='107';
 // ห่อฟังก์ชันของโมดูลหลังโหลดเสร็จด้วย (ตอนเริ่มระบบยังไม่มีฟังก์ชันเหล่านี้)
 function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V).then(()=>{ _applyConcurrencyGuards(); }); }
 function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
@@ -3283,7 +3287,7 @@ function exportAttendance(){
   const aoa=[
     [`${S.config.school_name||''} — บันทึกเวลาเรียน`],
     [`วิชา ${sub.subject_name} (${sub.subject_code}) ${grm(sub.grade_level,sub.room)}  ครู${sub.teacher_name||''}`],
-    [`ปีการศึกษา ${S.config.academic_year} ภาคเรียนที่ ${S.config.semester}  เวลาเรียน ${sub.total_hours} ชม.`],
+    [`ปีการศึกษา ${subYS(sub).y} ภาคเรียนที่ ${subYS(sub).s}  เวลาเรียน ${sub.total_hours} ชม.`],
     [],
     headMonth,
     headDay
@@ -3313,7 +3317,7 @@ function printAttendance(){
   const sub=attSub;
   const months=buildAttMonths();
   const sum=attSummaryByStudent();
-  const cfg=S.config;
+  const cfg=termCfg(S.config,sub);
   const COLS_PER_PAGE=15;
 
   // รวม day columns ทั้งหมดเรียงตามเดือน
@@ -4894,7 +4898,7 @@ function exportScores(){
   const hdr=[
     [`${S.config.school_name||''} — บันทึกคะแนน`],
     [`วิชา ${sub.subject_name} (${sub.subject_code}) ${grm(sub.grade_level,sub.room)}  ครู${sub.teacher_name||''}`],
-    [`ปีการศึกษา ${S.config.academic_year} ภาคเรียนที่ ${S.config.semester}`],
+    [`ปีการศึกษา ${subYS(sub).y} ภาคเรียนที่ ${subYS(sub).s}`],
     []
   ];
 
@@ -5036,7 +5040,7 @@ function _showSgsExportFallback(json){
 }
 function printScores(){
   const sub=scSub;
-  const cfg=S.config;
+  const cfg=termCfg(S.config,sub);
   const mBef=sub.score_before_mid??25, mAft=sub.score_after_mid??25;
   const mM=sub.score_mid??20, mF=sub.score_final??30;
   const COLS_PER_PAGE=6;
@@ -5498,7 +5502,7 @@ function exportEval(){
   const head=[
     [`${S.config.school_name||''} — การประเมิน`],
     [`วิชา ${sub.subject_name} (${sub.subject_code}) ${grm(sub.grade_level,sub.room)}  ครู${sub.teacher_name||''}`],
-    [`ปีการศึกษา ${S.config.academic_year} ภาคเรียนที่ ${S.config.semester}`],
+    [`ปีการศึกษา ${subYS(sub).y} ภาคเรียนที่ ${subYS(sub).s}`],
     []
   ];
   exportExcel([
@@ -5547,7 +5551,7 @@ function printEval(){
   CHAR8.forEach((item,i)=>{p2+=`ข้อที่ ${i+1} ${item.label}<br>`;});
   p2+='</div></div>';
 
-  printHTML(`การประเมิน — ${sub.subject_name} ${grm(sub.grade_level,sub.room)}`, p1+p2, 'portrait');
+  printHTML(`การประเมิน — ${sub.subject_name} ${grm(sub.grade_level,sub.room)}`, p1+p2, 'portrait', false, sub);
 }
 
 let _indicatorsAll=null;

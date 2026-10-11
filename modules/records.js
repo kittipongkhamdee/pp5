@@ -1501,7 +1501,7 @@ function exportEvalPlan(){
   const head=[
     [`${S.config.school_name||''} — แผนการวัดและประเมินผล`],
     [`วิชา ${sub.subject_name} (${sub.subject_code}) ${grm(sub.grade_level,sub.room)}  ครู${sub.teacher_name||''}`],
-    [`ปีการศึกษา ${S.config.academic_year} ภาคเรียนที่ ${S.config.semester}`],
+    [`ปีการศึกษา ${subYS(sub).y} ภาคเรียนที่ ${subYS(sub).s}`],
     []
   ];
   const unitBuilt=buildEvalPlanUnitRows();
@@ -1572,7 +1572,7 @@ function printEvalPlan(){
   p3+='</tbody></table></div>';
 
   const styleTag='<style>.ep-print td{vertical-align:top}</style>';
-  printHTML(`แผนการวัดและประเมินผล — ${sub.subject_name} ${grm(sub.grade_level,sub.room)}`, styleTag+'<div class="ep-print">'+p1+p2+p3+'</div>', 'portrait');
+  printHTML(`แผนการวัดและประเมินผล — ${sub.subject_name} ${grm(sub.grade_level,sub.room)}`, styleTag+'<div class="ep-print">'+p1+p2+p3+'</div>', 'portrait', false, sub);
 }
 // 7. REPORT
 // ════════════════════════════════════════════════════════════════
@@ -1693,7 +1693,7 @@ function exportReport(){
   const aoa=[
     [`${S.config.school_name||''} — รายงานผลการเรียน`],
     [`วิชา ${sub.subject_name} (${sub.subject_code}) ${grm(sub.grade_level,sub.room)}  ครู${sub.teacher_name||''}`],
-    [`ปีการศึกษา ${S.config.academic_year} ภาคเรียนที่ ${S.config.semester}`],
+    [`ปีการศึกษา ${subYS(sub).y} ภาคเรียนที่ ${subYS(sub).s}`],
     [],
     h
   ];
@@ -1711,7 +1711,7 @@ function exportReport(){
 function printReport(){
   if(!S._rpt){toast('ไม่มีข้อมูล','er');return;}
   const {sub,stus,sumMap,erMap,ecMap,attMap}=S._rpt;
-  const cfg=S.config||{};
+  const cfg=termCfg(S.config||{},sub);
   const schoolName=cfg.school_name||'';
   const _elb=v=>{const n=parseInt(v);return[0,1,2,3].includes(n)?String(n):'-';};
 
@@ -1995,7 +1995,7 @@ async function printAllPP5(){
   const sub=getSubject(S.selSub);
   if(!sub){ toast('ไม่พบข้อมูลรายวิชา','er'); return; }
   const subId=sub.id;
-  const cfg=S.config||{};
+  const cfg=termCfg(S.config||{},sub);
 
   toast('กำลังเตรียมข้อมูล...','in');
   loading(true);
@@ -2068,7 +2068,7 @@ async function pgCover(){
     qc('ev_char_cvr_'+S.selSub, ()=>q(sb.from('eval_char').select('student_id,overall_result').eq('subject_id',S.selSub)))
   ]);
   loading(false);
-  const cfg=S.config;
+  const cfg=termCfg(S.config,sub);
   const cvStus=await getStudentsBySubject(S.selSub);
   const totalN=cvStus.length;
   const cvStuIds=new Set(cvStus.map(s=>String(s.id)));
