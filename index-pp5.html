@@ -1799,7 +1799,7 @@ function _applyConcurrencyGuards(){
 // (ของโมดูลจะถูกห่อเพิ่มใน ensureModule หลังโหลดเสร็จ)
 _applyConcurrencyGuards();
 // ?v= กันแคชเก่าค้าง (modules/*.js แคชไว้ 1 วันตาม vercel.json) — แก้ไฟล์ใน modules/ เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย
-const MODULE_V='109';
+const MODULE_V='110';
 // ห่อฟังก์ชันของโมดูลหลังโหลดเสร็จด้วย (ตอนเริ่มระบบยังไม่มีฟังก์ชันเหล่านี้)
 function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V).then(()=>{ _applyConcurrencyGuards(); }); }
 function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
@@ -3785,11 +3785,20 @@ async function loadScData(){
 // ผลพิเศษ "มส" ตามเวลาเรียน: นักเรียนที่เวลาเรียนไม่ถึง 80% ล็อกช่องผลพิเศษเป็น มส (แก้เองไม่ได้)
 // พอเวลาเรียนครบ (>=80%) จะยกเลิก มส ให้อัตโนมัติและเปิดให้แก้ได้ — ซิงก์ลง score_summary ทุกครั้งที่เปิดหน้านี้
 let scMsIds=new Set();
+let scHasAtt=false; // วิชานี้มีการเช็คชื่อแล้ว (มีชั่วโมงที่เช็คชื่อ > 0)
+// กติกา "ร" อัตโนมัติ (เวลาเรียนครบ 80% แต่ไม่มีคะแนนสอบกลางภาคหรือปลายภาค) ใช้กับวิชาตั้งแต่ ภาคเรียนที่ 2/2569 เป็นต้นไป
+// — ภาคเรียนที่ 1/2569 ที่ครูทำเสร็จแล้วไม่แตะต้อง
+const R_RULE_FROM={y:2569,s:2};
+function _rRuleApplies(sub){
+  const t=subYS(sub), y=parseInt(t.y)||0, sm=parseInt(t.s)||0;
+  return y>R_RULE_FROM.y||(y===R_RULE_FROM.y&&sm>=R_RULE_FROM.s);
+}
 async function _calcMsIdsOfSubject(){
   const all=await loadTeacherAtt();
   const rows=all.filter(a=>String(a.subject_id)===String(S.selSub));
   const totalH=attHeldHours(rows);
   const ids=new Set();
+  scHasAtt=totalH>0;
   if(!(totalH>0)) return ids;
   const att={};
   rows.forEach(a=>{
@@ -3802,14 +3811,18 @@ async function _syncMsLock(){
   scMsIds=new Set();
   try{
     scMsIds=await _calcMsIdsOfSubject();
-    const rows=[]; let locked=0, released=0;
+    const rows=[]; let locked=0, released=0, rSet=0;
+    const rRule=_rRuleApplies(scSub);
     scStus.forEach(s=>{
       const sid=String(s.id), sm=gsum(sid), cur=sm.special_result||'';
       let sr=null;
       if(scMsIds.has(sid)){ if(cur!=='มส'){ sr='มส'; locked++; } }
       else if(cur==='มส'){ sr=''; released++; }
+      // เวลาเรียนครบ 80% แต่ไม่มีคะแนนสอบกลางภาค/ปลายภาค (อย่างใดอย่างหนึ่งหรือทั้งสอง) → ตั้งผลพิเศษ "ร" ให้ (ครูแก้ไขได้)
+      // (คะแนนสอบที่ไม่ได้กรอกกับที่กรอก 0 เก็บเป็น 0 เหมือนกัน จึงนับ 0 เป็น "ไม่มีคะแนน")
+      if(!scMsIds.has(sid)&&(sr===''||(sr===null&&cur===''))&&rRule&&scHasAtt&&!(parseFloat(sm.mid_normal)>0&&parseFloat(sm.final_score)>0)){ sr='ร'; rSet++; }
       if(sr===null) return;
-      const grade=sr==='มส'?0:calcGrade(parseFloat(sm.total_score)||0);
+      const grade=(sr==='มส'||sr==='ร')?0:calcGrade(parseFloat(sm.total_score)||0);
       rows.push({
         subject_id:S.selSub, student_id:s.id,
         total_before_mid:sm.total_before_mid??0, total_after_mid:sm.total_after_mid??0,
@@ -3825,7 +3838,7 @@ async function _syncMsLock(){
     scSum=await q(sb.from('score_summary').select('*').eq('subject_id',S.selSub));
     if(!patchTeacherSum(S.selSub, rows)) invalidateTeacherAgg();
     updateWatchlistBadge();
-    toast((locked?'ล็อกผลพิเศษเป็น มส '+locked+' คน (เวลาเรียนไม่ถึง 80%)':'')+(locked&&released?' · ':'')+(released?'ยกเลิก มส อัตโนมัติ '+released+' คน (เวลาเรียนครบแล้ว)':''),'in');
+    toast([locked?'ล็อกผลพิเศษเป็น มส '+locked+' คน (เวลาเรียนไม่ถึง 80%)':'',released?'ยกเลิก มส อัตโนมัติ '+released+' คน (เวลาเรียนครบแล้ว)':'',rSet?'ตั้งผลพิเศษ ร '+rSet+' คน (ยังไม่มีคะแนนสอบกลางภาค/ปลายภาค)':''].filter(Boolean).join(' · '),'in');
   }catch(e){ console.warn('ซิงก์ผลพิเศษ มส ไม่สำเร็จ',e); }
 }
 async function loadScPlanUnits(sid){
