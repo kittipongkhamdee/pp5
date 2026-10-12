@@ -1143,10 +1143,17 @@ const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 // ─── Login logo ────────────────────────────────────────────────────────────
 (async()=>{
   try{
-    const res=await fetch(`${SUPABASE_URL}/rest/v1/config?key=eq.logo_url&select=value&limit=1`,
-      {headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY}});
-    const rows=await res.json();
-    const val=rows?.[0]?.value;
+    // โลโก้ base64 ใหญ่ (~250 kB) — แคชไว้ในเครื่อง 6 ชม. ไม่ดึงทุกครั้งที่เปิดหน้า (ลด egress ของ Supabase)
+    // ใช้คีย์เดียวกับแอปหลัก (cfgc_logo_url) เพื่อแชร์แคชข้ามหน้าในเบราว์เซอร์เดียวกัน
+    let val;
+    try{ const c=JSON.parse(localStorage.getItem('cfgc_logo_url')||'null'); if(c&&Date.now()-c.ts<6*3600*1000) val=c.v; else val=undefined; }catch(e){ val=undefined; }
+    if(val===undefined){
+      const res=await fetch(`${SUPABASE_URL}/rest/v1/config?key=eq.logo_url&select=value&limit=1`,
+        {headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY}});
+      const rows=await res.json();
+      val=rows?.[0]?.value??null;
+      try{ localStorage.setItem('cfgc_logo_url',JSON.stringify({v:val,ts:Date.now()})); }catch(e){}
+    }
     if(val){
       const img=document.getElementById('login-school-logo');
       const svg=document.getElementById('login-logo-svg');

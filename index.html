@@ -578,12 +578,19 @@ renderQuickLinks();
   try{
     const SB_URL='https://zwtulepvmlngcrbcrrki.supabase.co';
     const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp3dHVsZXB2bWxuZ2NyYmNycmtpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNTc2NDcsImV4cCI6MjA5NTYzMzY0N30.9nhe0_NF3Fa-4FtmbE2AvQCtJdHS05RbkiyC8WvtvvA';
-    const res=await fetch(
-      `${SB_URL}/rest/v1/config?key=eq.logo_url&select=value&limit=1`,
-      {headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}}
-    );
-    const rows=await res.json();
-    const val=rows?.[0]?.value;
+    // โลโก้ base64 ใหญ่ (~250 kB) — แคชไว้ในเครื่อง 6 ชม. ไม่ดึงทุกครั้งที่เปิดหน้า (ลด egress ของ Supabase)
+    // ใช้คีย์เดียวกับแอปหลัก (cfgc_logo_url) เพื่อแชร์แคชข้ามหน้าในเบราว์เซอร์เดียวกัน
+    let val;
+    try{ const c=JSON.parse(localStorage.getItem('cfgc_logo_url')||'null'); if(c&&Date.now()-c.ts<6*3600*1000) val=c.v; else val=undefined; }catch(e){ val=undefined; }
+    if(val===undefined){
+      const res=await fetch(
+        `${SB_URL}/rest/v1/config?key=eq.logo_url&select=value&limit=1`,
+        {headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}}
+      );
+      const rows=await res.json();
+      val=rows?.[0]?.value??null;
+      try{ localStorage.setItem('cfgc_logo_url',JSON.stringify({v:val,ts:Date.now()})); }catch(e){}
+    }
     if(val){
       const img=document.getElementById('school-logo');
       const svg=document.getElementById('hero-svg');
