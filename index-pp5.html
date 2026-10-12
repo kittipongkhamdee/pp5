@@ -977,11 +977,28 @@ function _denyMenuAccess(label){
   alert2({title:'ไม่มีสิทธิ์เข้าถึง',msg:'เมนู "'+esc(label)+'" ถูกจำกัดสิทธิ์การเข้าถึง<br>ติดต่อผู้ดูแลระบบหากต้องการใช้งาน',type:'warn',okText:'เข้าใจแล้ว'});
 }
 
+// รูปโลโก้/ตราครุฑใน config เป็น base64 ขนาดใหญ่ (รวม ~0.5 MB) — เดิมดึงทั้งก้อนทุกครั้งที่เปิดแอปของครูทุกคน กิน egress ของ Supabase
+// จึงไม่ดึงมากับ config ปกติ แต่ดึงแยกเฉพาะที่ใช้ (logo_url, garuda_url) แล้วแคชไว้ในเครื่อง (localStorage, 6 ชม.)
+// school_logo / exam_app_logo เป็นของระบบสอบ ปพ.5 ไม่ใช้ จึงไม่ดึงเลย
+const _HEAVY_CFG_KEYS=['logo_url','school_logo','exam_app_logo','garuda_url'];
+async function cfgCached(key, ttl=6*3600*1000){
+  try{ const c=JSON.parse(localStorage.getItem('cfgc_'+key)||'null'); if(c&&Date.now()-c.ts<ttl) return c.v; }catch(e){}
+  let v=null;
+  try{ const rows=await q(sb.from('config').select('value').eq('key',key).limit(1)); v=rows&&rows[0]?rows[0].value:null; }
+  catch(e){ return null; }
+  cfgCacheSet(key,v);
+  return v;
+}
+// แอดมินอัปโหลด/ลบโลโก้แล้วเรียกอันนี้ เพื่อให้แคชในเครื่องตรงกับค่าใหม่ทันที
+function cfgCacheSet(key,v){ try{ localStorage.setItem('cfgc_'+key, JSON.stringify({v:v??null,ts:Date.now()})); }catch(e){} }
 async function loadConfig(){
   try{
-    const rows = await q(sb.from('config').select('*'));
+    const rows = await q(sb.from('config').select('*').not('key','in','('+_HEAVY_CFG_KEYS.join(',')+')'));
     S.config = {};
     rows.forEach(r=>{ S.config[r.key]=r.value; });
+    const [lg,gr]=await Promise.all([cfgCached('logo_url'),cfgCached('garuda_url')]);
+    if(lg) S.config.logo_url=lg;
+    if(gr) S.config.garuda_url=gr;
     if(S.config.subject_groups){try{SUBJECT_GROUPS=JSON.parse(S.config.subject_groups);}catch(e){}}
     if(S.config.rooms_per_grade){try{ROOMS_PER_GRADE=JSON.parse(S.config.rooms_per_grade);}catch(e){}}
     if(S.config.grade_config){
@@ -1799,7 +1816,7 @@ function _applyConcurrencyGuards(){
 // (ของโมดูลจะถูกห่อเพิ่มใน ensureModule หลังโหลดเสร็จ)
 _applyConcurrencyGuards();
 // ?v= กันแคชเก่าค้าง (modules/*.js แคชไว้ 1 วันตาม vercel.json) — แก้ไฟล์ใน modules/ เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย
-const MODULE_V='111';
+const MODULE_V='112';
 // ห่อฟังก์ชันของโมดูลหลังโหลดเสร็จด้วย (ตอนเริ่มระบบยังไม่มีฟังก์ชันเหล่านี้)
 function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V).then(()=>{ _applyConcurrencyGuards(); }); }
 function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
@@ -6484,8 +6501,9 @@ function _toggleDashFilter(){
 // ถ้าดึงไม่สำเร็จ (เช่น ออฟไลน์) จะใช้ค่า fallback ที่ฝังไว้ในโค้ด HTML แทน
 (async()=>{
   try{
-    const rows=await q(sb.from('config').select('key,value').in('key',['school_name','logo_url']));
+    const rows=await q(sb.from('config').select('key,value').in('key',['school_name']));
     const cfg={}; rows.forEach(r=>{ cfg[r.key]=r.value; });
+    cfg.logo_url=await cfgCached('logo_url'); // โลโก้ base64 ใหญ่ — ใช้แคชในเครื่อง ไม่ดึงทุกครั้งที่เปิดหน้า login
     if(cfg.school_name){
       const el=$('lp-sname'); if(el) el.textContent=cfg.school_name;
     }

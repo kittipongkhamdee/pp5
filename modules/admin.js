@@ -1805,7 +1805,7 @@ async function uploadLogo(input){
       reader.readAsDataURL(file);
     });
     await q(sb.from('config').upsert([{key:'logo_url', value:dataUrl}], {onConflict:'key'}));
-    S.config.logo_url = dataUrl;
+    S.config.logo_url = dataUrl; cfgCacheSet('logo_url', dataUrl);
     updateLogoDisplay(dataUrl);
     toast('บันทึกโลโก้เรียบร้อย');
     pgSettings();
@@ -1817,7 +1817,7 @@ async function removeLogo(){
   loading(true);
   try{
     await q(sb.from('config').delete().eq('key','logo_url'));
-    delete S.config.logo_url;
+    delete S.config.logo_url; cfgCacheSet('logo_url', null);
     updateLogoDisplay(_DEFAULT_LOGO);
     toast('คืนค่าโลโก้เริ่มต้นแล้ว');
     pgSettings();
@@ -1854,7 +1854,7 @@ async function uploadGaruda(input){
       reader.readAsDataURL(file);
     });
     await q(sb.from('config').upsert([{key:'garuda_url', value:dataUrl}], {onConflict:'key'}));
-    S.config.garuda_url = dataUrl;
+    S.config.garuda_url = dataUrl; cfgCacheSet('garuda_url', dataUrl);
     toast('บันทึกตราครุฑเรียบร้อย');
     pgSettings();
   }catch(e){ toast('เกิดข้อผิดพลาด: '+e.message,'er'); }
@@ -1865,7 +1865,7 @@ async function removeGaruda(){
   loading(true);
   try{
     await q(sb.from('config').delete().eq('key','garuda_url'));
-    delete S.config.garuda_url;
+    delete S.config.garuda_url; cfgCacheSet('garuda_url', null);
     toast('ลบตราครุฑแล้ว');
     pgSettings();
   }catch(e){ toast('เกิดข้อผิดพลาด: '+e.message,'er'); }
