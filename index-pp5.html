@@ -6324,8 +6324,9 @@ async function mscOpen(subId){
   try{
     [stus,units,sums,att]=await Promise.all([
       getStudentsBySubject(subId),
-      qc('sc_units_'+subId, ()=>qAll(()=>sb.from('score_units').select('*').eq('subject_id',subId))),
-      qc('sc_sum_'+subId, ()=>q(sb.from('score_summary').select('*').eq('subject_id',subId))),
+      // ดึงเฉพาะคอลัมน์ที่หน้านี้ใช้ (ลด egress) — ใช้คีย์แคชแยก ไม่ปนกับหน้าบันทึกคะแนนที่ต้องการทุกคอลัมน์
+      qc('msc_units_'+subId, ()=>qAll(()=>sb.from('score_units').select('student_id,period,unit_number,max_score,score').eq('subject_id',subId))),
+      qc('msc_sum_'+subId, ()=>q(sb.from('score_summary').select('student_id,mid_normal,final_score,total_score').eq('subject_id',subId))),
       loadTeacherAtt()
     ]);
   }catch(e){ loading(false); toast('โหลดคะแนนไม่สำเร็จ: '+e.message,'er'); return; }
