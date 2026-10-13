@@ -1066,7 +1066,7 @@ function showApp(){
   // Inject SVG nav icons
   const _navIcons={
     'nav-dashboard':IC.dash,'nav-subjects':IC.grid,'nav-students':IC.users,
-    'nav-evalplan':IC.checklist,'nav-attendance':IC.calendar,'nav-scores':IC.pencil,'nav-eval':IC.star,
+    'nav-evalplan':IC.checklist,'nav-attendance':IC.calendar,'nav-mchk':IC.check,'nav-scores':IC.pencil,'nav-eval':IC.star,
     'nav-report':IC.chart,'nav-watchlist':IC.warn,'nav-cover':IC.pp5,'nav-iqa':IC.iqa,'nav-settings':IC.settings,'nav-manual':IC.book,
     'nav-standards':IC.standard,'nav-sgs-guide':IC.zap,'nav-info':IC.chart
   };
@@ -6271,7 +6271,7 @@ async function _mchkCheckedSet(list){
 }
 async function mchkInit(){
   if(!mchkIsMobile()) return;
-  const nv=$('nav-mchk'); if(nv) nv.style.display='';
+  const nv=$('nav-mchk'); if(nv&&!(S.profile?.is_director&&!S.profile?.is_admin)) nv.style.display=''; // แสดงเฉพาะบนมือถือ (บนคอมซ่อนไว้ตลอด)
   // เรียกตอนเปิดแอป ก่อนแดชบอร์ดโหลดรายวิชาเสร็จ — ต้องโหลดรายวิชาเองก่อน ไม่งั้นรายการว่างและไม่ถาม
   try{ if(!(S.subjects||[]).length) await loadSubjects(); }catch(e){ return; }
   const list=_mchkTodaySubjects();
