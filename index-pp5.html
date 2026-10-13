@@ -6387,16 +6387,14 @@ function _mchkRender(){
   const m=_mchk; if(!m) return;
   const cnt={present:0,absent:0,leave:0}; Object.values(m.st).forEach(v=>cnt[v]++);
   const box=(k)=>`<div style="flex:1;background:#fff;border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,.05);text-align:center;padding:6px 0;font-size:11.5px;color:#6e6e73"><b style="display:block;font-size:18px;color:${_MCHK_CLR[k]}">${cnt[k]}</b>${_MCHK_LBL[k]}</div>`;
-  const body=`<div style="display:flex;align-items:center;justify-content:space-between;background:#fff;border-radius:14px;padding:9px 12px;margin-bottom:10px;font-size:13.5px;box-shadow:0 2px 8px rgba(0,0,0,.05)">
-      <span>จำนวนคาบวันนี้</span>
-      <select onchange="_mchk.periods=parseInt(this.value)||1;_mchkRender()" style="font:600 14px var(--font);border:1px solid #d1d1d6;border-radius:8px;padding:4px 8px">${[1,2,3,4,5,6].map(n=>`<option ${n===m.periods?'selected':''}>${n}</option>`).join('')}</select></div>
-    <div style="position:sticky;top:-14px;z-index:2;background:#f2f4f8;margin:0 -14px 10px;padding:8px 14px;display:flex;gap:6px">${box('present')}${box('absent')}${box('leave')}</div>
+  // จำนวนคาบมาจากวันสอนที่ตั้งไว้ในรายวิชา (ไม่ต้องให้ครูเลือก) — แสดงในหัวหน้าจอแทน
+  const body=`<div style="position:sticky;top:-14px;z-index:2;background:#f2f4f8;margin:0 -14px 10px;padding:8px 14px;display:flex;gap:6px">${box('present')}${box('absent')}${box('leave')}</div>
     ${m.stus.length?m.stus.map((s,i)=>{const v=m.st[String(s.id)];return `<div style="display:flex;align-items:center;background:#fff;border-radius:16px;padding:9px 10px;margin-bottom:7px;gap:10px;box-shadow:0 1px 6px rgba(0,0,0,.05)">
       <span style="width:30px;height:30px;border-radius:50%;background:${_MCHK_CLR[v]}22;color:${_MCHK_CLR[v]};font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</span>
       <span style="flex:1;font-size:14px">${esc(s.student_name)}<span style="display:block;color:#6e6e73;font-size:11px">${esc(s.student_code||'')}${_mchkMsTag(s.id)}</span></span>
       <button onclick="mchkCycle('${s.id}')" style="width:64px;height:40px;border:none;border-radius:20px;font:700 15px var(--font);color:#fff;background:${_MCHK_CLR[v]};box-shadow:0 3px 8px ${_MCHK_CLR[v]}55">${_MCHK_LBL[v]}</button></div>`;}).join('')
       :'<div style="text-align:center;color:#6e6e73;padding:30px">ไม่พบนักเรียนในชั้นนี้</div>'}`;
-  _mchkShell({text:esc(m.sub.subject_name)+' · '+grm(m.sub.grade_level,m.sub.room),back:'openMobileCheck()'},esc(m.sub.subject_code)+' · แตะปุ่มเพื่อเปลี่ยน มา → ขาด → ลา',body,
+  _mchkShell({text:esc(m.sub.subject_name)+' · '+grm(m.sub.grade_level,m.sub.room),back:'openMobileCheck()'},esc(m.sub.subject_code)+' · '+m.periods+' คาบ · แตะปุ่มเพื่อเปลี่ยน มา → ขาด → ลา',body,
     `<div style="display:flex;gap:8px"><button onclick="mchkAll()" style="${_MB_G};flex:0 0 38%">✓ มาทั้งหมด</button>
      <button style="${_MB_P};flex:1" onclick="mchkSave()" ${m.stus.length?'':'disabled'}>บันทึก (${m.stus.length} คน)</button></div>`);
 }
