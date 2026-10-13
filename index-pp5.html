@@ -820,6 +820,12 @@ async function exportExcel(sheets, fileName){
 // ปี/ภาคเรียนของรายวิชา (ใช้พิมพ์หัวกระดาษ) — ถ้าวิชาไม่มีค่า (สร้างก่อนมีฟิลด์นี้) ใช้ค่าตั้งต้นของระบบ
 // เพื่อให้พิมพ์วิชาภาค 1 ย้อนหลังหลังเปลี่ยนค่าตั้งต้นเป็นภาค 2 แล้วหัวกระดาษไม่เปลี่ยนตาม
 function subYS(sub){ const c=S.config||{}; return {y:(sub&&sub.academic_year)||c.academic_year||'', s:(sub&&sub.semester)||c.semester||''}; }
+// ตั้งแต่ภาคเรียนที่ 2/2569: ช่องคะแนนที่เว้นว่างเก็บเป็น "ว่าง" (null) แยกจากคะแนน 0 ที่ครูกรอกจริง
+// ภาคเรียนก่อนหน้าคงพฤติกรรมเดิม (ช่องว่าง = 0) ไม่แตะข้อมูลเก่า
+const BLANK_NULL_FROM={y:2569,s:2};
+function blankAsNull(sub){ const t=subYS(sub), y=parseInt(t.y)||0, m=parseInt(t.s)||0; return y>BLANK_NULL_FROM.y||(y===BLANK_NULL_FROM.y&&m>=BLANK_NULL_FROM.s); }
+// แปลงค่าจากช่องกรอก: ว่าง → null (วิชาภาคใหม่) หรือ 0 (วิชาภาคเก่า); ตัวเลข (รวม 0) → ตัวเลขนั้น
+function scoreIn(v,sub){ const n=parseFloat(v); return isNaN(n)?(blankAsNull(sub)?null:0):n; }
 function termCfg(cfg,sub){ const t=subYS(sub); return Object.assign({},cfg,{academic_year:t.y,semester:t.s}); }
 function printHTML(title, bodyHTML, orient='portrait', hideHeader=false, sub=null){
   const cfg=termCfg(S.config,sub);
@@ -1837,7 +1843,7 @@ function _applyConcurrencyGuards(){
 // (ของโมดูลจะถูกห่อเพิ่มใน ensureModule หลังโหลดเสร็จ)
 _applyConcurrencyGuards();
 // ?v= กันแคชเก่าค้าง (modules/*.js แคชไว้ 1 วันตาม vercel.json) — แก้ไฟล์ใน modules/ เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย
-const MODULE_V='115';
+const MODULE_V='116';
 // ห่อฟังก์ชันของโมดูลหลังโหลดเสร็จด้วย (ตอนเริ่มระบบยังไม่มีฟังก์ชันเหล่านี้)
 function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V).then(()=>{ _applyConcurrencyGuards(); }); }
 function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
@@ -2679,7 +2685,7 @@ async function doCopySubjects(){
               const scRows=[];
               uniqueUnits.forEach(u=>newStus.forEach(s=>scRows.push({
                 subject_id:newId,student_id:s.id,period:u.period,unit_number:u.unit_number,
-                unit_name:u.unit_name,standard_ref:u.standard_ref,max_score:u.max_score,score:0
+                unit_name:u.unit_name,standard_ref:u.standard_ref,max_score:u.max_score,score:blankAsNull(payload)?null:0
               })));
               const batchSize=200;
               for(let i=0;i<scRows.length;i+=batchSize){
@@ -3851,9 +3857,9 @@ async function _syncMsLock(){
       rows.push({
         subject_id:S.selSub, student_id:s.id,
         total_before_mid:sm.total_before_mid??0, total_after_mid:sm.total_after_mid??0,
-        total_unit:sm.total_unit??0, mid_normal:sm.mid_normal??0,
+        total_unit:sm.total_unit??0, mid_normal:sm.mid_normal??(blankAsNull(scSub)?null:0),
         mid_retake:sm.mid_retake??0, mid_repeat:sm.mid_repeat??0,
-        final_score:sm.final_score??0, total_score:sm.total_score??0,
+        final_score:sm.final_score??(blankAsNull(scSub)?null:0), total_score:sm.total_score??0,
         special_result:sr, grade, note:sm.note||''
       });
     });
@@ -4135,7 +4141,7 @@ async function addUnitOnly(period){
     const rows = scStus
       .filter(s=>!existIds.has(String(s.id)))
       .map(s=>({subject_id:S.selSub,student_id:s.id,period,unit_number:un,
-        unit_name:unm,standard_ref:std,max_score:mx,score:0}));
+        unit_name:unm,standard_ref:std,max_score:mx,score:blankAsNull(scSub)?null:0}));
     invalidateSc();
     if(rows.length){
       await q(sb.from('score_units').upsert(rows,{onConflict:'subject_id,student_id,period,unit_number'}));
@@ -4275,7 +4281,7 @@ async function saveUnitSc(){
   const rows=scStus.map(s=>({
     subject_id:S.selSub, student_id:s.id, period,
     unit_number:un, unit_name:unm, standard_ref:std, max_score:mx,
-    score:Math.min(mx, parseFloat($('usc-'+s.id)?.value)||0)
+    score:(v=>v==null?null:Math.min(mx,v))(scoreIn($('usc-'+s.id)?.value,scSub))
   }));
   loading(true);
   try{
@@ -4686,9 +4692,10 @@ async function saveExam(){
       const sm=gsum(s.id);
       const bef=Math.min(maxBef, freshUnits.filter(u=>u.student_id===s.id&&u.period==='before').reduce((a,b)=>a+(parseFloat(b.score)||0),0));
       const aft=Math.min(maxAft, freshUnits.filter(u=>u.student_id===s.id&&u.period==='after').reduce((a,b)=>a+(parseFloat(b.score)||0),0));
-      const mn=Math.min(mM,parseFloat($('mid-'+s.id)?.value)||0);
-      const fn=Math.min(mF,parseFloat($('fin-'+s.id)?.value)||0);
-      const total=bef+aft+mn+fn;
+      const _mn=scoreIn($('mid-'+s.id)?.value,scSub), _fn=scoreIn($('fin-'+s.id)?.value,scSub);
+      const mn=_mn==null?null:Math.min(mM,_mn);
+      const fn=_fn==null?null:Math.min(mF,_fn);
+      const total=bef+aft+(mn||0)+(fn||0);
       const ZERO_GRADE=['ร','มส','มผ','ผ'];
       const sr_dom=$('res-'+s.id)?.value??(sm?.special_result||'');
       const grade=ZERO_GRADE.includes(sr_dom)?0:calcGrade(total);
@@ -5042,9 +5049,9 @@ async function saveSpecial(){
     return{
       subject_id:S.selSub, student_id:s.id,
       total_before_mid:sm.total_before_mid??0, total_after_mid:sm.total_after_mid??0,
-      total_unit:sm.total_unit??0, mid_normal:sm.mid_normal??0,
+      total_unit:sm.total_unit??0, mid_normal:sm.mid_normal??(blankAsNull(scSub)?null:0),
       mid_retake:sm.mid_retake??0, mid_repeat:sm.mid_repeat??0,
-      final_score:sm.final_score??0, total_score:sm.total_score??0,
+      final_score:sm.final_score??(blankAsNull(scSub)?null:0), total_score:sm.total_score??0,
       special_result:sr, grade, note:sm.note||''
     };
   });
@@ -6354,7 +6361,7 @@ function _mscRows(){
     const sid=String(s.id), sm=m.sumBy[sid]||{};
     const lv=msLevel(m.sub,m.attBy[sid]||0,m.held);
     if(m.tab==='exam'){
-      const mid=parseFloat(sm.mid_normal)||0, fin=parseFloat(sm.final_score)||0, tot=parseFloat(sm.total_score)||0;
+      const nv=v=>(v==null||v==='')?null:parseFloat(v); const mid=nv(sm.mid_normal), fin=nv(sm.final_score), tot=parseFloat(sm.total_score)||0;
       rows.push({s,i,lv,mid,fin,tot,missing:!(mid>0&&fin>0),low:tot<50,val:tot});
     }else{
       const us=m.tab==='before'?m.uBefore:m.uAfter;
@@ -6383,10 +6390,10 @@ function _mscRender(){
       <span style="flex:1;font-size:14px">${esc(r.s.student_name)}</span>${tag(r)}`;
     if(m.tab==='exam'){
       // 0 = ได้ 0 หรือยังไม่ได้กรอก (ระบบเก็บช่องว่างเป็น 0 แยกไม่ได้) → เน้นแดงเข้มเหมือนหน่วยที่ได้ 0
-      const ex=(v,mx,lb)=>v>0?`<div style="flex:1;background:#f2f4f8;border-radius:10px;text-align:center;padding:5px 0;font-size:11px;color:#6e6e73"><b style="display:block;font-size:16px;color:#1d1d1f">${v}</b>${lb} /${mx}</div>`
+      const ex=(v,mx,lb)=>v==null?`<div style="flex:1;background:#f2f4f8;border-radius:10px;text-align:center;padding:5px 0;font-size:11px;color:#6e6e73"><b style="display:block;font-size:16px;color:#c7c7cc">—</b>${lb} /${mx}</div>`:v>0?`<div style="flex:1;background:#f2f4f8;border-radius:10px;text-align:center;padding:5px 0;font-size:11px;color:#6e6e73"><b style="display:block;font-size:16px;color:#1d1d1f">${v}</b>${lb} /${mx}</div>`
         :`<div style="flex:1;background:#ff3b30;border-radius:10px;text-align:center;padding:5px 0;font-size:11px;color:#fff;box-shadow:0 2px 6px rgba(255,59,48,.35)"><b style="display:block;font-size:16px">⚠ 0</b>${lb} /${mx}</div>`;
       return `<div style="background:#fff;border-radius:16px;padding:10px;margin-bottom:7px;box-shadow:0 1px 6px rgba(0,0,0,.05)">${head}</div>
-        <div style="display:flex;gap:6px;margin-top:7px">${ex(r.mid,m.sub.score_mid??20,'กลางภาค')}${ex(r.fin,m.sub.score_final??30,'ปลายภาค')}${ex(r.tot,100,'รวม')}</div></div>`;
+        <div style="display:flex;gap:6px;margin-top:7px">${ex(r.mid,m.sub.score_mid??20,'กลางภาค')}${ex(r.fin,m.sub.score_final??30,'ปลายภาค')}${ex(r.mid==null&&r.fin==null&&!r.tot?null:r.tot,100,'รวม')}</div></div>`;
     }
     const pct=r.maxP>0?Math.min(100,r.tot/r.maxP*100):0;
     return `<div style="background:#fff;border-radius:16px;padding:10px;margin-bottom:7px;box-shadow:0 1px 6px rgba(0,0,0,.05)">${head}
