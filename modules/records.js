@@ -882,7 +882,7 @@ async function _doCopyEvalPlanExec(srcId,copyPlan,copyUnits,copyRatio,destId){
         destStus.forEach(s=>{
           defs.forEach(d=>{
             rows.push({subject_id:destId,student_id:s.id,period:d.period,unit_number:d.unit_number,
-              unit_name:d.unit_name,standard_ref:d.standard_ref,max_score:d.max_score,score:0});
+              unit_name:d.unit_name,standard_ref:d.standard_ref,max_score:d.max_score,score:blankAsNull(getSubject(destId))?null:0});
           });
         });
         if(rows.length) await q(sb.from('score_units').upsert(rows,{onConflict:'subject_id,student_id,period,unit_number'}));
