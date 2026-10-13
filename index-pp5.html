@@ -6365,7 +6365,6 @@ function _mscRender(){
   const m=_msc; if(!m) return;
   const all=_mscRows();
   let rows=all;
-  if(m.filter==='miss') rows=all.filter(r=>r.missing);
   if(m.filter==='low') rows=all.filter(r=>r.low);
   if(m.filter==='sort') rows=[...all].sort((a,b)=>b.val-a.val);
   const avg=all.length?(all.reduce((a,r)=>a+r.val,0)/all.length).toFixed(1):'-';
@@ -6390,8 +6389,8 @@ function _mscRender(){
   };
   const body=`<div style="position:sticky;top:-14px;z-index:2;background:#f2f4f8;margin:0 -14px 8px;padding:8px 14px">
       <div style="display:flex;gap:6px;margin-bottom:8px">${box(avg,'เฉลี่ย','#007AFF')}${box(nLow,'ต่ำกว่า 50%','#ff9500')}</div>
-      <div style="display:flex;gap:6px;overflow-x:auto">${chip('all','ทั้งหมด')}${chip('miss','ยังไม่ครบ')}${chip('low','ต่ำกว่า 50%')}${chip('sort','เรียงคะแนน')}</div></div>
-    ${rows.length?rows.map(card).join(''):'<div style="text-align:center;color:#6e6e73;padding:30px">ไม่มีนักเรียนในกลุ่มนี้</div>'}`;
+      <div style="display:flex;gap:6px;overflow-x:auto">${chip('all','ทั้งหมด')}${chip('low','ต่ำกว่า 50%')}${chip('sort','เรียงคะแนน')}</div></div>
+    ${rows.length?rows.map(card).join(''):(m.filter==='all'?'<div style="text-align:center;color:#6e6e73;padding:30px">ไม่พบนักเรียนในชั้นนี้</div>':'<div style="text-align:center;color:#6e6e73;padding:30px">ไม่มีนักเรียนที่คะแนนต่ำกว่า 50% 👍</div>')}`;
   const sub=m.tab==='exam'?`กลางภาค ${m.sub.score_mid??20} · ปลายภาค ${m.sub.score_final??30}`:`คะแนนเต็ม ${(m.tab==='before'?m.sub.score_before_mid:m.sub.score_after_mid)??'-'}`;
   _mchkShell({text:esc(m.sub.subject_name)+' · '+grm(m.sub.grade_level,m.sub.room),back:'openMobileScores()'},esc(m.sub.subject_code)+' · '+sub,body,_mTabBar('sc'),
     `<div style="display:flex;background:rgba(255,255,255,.2);border-radius:12px;padding:3px;margin-top:12px">${seg('before','ก่อนกลางภาค')}${seg('after','หลังกลางภาค')}${seg('exam','สอบ')}</div>`);
