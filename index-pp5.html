@@ -6239,7 +6239,9 @@ function _mchkClassDays(sub){ try{ return JSON.parse(S.config['class_days_'+sub.
 // วิชาที่มีสอนวันนี้ (ตามวันสอนประจำสัปดาห์ที่ตั้งไว้) + จำนวนคาบ
 function _mchkTodaySubjects(){
   const t=_mchkToday();
-  return (S.subjects||[]).map(sub=>{
+  const cy=String(S.config.academic_year||''), cs=String(S.config.semester||'');
+  // เฉพาะวิชาของภาคเรียนปัจจุบัน (วิชาภาคเก่าที่ไม่ได้ระบุปี/ภาคยังนับ)
+  return (S.subjects||[]).filter(sub=>!sub.academic_year||(String(sub.academic_year)===cy&&String(sub.semester)===cs)).map(sub=>{
     const cd=_mchkClassDays(sub).find(c=>parseInt(c.weekday)===t.dow);
     return cd?{sub,periods:parseInt(cd.periods)||1}:null;
   }).filter(Boolean);
@@ -6254,6 +6256,8 @@ async function _mchkCheckedSet(list){
 async function mchkInit(){
   if(!mchkIsMobile()) return;
   const nv=$('nav-mchk'); if(nv) nv.style.display='';
+  // เรียกตอนเปิดแอป ก่อนแดชบอร์ดโหลดรายวิชาเสร็จ — ต้องโหลดรายวิชาเองก่อน ไม่งั้นรายการว่างและไม่ถาม
+  try{ if(!(S.subjects||[]).length) await loadSubjects(); }catch(e){ return; }
   const list=_mchkTodaySubjects();
   if(!list.length) return; // วันนี้ไม่มีสอน → ไม่ถาม
   let done;
@@ -6281,6 +6285,7 @@ function _mchkShell(title,sub,body,foot){
 function closeMobileCheck(){ const el=$('mchk'); if(el) el.remove(); _mchk=null; }
 function _mchkDateLabel(){ return new Date().toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'short',year:'numeric'}); }
 async function openMobileCheck(){
+  try{ if(!(S.subjects||[]).length) await loadSubjects(); }catch(e){}
   const list=_mchkTodaySubjects();
   let done=new Set();
   loading(true);
