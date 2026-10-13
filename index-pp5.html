@@ -1159,6 +1159,8 @@ function attHeldHours(rows){
 //   มส = ต่ำกว่า 80% (ขาดเกินโควตา 20% ของทั้งภาค), เสี่ยง มส = ต่ำกว่า 90%
 // วิชาที่ไม่ได้ตั้งชั่วโมงทั้งภาค ใช้ % ของชั่วโมงที่เช็คชื่อแล้วแทน (เกณฑ์เดียวกัน)
 const MS_PCT=80, MS_RISK_PCT=90;
+// "(ขาดได้อีก N คาบ)" สำหรับนักเรียนเสี่ยง มส — จำนวนคาบที่ยังขาดได้ก่อนจะต่ำกว่า 80% (ไม่มีชั่วโมงทั้งภาค = ไม่แสดง)
+function msLeftTxt(left){ return left==null?'':' (ขาดได้อีก '+Math.max(0,Math.floor(left+1e-9))+' คาบ)'; }
 function msLevel(sub, attended, held){
   attended=+attended||0; held=+held||0;
   if(!(held>0)) return {lv:'ok',pct:0,left:null};
@@ -1835,7 +1837,7 @@ function _applyConcurrencyGuards(){
 // (ของโมดูลจะถูกห่อเพิ่มใน ensureModule หลังโหลดเสร็จ)
 _applyConcurrencyGuards();
 // ?v= กันแคชเก่าค้าง (modules/*.js แคชไว้ 1 วันตาม vercel.json) — แก้ไฟล์ใน modules/ เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย
-const MODULE_V='114';
+const MODULE_V='115';
 // ห่อฟังก์ชันของโมดูลหลังโหลดเสร็จด้วย (ตอนเริ่มระบบยังไม่มีฟังก์ชันเหล่านี้)
 function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V).then(()=>{ _applyConcurrencyGuards(); }); }
 function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
@@ -2831,7 +2833,7 @@ function renderAttPage(){
                 <span style="font-size:11.5px">${m.pct}%</span>
               </div>
             </td>
-            <td class="tc">${m.ms?'<span class="badge bg-r">มส</span>':m.risk?'<span class="badge" style="background:rgba(255,149,0,.15);color:#b45309">เสี่ยง มส</span>':'<span class="badge bg-g">ปกติ</span>'}</td>
+            <td class="tc">${m.ms?'<span class="badge bg-r">มส</span>':m.risk?'<span class="badge" style="background:rgba(255,149,0,.15);color:#b45309;white-space:nowrap">เสี่ยง มส'+msLeftTxt(m.msLeft)+'</span>':'<span class="badge bg-g">ปกติ</span>'}</td>
           </tr>`;
         }).join('')}
         </tbody></table></div>
@@ -3210,7 +3212,7 @@ function _refreshSummaryTab(overrideSumMap){
               <span style="font-size:11.5px">${m.pct}%</span>
             </div>
           </td>
-          <td class="tc">${m.ms?'<span class="badge bg-r">มส</span>':m.risk?'<span class="badge" style="background:rgba(255,149,0,.15);color:#b45309">เสี่ยง มส</span>':'<span class="badge bg-g">ปกติ</span>'}</td>
+          <td class="tc">${m.ms?'<span class="badge bg-r">มส</span>':m.risk?'<span class="badge" style="background:rgba(255,149,0,.15);color:#b45309;white-space:nowrap">เสี่ยง มส'+msLeftTxt(m.msLeft)+'</span>':'<span class="badge bg-g">ปกติ</span>'}</td>
         </tr>`;
       }).join('')}
       </tbody></table></div>
@@ -3338,7 +3340,7 @@ function exportAttendance(){
       });
     });
     const m=sum[s.id]||{present:0,absent:0,leave:0,attended:0,pct:0,ms:false};
-    row.push(m.present,m.absent,m.leave,m.attended,m.pct+'%',m.ms?'มส':m.risk?'เสี่ยง มส':'ปกติ');
+    row.push(m.present,m.absent,m.leave,m.attended,m.pct+'%',m.ms?'มส':m.risk?'เสี่ยง มส'+msLeftTxt(m.msLeft):'ปกติ');
     aoa.push(row);
   });
   aoa.push([]);
@@ -6225,9 +6227,9 @@ async function _computeWatchlistRows(){
         const attended=attBySt[String(stu.id)]||0;
         const pct=totalH>0?msLevel(sub,attended,totalH).pct:null;
         const msAnnounced=msAnnSet.has(sub.id+'|'+stu.id);
-        const msLv=msLevel(sub,attended,totalH).lv;
+        const _ml=msLevel(sub,attended,totalH), msLv=_ml.lv, msLeft=_ml.left;
         if(msLv!=='ok'||msAnnounced) reasons.push('ms');
-        if(reasons.length) rows.push({stu,sub,reasons,gradeDisp,totalScore:sr?.total_score,pct,msAnnounced,msLv});
+        if(reasons.length) rows.push({stu,sub,reasons,gradeDisp,totalScore:sr?.total_score,pct,msAnnounced,msLv,msLeft});
       });
     });
   S._watchlistRows=rows;
@@ -6394,7 +6396,7 @@ function _mchkMsTag(sid){
   const k=String(sid), held=m.heldBase+m.periods, att=(m.base[k]||0)+(m.st[k]==='absent'?0:m.periods);
   const r=msLevel(m.sub,att,held);
   if(r.lv==='ms') return ` <b style="color:#ff3b30">· มส ${r.pct}%</b>`;
-  if(r.lv==='risk') return ` <b style="color:#ff9500">· เสี่ยง มส ${r.pct}%</b>`;
+  if(r.lv==='risk') return ` <b style="color:#ff9500">· เสี่ยง มส ${r.pct}%${msLeftTxt(r.left)}</b>`;
   return '';
 }
 function mchkCycle(sid){ const m=_mchk; if(!m) return; const k=String(sid); m.st[k]=ATT_C[(ATT_C.indexOf(m.st[k])+1)%ATT_C.length]; _mchkRender(); }
@@ -6463,7 +6465,7 @@ function renderWatchlistPage(){
     let h='';
     if(r.reasons.includes('fail')) h+=`<span class="badge bg-r" style="margin-right:4px">ไม่ผ่าน</span>`;
     if(r.reasons.includes('fail_risk')) h+=`<span class="badge" style="background:rgba(255,204,0,.2);color:#8a6d00;margin-right:4px">แนวโน้มไม่ผ่าน</span>`;
-    if(r.reasons.includes('ms')) h+=r.msAnnounced?`<span class="badge" style="background:rgba(220,38,38,.12);color:#dc2626">ประกาศ มส แล้ว</span>`:r.msLv==='ms'?`<span class="badge bg-r">มส</span>`:`<span class="badge" style="background:rgba(255,149,0,.15);color:#b45309">เสี่ยง มส</span>`;
+    if(r.reasons.includes('ms')) h+=r.msAnnounced?`<span class="badge" style="background:rgba(220,38,38,.12);color:#dc2626">ประกาศ มส แล้ว</span>`:r.msLv==='ms'?`<span class="badge bg-r">มส</span>`:`<span class="badge" style="background:rgba(255,149,0,.15);color:#b45309">เสี่ยง มส${r.msLv==='risk'?msLeftTxt(r.msLeft):''}</span>`;
     return h;
   };
   $('pg').innerHTML=`

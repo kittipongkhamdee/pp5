@@ -1659,7 +1659,7 @@ async function pgReport(){
           <td class="tr2" data-label="รวม">${sm.total_score??0}</td>
           <td class="tc" data-label="ผลการเรียน"><span style="font-size:15px;font-weight:700;color:var(--txt)">${g}</span></td>
           <td class="tc" data-label="ผลพิเศษ">${sm.special_result?`<span class="badge bg-r">${esc(sm.special_result)}</span>`:`<span class="badge bg-g">ปกติ</span>`}</td>
-          <td class="tc" data-label="เวลาเรียน"><span class="badge ${att.ms?'bg-r':att.risk?'':'bg-g'}" ${att.risk?'style="background:rgba(255,149,0,.15);color:#b45309"':''}>${att.pct}%${att.ms?' (มส)':att.risk?' (เสี่ยง)':''}</span></td>
+          <td class="tc" data-label="เวลาเรียน"><span class="badge ${att.ms?'bg-r':att.risk?'':'bg-g'}" ${att.risk?'style="background:rgba(255,149,0,.15);color:#b45309"':''}>${att.pct}%${att.ms?' (มส)':att.risk?' (เสี่ยง'+(att.msLeft!=null?' · ขาดได้อีก '+Math.max(0,Math.floor(att.msLeft+1e-9))+' คาบ':'')+')':''}</span></td>
           <td class="tc" data-label="อ่าน/คิด/เขียน"><span class="badge bg-b">${elb(er.result)}</span></td>
           <td class="tc" data-label="คุณลักษณะ"><span class="badge bg-b">${elb(ec.overall_result)}</span></td>
         </tr>`;
@@ -1702,7 +1702,7 @@ function exportReport(){
     aoa.push([i+1,s.student_code,s.student_name,
       sm.total_before_mid??0,sm.total_after_mid??0,sm.mid_normal??0,sm.final_score??0,
       sm.total_score??0,sm.grade??'',sm.special_result||'',
-      (att.pct??0)+'%',att.ms?'มส':att.risk?'เสี่ยง มส':'ปกติ',elb(er.result),elb(ec.overall_result)]);
+      (att.pct??0)+'%',att.ms?'มส':att.risk?'เสี่ยง มส'+msLeftTxt(att.msLeft):'ปกติ',elb(er.result),elb(ec.overall_result)]);
   });
   exportExcel([{name:'รายงานผล',aoa,colWidths:[6,10,28,14,14,12,12,10,8,10,12,10,14,14]}],
     `รายงานผล_${sub.subject_code}_ม${sub.grade_level}-${sub.room}.xlsx`);
