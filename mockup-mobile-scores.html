@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mockup คะแนนมือถือ</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}body{margin:0;background:#e9ecf2;font-family:Sarabun,sans-serif;color:#1d1d1f;padding:16px}
+h1{font-size:20px;text-align:center;margin:4px 0}.sub{text-align:center;color:#6e6e73;font-size:13px;margin-bottom:16px}
+.row{display:flex;gap:22px;flex-wrap:wrap;justify-content:center}.cap{text-align:center;font-weight:700;margin:8px 0}
+.note{font-size:12px;color:#6e6e73;max-width:300px;margin:6px auto 0;line-height:1.5}
+.phone{width:310px;height:640px;background:#f2f4f8;border-radius:36px;border:9px solid #1d1d1f;overflow:hidden;display:flex;flex-direction:column}
+.hd{background:linear-gradient(135deg,#34aadc,#007AFF);color:#fff;padding:14px 14px 14px;border-radius:0 0 22px 22px}
+.hd b{font-size:16px;display:block}.hd small{font-size:11.5px;opacity:.9}
+.seg{display:flex;background:rgba(255,255,255,.2);border-radius:12px;padding:3px;margin-top:10px}
+.seg span{flex:1;text-align:center;font-size:12.5px;font-weight:700;padding:7px 0;border-radius:9px}
+.seg .on{background:#fff;color:#007AFF}
+.body{flex:1;overflow:hidden;padding:10px 12px}
+.sum{display:flex;gap:6px;margin-bottom:8px}.sum div{flex:1;background:#fff;border-radius:12px;text-align:center;padding:6px 0;font-size:10.5px;color:#6e6e73}.sum b{display:block;font-size:16px}
+.chips{display:flex;gap:6px;margin-bottom:8px;overflow:hidden}.chips span{font-size:11px;background:#fff;border-radius:99px;padding:4px 10px;white-space:nowrap;color:#6e6e73}.chips .on{background:#007AFF;color:#fff}
+.st{background:#fff;border-radius:14px;padding:9px 10px;margin-bottom:6px;box-shadow:0 1px 5px rgba(0,0,0,.05)}
+.st .t{display:flex;align-items:center;gap:8px}.no{width:24px;height:24px;border-radius:50%;background:#eef4ff;color:#007AFF;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.nm{flex:1;font-size:13px}.tot{font-weight:800;font-size:15px}.tot small{font-weight:400;color:#6e6e73;font-size:11px}
+.bar{height:5px;border-radius:5px;background:#e5e5ea;margin:6px 0 5px}.bar i{display:block;height:100%;border-radius:5px}
+.units{display:flex;gap:4px;flex-wrap:wrap}.u{font-size:10.5px;border-radius:6px;padding:2px 6px;background:#f2f2f7}
+.u.miss{background:#fff1f0;color:#ff3b30;font-weight:700}
+.tab{display:flex;background:#fff;border-top:1px solid #e5e5ea}.tab div{flex:1;text-align:center;padding:8px 0 10px;font-size:11px;color:#8e8e93}.tab .on{color:#007AFF;font-weight:700}.tab i{display:block;font-style:normal;font-size:18px}
+.ex{display:flex;gap:6px}.ex div{flex:1;background:#f2f4f8;border-radius:10px;text-align:center;padding:5px 0;font-size:10.5px;color:#6e6e73}.ex b{display:block;font-size:15px;color:#1d1d1f}
+.g{font-size:11px;font-weight:800;color:#fff;border-radius:8px;padding:2px 7px}
+</style></head><body>
+<h1>ตัวอย่างหน้าจอ "คะแนน" บนมือถือ</h1>
+<div class="sub">ตัวอย่างเพื่อพิจารณา — ข้อมูลสมมติ กดไม่ได้</div>
+<div class="row">
+
+<div><div class="cap">① ก่อนกลางภาค</div>
+<div class="phone"><div class="hd"><b>‹ วิทยาศาสตร์ · ม.1</b><small>ว21101 · คะแนนเต็ม 25</small>
+<div class="seg"><span class="on">ก่อนกลางภาค</span><span>หลังกลางภาค</span><span>สอบ</span></div></div>
+<div class="body">
+<div class="sum"><div><b>18.4</b>เฉลี่ย</div><div><b style="color:#ff3b30">3</b>ยังไม่ครบ</div><div><b style="color:#ff9500">4</b>ต่ำกว่า 50%</div></div>
+<div class="chips"><span class="on">ทั้งหมด</span><span>ยังไม่ครบ</span><span>ต่ำกว่า 50%</span><span>เรียงคะแนน</span></div>
+<div class="st"><div class="t"><span class="no">1</span><span class="nm">ด.ช.ณัฐวุฒิ ฉัตรเงิน</span><span class="tot">22<small>/25</small></span></div>
+<div class="bar"><i style="width:88%;background:#34c759"></i></div><div class="units"><span class="u">น.1 5/5</span><span class="u">น.2 9/10</span><span class="u">น.3 8/10</span></div></div>
+<div class="st"><div class="t"><span class="no">2</span><span class="nm">ด.ช.จิรายุ แรงจบ</span><span class="tot">9<small>/25</small></span></div>
+<div class="bar"><i style="width:36%;background:#ff9500"></i></div><div class="units"><span class="u">น.1 4/5</span><span class="u">น.2 5/10</span><span class="u miss">น.3 —</span></div></div>
+<div class="st"><div class="t"><span class="no">3</span><span class="nm">ด.ช.นราธิป สิทธิ์ประโคน</span><span class="tot">17<small>/25</small></span></div>
+<div class="bar"><i style="width:68%;background:#34c759"></i></div><div class="units"><span class="u">น.1 3/5</span><span class="u">น.2 7/10</span><span class="u">น.3 7/10</span></div></div>
+</div>
+<div class="tab"><div><i>✓</i>เช็คชื่อ</div><div class="on"><i>✎</i>คะแนน</div></div></div>
+<div class="note">แต่ละคนแสดงคะแนนรวมช่วงนั้น + แถบสี + คะแนนรายหน่วย หน่วยที่ยังไม่มีคะแนนเป็นสีแดง "—" มีตัวกรองหาคนที่ยังไม่ครบ/คะแนนต่ำ</div></div>
+
+<div><div class="cap">② สอบ (กลางภาค/ปลายภาค)</div>
+<div class="phone"><div class="hd"><b>‹ วิทยาศาสตร์ · ม.1</b><small>ว21101 · กลางภาค 20 · ปลายภาค 30</small>
+<div class="seg"><span>ก่อนกลางภาค</span><span>หลังกลางภาค</span><span class="on">สอบ</span></div></div>
+<div class="body">
+<div class="sum"><div><b>13.2</b>เฉลี่ยกลางภาค</div><div><b>—</b>เฉลี่ยปลายภาค</div><div><b style="color:#ff3b30">25</b>ยังไม่มีปลายภาค</div></div>
+<div class="st"><div class="t"><span class="no">1</span><span class="nm">ด.ช.ณัฐวุฒิ ฉัตรเงิน</span><span class="g" style="background:#34c759">ปกติ</span></div>
+<div class="ex" style="margin-top:6px"><div><b>16</b>กลางภาค /20</div><div><b style="color:#ff3b30">—</b>ปลายภาค /30</div><div><b>68</b>รวม /100</div></div></div>
+<div class="st"><div class="t"><span class="no">2</span><span class="nm">ด.ช.จิรายุ แรงจบ</span><span class="g" style="background:#ff3b30">มส</span></div>
+<div class="ex" style="margin-top:6px"><div><b>8</b>กลางภาค /20</div><div><b style="color:#ff3b30">—</b>ปลายภาค /30</div><div><b>29</b>รวม /100</div></div></div>
+<div class="st"><div class="t"><span class="no">3</span><span class="nm">ด.ช.นราธิป สิทธิ์ประโคน</span><span class="g" style="background:#ff9500">เสี่ยง มส</span></div>
+<div class="ex" style="margin-top:6px"><div><b>14</b>กลางภาค /20</div><div><b style="color:#ff3b30">—</b>ปลายภาค /30</div><div><b>60</b>รวม /100</div></div></div>
+</div>
+<div class="tab"><div><i>✓</i>เช็คชื่อ</div><div class="on"><i>✎</i>คะแนน</div></div></div>
+<div class="note">แสดงคะแนนสอบกลางภาค/ปลายภาค และคะแนนรวมทั้งหมด พร้อมป้ายสถานะเวลาเรียน (ปกติ/เสี่ยง มส/มส) ในที่เดียว</div></div>
+
+<div><div class="cap">③ ทางเข้า</div>
+<div class="phone"><div class="hd"><b>‹ คะแนน</b><small>เลือกวิชา</small></div>
+<div class="body">
+<div class="st"><div class="t"><span class="nm"><b>วิทยาศาสตร์</b><br><small style="color:#6e6e73">ว21101 · ม.1 · 25 คน</small></span><span style="font-size:11px;color:#ff3b30;font-weight:700">ยังไม่ครบ 3</span></div></div>
+<div class="st"><div class="t"><span class="nm"><b>เทคโนโลยี</b><br><small style="color:#6e6e73">ว32102 · ม.5 · 11 คน</small></span><span style="font-size:11px;color:#34c759;font-weight:700">ครบแล้ว</span></div></div>
+</div>
+<div class="tab"><div><i>✓</i>เช็คชื่อ</div><div class="on"><i>✎</i>คะแนน</div></div></div>
+<div class="note">แถบเมนูล่าง สลับ "เช็คชื่อ" ↔ "คะแนน" รายการวิชาบอกว่ามีนักเรียนคะแนนยังไม่ครบกี่คน</div></div>
+
+</div></body></html>
