@@ -6282,7 +6282,7 @@ function _mchkDateCard(){
     <div style="width:52px;height:56px;border-radius:12px;background:#fff;color:#007AFF;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.12)">
       <div style="font-size:10px;font-weight:700;color:#ff3b30;line-height:1">${d.toLocaleDateString('th-TH',{month:'short'})}</div>
       <div style="font-size:26px;font-weight:800;line-height:1.05">${d.getDate()}</div></div>
-    <div style="font-size:16px;font-weight:800;line-height:1.3">วันนี้ · ${wd} <span style="font-weight:600;opacity:.9">${mo}</span></div></div>`;
+    <div style="font-size:16px;font-weight:800;line-height:1.3">${wd} ที่ ${d.getDate()} ${mo}</div></div>`;
 }
 function _mchkShell(title,sub,body,foot){
   let el=$('mchk');
