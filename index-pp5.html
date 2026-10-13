@@ -352,6 +352,9 @@
     <div class="ni" id="nav-attendance" data-sec="record" onclick="nav('attendance')">
       <span class="ic"></span>เวลาเรียน
     </div>
+    <div class="ni" id="nav-mchk" data-sec="record" onclick="openMobileCheck()" style="display:none">
+      <span class="ic"></span>เช็คชื่อ (มือถือ)
+    </div>
     <div class="ni" id="nav-scores" data-sec="record" onclick="nav('scores')">
       <span class="ic"></span>คะแนน
     </div>
@@ -1082,6 +1085,7 @@ function showApp(){
   else { nav('dashboard'); }
   initPresence();
   updateWatchlistBadge();
+  mchkInit();
   const fab=$('ai-fab');
   if(fab){
     if(aiAssistantOn()){ fab.style.display='flex'; if(window._initFabDrag) _initFabDrag(); }
@@ -6220,6 +6224,146 @@ async function pgWatchlist(){
   try{ await _computeWatchlistRows(); }finally{ loading(false); }
   _setWatchlistBadge(new Set((S._watchlistRows||[]).map(r=>r.stu.id)).size);
   renderWatchlistPage();
+}
+
+// ════════════════════════════════════════════════════════════════
+// เช็คชื่อบนมือถือ — เปิดแอปด้วยมือถือในวันที่มีสอน จะถามทุกครั้งว่าจะเช็คชื่อเลยไหม
+// (ถ้าทุกวิชาของวันนี้เช็คแล้วไม่ถาม) บันทึกลงตาราง attendance แบบเดียวกับหน้าเวลาเรียน
+// ════════════════════════════════════════════════════════════════
+function mchkIsMobile(){
+  try{ return window.matchMedia('(max-width: 820px)').matches && window.matchMedia('(pointer: coarse)').matches; }
+  catch(e){ return window.innerWidth<=820; }
+}
+function _mchkToday(){ const d=new Date(); return {d, ym:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'), day:d.getDate(), dow:d.getDay()}; }
+function _mchkClassDays(sub){ try{ return JSON.parse(S.config['class_days_'+sub.id]||'[]'); }catch(e){ return []; } }
+// วิชาที่มีสอนวันนี้ (ตามวันสอนประจำสัปดาห์ที่ตั้งไว้) + จำนวนคาบ
+function _mchkTodaySubjects(){
+  const t=_mchkToday();
+  return (S.subjects||[]).map(sub=>{
+    const cd=_mchkClassDays(sub).find(c=>parseInt(c.weekday)===t.dow);
+    return cd?{sub,periods:parseInt(cd.periods)||1}:null;
+  }).filter(Boolean);
+}
+// ชุด subject_id ที่เช็คชื่อของวันนี้แล้ว (มีแถว attendance วันนี้)
+async function _mchkCheckedSet(list){
+  const t=_mchkToday();
+  if(!list.length) return new Set();
+  const rows=await q(sb.from('attendance').select('subject_id').in('subject_id',list.map(x=>x.sub.id)).eq('year_month',t.ym).eq('date_day',t.day));
+  return new Set(rows.map(r=>String(r.subject_id)));
+}
+async function mchkInit(){
+  if(!mchkIsMobile()) return;
+  const nv=$('nav-mchk'); if(nv) nv.style.display='';
+  const list=_mchkTodaySubjects();
+  if(!list.length) return; // วันนี้ไม่มีสอน → ไม่ถาม
+  let done;
+  try{ done=await _mchkCheckedSet(list); }catch(e){ return; }
+  const pending=list.filter(x=>!done.has(String(x.sub.id)));
+  if(!pending.length) return; // เช็คครบแล้ว → ไม่ถาม
+  confirm2({title:'เช็คชื่อนักเรียนเลยไหม?',
+    msg:'วันนี้มีสอน '+list.length+' วิชา ยังไม่ได้เช็คชื่อ '+pending.length+' วิชา',
+    type:'info',confirmText:'เช็คชื่อนักเรียน',cancelText:'ใช้งานแบบปกติ',
+    onConfirm:()=>openMobileCheck()});
+}
+let _mchk=null;
+function _mchkShell(title,sub,body,foot){
+  let el=$('mchk');
+  if(!el){ el=document.createElement('div'); el.id='mchk';
+    el.style.cssText='position:fixed;inset:0;z-index:1500;background:#f5f5f7;display:flex;flex-direction:column;font-family:var(--font)';
+    document.body.appendChild(el); }
+  el.innerHTML=`<div style="background:#fff;padding:12px 14px;border-bottom:1px solid #e5e5ea;display:flex;align-items:center;gap:10px">
+      <button onclick="${title.back}" style="border:none;background:none;font-size:22px;padding:0 6px;color:#007AFF">‹</button>
+      <div style="flex:1;min-width:0"><div style="font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title.text}</div>
+      <div style="font-size:12px;color:#6e6e73">${sub}</div></div></div>
+    <div style="flex:1;overflow:auto;padding:12px">${body}</div>
+    ${foot?`<div style="background:#fff;border-top:1px solid #e5e5ea;padding:10px 12px">${foot}</div>`:''}`;
+}
+function closeMobileCheck(){ const el=$('mchk'); if(el) el.remove(); _mchk=null; }
+function _mchkDateLabel(){ return new Date().toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'short',year:'numeric'}); }
+async function openMobileCheck(){
+  const list=_mchkTodaySubjects();
+  let done=new Set();
+  loading(true);
+  try{ done=await _mchkCheckedSet(list); }catch(e){}
+  loading(false);
+  const card=(x)=>{
+    const ok=done.has(String(x.sub.id));
+    return `<div onclick="mchkOpenSubject('${x.sub.id}',${x.periods},${ok})" style="background:#fff;border-radius:14px;padding:13px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 2px rgba(0,0,0,.05)">
+      <div style="flex:1"><div style="font-weight:700;font-size:14.5px">${esc(x.sub.subject_name)}</div>
+      <div style="font-size:12px;color:#6e6e73">${esc(x.sub.subject_code)} · ${grm(x.sub.grade_level,x.sub.room)} · ${x.periods} คาบ</div></div>
+      <span style="font-size:11.5px;padding:4px 9px;border-radius:99px;font-weight:600;${ok?'background:#e8f8ec;color:#1f8a3b':'background:#fff4e0;color:#b45309'}">${ok?'เช็คแล้ว':'ยังไม่เช็ค'}</span></div>`;
+  };
+  const pending=list.filter(x=>!done.has(String(x.sub.id))), checked=list.filter(x=>done.has(String(x.sub.id)));
+  const body=list.length
+    ? pending.map(card).join('')+(checked.length?`<div style="font-size:12px;color:#6e6e73;margin:14px 2px 8px">เช็คแล้ววันนี้ (แตะเพื่อแก้ไข)</div>`+checked.map(card).join(''):'')
+    : `<div style="text-align:center;color:#6e6e73;padding:40px 10px">วันนี้ไม่มีวิชาที่สอน<br><span style="font-size:12px">(ตามวันสอนประจำสัปดาห์ที่ตั้งไว้ในรายวิชา)</span></div>`;
+  _mchkShell({text:'เช็คชื่อ',back:'closeMobileCheck()'},_mchkDateLabel(),body,
+    `<button class="btn bs" style="width:100%" onclick="closeMobileCheck()">ใช้งานแบบปกติ</button>`);
+}
+function mchkOpenSubject(subId,periods,alreadyChecked){
+  if(alreadyChecked){
+    confirm2({title:'วิชานี้เช็คชื่อวันนี้แล้ว',msg:'ต้องการแก้ไขการเช็คชื่อของวันนี้หรือไม่?',type:'warn',
+      confirmText:'แก้ไข',cancelText:'ยกเลิก',onConfirm:()=>_mchkLoadSubject(subId,periods)});
+    return;
+  }
+  _mchkLoadSubject(subId,periods);
+}
+async function _mchkLoadSubject(subId,periods){
+  const sub=getSubject(subId); if(!sub) return;
+  const t=_mchkToday();
+  loading(true);
+  let stus=[], rows=[];
+  try{
+    [stus,rows]=await Promise.all([
+      getStudentsBySubject(subId),
+      q(sb.from('attendance').select('student_id,status,periods').eq('subject_id',subId).eq('year_month',t.ym).eq('date_day',t.day))
+    ]);
+  }catch(e){ loading(false); toast('โหลดข้อมูลไม่สำเร็จ: '+e.message,'er'); return; }
+  loading(false);
+  const st={}; stus.forEach(s=>{ st[String(s.id)]='present'; });
+  rows.forEach(r=>{ if(String(r.student_id) in st) st[String(r.student_id)]=r.status||'present'; });
+  if(rows.length&&rows[0].periods) periods=parseInt(rows[0].periods)||periods;
+  _mchk={sub,stus,st,periods};
+  _mchkRender();
+}
+const _MCHK_LBL={present:'มา',absent:'ขาด',leave:'ลา'}, _MCHK_CLR={present:'#34c759',absent:'#ff3b30',leave:'#ff9500'};
+function _mchkRender(){
+  const m=_mchk; if(!m) return;
+  const cnt={present:0,absent:0,leave:0}; Object.values(m.st).forEach(v=>cnt[v]++);
+  const box=(k)=>`<div style="flex:1;background:#fff;border-radius:10px;text-align:center;padding:6px 0;font-size:11.5px;color:#6e6e73"><b style="display:block;font-size:18px;color:${_MCHK_CLR[k]}">${cnt[k]}</b>${_MCHK_LBL[k]}</div>`;
+  const body=`<div style="display:flex;align-items:center;justify-content:space-between;background:#fff;border-radius:12px;padding:8px 12px;margin-bottom:10px;font-size:13px">
+      <span>จำนวนคาบวันนี้</span>
+      <select onchange="_mchk.periods=parseInt(this.value)||1" style="font:600 14px var(--font);border:1px solid #d1d1d6;border-radius:8px;padding:4px 8px">${[1,2,3,4,5,6].map(n=>`<option ${n===m.periods?'selected':''}>${n}</option>`).join('')}</select></div>
+    <div style="display:flex;gap:6px;margin-bottom:10px">${box('present')}${box('absent')}${box('leave')}</div>
+    ${m.stus.length?m.stus.map((s,i)=>{const v=m.st[String(s.id)];return `<div style="display:flex;align-items:center;background:#fff;border-radius:12px;padding:8px 10px;margin-bottom:6px;gap:8px">
+      <span style="width:24px;color:#6e6e73;font-size:12px">${i+1}</span>
+      <span style="flex:1;font-size:14px">${esc(s.student_name)}<span style="display:block;color:#6e6e73;font-size:11px">${esc(s.student_code||'')}</span></span>
+      <button onclick="mchkCycle('${s.id}')" style="width:56px;height:40px;border:none;border-radius:10px;font:700 15px var(--font);color:#fff;background:${_MCHK_CLR[v]}">${_MCHK_LBL[v]}</button></div>`;}).join('')
+      :'<div style="text-align:center;color:#6e6e73;padding:30px">ไม่พบนักเรียนในชั้นนี้</div>'}`;
+  _mchkShell({text:esc(m.sub.subject_name)+' · '+grm(m.sub.grade_level,m.sub.room),back:'openMobileCheck()'},_mchkDateLabel()+' · แตะปุ่มเพื่อเปลี่ยน มา → ขาด → ลา',body,
+    `<button onclick="mchkAll()" style="width:100%;background:#e8f8ec;color:#1f8a3b;border:none;border-radius:10px;padding:9px;font:600 13.5px var(--font);margin-bottom:8px">✓ มาทั้งหมด</button>
+     <button class="btn bp" style="width:100%" onclick="mchkSave()" ${m.stus.length?'':'disabled'}>บันทึก (${m.stus.length} คน)</button>`);
+}
+function mchkCycle(sid){ const m=_mchk; if(!m) return; const k=String(sid); m.st[k]=ATT_C[(ATT_C.indexOf(m.st[k])+1)%ATT_C.length]; _mchkRender(); }
+function mchkAll(){ const m=_mchk; if(!m) return; Object.keys(m.st).forEach(k=>m.st[k]='present'); _mchkRender(); }
+async function mchkSave(){
+  const m=_mchk; if(!m||!m.stus.length) return;
+  const t=_mchkToday();
+  const rows=m.stus.map(s=>({subject_id:m.sub.id,student_id:s.id,year_month:t.ym,month_name:MONTHS[t.d.getMonth()],
+    date_day:t.day,periods:m.periods,hour_number:1,week_number:1,status:m.st[String(s.id)]||'present',note:''}));
+  loading(true);
+  try{
+    await q(sb.from('attendance').upsert(rows,{onConflict:'subject_id,student_id,year_month,date_day'}));
+  }catch(e){ loading(false); toast('บันทึกไม่สำเร็จ: '+e.message,'er'); return; }
+  loading(false);
+  cacheInv('att_'+m.sub.id,'att_sum_'+m.sub.id); invalidateTeacherAgg(); updateWatchlistBadge();
+  const cnt={present:0,absent:0,leave:0}; rows.forEach(r=>cnt[r.status]++);
+  _mchkShell({text:'เช็คชื่อ',back:'openMobileCheck()'},_mchkDateLabel(),
+    `<div style="text-align:center;padding:50px 10px"><div style="font-size:54px">✅</div><div style="font-weight:700;font-size:18px;margin:8px 0">บันทึกแล้ว</div>
+     <div style="color:#6e6e73;font-size:13.5px">${esc(m.sub.subject_name)} · ${grm(m.sub.grade_level,m.sub.room)}<br>มา ${cnt.present} · ขาด ${cnt.absent} · ลา ${cnt.leave}</div></div>`,
+    `<button class="btn bp" style="width:100%;margin-bottom:8px" onclick="openMobileCheck()">เช็ควิชาอื่น</button>
+     <button class="btn bs" style="width:100%" onclick="closeMobileCheck()">ใช้งานแบบปกติ</button>`);
+  _mchk=null;
 }
 async function updateWatchlistBadge(){
   if(!watchlistOn()){ _setWatchlistBadge(0); return; }
