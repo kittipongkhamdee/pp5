@@ -353,7 +353,7 @@
       <span class="ic"></span>เวลาเรียน
     </div>
     <div class="ni" id="nav-mchk" data-sec="record" onclick="openMobileCheck()" style="display:none">
-      <span class="ic"></span>เช็คชื่อ (มือถือ)
+      <span class="ic"></span>เช็คชื่อ / คะแนน (มือถือ)
     </div>
     <div class="ni" id="nav-scores" data-sec="record" onclick="nav('scores')">
       <span class="ic"></span>คะแนน
@@ -6294,6 +6294,107 @@ async function mchkInit(){
     onConfirm:()=>openMobileCheck()});
 }
 let _mchk=null;
+
+// ── แถบเมนูล่าง: เช็คชื่อ / คะแนน / ออกไปใช้งานแบบปกติ ──
+function _mTabBar(active){
+  const it=(k,ic,lb,fn)=>`<button onclick="${fn}" style="flex:1;border:none;background:none;padding:4px 0;font:${active===k?'800':'600'} 12px var(--font);color:${active===k?'#007AFF':'#8e8e93'};display:flex;flex-direction:column;align-items:center;gap:2px">
+    <span style="font-size:19px;line-height:1">${ic}</span>${lb}</button>`;
+  return `<div style="display:flex">${it('chk','✓','เช็คชื่อ','openMobileCheck()')}${it('sc','✎','คะแนน','openMobileScores()')}${it('out','⇱','ใช้งานแบบปกติ','closeMobileCheck()')}</div>`;
+}
+// ════ คะแนน (ดูอย่างเดียว) บนมือถือ ════
+let _msc=null;
+function _mscSubjects(){
+  const cy=String(S.config.academic_year||''), cs=String(S.config.semester||'');
+  return (S.subjects||[]).filter(sub=>!sub.academic_year||(String(sub.academic_year)===cy&&String(sub.semester)===cs));
+}
+async function openMobileScores(){
+  try{ if(!(S.subjects||[]).length) await loadSubjects(); }catch(e){}
+  const list=_mscSubjects();
+  const body=list.length?list.map(sub=>`<div onclick="mscOpen('${sub.id}')" style="background:#fff;border-radius:18px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 10px rgba(0,0,0,.06);border-left:5px solid #007AFF">
+      <div style="flex:1"><div style="font-weight:700;font-size:14.5px">${esc(sub.subject_name)}</div>
+      <div style="font-size:12px;color:#6e6e73">${esc(sub.subject_code)} · ${grm(sub.grade_level,sub.room)}</div></div>
+      <span style="color:#c7c7cc;font-size:20px">›</span></div>`).join('')
+    :`<div style="text-align:center;color:#6e6e73;padding:40px 10px">ยังไม่มีรายวิชาในภาคเรียนนี้</div>`;
+  _mchkShell({text:'คะแนน',back:'closeMobileCheck()'},'เลือกวิชาเพื่อดูคะแนน (ดูอย่างเดียว)',body,_mTabBar('sc'));
+}
+async function mscOpen(subId){
+  const sub=getSubject(subId); if(!sub) return;
+  loading(true);
+  let stus=[],units=[],sums=[],att=[];
+  try{
+    [stus,units,sums,att]=await Promise.all([
+      getStudentsBySubject(subId),
+      qc('sc_units_'+subId, ()=>qAll(()=>sb.from('score_units').select('*').eq('subject_id',subId))),
+      qc('sc_sum_'+subId, ()=>q(sb.from('score_summary').select('*').eq('subject_id',subId))),
+      loadTeacherAtt()
+    ]);
+  }catch(e){ loading(false); toast('โหลดคะแนนไม่สำเร็จ: '+e.message,'er'); return; }
+  loading(false);
+  const um={};
+  units.forEach(u=>{ const k=u.period+'_'+parseInt(u.unit_number); if(!um[k]) um[k]={period:u.period,n:parseInt(u.unit_number),max:parseFloat(u.max_score)||0}; });
+  const uList=p=>Object.values(um).filter(u=>u.period===p).sort((a,b)=>a.n-b.n);
+  const sc={}; units.forEach(u=>{ if(u.score!=null&&u.score!=='') sc[u.student_id+'_'+u.period+'_'+parseInt(u.unit_number)]=parseFloat(u.score); });
+  const sumBy=Object.fromEntries(sums.map(r=>[String(r.student_id),r]));
+  const attS=att.filter(a=>String(a.subject_id)===String(subId)), held=attHeldHours(attS), attBy={};
+  attS.forEach(a=>{ if(a.status==='present'||a.status==='leave') attBy[String(a.student_id)]=(attBy[String(a.student_id)]||0)+(parseInt(a.periods)||1); });
+  _msc={sub,stus,uBefore:uList('before'),uAfter:uList('after'),sc,sumBy,held,attBy,tab:'before',filter:'all'};
+  _mscRender();
+}
+function mscTab(t){ if(_msc){ _msc.tab=t; _msc.filter='all'; _mscRender(); } }
+function mscFilter(f){ if(_msc){ _msc.filter=f; _mscRender(); } }
+function _mscRows(){
+  const m=_msc, rows=[];
+  m.stus.forEach((s,i)=>{
+    const sid=String(s.id), sm=m.sumBy[sid]||{};
+    const lv=msLevel(m.sub,m.attBy[sid]||0,m.held);
+    if(m.tab==='exam'){
+      const mid=parseFloat(sm.mid_normal)||0, fin=parseFloat(sm.final_score)||0, tot=parseFloat(sm.total_score)||0;
+      rows.push({s,i,lv,mid,fin,tot,missing:!(mid>0&&fin>0),low:tot<50,val:tot});
+    }else{
+      const us=m.tab==='before'?m.uBefore:m.uAfter;
+      const maxP=parseFloat(m.tab==='before'?m.sub.score_before_mid:m.sub.score_after_mid)||us.reduce((a,u)=>a+u.max,0);
+      const cells=us.map(u=>({u,v:m.sc[sid+'_'+m.tab+'_'+u.n]}));
+      const tot=Math.min(maxP||Infinity,cells.reduce((a,c)=>a+(c.v||0),0));
+      rows.push({s,i,lv,cells,tot,maxP,missing:cells.some(c=>c.v==null),low:maxP>0&&tot<maxP*0.5,val:tot});
+    }
+  });
+  return rows;
+}
+function _mscRender(){
+  const m=_msc; if(!m) return;
+  const all=_mscRows();
+  let rows=all;
+  if(m.filter==='miss') rows=all.filter(r=>r.missing);
+  if(m.filter==='low') rows=all.filter(r=>r.low);
+  if(m.filter==='sort') rows=[...all].sort((a,b)=>b.val-a.val);
+  const avg=all.length?(all.reduce((a,r)=>a+r.val,0)/all.length).toFixed(1):'-';
+  const nMiss=all.filter(r=>r.missing).length, nLow=all.filter(r=>r.low).length;
+  const seg=(k,lb)=>`<button onclick="mscTab('${k}')" style="flex:1;border:none;border-radius:10px;padding:8px 0;font:700 13px var(--font);${m.tab===k?'background:#fff;color:#007AFF;box-shadow:0 1px 4px rgba(0,0,0,.12)':'background:none;color:#6e6e73'}">${lb}</button>`;
+  const chip=(k,lb)=>`<button onclick="mscFilter('${k}')" style="border:none;border-radius:99px;padding:5px 12px;font:600 12px var(--font);white-space:nowrap;${m.filter===k?'background:#007AFF;color:#fff':'background:#fff;color:#6e6e73'}">${lb}</button>`;
+  const box=(v,lb,c)=>`<div style="flex:1;background:#fff;border-radius:14px;text-align:center;padding:6px 0;font-size:11px;color:#6e6e73;box-shadow:0 2px 8px rgba(0,0,0,.05)"><b style="display:block;font-size:17px;color:${c}">${v}</b>${lb}</div>`;
+  const tag=r=>r.lv.lv==='ms'?'<span style="font-size:11px;font-weight:700;color:#fff;background:#ff3b30;border-radius:8px;padding:2px 7px">มส</span>':r.lv.lv==='risk'?'<span style="font-size:11px;font-weight:700;color:#fff;background:#ff9500;border-radius:8px;padding:2px 7px">เสี่ยง มส</span>':'';
+  const card=r=>{
+    const head=`<div style="display:flex;align-items:center;gap:8px"><span style="width:26px;height:26px;border-radius:50%;background:#eef4ff;color:#007AFF;font-size:11.5px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${r.i+1}</span>
+      <span style="flex:1;font-size:14px">${esc(r.s.student_name)}</span>${tag(r)}`;
+    if(m.tab==='exam'){
+      const ex=(v,mx,lb)=>`<div style="flex:1;background:#f2f4f8;border-radius:10px;text-align:center;padding:5px 0;font-size:11px;color:#6e6e73"><b style="display:block;font-size:16px;color:${v>0?'#1d1d1f':'#ff3b30'}">${v>0?v:'—'}</b>${lb} /${mx}</div>`;
+      return `<div style="background:#fff;border-radius:16px;padding:10px;margin-bottom:7px;box-shadow:0 1px 6px rgba(0,0,0,.05)">${head}</div>
+        <div style="display:flex;gap:6px;margin-top:7px">${ex(r.mid,m.sub.score_mid??20,'กลางภาค')}${ex(r.fin,m.sub.score_final??30,'ปลายภาค')}${ex(r.tot,100,'รวม')}</div></div>`;
+    }
+    const pct=r.maxP>0?Math.min(100,r.tot/r.maxP*100):0;
+    return `<div style="background:#fff;border-radius:16px;padding:10px;margin-bottom:7px;box-shadow:0 1px 6px rgba(0,0,0,.05)">${head}
+      <b style="font-size:16px">${r.tot}<span style="font-size:11px;font-weight:400;color:#6e6e73">/${r.maxP||'-'}</span></b></div>
+      <div style="height:5px;border-radius:5px;background:#e5e5ea;margin:7px 0 6px"><div style="height:100%;width:${pct}%;border-radius:5px;background:${r.low?'#ff9500':'#34c759'}"></div></div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap">${r.cells.length?r.cells.map(c=>`<span style="font-size:11px;border-radius:6px;padding:2px 7px;${c.v==null?'background:#fff1f0;color:#ff3b30;font-weight:700':'background:#f2f2f7'}">น.${c.u.n} ${c.v==null?'—':c.v+'/'+c.u.max}</span>`).join(''):'<span style="font-size:11px;color:#8e8e93">ยังไม่มีหน่วยการเรียน</span>'}</div></div>`;
+  };
+  const body=`<div style="position:sticky;top:-14px;z-index:2;background:#f2f4f8;margin:0 -14px 8px;padding:8px 14px">
+      <div style="display:flex;gap:6px;margin-bottom:8px">${box(avg,'เฉลี่ย','#007AFF')}${box(nMiss,'ยังไม่ครบ','#ff3b30')}${box(nLow,'ต่ำกว่า 50%','#ff9500')}</div>
+      <div style="display:flex;gap:6px;overflow-x:auto">${chip('all','ทั้งหมด')}${chip('miss','ยังไม่ครบ')}${chip('low','ต่ำกว่า 50%')}${chip('sort','เรียงคะแนน')}</div></div>
+    ${rows.length?rows.map(card).join(''):'<div style="text-align:center;color:#6e6e73;padding:30px">ไม่มีนักเรียนในกลุ่มนี้</div>'}`;
+  const sub=m.tab==='exam'?`กลางภาค ${m.sub.score_mid??20} · ปลายภาค ${m.sub.score_final??30}`:`คะแนนเต็ม ${(m.tab==='before'?m.sub.score_before_mid:m.sub.score_after_mid)??'-'}`;
+  _mchkShell({text:esc(m.sub.subject_name)+' · '+grm(m.sub.grade_level,m.sub.room),back:'openMobileScores()'},esc(m.sub.subject_code)+' · '+sub,body,_mTabBar('sc'),
+    `<div style="display:flex;background:rgba(255,255,255,.2);border-radius:12px;padding:3px;margin-top:12px">${seg('before','ก่อนกลางภาค')}${seg('after','หลังกลางภาค')}${seg('exam','สอบ')}</div>`);
+}
 // สไตล์เดียวกับแอป: หัวไล่สีฟ้า + การ์ดวันที่เด่น, การ์ดขาวมุมโค้ง, ปุ่มกลางเต็มความกว้าง
 const _MB='display:block;width:100%;border:none;border-radius:14px;padding:13px;font:700 15px var(--font);text-align:center;cursor:pointer';
 const _MB_P=_MB+';background:linear-gradient(135deg,#34aadc,#007AFF);color:#fff;box-shadow:0 4px 14px rgba(0,122,255,.3)';
@@ -6308,7 +6409,7 @@ function _mchkDateCard(){
       <div style="font-size:26px;font-weight:800;line-height:1.05">${d.getDate()}</div></div>
     <div style="font-size:16px;font-weight:800;line-height:1.3">${wd} ที่ ${d.getDate()} ${mo}</div></div>`;
 }
-function _mchkShell(title,sub,body,foot){
+function _mchkShell(title,sub,body,foot,headExtra){
   let el=$('mchk');
   if(!el){ el=document.createElement('div'); el.id='mchk';
     el.style.cssText='position:fixed;inset:0;z-index:1500;background:#f2f4f8;display:flex;flex-direction:column;font-family:var(--font)';
@@ -6322,7 +6423,7 @@ function _mchkShell(title,sub,body,foot){
         <button onclick="${title.back}" style="border:none;background:rgba(255,255,255,.2);color:#fff;width:34px;height:34px;border-radius:50%;font-size:20px;line-height:1">‹</button>
         <div style="flex:1;min-width:0"><div style="font-weight:800;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title.text}</div>
         ${sub?`<div style="font-size:12px;opacity:.9">${sub}</div>`:''}</div></div>
-      ${_mchkDateCard()}</div>
+      ${headExtra!=null?headExtra:_mchkDateCard()}</div>
     <div style="flex:1;overflow:auto;padding:14px 14px 8px">${body}</div>
     ${foot?`<div style="background:rgba(255,255,255,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:0.5px solid rgba(0,0,0,.08);padding:10px 14px calc(10px + env(safe-area-inset-bottom))">${foot}</div>`:''}`;
 }
@@ -6346,8 +6447,7 @@ async function openMobileCheck(){
   const body=list.length
     ? pending.map(card).join('')+(checked.length?`<div style="font-size:12px;color:#6e6e73;margin:14px 2px 8px">เช็คแล้ววันนี้ (แตะเพื่อแก้ไข)</div>`+checked.map(card).join(''):'')
     : `<div style="text-align:center;color:#6e6e73;padding:40px 10px">วันนี้ไม่มีวิชาที่สอน<br><span style="font-size:12px">(ตามวันสอนประจำสัปดาห์ที่ตั้งไว้ในรายวิชา)</span></div>`;
-  _mchkShell({text:'เช็คชื่อนักเรียน',back:'closeMobileCheck()'},'',body,
-    `<button style="${_MB_S}" onclick="closeMobileCheck()">ใช้งานแบบปกติ</button>`);
+  _mchkShell({text:'เช็คชื่อนักเรียน',back:'closeMobileCheck()'},'',body,_mTabBar('chk'));
 }
 function mchkOpenSubject(subId,periods,alreadyChecked){
   if(alreadyChecked){
