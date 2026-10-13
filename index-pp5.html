@@ -6382,7 +6382,9 @@ function _mscRender(){
     const head=`<div style="display:flex;align-items:center;gap:8px"><span style="width:26px;height:26px;border-radius:50%;background:#eef4ff;color:#007AFF;font-size:11.5px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${r.i+1}</span>
       <span style="flex:1;font-size:14px">${esc(r.s.student_name)}</span>${tag(r)}`;
     if(m.tab==='exam'){
-      const ex=(v,mx,lb)=>`<div style="flex:1;background:#f2f4f8;border-radius:10px;text-align:center;padding:5px 0;font-size:11px;color:#6e6e73"><b style="display:block;font-size:16px;color:${v>0?'#1d1d1f':'#ff3b30'}">${v>0?v:'—'}</b>${lb} /${mx}</div>`;
+      // 0 = ได้ 0 หรือยังไม่ได้กรอก (ระบบเก็บช่องว่างเป็น 0 แยกไม่ได้) → เน้นแดงเข้มเหมือนหน่วยที่ได้ 0
+      const ex=(v,mx,lb)=>v>0?`<div style="flex:1;background:#f2f4f8;border-radius:10px;text-align:center;padding:5px 0;font-size:11px;color:#6e6e73"><b style="display:block;font-size:16px;color:#1d1d1f">${v}</b>${lb} /${mx}</div>`
+        :`<div style="flex:1;background:#ff3b30;border-radius:10px;text-align:center;padding:5px 0;font-size:11px;color:#fff;box-shadow:0 2px 6px rgba(255,59,48,.35)"><b style="display:block;font-size:16px">⚠ 0</b>${lb} /${mx}</div>`;
       return `<div style="background:#fff;border-radius:16px;padding:10px;margin-bottom:7px;box-shadow:0 1px 6px rgba(0,0,0,.05)">${head}</div>
         <div style="display:flex;gap:6px;margin-top:7px">${ex(r.mid,m.sub.score_mid??20,'กลางภาค')}${ex(r.fin,m.sub.score_final??30,'ปลายภาค')}${ex(r.tot,100,'รวม')}</div></div>`;
     }
