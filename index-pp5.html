@@ -6390,7 +6390,7 @@ function _mscRender(){
     return `<div style="background:#fff;border-radius:16px;padding:10px;margin-bottom:7px;box-shadow:0 1px 6px rgba(0,0,0,.05)">${head}
       <b style="font-size:16px">${r.tot}<span style="font-size:11px;font-weight:400;color:#6e6e73">/${r.maxP||'-'}</span></b></div>
       <div style="height:5px;border-radius:5px;background:#e5e5ea;margin:7px 0 6px"><div style="height:100%;width:${pct}%;border-radius:5px;background:${r.low?'#ff9500':'#34c759'}"></div></div>
-      <div style="display:flex;gap:4px;flex-wrap:wrap">${r.cells.length?r.cells.map(c=>`<span style="font-size:11px;border-radius:6px;padding:2px 7px;${c.v==null?'background:#fff1f0;color:#ff3b30;font-weight:700':'background:#f2f2f7'}">น.${c.u.n} ${c.v==null?'—':c.v+'/'+c.u.max}</span>`).join(''):'<span style="font-size:11px;color:#8e8e93">ยังไม่มีหน่วยการเรียน</span>'}</div></div>`;
+      <div style="display:flex;gap:4px;flex-wrap:wrap">${r.cells.length?r.cells.map(c=>`<span style="font-size:11px;border-radius:6px;padding:2px 7px;${c.v==null?'background:#fff1f0;color:#ff3b30;font-weight:700':c.v===0?'background:#ff3b30;color:#fff;font-weight:800;box-shadow:0 2px 6px rgba(255,59,48,.35)':'background:#f2f2f7'}">น.${c.u.n} ${c.v==null?'—':c.v===0?'⚠ 0/'+c.u.max:c.v+'/'+c.u.max}</span>`).join(''):'<span style="font-size:11px;color:#8e8e93">ยังไม่มีหน่วยการเรียน</span>'}</div></div>`;
   };
   const body=`<div style="position:sticky;top:-14px;z-index:2;background:#f2f4f8;margin:0 -14px 8px;padding:8px 14px">
       <div style="display:flex;gap:6px;margin-bottom:8px">${box(avg,'เฉลี่ย','#007AFF')}${box(nLow,'ต่ำกว่า 50%','#ff9500')}</div>
