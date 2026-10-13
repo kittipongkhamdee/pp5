@@ -2121,7 +2121,7 @@ async function pgSchoolReport(){
       // msInfo = ตัวเลขที่ใช้พิมพ์: คนที่ประกาศแล้วใช้ตัวเลข ณ วันประกาศ ที่เหลือใช้ตัวเลขปัจจุบัน
       const msAnn = msAnnBySubj[sub.id]||{};
       const msInfo = {};
-      msCalcIds.forEach(sid=>{ const m=stuAttMapSub[String(sid)]; msInfo[String(sid)]={attended:m.attended,totalH,pct:m.attended/totalH*100,announced:false}; });
+      msCalcIds.forEach(sid=>{ const m=stuAttMapSub[String(sid)]; msInfo[String(sid)]={attended:m.attended,totalH,pct:msLevel(sub,m.attended,totalH).pct,announced:false}; });
       Object.entries(msAnn).forEach(([sid,r])=>{ msInfo[sid]={attended:+r.attended_hours,totalH:+r.total_hours,pct:+r.pct,announced:true,announcedAt:r.announced_at}; });
       const msStudentIds = Object.keys(msInfo);
       const msCount = msStudentIds.length;

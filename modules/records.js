@@ -1600,7 +1600,7 @@ async function pgReport(){
     if(!attMap[a.student_id])attMap[a.student_id]={attended:0,totalH,pct:0,ms:false};
     if(a.status!=='absent')attMap[a.student_id].attended+=(parseInt(a.periods)||1);
   });
-  Object.values(attMap).forEach(m=>{m.pct=m.totalH>0?Math.round(m.attended/m.totalH*100):0;{const _l=msLevel(sub,m.attended,m.totalH);m.msLv=_l.lv;m.msLeft=_l.left;m.ms=_l.lv==='ms';m.risk=_l.lv==='risk';}});
+  Object.values(attMap).forEach(m=>{m.pct=m.totalH>0?Math.round(m.attended/m.totalH*100):0;{const _l=msLevel(sub,m.attended,m.totalH);m.msLv=_l.lv;m.msLeft=_l.left;m.pct=_l.pct;m.ms=_l.lv==='ms';m.risk=_l.lv==='risk';}});
   // เก็บไว้ใน state เพื่อให้ export ใช้ได้
   S._rpt={sub,stus,sumMap,erMap,ecMap,attMap};
   // stats — filter เฉพาะนักเรียนในห้องจริง
@@ -2018,7 +2018,7 @@ async function printAllPP5(){
     const attMap={};
     stus.forEach(s=>{ attMap[s.id]={present:0,absent:0,leave:0,attended:0,pct:0,ms:false}; });
     attRows.forEach(a=>{ if(!attMap[a.student_id]) attMap[a.student_id]={present:0,absent:0,leave:0,attended:0,pct:0,ms:false}; const p=parseInt(a.periods)||1; if(a.status in attMap[a.student_id]) attMap[a.student_id][a.status]+=p; });
-    Object.values(attMap).forEach(m=>{ m.attended=m.present+m.leave; m.pct=totH>0?Math.round(m.attended/totH*100):0; {const _l=msLevel(sub,m.attended,totH);m.msLv=_l.lv;m.msLeft=_l.left;m.ms=_l.lv==='ms';m.risk=_l.lv==='risk';} });
+    Object.values(attMap).forEach(m=>{ m.attended=m.present+m.leave; m.pct=totH>0?Math.round(m.attended/totH*100):0; {const _l=msLevel(sub,m.attended,totH);m.msLv=_l.lv;m.msLeft=_l.left;m.pct=_l.pct;m.ms=_l.lv==='ms';m.risk=_l.lv==='risk';} });
 
     const body=_buildPP5Body(sub,cfg,stus,sumMap,erMap,ecMap,scUnitsAll,attRows,attMap,totH);
     const css=`
