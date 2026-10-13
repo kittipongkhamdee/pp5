@@ -1154,23 +1154,20 @@ function attHeldHours(rows){
   });
   return Object.values(dateMap).reduce((a,b)=>a+b,0);
 }
-// สถานะเวลาเรียนเทียบชั่วโมงเรียนทั้งภาค (subjects.total_hours) — ขาดได้ไม่เกิน 20% ของทั้งภาค
-//   'ms'   = ขาดเกินโควตาแล้ว (มาเรียนครบที่เหลือก็ไม่ถึง 80%) ตัดสินได้แล้ว
-//   'risk' = ยังไม่เกิน แต่ขาดได้อีกไม่เกิน MS_RISK_LEFT คาบ หรือ % สะสมตอนนี้ต่ำกว่า 80% (ยังกู้ได้)
-//   'ok'   = ปกติ
-// ถ้าวิชาไม่ได้ตั้งชั่วโมงทั้งภาค ใช้เกณฑ์เดิม: % สะสม (มา+ลา ÷ ชั่วโมงที่เช็คชื่อแล้ว) < 80% = มส
-const MS_RISK_LEFT=2;
+// เวลาเรียน % ของชั่วโมงเรียนทั้งภาค (subjects.total_hours) — ครูเข้าใจว่า 100% = มาครบทั้งภาค, 80% = มา 80% ของทั้งภาค
+//   pct = 100 − (ชั่วโมงที่ขาด ÷ ชั่วโมงทั้งภาค × 100)  (ลา นับเป็นมา) เริ่ม 100% แล้วลดลงทุกครั้งที่ขาด
+//   มส = ต่ำกว่า 80% (ขาดเกินโควตา 20% ของทั้งภาค), เสี่ยง มส = ต่ำกว่า 90%
+// วิชาที่ไม่ได้ตั้งชั่วโมงทั้งภาค ใช้ % ของชั่วโมงที่เช็คชื่อแล้วแทน (เกณฑ์เดียวกัน)
+const MS_PCT=80, MS_RISK_PCT=90;
 function msLevel(sub, attended, held){
   attended=+attended||0; held=+held||0;
-  if(!(held>0)) return {lv:'ok',left:null};
+  if(!(held>0)) return {lv:'ok',pct:0,left:null};
   const total=parseFloat(sub&&sub.total_hours)||0;
-  if(total>0){
-    const left=total*0.2-Math.max(0,held-attended);
-    if(left<0) return {lv:'ms',left};
-    if(left<=MS_RISK_LEFT||attended/held<0.8) return {lv:'risk',left};
-    return {lv:'ok',left};
-  }
-  return {lv:attended/held*100<80?'ms':'ok',left:null};
+  const absent=Math.max(0,held-attended);
+  const raw=total>0?Math.max(0,100-absent/total*100):attended/held*100;
+  const pct=Math.floor(raw+1e-9); // ปัดลง กัน "80%" แต่ขึ้น มส
+  const left=total>0?total*0.2-absent:null;
+  return {lv:raw<MS_PCT?'ms':raw<MS_RISK_PCT?'risk':'ok',pct,left};
 }
 
 // ════ DARK MODE ══════════════════════════════════════════════════
@@ -1838,7 +1835,7 @@ function _applyConcurrencyGuards(){
 // (ของโมดูลจะถูกห่อเพิ่มใน ensureModule หลังโหลดเสร็จ)
 _applyConcurrencyGuards();
 // ?v= กันแคชเก่าค้าง (modules/*.js แคชไว้ 1 วันตาม vercel.json) — แก้ไฟล์ใน modules/ เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย
-const MODULE_V='113';
+const MODULE_V='114';
 // ห่อฟังก์ชันของโมดูลหลังโหลดเสร็จด้วย (ตอนเริ่มระบบยังไม่มีฟังก์ชันเหล่านี้)
 function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V).then(()=>{ _applyConcurrencyGuards(); }); }
 function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
@@ -2754,7 +2751,7 @@ function renderAttPage(){
     // late removed
     else if(a.status==='leave')m.leave+=periods;
   });
-  Object.values(sumMap).forEach(m=>{ m.attended=m.present+m.leave; m.pct=m.totalH>0?Math.round(m.attended/m.totalH*100):0; m.ms=false; {const _l=msLevel(attSub,m.attended,m.totalH);m.msLv=_l.lv;m.msLeft=_l.left;m.ms=_l.lv==='ms';m.risk=_l.lv==='risk';} });
+  Object.values(sumMap).forEach(m=>{ m.attended=m.present+m.leave; m.pct=m.totalH>0?Math.round(m.attended/m.totalH*100):0; m.ms=false; {const _l=msLevel(attSub,m.attended,m.totalH);m.msLv=_l.lv;m.msLeft=_l.left;m.pct=_l.pct;m.ms=_l.lv==='ms';m.risk=_l.lv==='risk';} });
 
   $('pg').innerHTML=`
   <div class="ph"><div class="ptitle">บันทึกเวลาเรียน</div>
@@ -3189,7 +3186,7 @@ function _refreshSummaryTab(overrideSumMap){
     Object.values(sumMap).forEach(m=>{
       m.attended=m.present+m.leave;
       m.pct=m.totalH>0?Math.round(m.attended/m.totalH*100):0;
-      {const _l=msLevel(attSub,m.attended,m.totalH);m.msLv=_l.lv;m.msLeft=_l.left;m.ms=_l.lv==='ms';m.risk=_l.lv==='risk';}
+      {const _l=msLevel(attSub,m.attended,m.totalH);m.msLv=_l.lv;m.msLeft=_l.left;m.pct=_l.pct;m.ms=_l.lv==='ms';m.risk=_l.lv==='risk';}
     });
   }
   tab.innerHTML=`<div class="card"><div class="ch"><div class="ct">สรุปเวลาเรียนรายคน</div></div><div class="cb">
@@ -3261,7 +3258,7 @@ function _refreshSummaryFromDOM(){
   Object.values(sumMap).forEach(m=>{
     m.attended=m.present+m.leave;
     m.pct=m.totalH>0?Math.round(m.attended/m.totalH*100):0;
-    {const _l=msLevel(attSub,m.attended,m.totalH);m.msLv=_l.lv;m.msLeft=_l.left;m.ms=_l.lv==='ms';m.risk=_l.lv==='risk';}
+    {const _l=msLevel(attSub,m.attended,m.totalH);m.msLv=_l.lv;m.msLeft=_l.left;m.pct=_l.pct;m.ms=_l.lv==='ms';m.risk=_l.lv==='risk';}
   });
   // อัป DOM ของแท็บสรุปถ้าเปิดอยู่
   // ถ้าแท็บสรุปเปิดอยู่ ให้ re-render ด้วย sumMap จาก DOM ทันที
@@ -3300,7 +3297,7 @@ function attSummaryByStudent(){
     const p=parseInt(a.periods)||1;
     if(a.status in m) m[a.status]+=p;
   });
-  Object.values(sum).forEach(m=>{m.attended=m.present+m.leave;m.pct=totalH>0?Math.round(m.attended/totalH*100):0;m.totalH=totalH;{const _l=msLevel(sub,m.attended,totalH);m.msLv=_l.lv;m.msLeft=_l.left;m.ms=_l.lv==='ms';m.risk=_l.lv==='risk';}});
+  Object.values(sum).forEach(m=>{m.attended=m.present+m.leave;m.pct=totalH>0?Math.round(m.attended/totalH*100):0;m.totalH=totalH;{const _l=msLevel(sub,m.attended,totalH);m.msLv=_l.lv;m.msLeft=_l.left;m.pct=_l.pct;m.ms=_l.lv==='ms';m.risk=_l.lv==='risk';}});
   return sum;
 }
 
@@ -3534,7 +3531,7 @@ async function _loadMsBySubject(){
     // rowInfo = ตัวเลขที่ใช้พิมพ์รายงาน: คนที่ประกาศแล้วใช้ตัวเลข ณ วันประกาศ ที่เหลือใช้ตัวเลขปัจจุบัน
     const rowInfo={};
     calcIds.forEach(sid=>{
-      rowInfo[sid]={attended:attMap[sid].attended,totalH,pct:attMap[sid].attended/totalH*100,announced:false};
+      rowInfo[sid]={attended:attMap[sid].attended,totalH,pct:msLevel(sub,attMap[sid].attended,totalH).pct,announced:false};
     });
     Object.entries(annMap).forEach(([sid,a])=>{
       rowInfo[sid]={attended:+a.attended_hours,totalH:+a.total_hours,pct:+a.pct,announced:true,announcedAt:a.announced_at,annId:a.id};
@@ -3579,8 +3576,8 @@ async function openMsManage(){
       <div style="font-weight:600;font-size:12.5px;margin:12px 0 4px;color:#dc2626">ประกาศ มส แล้ว</div>
       ${done.map(sid=>{
         const a=it.annMap[sid];
-        const cur=it.attMap[sid]&&it.totalH>0?it.attMap[sid].attended/it.totalH*100:null;
-        const over=cur!==null&&cur>=80;
+        const cur=it.attMap[sid]&&it.totalH>0?msLevel(it.sub,it.attMap[sid].attended,it.totalH).pct:null;
+        const over=cur!==null&&cur>=MS_PCT;
         return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13px;border-top:1px solid #f1f1f4;flex-wrap:wrap">
           <span style="min-width:62px;color:var(--muted)">${esc(stuMap[sid]?.student_code||'')}</span>
           <span style="flex:1;min-width:140px">${esc(stuMap[sid]?.student_name||'(ไม่พบชื่อ)')}</span>
@@ -6226,7 +6223,7 @@ async function _computeWatchlistRows(){
           gradeDisp=isFailSpecial?sr.special_result:(sr.grade??'—');
         }
         const attended=attBySt[String(stu.id)]||0;
-        const pct=totalH>0?Math.round(attended/totalH*100):null;
+        const pct=totalH>0?msLevel(sub,attended,totalH).pct:null;
         const msAnnounced=msAnnSet.has(sub.id+'|'+stu.id);
         const msLv=msLevel(sub,attended,totalH).lv;
         if(msLv!=='ok'||msAnnounced) reasons.push('ms');
@@ -6396,8 +6393,8 @@ function _mchkMsTag(sid){
   const m=_mchk; if(!m) return '';
   const k=String(sid), held=m.heldBase+m.periods, att=(m.base[k]||0)+(m.st[k]==='absent'?0:m.periods);
   const r=msLevel(m.sub,att,held);
-  if(r.lv==='ms') return ` <b style="color:#ff3b30">· มส${r.left!=null?' (ขาดเกิน '+Math.ceil(-r.left)+' ชม.)':''}</b>`;
-  if(r.lv==='risk') return ` <b style="color:#ff9500">· เสี่ยง มส${r.left!=null?' (ขาดได้อีก '+Math.max(0,Math.floor(r.left))+' คาบ)':''}</b>`;
+  if(r.lv==='ms') return ` <b style="color:#ff3b30">· มส ${r.pct}%</b>`;
+  if(r.lv==='risk') return ` <b style="color:#ff9500">· เสี่ยง มส ${r.pct}%</b>`;
   return '';
 }
 function mchkCycle(sid){ const m=_mchk; if(!m) return; const k=String(sid); m.st[k]=ATT_C[(ATT_C.indexOf(m.st[k])+1)%ATT_C.length]; _mchkRender(); }
