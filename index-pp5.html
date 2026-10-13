@@ -6248,9 +6248,15 @@ async function pgWatchlist(){
 // เช็คชื่อบนมือถือ — เปิดแอปด้วยมือถือในวันที่มีสอน จะถามทุกครั้งว่าจะเช็คชื่อเลยไหม
 // (ถ้าทุกวิชาของวันนี้เช็คแล้วไม่ถาม) บันทึกลงตาราง attendance แบบเดียวกับหน้าเวลาเรียน
 // ════════════════════════════════════════════════════════════════
+// มือถือ/แท็บเล็ต (iPhone, iPad, Android) — ดูจากหน้าจอสัมผัสเป็นหลัก ไม่จำกัดความกว้างจอ
+// iPadOS รุ่นใหม่แจ้งตัวเป็น Mac จึงเช็ค maxTouchPoints เพิ่ม; โน้ตบุ๊กจอสัมผัสใช้ pointer:fine เป็นหลัก จึงไม่นับ
 function mchkIsMobile(){
-  try{ return window.matchMedia('(max-width: 820px)').matches && window.matchMedia('(pointer: coarse)').matches; }
-  catch(e){ return window.innerWidth<=820; }
+  try{
+    const ua=navigator.userAgent||'';
+    if(/Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(ua)) return true;
+    if(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1) return true; // iPadOS
+    return window.matchMedia('(pointer: coarse)').matches;
+  }catch(e){ return window.innerWidth<=820; }
 }
 function _mchkToday(){ const d=new Date(); return {d, ym:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'), day:d.getDate(), dow:d.getDay()}; }
 function _mchkClassDays(sub){ try{ return JSON.parse(S.config['class_days_'+sub.id]||'[]'); }catch(e){ return []; } }
@@ -6306,7 +6312,11 @@ function _mchkShell(title,sub,body,foot){
   let el=$('mchk');
   if(!el){ el=document.createElement('div'); el.id='mchk';
     el.style.cssText='position:fixed;inset:0;z-index:1500;background:#f2f4f8;display:flex;flex-direction:column;font-family:var(--font)';
-    document.body.appendChild(el); }
+    document.body.appendChild(el);
+    // แท็บเล็ตจอกว้าง: จำกัดความกว้างเนื้อหาไว้กลางจอ ไม่ยืดเต็มจอ
+    if(!$('mchk-css')){ const st=document.createElement('style'); st.id='mchk-css';
+      st.textContent='#mchk>div>*{max-width:680px;margin-left:auto!important;margin-right:auto!important}';
+      document.head.appendChild(st); } }
   el.innerHTML=`<div style="background:linear-gradient(135deg,#34aadc,#007AFF);color:#fff;padding:14px 16px 16px;border-radius:0 0 24px 24px;box-shadow:0 6px 20px rgba(0,122,255,.25)">
       <div style="display:flex;align-items:center;gap:8px">
         <button onclick="${title.back}" style="border:none;background:rgba(255,255,255,.2);color:#fff;width:34px;height:34px;border-radius:50%;font-size:20px;line-height:1">‹</button>
