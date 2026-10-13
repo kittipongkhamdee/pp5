@@ -1154,6 +1154,24 @@ function attHeldHours(rows){
   });
   return Object.values(dateMap).reduce((a,b)=>a+b,0);
 }
+// สถานะเวลาเรียนเทียบชั่วโมงเรียนทั้งภาค (subjects.total_hours) — ขาดได้ไม่เกิน 20% ของทั้งภาค
+//   'ms'   = ขาดเกินโควตาแล้ว (มาเรียนครบที่เหลือก็ไม่ถึง 80%) ตัดสินได้แล้ว
+//   'risk' = ยังไม่เกิน แต่ขาดได้อีกไม่เกิน MS_RISK_LEFT คาบ หรือ % สะสมตอนนี้ต่ำกว่า 80% (ยังกู้ได้)
+//   'ok'   = ปกติ
+// ถ้าวิชาไม่ได้ตั้งชั่วโมงทั้งภาค ใช้เกณฑ์เดิม: % สะสม (มา+ลา ÷ ชั่วโมงที่เช็คชื่อแล้ว) < 80% = มส
+const MS_RISK_LEFT=2;
+function msLevel(sub, attended, held){
+  attended=+attended||0; held=+held||0;
+  if(!(held>0)) return {lv:'ok',left:null};
+  const total=parseFloat(sub&&sub.total_hours)||0;
+  if(total>0){
+    const left=total*0.2-Math.max(0,held-attended);
+    if(left<0) return {lv:'ms',left};
+    if(left<=MS_RISK_LEFT||attended/held<0.8) return {lv:'risk',left};
+    return {lv:'ok',left};
+  }
+  return {lv:attended/held*100<80?'ms':'ok',left:null};
+}
 
 // ════ DARK MODE ══════════════════════════════════════════════════
 function toggleDark(){
@@ -1820,7 +1838,7 @@ function _applyConcurrencyGuards(){
 // (ของโมดูลจะถูกห่อเพิ่มใน ensureModule หลังโหลดเสร็จ)
 _applyConcurrencyGuards();
 // ?v= กันแคชเก่าค้าง (modules/*.js แคชไว้ 1 วันตาม vercel.json) — แก้ไฟล์ใน modules/ เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย
-const MODULE_V='112';
+const MODULE_V='113';
 // ห่อฟังก์ชันของโมดูลหลังโหลดเสร็จด้วย (ตอนเริ่มระบบยังไม่มีฟังก์ชันเหล่านี้)
 function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V).then(()=>{ _applyConcurrencyGuards(); }); }
 function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
@@ -2001,7 +2019,7 @@ async function pgDash(){
         if(a.status==='present'||a.status==='leave')stuAttMap[a.student_id].attended+=p;
       });
       const subTotalH = attHeldHours(attForSubj);
-      const msCount=Object.values(stuAttMap).filter(m=>subTotalH>0&&(m.attended/subTotalH*100)<80).length;
+      const msCount=Object.values(stuAttMap).filter(m=>msLevel(s,m.attended,subTotalH).lv==='ms').length;
       const recorded=sum.filter(r=>(parseFloat(r.total_score)||0)>0).length;
       const hasAttendance = attForSubj.length>0;
       const hasEval = evalReadSubjIds.has(s.id) && evalCharSubjIds.has(s.id);
@@ -2042,7 +2060,7 @@ async function pgDash(){
         const stuMap = attBySub[sub.id]||{};
         Object.entries(stuMap).forEach(([sid,m])=>{
           if(!enrolledIds.has(String(sid))) return;
-          if(totalH>0 && (m.attended/totalH*100)<80) msSet.add(sid);
+          if(msLevel(sub,m.attended,totalH).lv==='ms') msSet.add(sid);
         });
       });
       _dashMsCount = msSet.size;
@@ -2736,7 +2754,7 @@ function renderAttPage(){
     // late removed
     else if(a.status==='leave')m.leave+=periods;
   });
-  Object.values(sumMap).forEach(m=>{ m.attended=m.present+m.leave; m.pct=m.totalH>0?Math.round(m.attended/m.totalH*100):0; m.ms=m.totalH>0&&m.pct<80; });
+  Object.values(sumMap).forEach(m=>{ m.attended=m.present+m.leave; m.pct=m.totalH>0?Math.round(m.attended/m.totalH*100):0; m.ms=false; {const _l=msLevel(attSub,m.attended,m.totalH);m.msLv=_l.lv;m.msLeft=_l.left;m.ms=_l.lv==='ms';m.risk=_l.lv==='risk';} });
 
   $('pg').innerHTML=`
   <div class="ph"><div class="ptitle">บันทึกเวลาเรียน</div>
@@ -2816,7 +2834,7 @@ function renderAttPage(){
                 <span style="font-size:11.5px">${m.pct}%</span>
               </div>
             </td>
-            <td class="tc">${m.ms?'<span class="badge bg-r">มส</span>':'<span class="badge bg-g">ปกติ</span>'}</td>
+            <td class="tc">${m.ms?'<span class="badge bg-r">มส</span>':m.risk?'<span class="badge" style="background:rgba(255,149,0,.15);color:#b45309">เสี่ยง มส</span>':'<span class="badge bg-g">ปกติ</span>'}</td>
           </tr>`;
         }).join('')}
         </tbody></table></div>
@@ -3171,7 +3189,7 @@ function _refreshSummaryTab(overrideSumMap){
     Object.values(sumMap).forEach(m=>{
       m.attended=m.present+m.leave;
       m.pct=m.totalH>0?Math.round(m.attended/m.totalH*100):0;
-      m.ms=m.totalH>0&&m.pct<80;
+      {const _l=msLevel(attSub,m.attended,m.totalH);m.msLv=_l.lv;m.msLeft=_l.left;m.ms=_l.lv==='ms';m.risk=_l.lv==='risk';}
     });
   }
   tab.innerHTML=`<div class="card"><div class="ch"><div class="ct">สรุปเวลาเรียนรายคน</div></div><div class="cb">
@@ -3195,7 +3213,7 @@ function _refreshSummaryTab(overrideSumMap){
               <span style="font-size:11.5px">${m.pct}%</span>
             </div>
           </td>
-          <td class="tc">${m.ms?'<span class="badge bg-r">มส</span>':'<span class="badge bg-g">ปกติ</span>'}</td>
+          <td class="tc">${m.ms?'<span class="badge bg-r">มส</span>':m.risk?'<span class="badge" style="background:rgba(255,149,0,.15);color:#b45309">เสี่ยง มส</span>':'<span class="badge bg-g">ปกติ</span>'}</td>
         </tr>`;
       }).join('')}
       </tbody></table></div>
@@ -3243,7 +3261,7 @@ function _refreshSummaryFromDOM(){
   Object.values(sumMap).forEach(m=>{
     m.attended=m.present+m.leave;
     m.pct=m.totalH>0?Math.round(m.attended/m.totalH*100):0;
-    m.ms=m.totalH>0&&m.pct<80;
+    {const _l=msLevel(attSub,m.attended,m.totalH);m.msLv=_l.lv;m.msLeft=_l.left;m.ms=_l.lv==='ms';m.risk=_l.lv==='risk';}
   });
   // อัป DOM ของแท็บสรุปถ้าเปิดอยู่
   // ถ้าแท็บสรุปเปิดอยู่ ให้ re-render ด้วย sumMap จาก DOM ทันที
@@ -3282,7 +3300,7 @@ function attSummaryByStudent(){
     const p=parseInt(a.periods)||1;
     if(a.status in m) m[a.status]+=p;
   });
-  Object.values(sum).forEach(m=>{m.attended=m.present+m.leave;m.pct=totalH>0?Math.round(m.attended/totalH*100):0;m.ms=totalH>0&&m.pct<80;m.totalH=totalH;});
+  Object.values(sum).forEach(m=>{m.attended=m.present+m.leave;m.pct=totalH>0?Math.round(m.attended/totalH*100):0;m.totalH=totalH;{const _l=msLevel(sub,m.attended,totalH);m.msLv=_l.lv;m.msLeft=_l.left;m.ms=_l.lv==='ms';m.risk=_l.lv==='risk';}});
   return sum;
 }
 
@@ -3323,7 +3341,7 @@ function exportAttendance(){
       });
     });
     const m=sum[s.id]||{present:0,absent:0,leave:0,attended:0,pct:0,ms:false};
-    row.push(m.present,m.absent,m.leave,m.attended,m.pct+'%',m.ms?'มส':'ปกติ');
+    row.push(m.present,m.absent,m.leave,m.attended,m.pct+'%',m.ms?'มส':m.risk?'เสี่ยง มส':'ปกติ');
     aoa.push(row);
   });
   aoa.push([]);
@@ -3512,7 +3530,7 @@ async function _loadMsBySubject(){
     });
     const annMap=annBy[sub.id]||{};
     // เข้าเกณฑ์ มส ตอนนี้ (คำนวณสด)
-    const calcIds=Object.keys(attMap).filter(sid=>totalH>0 && (attMap[sid].attended/totalH*100)<80);
+    const calcIds=Object.keys(attMap).filter(sid=>msLevel(sub,attMap[sid].attended,totalH).lv==='ms');
     // rowInfo = ตัวเลขที่ใช้พิมพ์รายงาน: คนที่ประกาศแล้วใช้ตัวเลข ณ วันประกาศ ที่เหลือใช้ตัวเลขปัจจุบัน
     const rowInfo={};
     calcIds.forEach(sid=>{
@@ -3816,7 +3834,7 @@ async function _calcMsIdsOfSubject(){
   rows.forEach(a=>{
     if(a.status==='present'||a.status==='leave') att[String(a.student_id)]=(att[String(a.student_id)]||0)+(parseInt(a.periods)||1);
   });
-  scStus.forEach(s=>{ if(((att[String(s.id)]||0)/totalH*100)<80) ids.add(String(s.id)); });
+  scStus.forEach(s=>{ if(msLevel(scSub,att[String(s.id)]||0,totalH).lv==='ms') ids.add(String(s.id)); });
   return ids;
 }
 async function _syncMsLock(){
@@ -6210,8 +6228,9 @@ async function _computeWatchlistRows(){
         const attended=attBySt[String(stu.id)]||0;
         const pct=totalH>0?Math.round(attended/totalH*100):null;
         const msAnnounced=msAnnSet.has(sub.id+'|'+stu.id);
-        if((totalH>0&&pct<80)||msAnnounced) reasons.push('ms');
-        if(reasons.length) rows.push({stu,sub,reasons,gradeDisp,totalScore:sr?.total_score,pct,msAnnounced});
+        const msLv=msLevel(sub,attended,totalH).lv;
+        if(msLv!=='ok'||msAnnounced) reasons.push('ms');
+        if(reasons.length) rows.push({stu,sub,reasons,gradeDisp,totalScore:sr?.total_score,pct,msAnnounced,msLv});
       });
     });
   S._watchlistRows=rows;
@@ -6344,7 +6363,14 @@ async function _mchkLoadSubject(subId,periods){
   const st={}; stus.forEach(s=>{ st[String(s.id)]='present'; });
   rows.forEach(r=>{ if(String(r.student_id) in st) st[String(r.student_id)]=r.status||'present'; });
   if(rows.length&&rows[0].periods) periods=parseInt(rows[0].periods)||periods;
-  _mchk={sub,stus,st,periods};
+  // เวลาเรียนสะสมของวิชานี้ (ไม่รวมวันนี้) — ใช้แสดงป้าย มส/เสี่ยง และคำนวณใหม่ตามสถานะที่แตะ
+  let base={}, heldBase=0;
+  try{
+    const all=(await loadTeacherAtt()).filter(a=>String(a.subject_id)===String(subId)&&!(String(a.year_month)===String(t.ym)&&parseInt(a.date_day)===t.day));
+    heldBase=attHeldHours(all);
+    all.forEach(a=>{ if(a.status==='present'||a.status==='leave') base[String(a.student_id)]=(base[String(a.student_id)]||0)+(parseInt(a.periods)||1); });
+  }catch(e){}
+  _mchk={sub,stus,st,periods,base,heldBase};
   _mchkRender();
 }
 const _MCHK_LBL={present:'มา',absent:'ขาด',leave:'ลา'}, _MCHK_CLR={present:'#34c759',absent:'#ff3b30',leave:'#ff9500'};
@@ -6354,16 +6380,25 @@ function _mchkRender(){
   const box=(k)=>`<div style="flex:1;background:#fff;border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,.05);text-align:center;padding:6px 0;font-size:11.5px;color:#6e6e73"><b style="display:block;font-size:18px;color:${_MCHK_CLR[k]}">${cnt[k]}</b>${_MCHK_LBL[k]}</div>`;
   const body=`<div style="display:flex;align-items:center;justify-content:space-between;background:#fff;border-radius:14px;padding:9px 12px;margin-bottom:10px;font-size:13.5px;box-shadow:0 2px 8px rgba(0,0,0,.05)">
       <span>จำนวนคาบวันนี้</span>
-      <select onchange="_mchk.periods=parseInt(this.value)||1" style="font:600 14px var(--font);border:1px solid #d1d1d6;border-radius:8px;padding:4px 8px">${[1,2,3,4,5,6].map(n=>`<option ${n===m.periods?'selected':''}>${n}</option>`).join('')}</select></div>
+      <select onchange="_mchk.periods=parseInt(this.value)||1;_mchkRender()" style="font:600 14px var(--font);border:1px solid #d1d1d6;border-radius:8px;padding:4px 8px">${[1,2,3,4,5,6].map(n=>`<option ${n===m.periods?'selected':''}>${n}</option>`).join('')}</select></div>
     <div style="position:sticky;top:-14px;z-index:2;background:#f2f4f8;margin:0 -14px 10px;padding:8px 14px;display:flex;gap:6px">${box('present')}${box('absent')}${box('leave')}</div>
     ${m.stus.length?m.stus.map((s,i)=>{const v=m.st[String(s.id)];return `<div style="display:flex;align-items:center;background:#fff;border-radius:16px;padding:9px 10px;margin-bottom:7px;gap:10px;box-shadow:0 1px 6px rgba(0,0,0,.05)">
       <span style="width:30px;height:30px;border-radius:50%;background:${_MCHK_CLR[v]}22;color:${_MCHK_CLR[v]};font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</span>
-      <span style="flex:1;font-size:14px">${esc(s.student_name)}<span style="display:block;color:#6e6e73;font-size:11px">${esc(s.student_code||'')}</span></span>
+      <span style="flex:1;font-size:14px">${esc(s.student_name)}<span style="display:block;color:#6e6e73;font-size:11px">${esc(s.student_code||'')}${_mchkMsTag(s.id)}</span></span>
       <button onclick="mchkCycle('${s.id}')" style="width:64px;height:40px;border:none;border-radius:20px;font:700 15px var(--font);color:#fff;background:${_MCHK_CLR[v]};box-shadow:0 3px 8px ${_MCHK_CLR[v]}55">${_MCHK_LBL[v]}</button></div>`;}).join('')
       :'<div style="text-align:center;color:#6e6e73;padding:30px">ไม่พบนักเรียนในชั้นนี้</div>'}`;
   _mchkShell({text:esc(m.sub.subject_name)+' · '+grm(m.sub.grade_level,m.sub.room),back:'openMobileCheck()'},esc(m.sub.subject_code)+' · แตะปุ่มเพื่อเปลี่ยน มา → ขาด → ลา',body,
     `<div style="display:flex;gap:8px"><button onclick="mchkAll()" style="${_MB_G};flex:0 0 38%">✓ มาทั้งหมด</button>
      <button style="${_MB_P};flex:1" onclick="mchkSave()" ${m.stus.length?'':'disabled'}>บันทึก (${m.stus.length} คน)</button></div>`);
+}
+// ป้าย มส/เสี่ยง ของนักเรียน รวมสถานะที่แตะวันนี้ (ยังไม่บันทึก) ด้วย
+function _mchkMsTag(sid){
+  const m=_mchk; if(!m) return '';
+  const k=String(sid), held=m.heldBase+m.periods, att=(m.base[k]||0)+(m.st[k]==='absent'?0:m.periods);
+  const r=msLevel(m.sub,att,held);
+  if(r.lv==='ms') return ` <b style="color:#ff3b30">· มส${r.left!=null?' (ขาดเกิน '+Math.ceil(-r.left)+' ชม.)':''}</b>`;
+  if(r.lv==='risk') return ` <b style="color:#ff9500">· เสี่ยง มส${r.left!=null?' (ขาดได้อีก '+Math.max(0,Math.floor(r.left))+' คาบ)':''}</b>`;
+  return '';
 }
 function mchkCycle(sid){ const m=_mchk; if(!m) return; const k=String(sid); m.st[k]=ATT_C[(ATT_C.indexOf(m.st[k])+1)%ATT_C.length]; _mchkRender(); }
 function mchkAll(){ const m=_mchk; if(!m) return; Object.keys(m.st).forEach(k=>m.st[k]='present'); _mchkRender(); }
@@ -6431,7 +6466,7 @@ function renderWatchlistPage(){
     let h='';
     if(r.reasons.includes('fail')) h+=`<span class="badge bg-r" style="margin-right:4px">ไม่ผ่าน</span>`;
     if(r.reasons.includes('fail_risk')) h+=`<span class="badge" style="background:rgba(255,204,0,.2);color:#8a6d00;margin-right:4px">แนวโน้มไม่ผ่าน</span>`;
-    if(r.reasons.includes('ms')) h+=r.msAnnounced?`<span class="badge" style="background:rgba(220,38,38,.12);color:#dc2626">ประกาศ มส แล้ว</span>`:`<span class="badge" style="background:rgba(255,149,0,.15);color:#b45309">เสี่ยง มส</span>`;
+    if(r.reasons.includes('ms')) h+=r.msAnnounced?`<span class="badge" style="background:rgba(220,38,38,.12);color:#dc2626">ประกาศ มส แล้ว</span>`:r.msLv==='ms'?`<span class="badge bg-r">มส</span>`:`<span class="badge" style="background:rgba(255,149,0,.15);color:#b45309">เสี่ยง มส</span>`;
     return h;
   };
   $('pg').innerHTML=`
@@ -6799,7 +6834,7 @@ async function buildAIContext(){
       const stuAtt=attRows.filter(r=>String(r.student_id)===String(stu.id));
       const attended=stuAtt.filter(r=>r.status==='present'||r.status==='leave').reduce((a,r)=>a+(parseInt(r.periods)||1),0);
       const pct=totalH>0?Math.round(attended/totalH*100):null;
-      const isRisk=totalH>0&&pct<80;
+      const isRisk=msLevel(sub,attended,totalH).lv!=='ok';
       if(isRisk) riskMsCount++;
       let line=`${stu.student_code} ${stu.student_name} เกรด:${sr?(sr.special_result||sr.grade||'—'):'—'}`;
       if(sr?.total_score!=null) line+=` คะแนนรวม:${sr.total_score}`;

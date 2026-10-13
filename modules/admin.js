@@ -2116,7 +2116,7 @@ async function pgSchoolReport(){
       const msCalcIds = stuIds.filter(sid=>{
         const m=stuAttMapSub[String(sid)];
         if(!m) return false;
-        return totalH>0&&(m.attended/totalH*100)<80;
+        return msLevel(sub,m.attended,totalH).lv==='ms';
       });
       // msInfo = ตัวเลขที่ใช้พิมพ์: คนที่ประกาศแล้วใช้ตัวเลข ณ วันประกาศ ที่เหลือใช้ตัวเลขปัจจุบัน
       const msAnn = msAnnBySubj[sub.id]||{};

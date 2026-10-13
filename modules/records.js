@@ -1600,7 +1600,7 @@ async function pgReport(){
     if(!attMap[a.student_id])attMap[a.student_id]={attended:0,totalH,pct:0,ms:false};
     if(a.status!=='absent')attMap[a.student_id].attended+=(parseInt(a.periods)||1);
   });
-  Object.values(attMap).forEach(m=>{m.pct=m.totalH>0?Math.round(m.attended/m.totalH*100):0;m.ms=m.totalH>0&&m.pct<80;});
+  Object.values(attMap).forEach(m=>{m.pct=m.totalH>0?Math.round(m.attended/m.totalH*100):0;{const _l=msLevel(sub,m.attended,m.totalH);m.msLv=_l.lv;m.msLeft=_l.left;m.ms=_l.lv==='ms';m.risk=_l.lv==='risk';}});
   // เก็บไว้ใน state เพื่อให้ export ใช้ได้
   S._rpt={sub,stus,sumMap,erMap,ecMap,attMap};
   // stats — filter เฉพาะนักเรียนในห้องจริง
@@ -1659,7 +1659,7 @@ async function pgReport(){
           <td class="tr2" data-label="รวม">${sm.total_score??0}</td>
           <td class="tc" data-label="ผลการเรียน"><span style="font-size:15px;font-weight:700;color:var(--txt)">${g}</span></td>
           <td class="tc" data-label="ผลพิเศษ">${sm.special_result?`<span class="badge bg-r">${esc(sm.special_result)}</span>`:`<span class="badge bg-g">ปกติ</span>`}</td>
-          <td class="tc" data-label="เวลาเรียน"><span class="badge ${att.ms?'bg-r':'bg-g'}">${att.pct}%${att.ms?' (มส)':''}</span></td>
+          <td class="tc" data-label="เวลาเรียน"><span class="badge ${att.ms?'bg-r':att.risk?'':'bg-g'}" ${att.risk?'style="background:rgba(255,149,0,.15);color:#b45309"':''}>${att.pct}%${att.ms?' (มส)':att.risk?' (เสี่ยง)':''}</span></td>
           <td class="tc" data-label="อ่าน/คิด/เขียน"><span class="badge bg-b">${elb(er.result)}</span></td>
           <td class="tc" data-label="คุณลักษณะ"><span class="badge bg-b">${elb(ec.overall_result)}</span></td>
         </tr>`;
@@ -1702,7 +1702,7 @@ function exportReport(){
     aoa.push([i+1,s.student_code,s.student_name,
       sm.total_before_mid??0,sm.total_after_mid??0,sm.mid_normal??0,sm.final_score??0,
       sm.total_score??0,sm.grade??'',sm.special_result||'',
-      (att.pct??0)+'%',att.ms?'มส':'ปกติ',elb(er.result),elb(ec.overall_result)]);
+      (att.pct??0)+'%',att.ms?'มส':att.risk?'เสี่ยง มส':'ปกติ',elb(er.result),elb(ec.overall_result)]);
   });
   exportExcel([{name:'รายงานผล',aoa,colWidths:[6,10,28,14,14,12,12,10,8,10,12,10,14,14]}],
     `รายงานผล_${sub.subject_code}_ม${sub.grade_level}-${sub.room}.xlsx`);
@@ -2018,7 +2018,7 @@ async function printAllPP5(){
     const attMap={};
     stus.forEach(s=>{ attMap[s.id]={present:0,absent:0,leave:0,attended:0,pct:0,ms:false}; });
     attRows.forEach(a=>{ if(!attMap[a.student_id]) attMap[a.student_id]={present:0,absent:0,leave:0,attended:0,pct:0,ms:false}; const p=parseInt(a.periods)||1; if(a.status in attMap[a.student_id]) attMap[a.student_id][a.status]+=p; });
-    Object.values(attMap).forEach(m=>{ m.attended=m.present+m.leave; m.pct=totH>0?Math.round(m.attended/totH*100):0; m.ms=totH>0&&m.pct<80; });
+    Object.values(attMap).forEach(m=>{ m.attended=m.present+m.leave; m.pct=totH>0?Math.round(m.attended/totH*100):0; {const _l=msLevel(sub,m.attended,totH);m.msLv=_l.lv;m.msLeft=_l.left;m.ms=_l.lv==='ms';m.risk=_l.lv==='risk';} });
 
     const body=_buildPP5Body(sub,cfg,stus,sumMap,erMap,ecMap,scUnitsAll,attRows,attMap,totH);
     const css=`
