@@ -831,13 +831,15 @@ function termCfg(cfg,sub){ const t=subYS(sub); return Object.assign({},cfg,{acad
 // force=true: บังคับทุกตัวอักษรในหน้าพิมพ์ใช้ TH Sarabun New ผ่านชื่อ 'PP5 TH Sarabun' ที่ขยายตาม PRINT_FONT_ADJUST (size-adjust)
 //   เพราะ TH Sarabun New ตัวเล็กกว่า Sarabun มากที่ px เท่ากัน — ขยายแล้วขนาดเท่าเดิม เค้าโครงหน้ากระดาษไม่เพี้ยน
 // force=false: ประกาศเฉพาะ 'TH Sarabun New' ขนาดจริง สำหรับหน้าที่ออกแบบด้วย pt ของ TH Sarabun New อยู่แล้ว (บันทึกข้อความ)
-// ขนาดขยายของ TH Sarabun New ในหน้าพิมพ์ (ปรับได้ที่นี่ที่เดียว) — 133% ใหญ่เกินไปตามที่ครูทดสอบ
-const PRINT_FONT_ADJUST='115%';
+// ขนาดขยายของ TH Sarabun New ในหน้าพิมพ์ (ปรับได้ที่นี่ที่เดียว) — 133%/115% ใหญ่เกินไปตามที่ครูทดสอบ
+const PRINT_FONT_ADJUST='110%';
+// ระยะบรรทัดในเซลล์ตารางของหน้าพิมพ์ (แถวสูงขึ้นเล็กน้อย อ่านง่ายไม่แน่น)
+const PRINT_ROW_LH='1.45';
 function printFontTag(force=true){
   const b=location.origin+'/assets/fonts/';
   const face=(fam,adj)=>[['THSarabunNew',400,'normal'],['THSarabunNew_bold',700,'normal'],['THSarabunNew_italic',400,'italic'],['THSarabunNew_bolditalic',700,'italic']]
     .map(([f,w,st])=>`@font-face{font-family:'${fam}';src:url('${b}${f}.woff') format('woff');font-weight:${w};font-style:${st};font-display:block;${adj?'size-adjust:'+adj+';':''}}`).join('');
-  return `<style>${face('TH Sarabun New','')}${force?face('PP5 TH Sarabun',PRINT_FONT_ADJUST)+"body,body *{font-family:'PP5 TH Sarabun','TH Sarabun New',sans-serif!important}":''}</style>`;
+  return `<style>${face('TH Sarabun New','')}${force?face('PP5 TH Sarabun',PRINT_FONT_ADJUST)+"body,body *{font-family:'PP5 TH Sarabun','TH Sarabun New',sans-serif!important}table td,table th{line-height:"+PRINT_ROW_LH+"!important}":''}</style>`;
 }
 function printHTML(title, bodyHTML, orient='portrait', hideHeader=false, sub=null){
   const cfg=termCfg(S.config,sub);
