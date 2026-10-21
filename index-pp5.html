@@ -827,6 +827,16 @@ function blankAsNull(sub){ const t=subYS(sub), y=parseInt(t.y)||0, m=parseInt(t.
 // แปลงค่าจากช่องกรอก: ว่าง → null (วิชาภาคใหม่) หรือ 0 (วิชาภาคเก่า); ตัวเลข (รวม 0) → ตัวเลขนั้น
 function scoreIn(v,sub){ const n=parseFloat(v); return isNaN(n)?(blankAsNull(sub)?null:0):n; }
 function termCfg(cfg,sub){ const t=subYS(sub); return Object.assign({},cfg,{academic_year:t.y,semester:t.s}); }
+// ฟอนต์ TH Sarabun New สำหรับทุกหน้าพิมพ์ (ไฟล์เก็บในโปรเจกต์ assets/fonts/ ไม่ต้องติดตั้งในเครื่อง)
+// force=true: บังคับทุกตัวอักษรในหน้าพิมพ์ใช้ TH Sarabun New ผ่านชื่อ 'PP5 TH Sarabun' ที่ขยาย 133% (size-adjust)
+//   เพราะ TH Sarabun New ตัวเล็กกว่า Sarabun มากที่ px เท่ากัน — ขยายแล้วขนาดเท่าเดิม เค้าโครงหน้ากระดาษไม่เพี้ยน
+// force=false: ประกาศเฉพาะ 'TH Sarabun New' ขนาดจริง สำหรับหน้าที่ออกแบบด้วย pt ของ TH Sarabun New อยู่แล้ว (บันทึกข้อความ)
+function printFontTag(force=true){
+  const b=location.origin+'/assets/fonts/';
+  const face=(fam,adj)=>[['THSarabunNew',400,'normal'],['THSarabunNew_bold',700,'normal'],['THSarabunNew_italic',400,'italic'],['THSarabunNew_bolditalic',700,'italic']]
+    .map(([f,w,st])=>`@font-face{font-family:'${fam}';src:url('${b}${f}.woff') format('woff');font-weight:${w};font-style:${st};font-display:block;${adj?'size-adjust:'+adj+';':''}}`).join('');
+  return `<style>${face('TH Sarabun New','')}${force?face('PP5 TH Sarabun','133%')+"body,body *{font-family:'PP5 TH Sarabun','TH Sarabun New',sans-serif!important}":''}</style>`;
+}
 function printHTML(title, bodyHTML, orient='portrait', hideHeader=false, sub=null){
   const cfg=termCfg(S.config,sub);
   const schoolName=schoolNameWithPrefix(cfg.school_name);
@@ -861,7 +871,7 @@ function printHTML(title, bodyHTML, orient='portrait', hideHeader=false, sub=nul
         .action-bar{width:${orient==='landscape'?'297mm':'210mm'};max-width:100%;margin:16px auto 0;}
       }
     </style>
-    </head><body>
+    ${printFontTag()}</head><body>
     <div id="pbody">
       ${hideHeader?'':`
       <div class="ph">
@@ -1843,7 +1853,7 @@ function _applyConcurrencyGuards(){
 // (ของโมดูลจะถูกห่อเพิ่มใน ensureModule หลังโหลดเสร็จ)
 _applyConcurrencyGuards();
 // ?v= กันแคชเก่าค้าง (modules/*.js แคชไว้ 1 วันตาม vercel.json) — แก้ไฟล์ใน modules/ เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย
-const MODULE_V='116';
+const MODULE_V='117';
 // ห่อฟังก์ชันของโมดูลหลังโหลดเสร็จด้วย (ตอนเริ่มระบบยังไม่มีฟังก์ชันเหล่านี้)
 function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V).then(()=>{ _applyConcurrencyGuards(); }); }
 function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
@@ -3464,7 +3474,7 @@ function printAttendance(){
         #pbody{width:210mm;min-height:297mm;margin:0 auto;padding:12mm 14mm;background:#fff;box-shadow:0 2px 14px rgba(0,0,0,.45);}
         .action-bar{width:210mm;max-width:100%;margin:16px auto 0;}
       }
-    </style></head><body>
+    </style>${printFontTag()}</head><body>
     <div id="pbody">${body}</div>
     <div class="action-bar">
       <button class="btn-print" onclick="document.fonts.ready.then(()=>window.print())"><svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> พิมพ์</button>
@@ -5357,7 +5367,7 @@ function printScores(){
         #pbody{width:210mm;min-height:297mm;margin:0 auto;padding:12mm 14mm;background:#fff;box-shadow:0 2px 14px rgba(0,0,0,.45);}
         .action-bar{width:210mm;max-width:100%;margin:16px auto 0;}
       }
-    </style></head><body>
+    </style>${printFontTag()}</head><body>
     <div id="pbody">${body}</div>
     <div class="action-bar">
       <button class="btn-print" onclick="document.fonts.ready.then(()=>window.print())"><svg style="vertical-align:-.15em" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> พิมพ์</button>
