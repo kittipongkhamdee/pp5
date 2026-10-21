@@ -2818,7 +2818,7 @@ function printMsMemo(selectedIds){
       .btn-print{padding:9px 22px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;border:none;border-radius:10px;background:#1d1d1f;color:#fff;font-weight:600;}
       @media print{.action-bar{display:none!important;}}
     </style>
-    </head><body>
+    ${printFontTag(false)}</head><body>
     ${pages}
     <div class="action-bar"><button class="btn-print" onclick="document.fonts.ready.then(()=>window.print())">พิมพ์</button></div>
     <script>
@@ -3094,7 +3094,7 @@ function printInfoReport(){
     .note{font-size:8.5pt;margin-top:8px;line-height:1.5}
     .bar{position:fixed;top:8px;right:8px}@media print{.bar{display:none}}
     @media screen{body{background:#6b7280;padding:16px 0 40px}#pbody{width:297mm;min-height:210mm;margin:0 auto;padding:12mm;background:#fff;box-shadow:0 2px 14px rgba(0,0,0,.45)}}
-  </style></head><body>
+  </style>${printFontTag()}</head><body>
   <div class="bar"><button onclick="document.fonts.ready.then(()=>window.print())">พิมพ์</button></div>
   <div id="pbody">
   <h1>รายงานสารสนเทศผลสัมฤทธิ์ทางการเรียนและผลการประเมิน</h1>
