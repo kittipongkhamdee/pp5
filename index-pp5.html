@@ -950,8 +950,40 @@ async function loadProfile(){
   }catch(e){
     S.profile = {full_name:S.user.email, role:'teacher'};
   }
+  _applyRolePreview();
   // อัปเดตล็อกอินล่าสุด — ไม่ await เพราะไม่ใช่ path สำคัญ พลาดได้ไม่กระทบการใช้งาน
   q(sb.from('profiles').update({last_login_at:new Date().toISOString()}).eq('id',S.user.id)).catch(()=>{});
+}
+
+// ── ทดสอบในบทบาทอื่น (เฉพาะแอดมิน) ──
+// จำลองหน้าจอ/เมนูที่ครูหรือผู้บริหารเห็น โดยปิด is_admin ในฝั่งหน้าเว็บ — สิทธิ์ฐานข้อมูลจริงยังเป็นแอดมิน และข้อมูลที่เห็นยังเป็นของบัญชีแอดมินเอง
+// เก็บใน sessionStorage: ปิดแท็บ/ออกจากระบบแล้วกลับเป็นแอดมินเอง
+const ROLE_PREVIEW_KEY='pp5_role_preview';
+const ROLE_PREVIEWS={teacher:'ครูผู้สอน',director:'ผู้บริหาร (ดูรายงานการติดตาม)'};
+function _applyRolePreview(){
+  S.realIsAdmin=!!S.profile?.is_admin; S.rolePreview=null;
+  let r=null; try{ r=sessionStorage.getItem(ROLE_PREVIEW_KEY); }catch(e){}
+  if(S.realIsAdmin && ROLE_PREVIEWS[r]){
+    S.rolePreview=r;
+    S.profile={...S.profile, is_admin:false, is_director:r==='director'};
+  }
+  _renderRoleBanner();
+}
+function setRolePreview(r){
+  try{ if(r) sessionStorage.setItem(ROLE_PREVIEW_KEY,r); else sessionStorage.removeItem(ROLE_PREVIEW_KEY); }catch(e){}
+  _cacheClearPersisted?.();
+  location.reload();
+}
+function _renderRoleBanner(){
+  let b=document.getElementById('role-banner');
+  if(!S.rolePreview){ b?.remove(); document.body.style.paddingTop=''; document.body.classList.remove('role-pv'); return; }
+  if(!b){ b=document.createElement('div'); b.id='role-banner'; document.body.appendChild(b); }
+  b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9000;background:#f59e0b;color:#1f1300;font:600 13px var(--font);padding:7px 12px;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;box-shadow:0 2px 10px rgba(0,0,0,.15)';
+  b.innerHTML='👁 กำลังทดสอบในบทบาท: <b>'+ROLE_PREVIEWS[S.rolePreview]+'</b> <span style="font-weight:400;opacity:.85">(สิทธิ์ข้อมูลจริงยังเป็นแอดมิน)</span><button onclick="setRolePreview(null)" style="border:none;border-radius:8px;padding:4px 10px;background:#1f1300;color:#fff;font:700 12px var(--font);cursor:pointer">กลับเป็นแอดมิน</button>';
+  // แถบหัวของแอปเป็น sticky top:0 — เลื่อนลงมาใต้แถบเตือน ไม่ให้ถูกบัง
+  if(!document.getElementById('role-pv-css')) document.head.insertAdjacentHTML('beforeend','<style id="role-pv-css">body.role-pv header.tb{top:var(--rbh,0)!important}body.role-pv .sb{top:var(--rbh,0)!important}</style>');
+  document.body.classList.add('role-pv');
+  requestAnimationFrame(()=>{ const h=b.offsetHeight+'px'; document.body.style.paddingTop=h; document.body.style.setProperty('--rbh',h); });
 }
 
 // ── บันทึกเหตุการณ์สำคัญที่ย้อนกลับไม่ได้ (ลบนักเรียน/เลื่อนชั้น/ล้างข้อมูล/Restore) ──
@@ -969,6 +1001,7 @@ function logAudit(action, detail){
 // แอดมิน (profiles.is_admin) เข้าได้ทุกเมนูเสมอ ไม่ต้องเช็คตาราง menu_permissions
 async function _loadMenuPerms(){
   if(S.profile?.is_admin){ S.menuPerms=null; return; }
+  if(S.rolePreview){ S.menuPerms=new Set(); return; } // ทดสอบบทบาท: เหมือนครูที่ยังไม่ได้รับสิทธิ์เมนูพิเศษ
   try{
     const rows=await q(sb.from('menu_permissions').select('menu_key').eq('teacher_id',S.user.id));
     S.menuPerms=new Set(rows.map(r=>r.menu_key));
@@ -1400,7 +1433,7 @@ function openProfilePopup(ev){
       <div style="min-width:0">
         <div class="prof-name">${esc(n)}</div>
         <div class="prof-email">${esc(em)}</div>
-        <div class="prof-role">${S.profile?.is_admin ? `${_ico.crown} แอดมิน` : `${_ico.user} ครูผู้สอน`}</div>
+        <div class="prof-role">${S.rolePreview ? `👁 ทดสอบ: ${ROLE_PREVIEWS[S.rolePreview]}` : S.profile?.is_admin ? `${_ico.crown} แอดมิน` : `${_ico.user} ครูผู้สอน`}</div>
       </div>
     </div>
     <div class="prof-actions">
@@ -1410,6 +1443,15 @@ function openProfilePopup(ev){
         </div>
         แก้ไขชื่อ-นามสกุล
       </div>
+      ${S.realIsAdmin?`<div class="prof-row" style="cursor:default">
+        <div class="prof-row-ic" style="background:rgba(245,158,11,.15);font-size:13px">👁</div>
+        <div style="flex:1;min-width:0">ทดสอบในบทบาท
+          <select onchange="setRolePreview(this.value||null)" onclick="event.stopPropagation()" style="display:block;width:100%;margin-top:4px;padding:5px 8px;border-radius:8px;border:1px solid var(--sep);font:inherit;font-size:13px">
+            <option value="" ${!S.rolePreview?'selected':''}>แอดมิน (ปกติ)</option>
+            ${Object.entries(ROLE_PREVIEWS).map(([k,v])=>`<option value="${k}" ${S.rolePreview===k?'selected':''}>${v}</option>`).join('')}
+          </select>
+        </div>
+      </div>`:''}
       <div class="prof-row" onclick="_closeProfilePopup();PTheme.open()">
         <div class="prof-row-ic" style="background:rgba(255,149,0,.12);font-size:13px">🎨</div>
         ธีมและการแสดงผล
