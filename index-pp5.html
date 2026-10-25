@@ -1211,7 +1211,8 @@ function _checkAnnouncement(){
   setTimeout(()=>{
     alert2({
       title: esc(title),
-      msg: esc(msg).replace(/\n/g,'<br>'),
+      // เนื้อหาประกาศมักเป็นรายการหลายบรรทัด — จัดชิดซ้ายอ่านง่ายกว่ากึ่งกลาง (หัวข้อยังกึ่งกลาง)
+      msg: '<div style="text-align:left">'+esc(msg).replace(/\n/g,'<br>')+'</div>',
       type: 'info',
       okText: 'รับทราบ',
       onOk: ()=>{ try{ localStorage.setItem('dismissed_announcement_id', id); }catch(e){} }
