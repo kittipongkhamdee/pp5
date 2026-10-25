@@ -917,6 +917,7 @@ async function initAuth(){
       loadingOff();
       if(window._lovWelcomeHide) _lovWelcomeHide();
       showApp();
+      _noteDueAlert();
     } else {
       loadingOff();
       if(window._lovWelcomeHide) _lovWelcomeHide(true); // instant — no session, go to login
@@ -953,6 +954,24 @@ async function loadProfile(){
   _applyRolePreview();
   // อัปเดตล็อกอินล่าสุด — ไม่ await เพราะไม่ใช่ path สำคัญ พลาดได้ไม่กระทบการใช้งาน
   q(sb.from('profiles').update({last_login_at:new Date().toISOString()}).eq('id',S.user.id)).catch(()=>{});
+}
+
+// แจ้งเตือนโน้ตที่ครบกำหนด/เลยกำหนด ตอนเปิดแอป — ครั้งเดียวต่อวันต่อแท็บ (ดึงแค่คอลัมน์ที่ใช้ ไม่โหลดเนื้อหาโน้ต)
+async function _noteDueAlert(){
+  try{
+    const today=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
+    const key='pp5_note_alert_'+today;
+    if(sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key,'1');
+    const rows=await q(sb.from('teacher_notes').select('id,title,due_date').eq('user_id',S.user.id).eq('done',false).lte('due_date',today).order('due_date'));
+    if(!rows||!rows.length) return;
+    const d0=new Date(today+'T00:00:00');
+    const li=rows.slice(0,6).map(n=>{const late=Math.round((d0-new Date(n.due_date+'T00:00:00'))/864e5);
+      return '<div style="display:flex;justify-content:space-between;gap:10px;text-align:left;padding:5px 0;border-bottom:1px solid rgba(0,0,0,.06)"><b style="color:#1d1d1f">'+esc(n.title||'(ไม่มีหัวข้อ)')+'</b><span style="white-space:nowrap;font-weight:700;color:'+(late>0?'#dc2626':'#c2410c')+'">'+(late>0?'เลย '+late+' วัน':'วันนี้')+'</span></div>'}).join('');
+    alert2({type:'warn',title:'📝 โน้ตครบกำหนด '+rows.length+' รายการ',
+      msg:li+(rows.length>6?'<div style="margin-top:6px">และอีก '+(rows.length-6)+' รายการ</div>':''),
+      okText:'ดูโน้ต',onOk:()=>{ if(S.page!=='dashboard') nav('dashboard'); setTimeout(()=>document.getElementById('dash-notes')?.scrollIntoView({behavior:'smooth'}),600); }});
+  }catch(e){}
 }
 
 // ── ทดสอบในบทบาทอื่น (เฉพาะแอดมิน) ──
@@ -1685,6 +1704,7 @@ async function doLogin(){
     if(_elapsed<1800) await new Promise(r=>setTimeout(r,1800-_elapsed));
     if(window._lovWelcomeHide) _lovWelcomeHide();
     showApp();
+    _noteDueAlert();
   }catch(e){
     if(window._lovWelcomeHide) _lovWelcomeHide(true);
     if(btn) btn.disabled=false;
