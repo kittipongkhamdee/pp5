@@ -1907,7 +1907,7 @@ function _applyConcurrencyGuards(){
 // (ของโมดูลจะถูกห่อเพิ่มใน ensureModule หลังโหลดเสร็จ)
 _applyConcurrencyGuards();
 // ?v= กันแคชเก่าค้าง (modules/*.js แคชไว้ 1 วันตาม vercel.json) — แก้ไฟล์ใน modules/ เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย
-const MODULE_V = '119';
+const MODULE_V = '120';
 // ห่อฟังก์ชันของโมดูลหลังโหลดเสร็จด้วย (ตอนเริ่มระบบยังไม่มีฟังก์ชันเหล่านี้)
 function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V).then(()=>{ _applyConcurrencyGuards(); }); }
 function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
@@ -2189,6 +2189,7 @@ async function pgDash(){
     <div class="sc"><div class="si" style="background:${S._dashMsCount>0?'linear-gradient(135deg,#ff6b6b,#FF3B30)':' linear-gradient(135deg,#30d158,#34C759)'}"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div><div class="sv" style="${S._dashMsCount>0?'color:#FF3B30':'color:#16803d'}">${S._dashMsCount}</div><div class="sl">มส รอติดตาม</div></div></div>
 
   </div>
+  <div id="dash-notes"></div>
   ${(()=>{
     const _ns=S._dashNoScore||[], _na=S._dashNoAtt||[], _np=S._dashPartial||[];
     const _tot=_ns.length+_na.length+_np.length;
@@ -2299,6 +2300,8 @@ async function pgDash(){
   // load total students async
   // ใช้ค่าที่ดึงมาแล้วจาก query รวม ไม่ต้องยิงซ้ำ
   const el=$('d-stu'); if(el) el.textContent=S._dashStuTotal||0;
+  // โน้ตของครู — โหลดแยก (lazy) ไม่ให้แดชบอร์ดช้าลง
+  ensureModule('notes').then(()=>notesInit()).catch(()=>{});
 }
 
 // ════════════════════════════════════════════════════════════════
