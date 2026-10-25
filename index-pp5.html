@@ -1156,7 +1156,10 @@ function showApp(){
   _applyMenuVisibility();
   _applySidebarCollapse();
   // ผู้บริหาร (is_director) ไม่มีวิชาสอนเอง — พาไปหน้ารายงานการติดตามแทนแดชบอร์ดว่างๆ
-  if(S.profile?.is_director && !S.profile?.is_admin){ navSchoolReport(); }
+  // เปิดจากลิงก์/รีเฟรชที่มี #/เมนู → กลับไปเมนูเดิม
+  const _r=_routeRead();
+  if(_r){ _routeGo(_r); }
+  else if(S.profile?.is_director && !S.profile?.is_admin){ navSchoolReport(); }
   else { nav('dashboard'); }
   initPresence();
   updateWatchlistBadge();
@@ -1934,6 +1937,33 @@ function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/
 
 // เมนูที่ควบคุมสิทธิ์รายคน (ดู canAccessMenu/_loadMenuPerms) — key ต้องตรงกับ menu_permissions.menu_key
 const GATED_MENUS={settings:'ตั้งค่าระบบ',students:'นักเรียน',standards:'มาตรฐานและตัวชี้วัด'};
+// ── จำเมนูไว้ใน URL (#/เมนู/รหัสวิชา) — รีเฟรชแล้วอยู่หน้าเดิม, ปุ่มย้อนกลับของเบราว์เซอร์ใช้ได้, บุ๊กมาร์ก/ส่งลิงก์ได้
+// ใช้ # เพราะเป็นเว็บ static บน Vercel ไม่ต้องตั้ง rewrite ฝั่ง server · สิทธิ์เมนูยังตรวจใน nav() ตามเดิม
+const ROUTE_PAGES=['dashboard','subjects','attendance','scores','eval','watchlist','students','evalplan','report','cover','iqa','settings','manual','standards'];
+const ROUTE_SUB_PAGES=new Set(['attendance','scores','eval','evalplan','report','cover']);
+let _routeBusy=false;
+function _routeRead(){
+  const m=(location.hash||'').match(/^#\/([a-z_]+)(?:\/([0-9a-f-]{36}))?/i);
+  if(!m||!ROUTE_PAGES.includes(m[1])) return null;
+  return {page:m[1],sub:m[2]};
+}
+function _routeWrite(){
+  const h='#/'+S.page+(ROUTE_SUB_PAGES.has(S.page)&&S.selSub?'/'+S.selSub:'');
+  if(location.hash===h) return;
+  try{ (_routeBusy?history.replaceState:history.pushState).call(history,null,'',h); }catch(e){}
+}
+window.addEventListener('popstate',()=>{
+  if(!S.user) return;
+  const r=_routeRead()||{page:'dashboard'};
+  if(r.page===S.page&&(!r.sub||r.sub===S.selSub)) return;
+  _routeGo(r);
+});
+// รหัสวิชาใน URL ต้องเป็นวิชาที่ผู้ใช้เห็นได้ (เช่น ครูไม่เห็นวิชาภาคเก่า) ไม่งั้นตัดทิ้งให้หน้านั้นเลือกวิชาเอง
+async function _routeGo(r){
+  if(r.sub){ try{ await loadSubjects(); }catch(e){} if(!(S.subjects||[]).some(x=>x.id===r.sub)) r.sub=undefined; }
+  _routeBusy=true; try{ nav(r.page,r.sub); } finally{ _routeBusy=false; }
+}
+
 function nav(page,subId){
   // ถามก่อนถ้ามีคะแนนสอบที่พิมพ์ค้างไว้ยังไม่ได้บันทึก (ออกไปแล้วหายจริง)
   if(_examDirty && page!==S.page){ _guardUnsavedScores(()=>nav(page,subId)); return; }
@@ -1942,6 +1972,7 @@ function nav(page,subId){
   if(GATED_MENUS[page]&&!canAccessMenu(page)){ _denyMenuAccess(GATED_MENUS[page]); return; }
   if(page==='watchlist' && !watchlistOn()){ nav('dashboard'); return; }
   S.page=page; if(subId!==undefined) S.selSub=subId;
+  _routeWrite();
   closeSidebar();
   document.querySelectorAll('.ni').forEach(e=>e.classList.remove('active'));
   const el=$('nav-'+page);if(el)el.classList.add('active');
