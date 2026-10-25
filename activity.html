@@ -11,6 +11,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4"></script>
+<script src="theme.js?v=1"></script>
+<script>PTheme.init('act')</script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
 <style>
@@ -123,7 +125,7 @@ html[data-theme="dark"] .ios-select,html[data-theme="dark"] .ios-input{backgroun
 /* ── Cards / Lists ── */
 .section{padding:16px 20px 0}
 .section-title{display:flex;align-items:center;gap:6px;width:fit-content;font-size:11.5px;font-weight:700;color:#4f46e5;background:rgba(99,102,241,.09);border-radius:20px;padding:4px 12px;margin-bottom:10px;text-transform:none;letter-spacing:0}
-.section-title::before{content:'';width:6px;height:6px;border-radius:50%;background:#6366f1;flex-shrink:0}
+.section-title::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--primary-dark,#6366f1);flex-shrink:0}
 .card{
   background:rgba(255,255,255,0.72);
   backdrop-filter:blur(16px) saturate(1.5);-webkit-backdrop-filter:blur(16px) saturate(1.5);
@@ -154,7 +156,7 @@ html[data-theme="dark"] .ios-select,html[data-theme="dark"] .ios-input{backgroun
 .stat-box.s-red{background:#FFF1F2;border-color:#FECDD3}
 .stat-num{font-size:19px;font-weight:800;line-height:1}
 .stat-lbl{font-size:11px;font-weight:600;margin-top:2px}
-.stat-box.s-all .stat-num{color:#1D4ED8}.stat-box.s-all .stat-lbl{color:#3B82F6}
+.stat-box.s-all .stat-num{color:var(--primary-dark,#1D4ED8)}.stat-box.s-all .stat-lbl{color:var(--primary,#3B82F6)}
 .stat-num.green{color:#059669}.stat-box.s-present .stat-lbl{color:#059669}
 .stat-num.orange{color:#D97706}.stat-box.s-late .stat-lbl{color:#D97706}
 .stat-num.red{color:#DC2626}.stat-box.s-absent .stat-lbl{color:#DC2626}
@@ -617,7 +619,7 @@ html[data-theme="dark"] #confirm-sheet{background:rgba(28,35,50,.78)}
 .login-logo{text-align:center;margin-bottom:20px}
 .login-logo-icon{
   width:64px;height:64px;border-radius:18px;
-  background:linear-gradient(135deg,#3b82f6,#8b5cf6);
+  background:linear-gradient(135deg,var(--primary,#3b82f6),var(--primary-dark,#8b5cf6));
   display:flex;align-items:center;justify-content:center;margin:0 auto 12px;
   box-shadow:0 8px 24px rgba(99,102,241,.4),inset 0 1px 0 rgba(255,255,255,.3);
   overflow:hidden;transition:background .3s;
@@ -626,7 +628,7 @@ html[data-theme="dark"] #confirm-sheet{background:rgba(28,35,50,.78)}
 #login-school-logo{width:54px;height:54px;object-fit:contain;display:none}
 .login-title{
   font-size:20px;font-weight:800;text-align:center;
-  background:linear-gradient(135deg,#1d4ed8,#7c3aed);
+  background:linear-gradient(135deg,var(--primary-dark,#1d4ed8),#7c3aed);
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
 }
 .login-sub{font-size:13px;color:#94a3b8;text-align:center;margin-top:4px}
@@ -640,7 +642,7 @@ html[data-theme="dark"] #confirm-sheet{background:rgba(28,35,50,.78)}
   transition:background .2s,box-shadow .2s;
 }
 .login-field-wrap:focus-within{
-  background:linear-gradient(135deg,#3b82f6,#8b5cf6);
+  background:linear-gradient(135deg,var(--primary,#3b82f6),var(--primary-dark,#8b5cf6));
   box-shadow:0 0 0 3px rgba(99,102,241,.12);
 }
 .login-field-wrap .field-icon{
@@ -648,7 +650,7 @@ html[data-theme="dark"] #confirm-sheet{background:rgba(28,35,50,.78)}
   width:18px;height:18px;pointer-events:none;
   color:#94a3b8;transition:color .2s;
 }
-.login-field-wrap:focus-within .field-icon{color:#6366f1}
+.login-field-wrap:focus-within .field-icon{color:var(--primary-dark,#6366f1)}
 .login-field input{
   width:100%;padding:12px 14px 12px 42px;background:rgba(255,255,255,.9);
   border:none;border-radius:12px;
@@ -660,7 +662,7 @@ html[data-theme="dark"] #confirm-sheet{background:rgba(28,35,50,.78)}
 .login-err{font-size:13px;color:#ef4444;text-align:center;margin-bottom:12px;min-height:18px}
 .login-btn{
   width:100%;padding:13px;
-  background:linear-gradient(135deg,#3b82f6,#8b5cf6);
+  background:linear-gradient(135deg,var(--primary,#3b82f6),var(--primary-dark,#8b5cf6));
   border:none;border-radius:12px;font-family:var(--font);font-size:16px;font-weight:700;color:#fff;cursor:pointer;
   transition:opacity .15s,transform .1s;margin-top:4px;
   box-shadow:0 4px 20px rgba(99,102,241,.45),inset 0 1px 0 rgba(255,255,255,.22);
@@ -835,6 +837,7 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
       </div>
     </div>
     <div id="topbar-clock"><div id="clock-date"></div><div id="clock-time">--:--:--</div></div>
+    <button id="theme-btn" onclick="PTheme.open()" title="ธีมและการแสดงผล" style="flex-shrink:0;width:34px;height:34px;border-radius:9px;border:1px solid var(--sep);background:var(--card2);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;font-size:16px">🎨</button>
     <button id="admin-topbar-btn" onclick="nav('admin')" title="Admin" style="flex-shrink:0;width:34px;height:34px;border-radius:9px;border:1px solid var(--sep);background:var(--card2);color:var(--txt2);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;transition:background .15s,color .15s"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></button>
     <button class="logout-btn" onclick="doLogout()" id="logout-btn" style="display:none">ออกจากระบบ</button>
   </div>
@@ -1635,7 +1638,7 @@ async function renderHome(){
       <div id="hwx-pm" style="font-size:12px;color:var(--txt2);white-space:nowrap">PM2.5 …</div></div>
     </div>
     <div style="text-align:right;min-width:0">
-      <div id="hclock-day" style="font-size:14px;font-weight:700;color:#3B82F6;line-height:1.3;white-space:nowrap"></div>
+      <div id="hclock-day" style="font-size:14px;font-weight:700;color:var(--primary,#3B82F6);line-height:1.3;white-space:nowrap"></div>
       <div id="hclock-date" style="font-size:12px;color:var(--txt2);margin-top:1px;white-space:nowrap"></div>
     </div>
   </div>
@@ -1678,7 +1681,7 @@ async function renderHome(){
       const badge=done
         ?`<span style="font-size:9px;font-weight:700;color:#059669;background:#ECFDF5;border:1px solid #A7F3D0;border-radius:20px;padding:1px 8px;white-space:nowrap">✓ เช็คครบทุกห้องแล้ว</span>`
         :clsN>0
-          ?`<span onclick="event.stopPropagation();_showUncheckedRooms('${label}',${JSON.stringify([...sd.cls]).replace(/"/g,'&quot;')})" style="cursor:pointer;text-decoration:underline dotted;font-size:9px;font-weight:700;color:#3B82F6;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:20px;padding:1px 8px;white-space:nowrap">${clsN}/${totalCls} ห้อง</span>`
+          ?`<span onclick="event.stopPropagation();_showUncheckedRooms('${label}',${JSON.stringify([...sd.cls]).replace(/"/g,'&quot;')})" style="cursor:pointer;text-decoration:underline dotted;font-size:9px;font-weight:700;color:var(--primary,#3B82F6);background:#EFF6FF;border:1px solid #BFDBFE;border-radius:20px;padding:1px 8px;white-space:nowrap">${clsN}/${totalCls} ห้อง</span>`
           :`<span style="font-size:9px;font-weight:600;color:var(--txt3);background:var(--card2);border:1px solid var(--sep);border-radius:20px;padding:1px 8px;white-space:nowrap">ยังไม่เช็ค</span>`;
       return `<div style="display:flex;align-items:center;gap:6px;margin-top:3px">
         <span style="font-size:10px;font-weight:600;color:var(--txt3);min-width:22px">${label}</span>${badge}
@@ -3800,6 +3803,7 @@ async function doLogin(){
     const{data,error}=await sb.auth.signInWithPassword({email,password:pass});
     if(error)throw error;
     S.user=data.user;
+    PTheme.setUser(S.user.id);
     await _loadTeacherProfile();
     // จำเฉพาะอีเมล — ไม่เก็บรหัสผ่านไว้ในเครื่อง (session ค้างอยู่ผ่าน Supabase token อยู่แล้ว)
     if($('login-remember')?.checked){
@@ -3932,6 +3936,7 @@ async function init(){
   const{data:{session}}=await sb.auth.getSession();
   if(session){
     S.user=session.user;
+    PTheme.setUser(S.user.id);
     await _loadTeacherProfile();
     $('login-overlay').style.display='none';
     $('logout-btn').style.display='';

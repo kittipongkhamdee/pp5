@@ -128,11 +128,11 @@
       <!-- Remember me + Forgot password -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12.5px;color:#3a3a3c;font-family:'Sarabun',sans-serif;font-weight:500;user-select:none;">
-          <input type="checkbox" id="lp-remember" style="width:15px;height:15px;accent-color:#007AFF;cursor:pointer;">
+          <input type="checkbox" id="lp-remember" style="width:15px;height:15px;accent-color:var(--ac,#007AFF);cursor:pointer;">
           จดจำฉัน
         </label>
         <button onclick="showForgotPassword()" type="button"
-          style="background:none;border:none;cursor:pointer;font-size:12.5px;color:#007AFF;font-family:'Sarabun',sans-serif;font-weight:600;padding:0;">
+          style="background:none;border:none;cursor:pointer;font-size:12.5px;color:var(--ac,#007AFF);font-family:'Sarabun',sans-serif;font-weight:600;padding:0;">
           ลืมรหัสผ่าน?
         </button>
       </div>
@@ -313,7 +313,7 @@
           style="width:40px;height:40px;object-fit:contain;display:block"
           onerror="this.style.display='none';document.getElementById('sb-logo-fallback').style.display='flex'">
         <!-- fallback SVG ถ้าโหลดโลโก้ไม่ได้ -->
-        <div id="sb-logo-fallback" style="display:none;width:44px;height:44px;background:linear-gradient(145deg,#0A84FF,#007AFF);border-radius:12px;align-items:center;justify-content:center">
+        <div id="sb-logo-fallback" style="display:none;width:44px;height:44px;background:linear-gradient(145deg,#0A84FF,var(--ac,#007AFF));border-radius:12px;align-items:center;justify-content:center">
           <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
         </div>
       </div>
@@ -410,7 +410,7 @@
     style="padding:8px 12px 12px;border-top:0.5px solid var(--bdr);display:flex;align-items:center;gap:9px;text-decoration:none;transition:background .15s;border-radius:0 0 0 0;cursor:pointer;"
     onmouseover="this.style.background='rgba(0,0,0,.04)'" onmouseout="this.style.background=''"
     title="ติดต่อผู้พัฒนาระบบทาง LINE">
-    <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#34aadc,#007AFF);display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;color:#fff;flex-shrink:0;">กต</div>
+    <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#34aadc,var(--ac,#007AFF));display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;color:#fff;flex-shrink:0;">กต</div>
     <div style="min-width:0;flex:1">
       <div style="font-size:11.5px;font-weight:600;color:var(--txt);line-height:1.3;">นายกิตติพงษ์ คำดี</div>
       <div style="font-size:10px;color:var(--muted);">ผู้พัฒนาระบบ · v2569</div>
@@ -452,6 +452,8 @@
 
 <script src="config.js"></script>
 <script src="vendor/supabase-js.min.js"></script>
+<script src="theme.js?v=1"></script>
+<script>PTheme.init('pp5')</script>
 <!-- xlsx.js (~270KB) โหลดแบบ lazy ผ่าน ensureXLSX() เฉพาะตอนใช้ Import/Export Excel จริงๆ ดู exportExcel() -->
 <script>
 
@@ -905,6 +907,7 @@ async function initAuth(){
     const {data:{session}} = await sb.auth.getSession();
     if(session){
       S.user = session.user;
+      PTheme.setUser(S.user.id);
       await loadProfile();
       await Promise.all([loadConfig(), _loadMenuPerms(), loadFlexMap()]);
       if(window._lovWelcomeUpdateName) _lovWelcomeUpdateName();
@@ -1407,6 +1410,10 @@ function openProfilePopup(ev){
         </div>
         แก้ไขชื่อ-นามสกุล
       </div>
+      <div class="prof-row" onclick="_closeProfilePopup();PTheme.open()">
+        <div class="prof-row-ic" style="background:rgba(255,149,0,.12);font-size:13px">🎨</div>
+        ธีมและการแสดงผล
+      </div>
       <div class="prof-row" onclick="_closeProfilePopup();openChangePwModal()">
         <div class="prof-row-ic" style="background:rgba(88,86,214,.1)">
           <svg viewBox="0 0 24 24" fill="none" stroke="#5856D6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -1626,6 +1633,7 @@ async function doLogin(){
       return;
     }
     S.user = data.user;
+    PTheme.setUser(S.user.id);
     if($('lp-remember')?.checked) localStorage.setItem('pp5-saved-email',email);
     else localStorage.removeItem('pp5-saved-email');
     await loadProfile();
@@ -1857,7 +1865,7 @@ function _applyConcurrencyGuards(){
 // (ของโมดูลจะถูกห่อเพิ่มใน ensureModule หลังโหลดเสร็จ)
 _applyConcurrencyGuards();
 // ?v= กันแคชเก่าค้าง (modules/*.js แคชไว้ 1 วันตาม vercel.json) — แก้ไฟล์ใน modules/ เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย
-const MODULE_V='117';
+const MODULE_V = '118';
 // ห่อฟังก์ชันของโมดูลหลังโหลดเสร็จด้วย (ตอนเริ่มระบบยังไม่มีฟังก์ชันเหล่านี้)
 function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V).then(()=>{ _applyConcurrencyGuards(); }); }
 function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
@@ -2118,7 +2126,7 @@ async function pgDash(){
     </div>
   </div>
   <div class="sg">
-    <div class="sc"><div class="si" style="background:linear-gradient(135deg,#34aadc,#007AFF)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div><div><div class="sv">${S.subjects.length}</div><div class="sl">รายวิชา</div></div></div>
+    <div class="sc"><div class="si" style="background:linear-gradient(135deg,#34aadc,var(--ac,#007AFF))"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div><div><div class="sv">${S.subjects.length}</div><div class="sl">รายวิชา</div></div></div>
     <div class="sc"><div class="si" style="background:linear-gradient(135deg,#30d158,#34C759)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div><div class="sv" id="d-stu">...</div><div class="sl">นักเรียน</div></div></div>
     <div class="sc"><div class="si" style="background:linear-gradient(135deg,#ff9f0a,#FF9500)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="20 6 9 17 4 12"/></svg></div><div><div class="sv">${S.subjects.filter(s=>s.stats.recorded>0).length}</div><div class="sl">วิชาที่มีคะแนน</div></div></div>
     <div class="sc"><div class="si" style="background:linear-gradient(135deg,#bf5af2,#7c3aed)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div><div><div class="sv" style="${S._dashPassAvg>=80?'color:#16803d':S._dashPassAvg>=60?'color:#FF9500':'color:#FF3B30'}">${S.subjects.filter(s=>s.stats.recorded>0).length>0?S._dashPassAvg+'%':'—'}</div><div class="sl">% ผ่านเฉลี่ย</div></div></div>
@@ -3506,7 +3514,7 @@ function printAttendanceMsChoice(){
         '<div style="font-size:13.5px;color:#6e6e73;line-height:1.6">เลือกรูปแบบรายงานนักเรียนที่มีเวลาเรียนไม่ถึง 80%</div>'+
       '</div>'+
       '<div style="border-top:0.5px solid rgba(0,0,0,.1)">'+
-        '<button id="'+id+'-combined" style="width:100%;padding:15px;font-size:15px;font-weight:700;color:#007AFF;background:none;border:none;border-bottom:0.5px solid rgba(0,0,0,.1);cursor:pointer;font-family:var(--font)">รวมทุกวิชาในตารางเดียว</button>'+
+        '<button id="'+id+'-combined" style="width:100%;padding:15px;font-size:15px;font-weight:700;color:var(--ac,#007AFF);background:none;border:none;border-bottom:0.5px solid rgba(0,0,0,.1);cursor:pointer;font-family:var(--font)">รวมทุกวิชาในตารางเดียว</button>'+
         '<button id="'+id+'-bysubject" style="width:100%;padding:15px;font-size:15px;font-weight:600;color:#1d1d1f;background:none;border:none;border-bottom:0.5px solid rgba(0,0,0,.1);cursor:pointer;font-family:var(--font)">แยกหน้าตามวิชา</button>'+
         '<button id="'+id+'-manage" style="width:100%;padding:15px;font-size:15px;font-weight:700;color:#dc2626;background:none;border:none;border-bottom:0.5px solid rgba(0,0,0,.1);cursor:pointer;font-family:var(--font)">ประกาศ มส / จัดการรายชื่อที่ประกาศแล้ว</button>'+
         '<button id="'+id+'-cancel" style="width:100%;padding:15px;font-size:15px;font-weight:400;color:#8e8e93;background:none;border:none;cursor:pointer;font-family:var(--font)">ยกเลิก</button>'+
@@ -6335,11 +6343,11 @@ async function openMobileScores(){
   const sorted=[...list].sort((a,b)=>(parseInt(a.grade_level)||0)-(parseInt(b.grade_level)||0)
     ||String(a.subject_name).localeCompare(String(b.subject_name),'th')||(parseInt(a.room)||0)-(parseInt(b.room)||0));
   const groups=[]; sorted.forEach(sub=>{ const g=String(sub.grade_level); let G=groups.find(x=>x.g===g); if(!G){G={g,items:[]};groups.push(G);} G.items.push(sub); });
-  const cardOf=sub=>`<div onclick="mscOpen('${sub.id}')" style="background:#fff;border-radius:18px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 10px rgba(0,0,0,.06);border-left:5px solid #007AFF">
+  const cardOf=sub=>`<div onclick="mscOpen('${sub.id}')" style="background:#fff;border-radius:18px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 10px rgba(0,0,0,.06);border-left:5px solid var(--ac,#007AFF)">
       <div style="flex:1"><div style="font-weight:700;font-size:14.5px">${esc(sub.subject_name)}</div>
       <div style="font-size:12px;color:#6e6e73">${esc(sub.subject_code)} · ${grm(sub.grade_level,sub.room)}</div></div>
       <span style="color:#c7c7cc;font-size:20px">›</span></div>`;
-  const body=list.length?groups.map(G=>`<div style="font-weight:800;font-size:14px;color:#007AFF;margin:6px 4px 8px">${esc(GRADE_PREFIX+G.g)} <span style="font-weight:600;color:#8e8e93;font-size:12px">· ${G.items.length} วิชา</span></div>`+G.items.map(cardOf).join('')).join('')
+  const body=list.length?groups.map(G=>`<div style="font-weight:800;font-size:14px;color:var(--ac,#007AFF);margin:6px 4px 8px">${esc(GRADE_PREFIX+G.g)} <span style="font-weight:600;color:#8e8e93;font-size:12px">· ${G.items.length} วิชา</span></div>`+G.items.map(cardOf).join('')).join('')
     :`<div style="text-align:center;color:#6e6e73;padding:40px 10px">ยังไม่มีรายวิชาในภาคเรียนนี้</div>`;
   _mchkShell({text:'คะแนน',back:'closeMobileCheck()'},'เลือกวิชาเพื่อดูคะแนน (ดูอย่างเดียว)',body,_mTabBar('sc'));
 }
@@ -6395,12 +6403,12 @@ function _mscRender(){
   if(m.filter==='sort') rows=[...all].sort((a,b)=>b.val-a.val);
   const avg=all.length?(all.reduce((a,r)=>a+r.val,0)/all.length).toFixed(1):'-';
   const nLow=all.filter(r=>r.low).length;
-  const seg=(k,lb)=>`<button onclick="mscTab('${k}')" style="flex:1;border:none;border-radius:10px;padding:8px 0;font:700 13px var(--font);${m.tab===k?'background:#fff;color:#007AFF;box-shadow:0 1px 4px rgba(0,0,0,.12)':'background:none;color:#6e6e73'}">${lb}</button>`;
-  const chip=(k,lb)=>`<button onclick="mscFilter('${k}')" style="border:none;border-radius:99px;padding:5px 12px;font:600 12px var(--font);white-space:nowrap;${m.filter===k?'background:#007AFF;color:#fff':'background:#fff;color:#6e6e73'}">${lb}</button>`;
+  const seg=(k,lb)=>`<button onclick="mscTab('${k}')" style="flex:1;border:none;border-radius:10px;padding:8px 0;font:700 13px var(--font);${m.tab===k?'background:#fff;color:var(--ac,#007AFF);box-shadow:0 1px 4px rgba(0,0,0,.12)':'background:none;color:#6e6e73'}">${lb}</button>`;
+  const chip=(k,lb)=>`<button onclick="mscFilter('${k}')" style="border:none;border-radius:99px;padding:5px 12px;font:600 12px var(--font);white-space:nowrap;${m.filter===k?'background:var(--ac,#007AFF);color:#fff':'background:#fff;color:#6e6e73'}">${lb}</button>`;
   const box=(v,lb,c)=>`<div style="flex:1;background:#fff;border-radius:14px;text-align:center;padding:6px 0;font-size:11px;color:#6e6e73;box-shadow:0 2px 8px rgba(0,0,0,.05)"><b style="display:block;font-size:17px;color:${c}">${v}</b>${lb}</div>`;
   const tag=r=>r.lv.lv==='ms'?'<span style="font-size:11px;font-weight:700;color:#fff;background:#ff3b30;border-radius:8px;padding:2px 7px">มส</span>':r.lv.lv==='risk'?'<span style="font-size:11px;font-weight:700;color:#fff;background:#ff9500;border-radius:8px;padding:2px 7px">เสี่ยง มส</span>':'';
   const card=r=>{
-    const head=`<div style="display:flex;align-items:center;gap:8px"><span style="width:26px;height:26px;border-radius:50%;background:#eef4ff;color:#007AFF;font-size:11.5px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${r.i+1}</span>
+    const head=`<div style="display:flex;align-items:center;gap:8px"><span style="width:26px;height:26px;border-radius:50%;background:#eef4ff;color:var(--ac,#007AFF);font-size:11.5px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${r.i+1}</span>
       <span style="flex:1;font-size:14px">${esc(r.s.student_name)}</span>${tag(r)}`;
     if(m.tab==='exam'){
       // 0 = ได้ 0 หรือยังไม่ได้กรอก (ระบบเก็บช่องว่างเป็น 0 แยกไม่ได้) → เน้นแดงเข้มเหมือนหน่วยที่ได้ 0
@@ -6425,14 +6433,14 @@ function _mscRender(){
 }
 // สไตล์เดียวกับแอป: หัวไล่สีฟ้า + การ์ดวันที่เด่น, การ์ดขาวมุมโค้ง, ปุ่มกลางเต็มความกว้าง
 const _MB='display:block;width:100%;border:none;border-radius:14px;padding:13px;font:700 15px var(--font);text-align:center;cursor:pointer';
-const _MB_P=_MB+';background:linear-gradient(135deg,#34aadc,#007AFF);color:#fff;box-shadow:0 4px 14px rgba(0,122,255,.3)';
-const _MB_S=_MB+';background:rgba(0,122,255,.08);color:#007AFF';
+const _MB_P=_MB+';background:linear-gradient(135deg,#34aadc,var(--ac,#007AFF));color:#fff;box-shadow:0 4px 14px rgba(0,122,255,.3)';
+const _MB_S=_MB+';background:rgba(0,122,255,.08);color:var(--ac,#007AFF)';
 const _MB_G=_MB+';background:rgba(52,199,89,.12);color:#1f8a3b';
 function _mchkDateCard(){
   const d=new Date();
   const wd=d.toLocaleDateString('th-TH',{weekday:'long'}), mo=d.toLocaleDateString('th-TH',{month:'long',year:'numeric'});
   return `<div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);border-radius:16px;padding:8px 14px 8px 8px;margin-top:12px">
-    <div style="width:52px;height:56px;border-radius:12px;background:#fff;color:#007AFF;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.12)">
+    <div style="width:52px;height:56px;border-radius:12px;background:#fff;color:var(--ac,#007AFF);display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.12)">
       <div style="font-size:10px;font-weight:700;color:#ff3b30;line-height:1">${d.toLocaleDateString('th-TH',{month:'short'})}</div>
       <div style="font-size:26px;font-weight:800;line-height:1.05">${d.getDate()}</div></div>
     <div style="font-size:16px;font-weight:800;line-height:1.3">${wd} ที่ ${d.getDate()} ${mo}</div></div>`;
@@ -6446,7 +6454,7 @@ function _mchkShell(title,sub,body,foot,headExtra){
     if(!$('mchk-css')){ const st=document.createElement('style'); st.id='mchk-css';
       st.textContent='#mchk>div>*{max-width:680px;margin-left:auto!important;margin-right:auto!important}';
       document.head.appendChild(st); } }
-  el.innerHTML=`<div style="background:linear-gradient(135deg,#34aadc,#007AFF);color:#fff;padding:14px 16px 16px;border-radius:0 0 24px 24px;box-shadow:0 6px 20px rgba(0,122,255,.25)">
+  el.innerHTML=`<div style="background:linear-gradient(135deg,#34aadc,var(--ac,#007AFF));color:#fff;padding:14px 16px 16px;border-radius:0 0 24px 24px;box-shadow:0 6px 20px rgba(0,122,255,.25)">
       <div style="display:flex;align-items:center;gap:8px">
         <button onclick="${title.back}" style="border:none;background:rgba(255,255,255,.2);color:#fff;width:34px;height:34px;border-radius:50%;font-size:20px;line-height:1">‹</button>
         <div style="flex:1;min-width:0"><div style="font-weight:800;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title.text}</div>
@@ -7250,7 +7258,7 @@ async function _callGeminiStream(history,context,apiKey,onChunk,retry=0){
 function _aiWelcomeHTML(){
   const cards=[
     {
-      bg:'linear-gradient(145deg,#007AFF,#0A84FF)',
+      bg:'linear-gradient(145deg,var(--ac,#007AFF),#0A84FF)',
       shadow:'rgba(0,122,255,.35)',
       svg:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="8" y1="9" x2="10" y2="9"/>',
       title:'สรุปผลการเรียนทุกวิชา',sub:'ภาพรวมเกรดและอัตราผ่าน',
