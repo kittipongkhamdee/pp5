@@ -1159,13 +1159,14 @@ const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
     // โลโก้ base64 ใหญ่ (~250 kB) — แคชไว้ในเครื่อง 6 ชม. ไม่ดึงทุกครั้งที่เปิดหน้า (ลด egress ของ Supabase)
     // ใช้คีย์เดียวกับแอปหลัก (cfgc_logo_url) เพื่อแชร์แคชข้ามหน้าในเบราว์เซอร์เดียวกัน
     let val;
-    try{ const c=JSON.parse(localStorage.getItem('cfgc_logo_url')||'null'); if(c&&Date.now()-c.ts<6*3600*1000) val=c.v; else val=undefined; }catch(e){ val=undefined; }
+    try{ const c=JSON.parse(localStorage.getItem('cfgc_logo_url')||'null'); if(c&&c.v&&Date.now()-c.ts<6*3600*1000) val=c.v; else val=undefined; }catch(e){ val=undefined; }
     if(val===undefined){
       const res=await fetch(`${SUPABASE_URL}/rest/v1/config?key=eq.logo_url&select=value&limit=1`,
         {headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY}});
       const rows=await res.json();
       val=rows?.[0]?.value??null;
-      try{ localStorage.setItem('cfgc_logo_url',JSON.stringify({v:val,ts:Date.now()})); }catch(e){}
+      // ไม่จำค่าว่าง — ถ้าโหลดพลาด (เช่นเน็ตหลุด) ครั้งหน้าจะลองใหม่ แทนที่โลโก้จะหายไป 6 ชม.
+      if(val) try{ localStorage.setItem('cfgc_logo_url',JSON.stringify({v:val,ts:Date.now()})); }catch(e){}
     }
     if(val){
       const img=document.getElementById('login-school-logo');
@@ -1174,6 +1175,8 @@ const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
       img.onerror=()=>{img.style.display='none';svg.style.display='block';wrap.classList.remove('has-logo')};
       img.src=val;img.style.display='block';svg.style.display='none';
       wrap.classList.add('has-logo');
+      const al=document.getElementById('app-logo');
+      if(al){const im=new Image();im.alt='โลโก้โรงเรียน';im.style.cssText='width:34px;height:34px;object-fit:contain;display:block';im.onload=()=>{al.innerHTML='';al.appendChild(im)};im.src=val}
     }
   }catch(e){}
 })();
@@ -1638,19 +1641,10 @@ async function renderHome(){
   </div>
   ${isNoSchool(today)?`<div style="background:rgba(148,163,184,.14);border:1px solid rgba(148,163,184,.35);border-radius:var(--radius);padding:12px 16px;margin-bottom:12px;font-size:14px;color:var(--txt2)">🏖️ วันนี้เป็น<b style="color:var(--txt)">${esc(holidayName(today))}</b> — ไม่ต้องเช็คชื่อ</div>`:''}
   <div id="home-streak"></div>
-  <div class="home-stats-row" style="display:flex;gap:10px;margin-bottom:20px">
-    <div style="flex:1;background:var(--card);border:1px solid var(--sep);border-radius:var(--radius);padding:14px 12px;text-align:center">
-      <div style="font-size:24px;font-weight:800;color:var(--primary)">${acts.length}</div>
-      <div style="font-size:12px;color:var(--txt2);margin-top:3px">กิจกรรม</div>
-    </div>
-    <div style="flex:1;background:var(--card);border:1px solid var(--sep);border-radius:var(--radius);padding:14px 12px;text-align:center">
-      <div style="font-size:24px;font-weight:800;color:#059669">${S.students.length}</div>
-      <div style="font-size:12px;color:var(--txt2);margin-top:3px">นักเรียน</div>
-    </div>
-    <div style="flex:1;background:var(--card);border:1px solid var(--sep);border-radius:var(--radius);padding:14px 12px;text-align:center">
-      <div style="font-size:24px;font-weight:800;color:#D97706">${S.classes.length}</div>
-      <div style="font-size:12px;color:var(--txt2);margin-top:3px">ห้องเรียน</div>
-    </div>
+  <div class="home-stats-row" style="display:flex;justify-content:space-around;background:var(--card);border:1px solid var(--sep);border-radius:var(--radius);padding:8px 10px;margin-bottom:16px;font-size:13px;color:var(--txt2)">
+    <span><b style="color:var(--txt);font-size:15px">${acts.length}</b> กิจกรรม</span>
+    <span><b style="color:var(--txt);font-size:15px">${S.students.length}</b> นักเรียน</span>
+    <span><b style="color:var(--txt);font-size:15px">${S.classes.length}</b> ห้องเรียน</span>
   </div>`;
   if(!acts.length){
     html+=`<div style="background:var(--card);border:1px solid var(--sep);border-radius:var(--radius);padding:40px 24px;text-align:center;color:var(--txt2)">ยังไม่มีกิจกรรม<br><small style="font-size:13px;color:var(--txt3)">กด Admin → เพิ่มกิจกรรม</small></div>`;
