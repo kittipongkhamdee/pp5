@@ -923,12 +923,17 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div class="rpt-more-menu" id="rpt-more-menu">
-          <button id="rpt-tab-servicecheck" onclick="selectRptMore('servicecheck')">เช็คบำเพ็ญประโยชน์</button>
-          <button id="rpt-tab-service" onclick="selectRptMore('service')">บำเพ็ญประโยชน์</button>
+          <div style="padding:8px 16px 4px;font-size:11px;font-weight:700;color:var(--txt3);letter-spacing:.3px">สถิติ</div>
+          <button id="rpt-tab-trend" onclick="selectRptMore('trend')">แนวโน้ม % มา</button>
+          <button id="rpt-tab-percent" onclick="selectRptMore('percent')">ร้อยละ</button>
+          <button id="rpt-tab-streak" onclick="selectRptMore('streak')">ขาดต่อเนื่อง</button>
+          <button id="rpt-tab-monthly" onclick="selectRptMore('monthly')">รายเดือน (เสนอผู้บริหาร)</button>
+          <div style="padding:8px 16px 4px;font-size:11px;font-weight:700;color:var(--txt3);letter-spacing:.3px">รายบุคคล / รายกิจกรรม</div>
           <button id="rpt-tab-activity" onclick="selectRptMore('activity')">รายกิจกรรม</button>
           <button id="rpt-tab-student" onclick="selectRptMore('student')">รายนักเรียน</button>
-          <button id="rpt-tab-streak" onclick="selectRptMore('streak')">ขาดต่อเนื่อง</button>
-          <button id="rpt-tab-percent" onclick="selectRptMore('percent')">ร้อยละ</button>
+          <div style="padding:8px 16px 4px;font-size:11px;font-weight:700;color:var(--txt3);letter-spacing:.3px">บำเพ็ญประโยชน์</div>
+          <button id="rpt-tab-servicecheck" onclick="selectRptMore('servicecheck')">เช็คบำเพ็ญประโยชน์</button>
+          <button id="rpt-tab-service" onclick="selectRptMore('service')">บำเพ็ญประโยชน์</button>
         </div>
       </div>
     </div>
@@ -2321,8 +2326,8 @@ async function onCkDateChange(){
 async function onCkSessionChange(s){S.ckSession=s;await renderCheckin()}
 
 // ─── REPORT ────────────────────────────────────────────────────────────────
-const RPT_MORE_TABS=['servicecheck','service','activity','student','streak','percent'];
-const RPT_MORE_LABELS={servicecheck:'เช็คบำเพ็ญประโยชน์',service:'บำเพ็ญประโยชน์',activity:'รายกิจกรรม',student:'รายนักเรียน',streak:'ขาดต่อเนื่อง',percent:'ร้อยละ'};
+const RPT_MORE_TABS=['servicecheck','service','activity','student','streak','percent','trend','monthly'];
+const RPT_MORE_LABELS={trend:'แนวโน้ม % มา',monthly:'รายเดือน',servicecheck:'เช็คบำเพ็ญประโยชน์',service:'บำเพ็ญประโยชน์',activity:'รายกิจกรรม',student:'รายนักเรียน',streak:'ขาดต่อเนื่อง',percent:'ร้อยละ'};
 function renderReport(){
   const tabs=$('rpt-tabs');if(tabs)tabs.style.display='flex';
   ['school','class','leave'].forEach(t=>$('rpt-tab-'+t)?.classList.toggle('active',S.rptTab===t));
@@ -2342,6 +2347,8 @@ function renderReport(){
   else if(S.rptTab==='service')renderRptService();
   else if(S.rptTab==='servicecheck')renderRptServiceCheck();
   else if(S.rptTab==='leave')renderRptLeave();
+  else if(S.rptTab==='trend')renderRptTrend();
+  else if(S.rptTab==='monthly')renderRptMonthly();
   else renderRptPercent();
 }
 function switchRptTab(tab){
@@ -2367,6 +2374,70 @@ function toggleRptMoreMenu(e){
     if(parseInt(m.style.left)>maxLeft)m.style.left=Math.max(8,maxLeft)+'px';
   }
   m.classList.toggle('open',willOpen);
+}
+
+// ── รายงานแนวโน้ม % มา (รายวัน, ไม่นับวันหยุด) + เปรียบเทียบรายห้อง ──
+function _actOpts(sel){ return '<option value="">-- เลือกกิจกรรม --</option>'+S.activities.map(a=>`<option value="${a.id}"${sel==a.id?' selected':''}>${esc(a.name)}</option>`).join(''); }
+function _clsStat(rows){
+  const stuCls={}; S.students.forEach(x=>stuCls[x.id]=`${x.grade_level}_${x.room}`);
+  const by={}; rows.forEach(r=>{ const k=stuCls[r.student_id]; if(!k)return; const o=by[k]=by[k]||{p:0,n:0,a:0}; o.n++; if(r.status==='present')o.p++; if(r.status==='absent')o.a++; });
+  return S.classes.map(c=>{ const k=`${c.grade_level}_${c.room}`, o=by[k]||{p:0,n:0,a:0}; return {c,k,...o,pct:o.n?Math.round(o.p/o.n*100):null}; });
+}
+async function renderRptTrend(){
+  if(!S.rptTrendDays) S.rptTrendDays=30;
+  $('rpt-content').innerHTML=`<div class="filter-row"><select class="ios-select" onchange="S.rptTrendActId=+this.value||null;renderRptTrend()">${_actOpts(S.rptTrendActId)}</select></div>
+    <div class="filter-row"><select class="ios-select" onchange="S.rptTrendDays=+this.value;renderRptTrend()">${[14,30,60,90].map(d=>`<option value="${d}"${S.rptTrendDays==d?' selected':''}>${d} วันล่าสุด</option>`).join('')}</select></div>
+    <div id="rpt-trend-body">${S.rptTrendActId?'<div class="loading-text">กำลังโหลด...</div>':'<div class="empty-state">เลือกกิจกรรมเพื่อดูแนวโน้ม</div>'}</div>`;
+  if(!S.rptTrendActId) return;
+  try{
+    const since=new Date(); since.setDate(since.getDate()-S.rptTrendDays); const sinceStr=since.toISOString().split('T')[0];
+    const rows=(await qAllA(()=>sb.from('activity_attend').select('student_id,date,status').eq('activity_id',S.rptTrendActId).eq('session','morning').gte('date',sinceStr))).filter(r=>!isNoSchool(r.date));
+    if(!rows.length){ $('rpt-trend-body').innerHTML='<div class="empty-state">ไม่มีข้อมูลในช่วงที่เลือก</div>'; return; }
+    const byD={}; rows.forEach(r=>{ const o=byD[r.date]=byD[r.date]||{p:0,n:0}; o.n++; if(r.status==='present')o.p++; });
+    const days=Object.keys(byD).sort(), pts=days.map(d=>({d,pct:Math.round(byD[d].p/byD[d].n*100)}));
+    const W=Math.max(320,pts.length*22), Hh=160, x=i=>18+i*((W-30)/Math.max(1,pts.length-1)), y=v=>Hh-14-(v/100)*(Hh-30);
+    const col=v=>v>=80?'#059669':v>=50?'#D97706':'#DC2626';
+    const svg=`<svg viewBox="0 0 ${W} ${Hh}" width="100%" style="min-width:${Math.min(W,600)}px;display:block">
+      <line x1="10" x2="${W}" y1="${y(80)}" y2="${y(80)}" stroke="#d1d5db" stroke-dasharray="4 4"/><text x="${W-4}" y="${y(80)-4}" font-size="10" fill="#9ca3af" text-anchor="end">80%</text>
+      <polyline fill="none" stroke="#3B82F6" stroke-width="2.5" points="${pts.map((p,i)=>x(i)+','+y(p.pct)).join(' ')}"/>
+      ${pts.map((p,i)=>`<circle cx="${x(i)}" cy="${y(p.pct)}" r="3.5" fill="${col(p.pct)}"><title>${thDate(p.d)}: ${p.pct}%</title></circle>`).join('')}
+      <text x="18" y="${Hh-1}" font-size="10" fill="#9ca3af">${thDate(days[0])}</text><text x="${W-4}" y="${Hh-1}" font-size="10" fill="#9ca3af" text-anchor="end">${thDate(days[days.length-1])}</text></svg>`;
+    const avg=Math.round(pts.reduce((a,p)=>a+p.pct,0)/pts.length);
+    const cls=_clsStat(rows).filter(c=>c.pct!=null).sort((a,b)=>b.pct-a.pct);
+    $('rpt-trend-body').innerHTML=`<div class="school-report">
+      <div style="font-size:13px;color:var(--txt2);margin-bottom:8px">เฉลี่ย <b style="color:${col(avg)}">${avg}%</b> · ${pts.length} วันที่เช็ค (ไม่นับวันหยุด) · รอบเช้า</div>
+      <div style="overflow-x:auto">${svg}</div>
+      <div style="font-weight:700;margin:16px 0 8px">เปรียบเทียบรายห้อง</div>
+      ${cls.map(c=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px"><span style="width:44%">${classLabel(c.c.grade_level,c.c.room)}</span>
+        <div style="flex:1;height:8px;border-radius:8px;background:var(--card2)"><div style="height:100%;width:${c.pct}%;border-radius:8px;background:${col(c.pct)}"></div></div><b style="width:42px;text-align:right;color:${col(c.pct)}">${c.pct}%</b></div>`).join('')}
+    </div>`;
+  }catch(e){ $('rpt-trend-body').innerHTML='<div class="empty-state">โหลดไม่สำเร็จ: '+esc(e.message)+'</div>'; }
+}
+// ── รายงานรายเดือนเสนอผู้บริหาร (รายห้อง + ช่องลงชื่อ) ──
+async function renderRptMonthly(){
+  if(!S.rptMonth) S.rptMonth=todayStr().slice(0,7);
+  $('rpt-content').innerHTML=`<div class="filter-row"><select class="ios-select" onchange="S.rptMonthActId=+this.value||null;renderRptMonthly()">${_actOpts(S.rptMonthActId)}</select></div>
+    <div class="filter-row"><input type="month" class="ios-input" value="${S.rptMonth}" onchange="S.rptMonth=this.value;renderRptMonthly()"></div>
+    <div id="rpt-month-body">${S.rptMonthActId?'<div class="loading-text">กำลังโหลด...</div>':'<div class="empty-state">เลือกกิจกรรมและเดือน</div>'}</div>`;
+  if(!S.rptMonthActId) return;
+  try{
+    const [y,m]=S.rptMonth.split('-').map(Number), from=S.rptMonth+'-01', to=S.rptMonth+'-'+String(new Date(y,m,0).getDate()).padStart(2,'0');
+    const rows=(await qAllA(()=>sb.from('activity_attend').select('student_id,date,status').eq('activity_id',S.rptMonthActId).eq('session','morning').gte('date',from).lte('date',to))).filter(r=>!isNoSchool(r.date));
+    const nDays=new Set(rows.map(r=>r.date)).size;
+    const cls=_clsStat(rows);
+    const act=S.activities.find(a=>a.id==S.rptMonthActId);
+    const mName=new Date(y,m-1,1).toLocaleDateString('th-TH',{month:'long',year:'numeric'});
+    const tot=cls.reduce((a,c)=>({p:a.p+c.p,n:a.n+c.n,a:a.a+c.a}),{p:0,n:0,a:0});
+    const html=`<div class="sr-header"><div class="sr-school">${esc(S.schoolName||'')}</div><div class="sr-title">รายงานการเข้าร่วม${esc(act?.name||'กิจกรรม')} ประจำเดือน${mName}</div><div class="sr-sub">วันที่เช็คชื่อ ${nDays} วัน (ไม่นับวันหยุด) · รอบเช้า</div></div>
+      <table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr>${['ชั้น','จำนวนครั้งที่เช็ค','มา','ขาด','% มา'].map(h=>`<th style="border:1px solid #999;padding:6px;background:#f3f4f6">${h}</th>`).join('')}</tr></thead>
+      <tbody>${cls.map(c=>`<tr><td style="border:1px solid #999;padding:6px">${classLabel(c.c.grade_level,c.c.room)}</td><td style="border:1px solid #999;padding:6px;text-align:center">${c.n||'-'}</td><td style="border:1px solid #999;padding:6px;text-align:center">${c.n?c.p:'-'}</td><td style="border:1px solid #999;padding:6px;text-align:center">${c.n?c.a:'-'}</td><td style="border:1px solid #999;padding:6px;text-align:center;font-weight:700">${c.pct==null?'-':c.pct+'%'}</td></tr>`).join('')}
+      <tr><td style="border:1px solid #999;padding:6px;font-weight:700">รวม</td><td style="border:1px solid #999;padding:6px;text-align:center">${tot.n}</td><td style="border:1px solid #999;padding:6px;text-align:center">${tot.p}</td><td style="border:1px solid #999;padding:6px;text-align:center">${tot.a}</td><td style="border:1px solid #999;padding:6px;text-align:center;font-weight:700">${tot.n?Math.round(tot.p/tot.n*100)+'%':'-'}</td></tr></tbody></table>
+      <div style="display:flex;justify-content:space-around;margin-top:56px;text-align:center;font-size:14px">
+        <div>ลงชื่อ ...................................<br>(...................................)<br>ผู้รายงาน</div>
+        <div>ลงชื่อ ...................................<br>(...................................)<br>ผู้อำนวยการโรงเรียน</div></div>`;
+    S._monthlyHtml=html;
+    $('rpt-month-body').innerHTML=`<button class="btn btn-blue btn-sm" style="margin-bottom:10px" onclick="_openPrintWin('รายงานรายเดือน',S._monthlyHtml)">🖨 พิมพ์ / PDF</button><div class="school-report">${html}</div>`;
+  }catch(e){ $('rpt-month-body').innerHTML='<div class="empty-state">โหลดไม่สำเร็จ: '+esc(e.message)+'</div>'; }
 }
 function selectRptMore(tab){
   const m=$('rpt-more-menu');if(m)m.classList.remove('open');
@@ -2854,7 +2925,10 @@ function _expBar(p,x,i){
   return`<div class="export-bar"><button class="exp-btn blue" onclick="${p}()" title="PDF">${pdfSvg}<span class="exp-lbl">PDF</span></button><button class="exp-btn green" onclick="${x}()" title="Excel">${xlSvg}<span class="exp-lbl">Excel</span></button><button class="exp-btn orange" onclick="${i}()" title="ภาพ">${imgSvg}<span class="exp-lbl">รูปภาพ</span></button></div>`;
 }
 function _pdfCss(){
-  return`@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
+  const fb=location.origin+'/assets/fonts/';
+  return`@font-face{font-family:'PP5 TH Sarabun';src:url('${fb}THSarabunNew.woff') format('woff');font-weight:400;size-adjust:110%}
+    @font-face{font-family:'PP5 TH Sarabun';src:url('${fb}THSarabunNew_bold.woff') format('woff');font-weight:700;size-adjust:110%}
+    body,body *{font-family:'PP5 TH Sarabun','TH Sarabun New',sans-serif!important}
     @page{size:A4 portrait;margin:0}
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:'Sarabun',sans-serif;color:#000;background:#fff;font-size:14px;padding:18mm 20mm}
