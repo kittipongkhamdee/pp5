@@ -705,6 +705,8 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
   background:var(--card2);font-family:var(--font);font-size:12px;font-weight:500;color:var(--txt2);cursor:pointer;
 }
 #admin-topbar-btn,#topbar #logout-btn{display:none!important}
+/* เลื่อนรายชื่อลง: ซ่อนแถวเลือกกิจกรรม/ชั้นเรียน ให้เห็นรายชื่อมากขึ้น — กลับมาแสดงเมื่อเลื่อนขึ้นถึงคนแรก */
+#ck-header.ck-compact #ck-act-sel,#ck-header.ck-compact #ck-class-sel{display:none}
 #top-menu{position:fixed;z-index:4000;right:12px;min-width:210px;background:var(--card);border:1px solid var(--sep);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.18);padding:6px;overflow:hidden}
 #top-menu button{display:flex;align-items:center;gap:10px;width:100%;border:none;background:none;padding:11px 12px;border-radius:10px;font:inherit;font-size:14.5px;color:var(--txt);cursor:pointer;text-align:left}
 #top-menu button:active{background:var(--card2)}
@@ -1892,6 +1894,19 @@ function _unifTodo(){
   return _filteredStudents().filter(s=>S.ckAttend[s.id]?.status==='present'&&!S.ckUnifChecks[String(s.id)]?.status);
 }
 // เมนูรวมมุมขวาบน (ธีม / ตั้งค่า / ออกจากระบบ) — ให้ชื่อระบบมีที่แสดงเต็มบนมือถือ
+// ซ่อน/แสดงแถวเลือกกิจกรรม+ชั้นเรียนตามการเลื่อนรายชื่อ (มีช่วงกันกระตุก: ซ่อนเมื่อเลื่อนเกิน 60px แสดงเมื่อกลับมาต่ำกว่า 8px)
+(function(){
+  const bind=()=>{
+    const list=document.getElementById('ck-list'),hd=document.getElementById('ck-header');if(!list||!hd)return;
+    list.addEventListener('scroll',()=>{
+      const y=list.scrollTop;
+      if(y>60)hd.classList.add('ck-compact');else if(y<8)hd.classList.remove('ck-compact');
+    },{passive:true});
+    // รายชื่อถูกวาดใหม่ (เปลี่ยนห้อง/วัน/กิจกรรม) แล้วกลับไปบนสุด → แสดงแถวเลือกคืน ไม่ให้ค้างซ่อนจนเปลี่ยนห้องไม่ได้
+    new MutationObserver(()=>{if(list.scrollTop<8)hd.classList.remove('ck-compact')}).observe(list,{childList:true});
+  };
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind);else bind();
+})();
 function _toggleTopMenu(ev){
   ev&&ev.stopPropagation();
   const ex=$('top-menu');if(ex){ex.remove();return}
