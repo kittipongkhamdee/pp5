@@ -263,6 +263,9 @@ html[data-theme="dark"] .ios-select,html[data-theme="dark"] .ios-input{backgroun
 .ck-dr{width:50px;height:36px;border:none;border-radius:18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;background:var(--card2);color:var(--txt2);border:1.5px dashed var(--sep)}
 .ck-dr.pass{background:#e0f5ea;color:#1f8a3b;border:none}
 .ck-dr.fail{background:var(--red);color:#fff;border:none}
+.ck-dr.todo{background:#fff7ed;color:#c2410c;border:1.5px solid #fb923c;animation:ckPulse 1.6s ease-in-out infinite}
+@keyframes ckPulse{50%{box-shadow:0 0 0 4px rgba(251,146,60,.25)}}
+#ck-unif-todo{position:sticky;top:0;z-index:5;background:#fff7ed;border:1px solid #fdba74;color:#9a3412;border-radius:12px;padding:8px 12px;margin-bottom:8px;font-size:13px;font-weight:600}
 .ck-dr.none{display:inline-block;background:none;border:none}
 .sb-btn{padding:5px 12px;border:none;border-radius:18px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .12s;background:var(--card2);color:var(--txt2)}
 @media(max-width:639px){.sb-btn{border-radius:50%;width:36px;height:36px;padding:0;font-size:11px;display:inline-flex;align-items:center;justify-content:center}}
@@ -701,6 +704,10 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
   flex-shrink:0;padding:5px 12px;border-radius:6px;border:1px solid var(--sep);
   background:var(--card2);font-family:var(--font);font-size:12px;font-weight:500;color:var(--txt2);cursor:pointer;
 }
+#admin-topbar-btn,#topbar #logout-btn{display:none!important}
+#top-menu{position:fixed;z-index:4000;right:12px;min-width:210px;background:var(--card);border:1px solid var(--sep);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.18);padding:6px;overflow:hidden}
+#top-menu button{display:flex;align-items:center;gap:10px;width:100%;border:none;background:none;padding:11px 12px;border-radius:10px;font:inherit;font-size:14.5px;color:var(--txt);cursor:pointer;text-align:left}
+#top-menu button:active{background:var(--card2)}
 #theme-btn,#admin-topbar-btn{
   flex-shrink:0;width:34px;height:34px;border-radius:9px;
   background:rgba(255,255,255,0.6);
@@ -847,7 +854,7 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
       </div>
     </div>
     <div id="topbar-clock"><div id="clock-date"></div><div id="clock-time">--:--:--</div></div>
-    <button id="theme-btn" onclick="PTheme.open()" title="ธีมและการแสดงผล" style="flex-shrink:0;width:34px;height:34px;border-radius:9px;border:1px solid var(--sep);background:var(--card2);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;font-size:16px">🎨</button>
+    <button id="more-btn" onclick="_toggleTopMenu(event)" title="เมนู" style="flex-shrink:0;width:36px;height:36px;border-radius:10px;border:1px solid var(--sep);background:var(--card2);color:var(--txt2);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;font-size:18px;font-weight:700">☰</button>
     <button id="admin-topbar-btn" onclick="nav('admin')" title="Admin" style="flex-shrink:0;width:34px;height:34px;border-radius:9px;border:1px solid var(--sep);background:var(--card2);color:var(--txt2);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;transition:background .15s,color .15s"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></button>
     <button class="logout-btn" onclick="doLogout()" id="logout-btn" style="display:none">ออกจากระบบ</button>
   </div>
@@ -1691,7 +1698,7 @@ async function renderHome(){
       const badge=done
         ?`<span style="font-size:9px;font-weight:700;color:#059669;background:#ECFDF5;border:1px solid #A7F3D0;border-radius:20px;padding:1px 8px;white-space:nowrap">✓ เช็คครบทุกห้องแล้ว</span>`
         :clsN>0
-          ?`<span onclick="event.stopPropagation();_showUncheckedRooms('${label}',${JSON.stringify([...sd.cls]).replace(/"/g,'&quot;')})" style="cursor:pointer;text-decoration:underline dotted;font-size:9px;font-weight:700;color:var(--primary,#3B82F6);background:#EFF6FF;border:1px solid #BFDBFE;border-radius:20px;padding:1px 8px;white-space:nowrap">${clsN}/${totalCls} ห้อง</span>`
+          ?`<span onclick="event.stopPropagation();_showUncheckedRooms('${label}',${JSON.stringify([...sd.cls]).replace(/"/g,'&quot;')})" style="cursor:pointer;font-size:11px;font-weight:700;color:var(--primary,#3B82F6);background:#EFF6FF;border:1px solid #BFDBFE;border-radius:20px;padding:4px 10px;white-space:nowrap">${clsN}/${totalCls} ห้อง · ดูที่ยังไม่เช็ค ›</span>`
           :`<span style="font-size:9px;font-weight:600;color:var(--txt3);background:var(--card2);border:1px solid var(--sep);border-radius:20px;padding:1px 8px;white-space:nowrap">ยังไม่เช็ค</span>`;
       return `<div style="display:flex;align-items:center;gap:6px;margin-top:3px">
         <span style="font-size:10px;font-weight:600;color:var(--txt3);min-width:22px">${label}</span>${badge}
@@ -1704,13 +1711,13 @@ async function renderHome(){
       const bars=a.has_evening
         ?`<div style="display:flex;flex-direction:column;gap:6px;margin-top:6px">${_bar('เช้า',ad.morning)}${_bar('บ่าย',ad.evening)}</div>`
         :`<div style="margin-top:6px">${_bar('เช้า',ad.morning)}</div>`;
-      html+=`<div class="card-row" onclick="quickCheckin(${a.id})">
+      html+=`<div class="card-row" style="cursor:default">
         <div class="card-row-icon" style="background:linear-gradient(135deg,${actBg(a.id)}55,${actBg(a.id)}18);color:${actBg(a.id)}">${actEmoji(a.name)}</div>
         <div class="card-row-info">
           <div class="card-row-name">${esc(a.name)}</div>
           ${bars}
         </div>
-        <svg class="card-row-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M9 18l6-6-6-6"/></svg>
+        <button onclick="quickCheckin(${a.id})" style="flex-shrink:0;align-self:center;border:none;border-radius:12px;padding:9px 12px;background:var(--primary,#2563EB);color:#fff;font:inherit;font-size:13px;font-weight:700;cursor:pointer">เช็คชื่อ ›</button>
       </div>`;
     });
     html+=`</div>`;
@@ -1819,7 +1826,7 @@ function renderCkList(){
   const[gl,r]=S.ckFilter.split('_');stus=stus.filter(s=>String(s.grade_level)===gl&&String(s.room)===r);
   if(!stus.length){$('ck-list').innerHTML=`<div class="empty-state">ไม่พบนักเรียน</div>`;return}
   const hol=isNoSchool(S.ckDate)?`<div style="background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35);color:#92400e;border-radius:14px;padding:10px 14px;margin-bottom:10px;font-size:13.5px">⚠ วันที่เลือกเป็น<b>${esc(holidayName(S.ckDate))}</b> — ปกติไม่ต้องเช็คชื่อ (ถ้าเช็ค ข้อมูลวันนี้จะไม่ถูกนับในรายงานขาดต่อเนื่อง/ร้อยละ)</div>`:'';
-  const cards=hol+stus.map((s,i)=>_stuCardHtml(s,i+1,unifOn)).join('');
+  const cards=hol+'<div id="ck-unif-todo" style="display:none"></div>'+stus.map((s,i)=>_stuCardHtml(s,i+1,unifOn)).join('');
   const saveBtn=`<div class="ck-save-wrap">
     <button class="ck-save-btn" onclick="saveCkAndGoHome()">✓ บันทึก</button>
     <div class="ck-save-hint">ข้อมูลบันทึกอัตโนมัติทุกครั้งที่กด · กดเพื่อกลับหน้าหลัก</div>
@@ -1841,7 +1848,7 @@ function _stuCardHtml(s,num,unifOn){
   // ปุ่มสถานะปุ่มเดียว แตะวน มา → ลา → ขาด (แบบหน้าเช็คชื่อมือถือของ ปพ.5) + ปุ่ม 👕 ข้างกัน แตะสลับ ผ่าน/ไม่ผ่าน (เฉพาะคนที่มา)
   const stLbl={present:'มา',late:'ลา',absent:'ขาด'}[st]||'แตะ';
   const uSt=uchk?.status||'';
-  const unifPill=unifOn?(hasUnif?`<button class="ck-dr ${uSt}" onclick="cycleUnif('${s.id}')" title="การแต่งกาย">👕${uSt==='pass'?'✓':uSt==='fail'?'✗':''}</button>`:'<span class="ck-dr none"></span>'):'';
+  const unifPill=unifOn?(hasUnif?`<button class="ck-dr ${uSt||'todo'}" onclick="cycleUnif('${s.id}')" title="การแต่งกาย">👕${uSt==='pass'?'✓':uSt==='fail'?'✗':'?'}</button>`:'<span class="ck-dr none"></span>'):'';
   const ckBtns=`<div class="card-ck-btns"><button class="ck-pill ${st||'none'}" onclick="cycleStatus('${s.id}')">${stLbl}</button>${unifPill}</div>`;
   const chevron='';
 
@@ -1874,7 +1881,29 @@ function _stuCardHtml(s,num,unifOn){
   </div>`;
 }
 
-function saveCkAndGoHome(){
+// นักเรียนที่ "มา" แต่ยังไม่ได้ตรวจการแต่งกาย (เฉพาะเมื่อรอบนี้เปิดตรวจแต่งกาย)
+function _unifTodo(){
+  if(!_unifCheckActive()||!S.ckFilter)return [];
+  return _filteredStudents().filter(s=>S.ckAttend[s.id]?.status==='present'&&!S.ckUnifChecks[String(s.id)]?.status);
+}
+// เมนูรวมมุมขวาบน (ธีม / ตั้งค่า / ออกจากระบบ) — ให้ชื่อระบบมีที่แสดงเต็มบนมือถือ
+function _toggleTopMenu(ev){
+  ev&&ev.stopPropagation();
+  const ex=$('top-menu');if(ex){ex.remove();return}
+  const r=$('more-btn').getBoundingClientRect();
+  const m=document.createElement('div');m.id='top-menu';m.style.top=(r.bottom+6)+'px';
+  m.innerHTML=`<button onclick="_toggleTopMenu();PTheme.open()">🎨 ธีมและการแสดงผล</button>
+    <button onclick="_toggleTopMenu();nav('admin')">⚙️ ตั้งค่า (Admin)</button>
+    ${S.user?`<button onclick="_toggleTopMenu();doLogout()" style="color:var(--red)">⎋ ออกจากระบบ</button>`:''}`;
+  document.body.appendChild(m);
+  setTimeout(()=>document.addEventListener('click',function h(){$('top-menu')?.remove();document.removeEventListener('click',h)}),0);
+}
+function saveCkAndGoHome(force){
+  const todo=_unifTodo();
+  if(!force&&todo.length){
+    _showConfirm('ยังไม่ได้ตรวจการแต่งกาย',`มีนักเรียนที่มา ${todo.length} คน ยังไม่ได้ตรวจการแต่งกาย — กลับไปตรวจก่อน หรือออกเลย`,'ออกเลย','#d97706',()=>saveCkAndGoHome(true));
+    return;
+  }
   let checked=0;
   if(S.ckFilter){
     const[gl,r]=S.ckFilter.split('_');
@@ -1935,6 +1964,8 @@ function updateCkStats(){
   $('ck-stat-absent').textContent=absent;
   const unifEl=$('ck-stat-unif-fail');
   const unifActive=_unifCheckActive();
+  const todo=$('ck-unif-todo');
+  if(todo){const n=_unifTodo().length;todo.style.display=unifActive&&n?'':'none';todo.textContent=`👕 ยังไม่ได้ตรวจการแต่งกาย ${n} คน (คนที่มา) — แตะปุ่ม 👕? หรือ "ผ่านทั้งหมด"`}
   if(unifEl){
     unifEl.textContent=unifFail;
     const box=unifEl.closest('.stat-box');
@@ -1944,11 +1975,13 @@ function updateCkStats(){
   }
 }
 
-// แตะวนสถานะ: (ยังไม่เช็ค) → มา → ลา → ขาด → มา … — กันกดรัวระหว่างรอบันทึก
+// แตะวนสถานะ: (ยังไม่เช็ค) → มา → ลา → ขาด → (ยังไม่เช็ค) … — กันกดรัวระหว่างรอบันทึก
 const _ckBusy={};
 async function cycleStatus(stuId){
   if(_ckBusy[stuId])return;_ckBusy[stuId]=1;
-  try{const cur=S.ckAttend[stuId]?.status;const nx=cur==='present'?'late':cur==='late'?'absent':'present';await setStatus(stuId,nx)}
+  try{const cur=S.ckAttend[stuId]?.status;
+    // ขาด → แตะอีกครั้ง = ล้างค่า (setStatus ส่งสถานะเดิมซ้ำ = ลบ)
+    const nx=cur==='present'?'late':cur==='late'?'absent':cur==='absent'?'absent':'present';await setStatus(stuId,nx)}
   finally{delete _ckBusy[stuId]}
 }
 async function cycleUnif(stuId){
