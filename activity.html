@@ -254,6 +254,16 @@ html[data-theme="dark"] .ios-select,html[data-theme="dark"] .ios-input{backgroun
 .stu-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .stu-meta{font-size:12px;color:var(--txt3);margin-top:1px}
 .stu-btns{display:flex;gap:5px;flex-shrink:0}
+.ck-pill{min-width:56px;height:36px;padding:0 12px;border:none;border-radius:18px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;color:#fff;transition:transform .1s}
+.ck-pill:active,.ck-dr:active{transform:scale(.92)}
+.ck-pill.none{background:var(--card2);color:var(--txt2);border:1.5px dashed var(--sep)}
+.ck-pill.present{background:var(--green);box-shadow:0 3px 10px rgba(5,150,105,.3)}
+.ck-pill.late{background:#d97706;box-shadow:0 3px 10px rgba(217,119,6,.3)}
+.ck-pill.absent{background:var(--red);box-shadow:0 3px 10px rgba(220,38,38,.3)}
+.ck-dr{width:50px;height:36px;border:none;border-radius:18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;background:var(--card2);color:var(--txt2);border:1.5px dashed var(--sep)}
+.ck-dr.pass{background:#e0f5ea;color:#1f8a3b;border:none}
+.ck-dr.fail{background:var(--red);color:#fff;border:none}
+.ck-dr.none{display:inline-block;background:none;border:none}
 .sb-btn{padding:5px 12px;border:none;border-radius:18px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .12s;background:var(--card2);color:var(--txt2)}
 @media(max-width:639px){.sb-btn{border-radius:50%;width:36px;height:36px;padding:0;font-size:11px;display:inline-flex;align-items:center;justify-content:center}}
 .sb-btn:active{transform:scale(0.93)}
@@ -1823,24 +1833,21 @@ function _stuCardHtml(s,num,unifOn){
   const hasUnif=unifOn&&st==='present';
   const unifDone=hasUnif&&uchk?.status;
   const cardClass=unifDone?(uchk.status==='fail'?'ck-fail':'ck-done'):(st==='late'||st==='absent'?'ck-other':'');
-  const collapsed=(unifDone&&uchk?.status==='pass')?' collapsed':'';
+  const collapsed='';
 
   // unif badge (shown when done, beside chevron)
   const unifBadge=uchk?.status?`<span class="stu-cbadge ${uchk.status==='pass'?'unif-pass':'unif-fail'}" style="flex-shrink:0">${uchk.status==='pass'?'ผ่าน':'ไม่ผ่าน'}</span>`:'';
 
-  // chevron (only when has uniform section to expand/collapse)
-  const chevron=hasUnif?`<span class="stu-chevron" onclick="event.stopPropagation();toggleCkCard('stu-${s.id}')">▾</span>`:'';
-
-  // attendance buttons — always inline in header
-  const ckBtns=`<div class="card-ck-btns">
-    <button class="sb-btn present${st==='present'?' active':''}" onclick="setStatus('${s.id}','present')">มา</button>
-    <button class="sb-btn late${st==='late'?' active':''}" onclick="setStatus('${s.id}','late')">ลา</button>
-    <button class="sb-btn absent${st==='absent'?' active':''}" onclick="setStatus('${s.id}','absent')">ขาด</button>
-  </div>`;
+  // ปุ่มสถานะปุ่มเดียว แตะวน มา → ลา → ขาด (แบบหน้าเช็คชื่อมือถือของ ปพ.5) + ปุ่ม 👕 ข้างกัน แตะสลับ ผ่าน/ไม่ผ่าน (เฉพาะคนที่มา)
+  const stLbl={present:'มา',late:'ลา',absent:'ขาด'}[st]||'แตะ';
+  const uSt=uchk?.status||'';
+  const unifPill=unifOn?(hasUnif?`<button class="ck-dr ${uSt}" onclick="cycleUnif('${s.id}')" title="การแต่งกาย">👕${uSt==='pass'?'✓':uSt==='fail'?'✗':''}</button>`:'<span class="ck-dr none"></span>'):'';
+  const ckBtns=`<div class="card-ck-btns"><button class="ck-pill ${st||'none'}" onclick="cycleStatus('${s.id}')">${stLbl}</button>${unifPill}</div>`;
+  const chevron='';
 
   // uniform section (only if มา + setting enabled)
   let unifSec='';
-  if(hasUnif){
+  if(hasUnif&&uchk?.status==='fail'){
     const viols=S.unifViolations.filter(v=>v.is_active);
     const selViols=(uchk?.viols||[]).map(v=>v.id);
     const chips=viols.map(v=>`<div class="card-vchip${selViols.includes(v.id)?' on':''}" onclick="setCkUnifViol('${s.id}',${v.id},this)">${esc(v.name)}</div>`).join('');
@@ -1848,13 +1855,7 @@ function _stuCardHtml(s,num,unifOn){
     const curNote=uchk?.note||'';
     const noteInput=uchk?.status==='fail'?`<textarea class="card-note-input" rows="1" placeholder="หมายเหตุเพิ่มเติม (ไม่บังคับ)" oninput="setCkUnifNote('${s.id}',this)">${esc(curNote)}</textarea>`:'';
     unifSec=`<div class="card-unif-sec">
-      <div class="card-unif-hd">
-        <span class="card-unif-lbl">การแต่งกาย</span>
-        <div class="card-unif-btns">
-          <button class="ub pass${uchk?.status==='pass'?' active':''}" onclick="setCkUnifStatus('${s.id}','pass')">✓</button>
-          <button class="ub fail${uchk?.status==='fail'?' active':''}" onclick="setCkUnifStatus('${s.id}','fail')">✗</button>
-        </div>
-      </div>${violWrap}${noteInput}
+      <div class="card-unif-hd"><span class="card-unif-lbl">👕 แต่งกายไม่ผ่าน — เลือกสาเหตุ</span></div>${violWrap}${noteInput}
     </div>`;
   }
 
@@ -1868,9 +1869,8 @@ function _stuCardHtml(s,num,unifOn){
         </div>
         <div class="stu-card-actions">${ckBtns}${chevron}</div>
       </div>
-      ${unifBadge?`<div class="stu-card-bot">${unifBadge}</div>`:''}
     </div>
-    ${hasUnif?`<div class="card-btns-wrap">${unifSec}</div>`:''}
+    ${unifSec?`<div class="card-btns-wrap">${unifSec}</div>`:''}
   </div>`;
 }
 
@@ -1944,6 +1944,18 @@ function updateCkStats(){
   }
 }
 
+// แตะวนสถานะ: (ยังไม่เช็ค) → มา → ลา → ขาด → มา … — กันกดรัวระหว่างรอบันทึก
+const _ckBusy={};
+async function cycleStatus(stuId){
+  if(_ckBusy[stuId])return;_ckBusy[stuId]=1;
+  try{const cur=S.ckAttend[stuId]?.status;const nx=cur==='present'?'late':cur==='late'?'absent':'present';await setStatus(stuId,nx)}
+  finally{delete _ckBusy[stuId]}
+}
+async function cycleUnif(stuId){
+  const k='u'+stuId;if(_ckBusy[k])return;_ckBusy[k]=1;
+  try{const cur=S.ckUnifChecks[String(stuId)]?.status;await setCkUnifStatus(stuId,cur==='pass'?'fail':'pass')}
+  finally{delete _ckBusy[k]}
+}
 async function setStatus(stuId,status){
   if(!S.ckActivityId)return;
   const ex=S.ckAttend[stuId];
