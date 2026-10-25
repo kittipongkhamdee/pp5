@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Mockup เลือกธีม</title>
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700;800&family=Prompt:wght@400;600;700&family=Kanit:wght@400;600;700&family=Noto+Sans+Thai:wght@400;600;800&family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Mitr:wght@400;500;600&family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700;800&family=Anuphan:wght@400;500;600&family=Prompt:wght@400;600;700&family=Kanit:wght@400;600;700&family=Noto+Sans+Thai:wght@400;600;800&family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Mitr:wght@400;500;600&family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--c1:#34aadc;--c2:#007AFF;--soft:#eef4ff;--font:Sarabun;--fs:15px;--bg:#f2f4f8;--card:#fff;--txt:#1d1d1f;--mut:#6e6e73;--line:#e5e5ea}
 .dark{--bg:#121417;--card:#1e2126;--txt:#f2f2f7;--mut:#a1a1aa;--line:#2c2f36;--soft:rgba(255,255,255,.08)}
@@ -10,19 +10,19 @@ h1{font-size:20px;text-align:center;margin:4px 0}.sub{text-align:center;color:#6
 .row{display:flex;gap:22px;flex-wrap:wrap;justify-content:center;align-items:flex-start}.cap{text-align:center;font-weight:700;margin:8px 0}
 .note{font-size:12px;color:#6e6e73;max-width:310px;margin:6px auto 0;line-height:1.5}
 .phone{width:310px;height:640px;border-radius:36px;border:9px solid #1d1d1f;overflow:hidden;display:flex;flex-direction:column;background:var(--bg);color:var(--txt);font-family:var(--font),sans-serif;font-size:var(--fs);transition:background .2s}
-.hd{background:linear-gradient(135deg,var(--c1),var(--c2));color:#fff;padding:14px;border-radius:0 0 22px 22px}
-.hd b{font-size:1.07em}.hd small{display:block;font-size:.75em;opacity:.9}
+.hd{background:linear-gradient(135deg,var(--c2),var(--c1));color:#fff;padding:14px;border-radius:0 0 22px 22px}
+.hd b{font-size:1.07em;font-family:var(--head,inherit)}.hd{border-bottom:4px solid var(--gold,transparent)}.stat b{font-family:var(--head,inherit)}.hd small{display:block;font-size:.75em;opacity:.9}
 .body{flex:1;overflow:auto;padding:10px 12px}
 .card{background:var(--card);border-radius:16px;padding:12px;margin-bottom:8px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
 .lbl{font-size:.8em;font-weight:700;color:var(--mut);margin:2px 0 8px}
-.sw{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.sw{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .sw button{height:44px;border-radius:12px;border:3px solid transparent;cursor:pointer;color:#fff;font:700 11px Sarabun}
 .sw button.on{border-color:var(--txt)}
 .fonts button,.sizes button,.modes button{display:block;width:100%;text-align:left;padding:9px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:var(--txt);margin-bottom:6px;cursor:pointer;font-size:1em}
 .fonts button.on,.sizes button.on,.modes button.on{border-color:var(--c2);background:var(--soft)}
 .sizes,.modes{display:flex;gap:6px}.sizes button,.modes button{text-align:center;margin:0}
 .btn{display:block;width:100%;border:none;border-radius:14px;padding:11px;font-weight:700;font-family:inherit;font-size:.95em;text-align:center;cursor:pointer}
-.bp{background:linear-gradient(135deg,var(--c1),var(--c2));color:#fff}.bs{background:var(--soft);color:var(--c2)}
+.bp{background:linear-gradient(135deg,var(--c2),var(--c1));color:#fff}.bs{background:var(--soft);color:var(--c2)}
 .stu{display:flex;align-items:center;gap:8px;background:var(--card);border-radius:14px;padding:8px 10px;margin-bottom:6px}
 .no{width:26px;height:26px;border-radius:50%;font-size:.72em;font-weight:700;display:flex;align-items:center;justify-content:center;background:var(--soft);color:var(--c2)}
 .nm{flex:1;font-size:.88em}.nm small{display:block;color:var(--mut);font-size:.8em}
@@ -33,14 +33,14 @@ h1{font-size:20px;text-align:center;margin:4px 0}.sub{text-align:center;color:#6
 .lock{display:flex;align-items:center;gap:8px;font-size:.85em;margin-top:8px}
 .tg{width:40px;height:24px;border-radius:12px;background:#34c759;position:relative;flex:none}.tg:after{content:'';position:absolute;right:2px;top:2px;width:20px;height:20px;border-radius:50%;background:#fff}
 </style></head><body>
-<h1>ตัวอย่าง: ครูเลือกธีมเองได้</h1>
+<h1>ตัวอย่าง: ครูเลือกธีมเองได้ (ชุดสีเดียวกับเว็บโรงเรียน)</h1>
 <div class="sub">กดเลือกสี / ฟอนต์ / ขนาด / โหมดในหน้าจอ ① ได้จริง — หน้าจอ ② ③ เปลี่ยนตามทันที</div>
 <div class="row">
 
 <div><div class="cap">① ตั้งค่า › ธีมของฉัน</div>
 <div class="phone" id="p1"><div class="hd"><b>🎨 ธีมของฉัน</b><small>เปลี่ยนเฉพาะที่ครูเห็น ไม่กระทบคนอื่น</small></div>
 <div class="body">
-<div class="card"><div class="lbl">สีหลัก</div><div class="sw" id="sw"></div></div>
+<div class="card"><div class="lbl">ชุดสี (สีหลัก + สีเน้น แบบเว็บโรงเรียน)</div><div class="sw" id="sw"></div></div>
 <div class="card"><div class="lbl">รูปแบบตัวอักษร</div><div class="fonts" id="fonts"></div></div>
 <div class="card"><div class="lbl">ขนาดตัวอักษร</div><div class="sizes" id="sizes"></div></div>
 <div class="card"><div class="lbl">โหมด</div><div class="modes" id="modes"></div></div>
@@ -63,10 +63,10 @@ h1{font-size:20px;text-align:center;margin:4px 0}.sub{text-align:center;color:#6
 <div class="note">สีสถานะ มา/ลา/ขาด (เขียว/ส้ม/แดง) คงที่ทุกธีม เพื่อไม่ให้สับสน — เปลี่ยนเฉพาะสีหัว ปุ่ม ตัวเลข และฟอนต์</div></div>
 
 <div><div class="cap">③ แอดมิน › ธีมเริ่มต้นของโรงเรียน</div>
-<div class="phone" style="--c1:#34aadc;--c2:#007AFF;--font:Sarabun;--fs:15px;--bg:#f2f4f8;--card:#fff;--txt:#1d1d1f;--mut:#6e6e73;--line:#e5e5ea;--soft:#eef4ff"><div class="hd"><b>⚙ ธีมเริ่มต้นของโรงเรียน</b><small>สำหรับผู้ดูแลระบบ</small></div>
+<div class="phone" style="--c1:#146b3c;--c2:#0d5c33;--gold:#f5c518;--font:Anuphan;--head:Prompt;--fs:15px;--bg:#f2f4f8;--card:#fff;--txt:#1d1d1f;--mut:#6e6e73;--line:#e5e5ea;--soft:#e0f3e5"><div class="hd"><b>⚙ ธีมเริ่มต้นของโรงเรียน</b><small>สำหรับผู้ดูแลระบบ</small></div>
 <div class="body"><div class="card adm">
-<div class="r"><span>สีหลัก</span><b style="color:#007AFF">● ฟ้า</b></div>
-<div class="r"><span>ฟอนต์</span><b>Sarabun</b></div>
+<div class="r"><span>ชุดสี</span><b style="color:#0d5c33">● เขียว-เหลือง</b></div>
+<div class="r"><span>ฟอนต์</span><b>Prompt + Anuphan</b></div>
 <div class="r"><span>ขนาดตัวอักษร</span><b>กลาง</b></div>
 <div class="r" style="border:none"><span>โหมด</span><b>สว่าง</b></div>
 <div class="lock"><span class="tg"></span>อนุญาตให้ครูเปลี่ยนธีมเองได้</div>
@@ -78,16 +78,16 @@ h1{font-size:20px;text-align:center;margin:4px 0}.sub{text-align:center;color:#6
 
 </div>
 <script>
-const C=[['ฟ้า','#34aadc','#007AFF','#eef4ff'],['เขียว','#34c759','#1f8a3b','#e8f8ec'],['ม่วง','#af52de','#5856d6','#f1eefe'],['ชมพู','#ff6b9d','#e0306f','#ffeef4'],['ส้ม','#ffb340','#f57c00','#fff4e0'],['แดง','#ff6b6b','#d32f2f','#ffeeee'],['เขียวน้ำทะเล','#2dd4bf','#0f766e','#e0f5f1'],['กรมท่า','#3b5998','#1e3a8a','#e8edf8']];
-const F=['Sarabun','Prompt','Kanit','Noto Sans Thai','IBM Plex Sans Thai','Mitr','Chakra Petch'];
+const C=[['เขียว-เหลือง','#146b3c','#0d5c33','#e0f3e5','#f5c518'],['น้ำเงิน-ทอง','#2a7be8','#0b2a5b','#e6eefb','#f2c14e'],['เขียวน้ำทะเล-ส้ม','#2fb6c9','#0b4f5c','#dcf1f4','#f59e42'],['ม่วง-ทอง','#9068ec','#3b2480','#ece5fb','#f2c14e'],['แดงเลือดหมู-ทอง','#d9485a','#7a1620','#fbe4e6','#f2c14e'],['ฟ้า (ปพ.5)','#34aadc','#007AFF','#eef4ff','#ff9500']];
+const F=[['Prompt + Anuphan (แบบเว็บโรงเรียน)','Prompt','Anuphan'],['Sarabun','Sarabun','Sarabun'],['Kanit + Sarabun','Kanit','Sarabun'],['Noto Sans Thai','Noto Sans Thai','Noto Sans Thai'],['IBM Plex Sans Thai','IBM Plex Sans Thai','IBM Plex Sans Thai'],['Mitr + Anuphan','Mitr','Anuphan'],['Chakra Petch','Chakra Petch','Chakra Petch']];
 const S=[['เล็ก','13.5px'],['กลาง','15px'],['ใหญ่','17px'],['ใหญ่มาก','19px']];
 const M=[['☀ สว่าง',0],['🌙 มืด',1]];
 const st={c:0,f:0,s:1,m:0};
 const ps=[document.getElementById('p1'),document.getElementById('p2')];
-function apply(){const c=C[st.c];ps.forEach(p=>{p.style.setProperty('--c1',c[1]);p.style.setProperty('--c2',c[2]);p.style.setProperty('--font',`'${F[st.f]}'`);p.style.setProperty('--fs',S[st.s][1]);p.classList.toggle('dark',!!st.m);if(!st.m)p.style.setProperty('--soft',c[3]);else p.style.removeProperty('--soft')});draw()}
+function apply(){const c=C[st.c];ps.forEach(p=>{p.style.setProperty('--c1',c[1]);p.style.setProperty('--c2',c[2]);p.style.setProperty('--font',`'${F[st.f][2]}'`);p.style.setProperty('--head',`'${F[st.f][1]}'`);p.style.setProperty('--gold',c[4]);p.style.setProperty('--fs',S[st.s][1]);p.classList.toggle('dark',!!st.m);if(!st.m)p.style.setProperty('--soft',c[3]);else p.style.removeProperty('--soft')});draw()}
 function draw(){
- sw.innerHTML=C.map((c,i)=>`<button class="${i==st.c?'on':''}" style="background:linear-gradient(135deg,${c[1]},${c[2]})" onclick="st.c=${i};apply()">${c[0]}</button>`).join('');
- fonts.innerHTML=F.map((f,i)=>`<button class="${i==st.f?'on':''}" style="font-family:'${f}'" onclick="st.f=${i};apply()">${f} — กขค ๑๒๓ เช็คชื่อ</button>`).join('');
+ sw.innerHTML=C.map((c,i)=>`<button class="${i==st.c?'on':''}" style="background:linear-gradient(135deg,${c[2]},${c[1]});box-shadow:inset 0 -8px 0 ${c[4]}" onclick="st.c=${i};apply()">${c[0]}</button>`).join('');
+ fonts.innerHTML=F.map((f,i)=>`<button class="${i==st.f?'on':''}" onclick="st.f=${i};apply()"><b style="font-family:'${f[1]}'">${f[0]}</b><br><span style="font-family:'${f[2]}';font-size:.85em">เช็คชื่อนักเรียน ๑๒๓</span></button>`).join('');
  sizes.innerHTML=S.map((s,i)=>`<button class="${i==st.s?'on':''}" style="font-size:${s[1]}" onclick="st.s=${i};apply()">${s[0]}</button>`).join('');
  modes.innerHTML=M.map((m,i)=>`<button class="${i==st.m?'on':''}" onclick="st.m=${i};apply()">${m[0]}</button>`).join('');
 }
