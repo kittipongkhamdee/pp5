@@ -16,11 +16,12 @@ h1{font-size:20px;text-align:center;margin:4px 0}.sub{text-align:center;color:#6
 .cal i{font-style:normal;font-size:9px;color:#ff3b30;font-weight:700}.cal b{font-size:22px;line-height:1}
 .body{flex:1;overflow:hidden;padding:10px 12px}
 .card{background:#fff;border-radius:16px;padding:12px;margin-bottom:8px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
-.stat{display:flex;gap:6px;margin-bottom:8px}.stat div{flex:1;background:#fff;border-radius:12px;text-align:center;padding:6px 0;font-size:10.5px;color:#6e6e73;box-shadow:0 2px 8px rgba(0,0,0,.05)}.stat b{display:block;font-size:17px}
+.stat{display:flex;gap:6px;margin-bottom:8px}.stat div{flex:1;min-width:0;background:#fff;border-radius:12px;text-align:center;padding:6px 0;font-size:10.5px;color:#6e6e73;box-shadow:0 2px 8px rgba(0,0,0,.05)}.stat b{display:block;font-size:17px}
 .stu{display:flex;align-items:center;gap:8px;background:#fff;border-radius:14px;padding:8px 10px;margin-bottom:6px;box-shadow:0 1px 6px rgba(0,0,0,.05)}
 .no{width:26px;height:26px;border-radius:50%;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
 .nm{flex:1;font-size:13px}.nm small{display:block;color:#8e8e93;font-size:10.5px}
 .pill{width:56px;height:34px;border-radius:17px;border:none;font:700 13px Sarabun;color:#fff}
+.dr{width:46px;height:34px;border-radius:17px;border:none;font:700 12px Sarabun;flex:none}.dr.ok{background:#e0f5ea;color:#1f8a3b}.dr.bad{background:#ff3b30;color:#fff}.dr.none{background:none}
 .tab{display:flex;background:rgba(255,255,255,.95);border-top:1px solid #e5e5ea}.tab div{flex:1;text-align:center;padding:8px 0 10px;font-size:10.5px;color:#8e8e93}.tab .on{color:#007AFF;font-weight:800}.tab i{display:block;font-style:normal;font-size:17px}
 .btn{display:block;width:100%;border:none;border-radius:14px;padding:11px;font:700 14px Sarabun;text-align:center}
 .bp{background:linear-gradient(135deg,#34aadc,#007AFF);color:#fff;box-shadow:0 4px 14px rgba(0,122,255,.3)}
@@ -46,18 +47,19 @@ h1{font-size:20px;text-align:center;margin:4px 0}.sub{text-align:center;color:#6
 <div class="note">หัวไล่สีฟ้า + การ์ดปฏิทินแบบ ปพ.5 · การ์ดกิจกรรมมีแถบความคืบหน้าห้องที่เช็คแล้ว</div></div>
 
 <div><div class="cap">② เช็คชื่อ</div>
-<div class="phone"><div class="hd"><div class="t"><span class="ic">‹</span><div><b>กิจกรรมเข้าแถว · ม.1</b><small>25 คน · แตะเพื่อเลือก มา / ลา / ขาด</small></div></div>
+<div class="phone"><div class="hd"><div class="t"><span class="ic">‹</span><div><b>กิจกรรมเข้าแถว · ม.1</b><small>25 คน · แตะสถานะ / แตะ 👕 การแต่งกาย</small></div></div>
 <div class="seg"><span class="on">เช้า</span><span>บ่าย</span></div></div>
 <div class="body">
-<div class="stat"><div><b style="color:#34c759">22</b>มา</div><div><b style="color:#ff9500">1</b>ลา</div><div><b style="color:#ff3b30">2</b>ขาด</div></div>
-<div class="stu"><span class="no" style="background:#e8f8ec;color:#34c759">1</span><span class="nm">ด.ช.ณัฐวุฒิ ฉัตรเงิน<small>02413</small></span><button class="pill" style="background:#34c759">มา</button></div>
-<div class="stu"><span class="no" style="background:#ffecec;color:#ff3b30">2</span><span class="nm">ด.ช.จิรายุ แรงจบ<small>02426 · <b style="color:#ff3b30">ขาด 3 วันติด</b></small></span><button class="pill" style="background:#ff3b30">ขาด</button></div>
-<div class="stu"><span class="no" style="background:#fff4e0;color:#ff9500">3</span><span class="nm">ด.ช.นราธิป สิทธิ์ประโคน<small>02430 · ลาป่วย</small></span><button class="pill" style="background:#ff9500">ลา</button></div>
-<div class="stu"><span class="no" style="background:#e8f8ec;color:#34c759">4</span><span class="nm">ด.ช.รัฐศาสตร์ ขนวน<small>02433</small></span><button class="pill" style="background:#34c759">มา</button></div>
+<div class="stat"><div><b style="color:#34c759">22</b>มา</div><div><b style="color:#ff9500">1</b>ลา</div><div><b style="color:#ff3b30">2</b>ขาด</div><div><b style="color:#ff3b30">1</b>👕 ไม่ผ่าน</div></div>
+<div class="stu"><span class="no" style="background:#e8f8ec;color:#34c759">1</span><span class="nm">ด.ช.ณัฐวุฒิ ฉัตรเงิน<small>02413</small></span><button class="pill" style="background:#34c759">มา</button><button class="dr ok">👕✓</button></div>
+<div class="stu"><span class="no" style="background:#ffecec;color:#ff3b30">2</span><span class="nm">ด.ช.จิรายุ แรงจบ<small>02426 · <b style="color:#ff3b30">ขาด 3 วันติด</b></small></span><button class="pill" style="background:#ff3b30">ขาด</button><span class="dr none"></span></div>
+<div class="stu"><span class="no" style="background:#fff4e0;color:#ff9500">3</span><span class="nm">ด.ช.นราธิป สิทธิ์ประโคน<small>02430 · ลาป่วย</small></span><button class="pill" style="background:#ff9500">ลา</button><span class="dr none"></span></div>
+<div class="stu"><span class="no" style="background:#e8f8ec;color:#34c759">4</span><span class="nm">ด.ช.รัฐศาสตร์ ขนวน<small>02433 · <b style="color:#ff3b30">แต่งกายไม่ผ่าน</b></small></span><button class="pill" style="background:#34c759">มา</button><button class="dr bad">👕✗</button></div>
+<div class="stu"><span class="no" style="background:#e8f8ec;color:#34c759">5</span><span class="nm">ด.ช.ธนพัทธ์ จันอ่อน<small>02449</small></span><button class="pill" style="background:#34c759">มา</button><button class="dr ok">👕✓</button></div>
 </div>
-<div style="background:#fff;padding:8px 12px;display:flex;gap:8px;border-top:1px solid #e5e5ea"><button class="btn bg" style="flex:0 0 40%">✓ มาทั้งหมด</button><button class="btn bp" style="flex:1">บันทึก</button></div>
+<div style="background:#fff;padding:8px 12px;display:flex;gap:8px;border-top:1px solid #e5e5ea"><button class="btn bg" style="flex:1;font-size:13px">✓ มาทั้งหมด</button><button class="btn" style="flex:1;font-size:13px;background:#e0f5f1;color:#0f766e">👕 ผ่านทั้งหมด</button></div>
 <div class="tab"><div><i>⌂</i>หน้าหลัก</div><div class="on"><i>✓</i>เช็คชื่อ</div><div><i>▤</i>รายงาน</div><div><i>👕</i>แต่งกาย</div></div></div>
-<div class="note">ปุ่มเดียวต่อคนแบบหน้าเช็คชื่อ ปพ.5 (แตะวน มา → ลา → ขาด) แทน 3 ปุ่ม · ป้ายขาดติดกัน/ลาใต้ชื่อ</div></div>
+<div class="note">ปุ่มสถานะ: แตะวน มา → ลา → ขาด · ปุ่ม 👕 ขึ้นเฉพาะคนที่ "มา" แตะสลับ ✓ ผ่าน / ✗ ไม่ผ่าน · คนที่ลา/ขาดเว้นช่องไว้ให้ปุ่มตรงแนว · บันทึกทันทีทุกครั้งที่แตะเหมือนเดิม</div></div>
 
 <div><div class="cap">③ รายงาน</div>
 <div class="phone"><div class="hd"><div class="t"><span class="ic">▤</span><div><b>รายงาน</b><small>กิจกรรมเข้าแถว · ต.ค. 2569</small></div></div>
