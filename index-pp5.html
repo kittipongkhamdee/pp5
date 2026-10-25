@@ -2054,12 +2054,16 @@ async function pgDash(){
       const hasFinalExam = sum.some(r=>(parseFloat(r.final_score)||0)>0);
       return {...s,stats:{total,pass,recorded,avg,passPercent:pct,msCount,hasAttendance,hasEval,hasMidExam,hasFinalExam}};
     });
+    // สรุปบนแดชบอร์ด (การ์ดตัวเลข/มส/งานที่ค้าง) นับเฉพาะวิชาภาคที่เลือกดู ให้ตรงกับรายการวิชาด้านล่าง — เดิมนับทุกภาค จึงยังเห็นวิชาภาคเก่าหลังขึ้นภาคใหม่
+    const _dYr=String(S.config.academic_year||''), _dSm=String(S.config.semester||'');
+    const DS = window._dashShowAll ? S.subjects : S.subjects.filter(s=>!s.academic_year||(String(s.academic_year)===_dYr&&String(s.semester)===_dSm));
+    S._dashSubs = DS;
     // นับเฉพาะนักเรียนในห้องที่ครูสอน (ตาม grade_level+room ของวิชาที่มี)
-    const _teachRooms = new Set(S.subjects.map(s=>s.grade_level+'_'+s.room));
+    const _teachRooms = new Set(DS.map(s=>s.grade_level+'_'+s.room));
     S._dashStuTotal = allStu.filter(s=>_teachRooms.has(s.grade_level+'_'+s.room)).length;
 
     // ── คำนวณ % ผ่านเฉลี่ย และ มส รอติดตาม ──
-    const subjWithScore = S.subjects.filter(s=>s.stats.recorded>0);
+    const subjWithScore = DS.filter(s=>s.stats.recorded>0);
     let _dashPassAvg = 0, _dashMsCount = 0;
     if(subjWithScore.length){
       // % ผ่านรวม = นักเรียนที่ผ่านทุกวิชารวมกัน ÷ นักเรียนทั้งหมดในห้อง (ตรงกับ Report)
@@ -2080,7 +2084,7 @@ async function pgDash(){
       const attRowsBySub = {};
       allAtt.forEach(a=>{ (attRowsBySub[a.subject_id]=attRowsBySub[a.subject_id]||[]).push(a); });
       const msSet = new Set();
-      S.subjects.forEach(sub=>{
+      DS.forEach(sub=>{
         const totalH = attHeldHours(attRowsBySub[sub.id]||[]);
         const rKey = sub.grade_level+'_'+sub.room;
         const enrolledIds = stuIdsByRoom[rKey]||new Set();
@@ -2096,9 +2100,9 @@ async function pgDash(){
     S._dashMsCount = _dashMsCount;
     // งานที่ยังค้าง
     const _attSubjHas = new Set(allAtt.map(a=>a.subject_id));
-    S._dashNoScore  = S.subjects.filter(s=>s.stats.recorded===0);
-    S._dashNoAtt    = S.subjects.filter(s=>!_attSubjHas.has(s.id));
-    S._dashPartial  = S.subjects.filter(s=>s.stats.recorded>0&&s.stats.recorded<s.stats.total);
+    S._dashNoScore  = DS.filter(s=>s.stats.recorded===0);
+    S._dashNoAtt    = DS.filter(s=>!_attSubjHas.has(s.id));
+    S._dashPartial  = DS.filter(s=>s.stats.recorded>0&&s.stats.recorded<s.stats.total);
   }catch(e){
     S.subjects = S.subjects.map(s=>({...s,stats:{total:0,pass:0,recorded:0,avg:0,passPercent:0}}));
     S._dashPassAvg=0; S._dashMsCount=0;
@@ -2126,10 +2130,10 @@ async function pgDash(){
     </div>
   </div>
   <div class="sg">
-    <div class="sc"><div class="si" style="background:linear-gradient(135deg,#34aadc,var(--ac,#007AFF))"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div><div><div class="sv">${S.subjects.length}</div><div class="sl">รายวิชา</div></div></div>
+    <div class="sc"><div class="si" style="background:linear-gradient(135deg,#34aadc,var(--ac,#007AFF))"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div><div><div class="sv">${(S._dashSubs||S.subjects).length}</div><div class="sl">รายวิชา</div></div></div>
     <div class="sc"><div class="si" style="background:linear-gradient(135deg,#30d158,#34C759)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div><div class="sv" id="d-stu">...</div><div class="sl">นักเรียน</div></div></div>
-    <div class="sc"><div class="si" style="background:linear-gradient(135deg,#ff9f0a,#FF9500)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="20 6 9 17 4 12"/></svg></div><div><div class="sv">${S.subjects.filter(s=>s.stats.recorded>0).length}</div><div class="sl">วิชาที่มีคะแนน</div></div></div>
-    <div class="sc"><div class="si" style="background:linear-gradient(135deg,#bf5af2,#7c3aed)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div><div><div class="sv" style="${S._dashPassAvg>=80?'color:#16803d':S._dashPassAvg>=60?'color:#FF9500':'color:#FF3B30'}">${S.subjects.filter(s=>s.stats.recorded>0).length>0?S._dashPassAvg+'%':'—'}</div><div class="sl">% ผ่านเฉลี่ย</div></div></div>
+    <div class="sc"><div class="si" style="background:linear-gradient(135deg,#ff9f0a,#FF9500)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="20 6 9 17 4 12"/></svg></div><div><div class="sv">${(S._dashSubs||S.subjects).filter(s=>s.stats.recorded>0).length}</div><div class="sl">วิชาที่มีคะแนน</div></div></div>
+    <div class="sc"><div class="si" style="background:linear-gradient(135deg,#bf5af2,#7c3aed)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div><div><div class="sv" style="${S._dashPassAvg>=80?'color:#16803d':S._dashPassAvg>=60?'color:#FF9500':'color:#FF3B30'}">${(S._dashSubs||S.subjects).filter(s=>s.stats.recorded>0).length>0?S._dashPassAvg+'%':'—'}</div><div class="sl">% ผ่านเฉลี่ย</div></div></div>
     <div class="sc"><div class="si" style="background:${S._dashMsCount>0?'linear-gradient(135deg,#ff6b6b,#FF3B30)':' linear-gradient(135deg,#30d158,#34C759)'}"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div><div class="sv" style="${S._dashMsCount>0?'color:#FF3B30':'color:#16803d'}">${S._dashMsCount}</div><div class="sl">มส รอติดตาม</div></div></div>
 
   </div>
