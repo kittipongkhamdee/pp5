@@ -1416,7 +1416,12 @@ async function checkPin(){
 }
 
 // ─── Navigation ────────────────────────────────────────────────────────────
-function nav(page){
+function nav(page,force){
+  // ออกจากหน้าเช็คชื่อทางไหนก็ตาม (แถบล่าง/เมนู/ปุ่มบันทึก) ถามก่อนถ้ายังมีคนที่มาแต่ยังไม่ตรวจแต่งกาย
+  if(!force&&S.page==='checkin'&&page!=='checkin'){
+    const n=_unifTodo().length;
+    if(n){_showConfirm('ยังไม่ได้ตรวจการแต่งกาย',`มีนักเรียนที่มา ${n} คน ยังไม่ได้ตรวจการแต่งกาย — กลับไปตรวจก่อน หรือออกเลย`,'ออกเลย','#d97706',()=>nav(page,true));return}
+  }
   if(page==='admin'&&!_adminUnlocked){showPinModal();return}
   S.page=page;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -1911,7 +1916,7 @@ function saveCkAndGoHome(force){
     checked=classStus.filter(s=>S.ckAttend[s.id]).length;
   }
   toast(`✓ บันทึกเรียบร้อย${checked>0?' ('+checked+' คน)':''}`);
-  setTimeout(()=>nav('home'),420);
+  setTimeout(()=>nav('home',true),420);
 }
 
 function _unifCheckActive(){
