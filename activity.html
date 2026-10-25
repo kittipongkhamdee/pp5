@@ -1127,6 +1127,7 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
   <div class="leave-sheet-title">📋 มีนักเรียนแจ้งขอลา</div>
   <div class="leave-sheet-sub" id="leave-sheet-sub"></div>
   <div class="leave-list" id="leave-list"></div>
+  <div id="leave-mark-wrap"></div>
   <button class="leave-dismiss-btn" onclick="_hideLeaveAlert()">รับทราบ</button>
 </div>
 <div id="confirm-overlay" onclick="_hideConfirm()"></div>
@@ -1628,6 +1629,7 @@ async function renderHome(){
     </div>
   </div>
   ${isNoSchool(today)?`<div style="background:rgba(148,163,184,.14);border:1px solid rgba(148,163,184,.35);border-radius:var(--radius);padding:12px 16px;margin-bottom:12px;font-size:14px;color:var(--txt2)">🏖️ วันนี้เป็น<b style="color:var(--txt)">${esc(holidayName(today))}</b> — ไม่ต้องเช็คชื่อ</div>`:''}
+  <div id="home-streak"></div>
   <div class="home-stats-row" style="display:flex;gap:10px;margin-bottom:20px">
     <div style="flex:1;background:var(--card);border:1px solid var(--sep);border-radius:var(--radius);padding:14px 12px;text-align:center">
       <div style="font-size:24px;font-weight:800;color:var(--primary)">${acts.length}</div>
@@ -1674,7 +1676,7 @@ async function renderHome(){
       const badge=done
         ?`<span style="font-size:9px;font-weight:700;color:#059669;background:#ECFDF5;border:1px solid #A7F3D0;border-radius:20px;padding:1px 8px;white-space:nowrap">✓ เช็คครบทุกห้องแล้ว</span>`
         :clsN>0
-          ?`<span style="font-size:9px;font-weight:700;color:#3B82F6;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:20px;padding:1px 8px;white-space:nowrap">${clsN}/${totalCls} ห้อง</span>`
+          ?`<span onclick="event.stopPropagation();_showUncheckedRooms('${label}',${JSON.stringify([...sd.cls]).replace(/"/g,'&quot;')})" style="cursor:pointer;text-decoration:underline dotted;font-size:9px;font-weight:700;color:#3B82F6;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:20px;padding:1px 8px;white-space:nowrap">${clsN}/${totalCls} ห้อง</span>`
           :`<span style="font-size:9px;font-weight:600;color:var(--txt3);background:var(--card2);border:1px solid var(--sep);border-radius:20px;padding:1px 8px;white-space:nowrap">ยังไม่เช็ค</span>`;
       return `<div style="display:flex;align-items:center;gap:6px;margin-top:3px">
         <span style="font-size:10px;font-weight:600;color:var(--txt3);min-width:22px">${label}</span>${badge}
@@ -1700,8 +1702,39 @@ async function renderHome(){
   }
   html+=`</div>`;
   $('home-content').innerHTML=html;
+  _homeStreakBanner();
 }
 
+// แตะ "N/M ห้อง" บนหน้าแรก → บอกห้องที่ยังไม่เช็ค
+function _showUncheckedRooms(label,doneKeys){
+  const done=new Set(doneKeys||[]);
+  const left=S.classes.filter(c=>!done.has(`${c.grade_level}_${c.room}`)).map(c=>'• '+classLabel(c.grade_level,c.room));
+  _showWarn(`รอบ${label} ยังไม่เช็ค ${left.length} ห้อง`,left.join('\n')||'เช็คครบทุกห้องแล้ว');
+}
+// ป้ายบนหน้าแรก: นักเรียนขาด/ลาติดต่อกัน 3 วันเรียนขึ้นไป (14 วันล่าสุด ไม่นับวันหยุด) — แคช 10 นาทีลดการดึงข้อมูล
+async function _homeStreakBanner(){
+  const el=$('home-streak'); if(!el) return;
+  const acts=S.activities.filter(a=>a.is_active); if(!acts.length) return;
+  let res;
+  try{ const c=JSON.parse(sessionStorage.getItem('act_home_streak')||'null'); if(c&&Date.now()-c.ts<600000) res=c.res; }catch(e){}
+  if(!res){
+    const since=new Date(); since.setDate(since.getDate()-14);
+    const sinceStr=since.toISOString().split('T')[0];
+    res=[];
+    for(const a of acts){
+      try{
+        const rows=await qAllA(()=>sb.from('activity_attend').select('student_id,date,status').eq('activity_id',a.id).eq('session','morning').gte('date',sinceStr));
+        const dates=[...new Set(rows.map(r=>r.date))].filter(d=>!isNoSchool(d)).sort();
+        const m={}; rows.forEach(r=>{(m[r.student_id]=m[r.student_id]||{})[r.date]=r.status});
+        let n=0; Object.values(m).forEach(rec=>{ let k=0; for(let i=dates.length-1;i>=0;i--){ const st=rec[dates[i]]; if(st==='absent'||st==='late')k++; else break; } if(k>=3)n++; });
+        if(n) res.push({id:a.id,name:a.name,n});
+      }catch(e){}
+    }
+    try{ sessionStorage.setItem('act_home_streak',JSON.stringify({ts:Date.now(),res})); }catch(e){}
+  }
+  el.innerHTML=res.map(r=>`<div onclick="S.rptStreakActivityId=${r.id};S.rptStreakMin=3;S.rptTab='streak';nav('report')" style="cursor:pointer;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:var(--radius);padding:11px 14px;margin-bottom:10px;font-size:13.5px;color:#b91c1c;display:flex;align-items:center;gap:8px">
+    <span>⚠</span><span style="flex:1">${esc(r.name)}: ขาด/ลาติดต่อกัน 3 วันขึ้นไป <b>${r.n} คน</b></span><span>›</span></div>`).join('');
+}
 function quickCheckin(actId){
   S.ckActivityId=actId;S.ckDate=todayStr();
   const act=S.activities.find(a=>a.id==actId);
@@ -1971,7 +2004,7 @@ function _hideWarn(){
 async function checkActiveLeaves(gl,r){
   try{
     const today=todayStr();
-    const rows=await q(sb.from('leave_requests').select('id,leave_type,start_date,end_date,reason,photo_url,gps_lat,gps_lng,students(student_name)')
+    const rows=await q(sb.from('leave_requests').select('id,student_id,leave_type,start_date,end_date,reason,photo_url,gps_lat,gps_lng,students(student_name)')
       .eq('grade_level',gl).eq('room',r).lte('start_date',today).gte('end_date',today).order('created_at'));
     if(rows&&rows.length)_showLeaveAlert(rows,gl,r);
   }catch(e){/* เงียบไว้ ไม่ให้บั๊กจุดนี้ไปรบกวนการเช็คชื่อหลัก */}
@@ -1999,8 +2032,19 @@ function _showLeaveAlert(rows,gl,r){
       </div>
     </div>`;
   }).join('');
+  // ปุ่มบันทึกเป็น "ลา" ให้นักเรียนที่แจ้งลาวันนี้ (เฉพาะเมื่อเลือกกิจกรรมแล้ว และวันที่เช็คคือวันนี้)
+  const ids=[...new Set(rows.map(x=>x.student_id).filter(Boolean))];
+  const pend=ids.filter(id=>S.ckAttend?.[id]?.status!=='late');
+  const btnWrap=$('leave-mark-wrap');
+  if(btnWrap) btnWrap.innerHTML=(S.ckActivityId&&S.ckDate===todayStr()&&pend.length)
+    ?`<button class="btn btn-sm" style="width:100%;margin-bottom:8px;background:#d97706;color:#fff;border:none" onclick="_markLeaves(${JSON.stringify(pend).replace(/"/g,'&quot;')})">บันทึกเป็น "ลา" ให้ ${pend.length} คน</button>`:'';
   $('leave-overlay').classList.add('show');
   $('leave-sheet').classList.add('show');
+}
+async function _markLeaves(ids){
+  _hideLeaveAlert();
+  for(const id of ids){ try{ await setStatus(String(id),'late'); }catch(e){} }
+  toast('บันทึกเป็น "ลา" '+ids.length+' คนแล้ว');
 }
 function _hideLeaveAlert(){
   $('leave-overlay').classList.remove('show');
