@@ -1175,7 +1175,7 @@ function renderEplRatioTab(){
     <div class="ch"><div class="ct">2. สัดส่วนคะแนน ด้านความรู้ : ทักษะ/กระบวนการ : คุณธรรม</div></div>
     <div class="cb">
       <div class="ratio-row">
-        <span class="kpa-tag"><span class="kpa-dot" style="background:#007AFF"></span>ความรู้ (K)</span>
+        <span class="kpa-tag"><span class="kpa-dot" style="background:var(--ac,#007AFF)"></span>ความรู้ (K)</span>
         <input class="ratio-in" id="epl-k" value="${k}" oninput="_eplUpdKpa()">
         <span class="ratio-sep">:</span>
         <span class="kpa-tag"><span class="kpa-dot" style="background:#34C759"></span>ทักษะ (P)</span>
@@ -1627,7 +1627,7 @@ async function pgReport(){
     </select>
   </div>
   <div class="sg no-print">
-    <div class="sc"><div class="si" style="background:linear-gradient(135deg,#34aadc,#007AFF)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div><div class="sv">${stus.length}</div><div class="sl">นักเรียน</div></div></div>
+    <div class="sc"><div class="si" style="background:linear-gradient(135deg,#34aadc,var(--ac,#007AFF))"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div><div class="sv">${stus.length}</div><div class="sl">นักเรียน</div></div></div>
     <div class="sc"><div class="si" style="background:linear-gradient(135deg,#34c759,#28a745)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="20 6 9 17 4 12"/></svg></div><div><div class="sv">${pass}<small style="font-size:13px"> (${pct}%)</small></div><div class="sl">ผ่าน</div></div></div>
     <div class="sc"><div class="si" style="background:linear-gradient(135deg,#ff453a,#dc2626)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div><div><div class="sv">${stus.length-pass}</div><div class="sl">ไม่ผ่าน</div></div></div>
     <div class="sc"><div class="si" style="background:linear-gradient(135deg,#bf5af2,#9b59b6)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><div><div class="sv">${avg}</div><div class="sl">คะแนนเฉลี่ย</div></div></div>
