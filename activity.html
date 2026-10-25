@@ -1261,6 +1261,35 @@ async function loadStudents(){
 async function loadSchoolName(){
   try{const r=await q(sb.from('config').select('value').eq('key','school_name').limit(1));if(r&&r[0])S.schoolName=r[0].value}catch(e){}
 }
+// ── วันหยุด: เสาร์-อาทิตย์ อัตโนมัติ + วันหยุดที่แอดมินเพิ่ม (config 'activity_holidays' = [{date,name}]) ──
+// วันหยุดไม่ต้องเช็คชื่อ และไม่นับในรายงานขาดต่อเนื่อง/ร้อยละ
+async function loadHolidays(){
+  try{const r=await q(sb.from('config').select('value').eq('key','activity_holidays').limit(1));S.holidays=r&&r[0]?JSON.parse(r[0].value||'[]'):[]}
+  catch(e){S.holidays=[]}
+}
+function holidayName(d){
+  if(!d)return '';
+  const h=(S.holidays||[]).find(x=>x.date===d); if(h)return h.name||'วันหยุด';
+  const dow=new Date(d+'T00:00:00').getDay();
+  return dow===0?'วันอาทิตย์':dow===6?'วันเสาร์':'';
+}
+function isNoSchool(d){ return !!holidayName(d); }
+async function saveHolidays(){
+  S.holidays.sort((a,b)=>a.date.localeCompare(b.date));
+  await q(sb.from('config').upsert({key:'activity_holidays',value:JSON.stringify(S.holidays)},{onConflict:'key'}));
+}
+async function addHoliday(){
+  const d=$('hol-date')?.value, n=($('hol-name')?.value||'').trim();
+  if(!d){toast('เลือกวันที่ก่อน','er');return}
+  S.holidays=(S.holidays||[]).filter(x=>x.date!==d); S.holidays.push({date:d,name:n||'วันหยุด'});
+  try{loading(true);await saveHolidays();toast('เพิ่มวันหยุดแล้ว')}catch(e){toast('บันทึกไม่สำเร็จ: '+e.message,'er')}finally{loading(false)}
+  renderAdmin();
+}
+async function delHoliday(d){
+  S.holidays=(S.holidays||[]).filter(x=>x.date!==d);
+  try{loading(true);await saveHolidays();toast('ลบวันหยุดแล้ว')}catch(e){toast('บันทึกไม่สำเร็จ: '+e.message,'er')}finally{loading(false)}
+  renderAdmin();
+}
 async function loadUnifCheckSetting(){
   try{const r=await q(sb.from('config').select('value').eq('key','unif_check_sessions').limit(1));if(r&&r[0])S.unifCheckSessions=r[0].value||'';}catch(e){}
 }
@@ -1598,6 +1627,7 @@ async function renderHome(){
       <div id="hclock-date" style="font-size:12px;color:var(--txt2);margin-top:1px;white-space:nowrap"></div>
     </div>
   </div>
+  ${isNoSchool(today)?`<div style="background:rgba(148,163,184,.14);border:1px solid rgba(148,163,184,.35);border-radius:var(--radius);padding:12px 16px;margin-bottom:12px;font-size:14px;color:var(--txt2)">🏖️ วันนี้เป็น<b style="color:var(--txt)">${esc(holidayName(today))}</b> — ไม่ต้องเช็คชื่อ</div>`:''}
   <div class="home-stats-row" style="display:flex;gap:10px;margin-bottom:20px">
     <div style="flex:1;background:var(--card);border:1px solid var(--sep);border-radius:var(--radius);padding:14px 12px;text-align:center">
       <div style="font-size:24px;font-weight:800;color:var(--primary)">${acts.length}</div>
@@ -1740,7 +1770,8 @@ function renderCkList(){
   let stus=S.students;
   const[gl,r]=S.ckFilter.split('_');stus=stus.filter(s=>String(s.grade_level)===gl&&String(s.room)===r);
   if(!stus.length){$('ck-list').innerHTML=`<div class="empty-state">ไม่พบนักเรียน</div>`;return}
-  const cards=stus.map((s,i)=>_stuCardHtml(s,i+1,unifOn)).join('');
+  const hol=isNoSchool(S.ckDate)?`<div style="background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35);color:#92400e;border-radius:14px;padding:10px 14px;margin-bottom:10px;font-size:13.5px">⚠ วันที่เลือกเป็น<b>${esc(holidayName(S.ckDate))}</b> — ปกติไม่ต้องเช็คชื่อ (ถ้าเช็ค ข้อมูลวันนี้จะไม่ถูกนับในรายงานขาดต่อเนื่อง/ร้อยละ)</div>`:'';
+  const cards=hol+stus.map((s,i)=>_stuCardHtml(s,i+1,unifOn)).join('');
   const saveBtn=`<div class="ck-save-wrap">
     <button class="ck-save-btn" onclick="saveCkAndGoHome()">✓ บันทึก</button>
     <div class="ck-save-hint">ข้อมูลบันทึกอัตโนมัติทุกครั้งที่กด · กดเพื่อกลับหน้าหลัก</div>
@@ -2713,11 +2744,11 @@ async function renderRptPercent(){
     <div id="rpt-pct-body"><div class="loading-text">กำลังโหลด...</div></div>`;
   try{
     const _mk=()=>{
-      let qb=sb.from('activity_attend').select('student_id,status');
+      let qb=sb.from('activity_attend').select('student_id,status,date');
       if(S.rptPctActivityId) qb=qb.eq('activity_id',S.rptPctActivityId);
       return qb;
     };
-    const rows=await qAllA(_mk);
+    const rows=(await qAllA(_mk)).filter(r=>!isNoSchool(r.date)); // ไม่นับวันหยุด
     if(!rows.length){$('rpt-pct-body').innerHTML='<div class="empty-state">ยังไม่มีข้อมูลการเช็คชื่อ</div>';return}
     const stuMap={};
     rows.forEach(r=>{
@@ -3425,7 +3456,7 @@ async function renderRptStreak(){
     const rows=await qAllA(()=>sb.from('activity_attend').select('student_id,date,status').eq('activity_id',S.rptStreakActivityId).eq('session',useSession).gte('date',sinceStr).order('date',{ascending:true}));
     if(!rows.length){$('rpt-streak-body').innerHTML='<div class="empty-state">ไม่มีข้อมูลการเช็คชื่อ</div>';return}
     // หาวันที่มีการเช็คชื่อ (เรียงจากเก่า→ใหม่)
-    const checkedDates=[...new Set(rows.map(r=>r.date))].sort();
+    const checkedDates=[...new Set(rows.map(r=>r.date))].filter(d=>!isNoSchool(d)).sort();
     // สร้าง map: student_id → {date → status}
     const stuMap={};
     rows.forEach(r=>{
@@ -3505,6 +3536,20 @@ function renderAdmin(){
     h+=`</div>`;
   }
   h+=`</div>`;
+  const hols=(S.holidays||[]).filter(x=>x.date>=todayStr().slice(0,4)+'-01-01');
+  h+=`<div class="section" style="margin-top:16px">
+    <div class="admin-hd"><div class="admin-hd-title">วันหยุด</div></div>
+    <div class="card" style="padding:14px 16px">
+      <div style="font-size:12.5px;color:var(--txt2);margin-bottom:10px">เสาร์-อาทิตย์เป็นวันหยุดอัตโนมัติ · เพิ่มวันหยุดนักขัตฤกษ์/วันหยุดโรงเรียนที่นี่ (ไม่ต้องเช็คชื่อ และไม่นับในรายงานขาดต่อเนื่อง/ร้อยละ)</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <input type="date" class="ios-input" id="hol-date" style="flex:1;min-width:140px">
+        <input type="text" class="ios-input" id="hol-name" placeholder="ชื่อวันหยุด เช่น วันปิยมหาราช" style="flex:2;min-width:160px">
+        <button class="btn btn-blue btn-sm" onclick="addHoliday()">+ เพิ่ม</button>
+      </div>
+      ${hols.length?hols.map(x=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--sep)">
+        <div style="flex:1"><b>${thDate(x.date)}</b> <span style="color:var(--txt2)">· ${esc(x.name||'')}</span></div>
+        <button class="icon-btn red" onclick="delHoliday('${x.date}')">✕</button></div>`).join(''):'<div style="font-size:13px;color:var(--txt3)">ยังไม่มีวันหยุดที่เพิ่มไว้ในปีนี้</div>'}
+    </div></div>`;
   h+=`<div class="section" style="margin-top:16px">
     <div class="admin-hd"><div class="admin-hd-title">ตั้งค่าระบบ</div></div>
     <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:12px">
@@ -3731,7 +3776,7 @@ async function deleteViolation(id){
 async function loadAppData(){
   loading(true);
   try{
-    const[actR,stuR,nameR]=await Promise.allSettled([loadActivities(),loadStudents(),loadSchoolName(),loadViolations(),loadUnifCheckSetting()]);
+    const[actR,stuR,nameR]=await Promise.allSettled([loadActivities(),loadStudents(),loadSchoolName(),loadViolations(),loadUnifCheckSetting(),loadHolidays()]);
     if(actR.status==='rejected')throw actR.reason;
     if(stuR.status==='rejected')throw stuR.reason;
     const sn=$('side-school-name');if(sn)sn.textContent=S.schoolName;
