@@ -2263,11 +2263,29 @@ async function pgSubjects(){
     </div></div>
   <div class="card"><div class="cb">
   ${!S.subjects.length?`<div class="empty"><svg class="ei" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg><div>ยังไม่มีรายวิชา</div></div>`:`
-  <div class="tw tw-cards"><table>
+  ${(()=>{
+    // แยกตามภาคเรียน: ภาคปัจจุบันขึ้นก่อน ภาคเก่าพับไว้ (ยังแก้ไข/ลบได้) — เดิมแสดงทุกภาครวมกันโดยไม่บอกภาค
+    const _cy=String(S.config.academic_year||''),_cs=String(S.config.semester||'');
+    const _gm={};S.subjects.forEach(x=>{const k=x.academic_year?x.academic_year+'/'+x.semester:'';(_gm[k]=_gm[k]||[]).push(x)});
+    const _groups=Object.keys(_gm).map(k=>{const [y,sm]=k.split('/');return {k,y,sm,cur:!k||(y===_cy&&sm===_cs),subs:_gm[k]}})
+      .sort((A,B)=>(B.cur-A.cur)||((+B.y||0)-(+A.y||0))||((+B.sm||0)-(+A.sm||0)));
+    if(!_groups.some(g=>g.cur))_groups.unshift({k:'x',y:_cy,sm:_cs,cur:true,subs:[]});
+    return _groups.map(g=>{
+      const title=g.k?`ภาคเรียนที่ ${g.sm}/${g.y}`:'ไม่ระบุภาคเรียน';
+      if(g.cur) return `<div style="font-weight:700;font-size:14.5px;margin:2px 0 10px;color:var(--ac)">${title} (ภาคปัจจุบัน) · ${g.subs.length} วิชา</div>`
+        +(g.subs.length?_subTable(g.subs):'<div style="padding:16px;text-align:center;color:var(--muted);font-size:13.5px">ยังไม่มีวิชาในภาคนี้ — กด "เพิ่มรายวิชา" หรือ "คัดลอกวิชาไปปีการศึกษาใหม่"</div>');
+      return `<details style="margin-top:16px;border-top:1px solid var(--sep);padding-top:8px"><summary style="cursor:pointer;font-weight:700;font-size:14px;color:var(--muted);padding:6px 0">${title} · ${g.subs.length} วิชา (ภาคเก่า — แตะเพื่อดู)</summary>${_subTable(g.subs)}</details>`;
+    }).join('');
+  })()}`}
+  </div></div>`;
+}
+// ตารางรายวิชา (ใช้แยกตามภาคเรียนในหน้าจัดการรายวิชา)
+function _subTable(subs){
+  return `  <div class="tw tw-cards"><table>
     <thead><tr><th>ลำดับ</th><th class="tl">รหัส</th><th class="tl">ชื่อวิชา</th>
       <th>ชั้น/ห้อง</th><th>ชม./สัปดาห์</th><th>ชม./ภาค</th><th class="tl">ครูผู้สอน</th>
       <th>โครงสร้างคะแนน</th><th>ประกาศผลการเรียน</th><th>จัดการ</th></tr></thead>
-    <tbody>${S.subjects.map((s,i)=>`<tr>
+    <tbody>${subs.map((s,i)=>`<tr>
       <td class="tc" data-label="ลำดับ" data-hide-mobile>${i+1}</td><td data-label="รหัส">${esc(s.subject_code)}</td>
       <td data-label="ชื่อวิชา" data-head><strong>${esc(s.subject_name)}</strong>${s.subject_type==='วิชาเพิ่มเติม'?' <span class="badge bg-o" style="margin-left:4px">เพิ่มเติม</span>':''}</td>
       <td class="tc" data-label="ชั้น/ห้อง">${grm(s.grade_level,s.room)}</td>
@@ -2288,9 +2306,9 @@ async function pgSubjects(){
         <button class="btn bs btn-sm" onclick="openSubModal('${s.id}')" style="padding:5px 8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
         <button class="btn bd btn-sm" onclick="delSub('${s.id}','${escJs(s.subject_name)}')" style="padding:5px 8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
       </td></tr>`).join('')}
-    </tbody></table></div>`}
-  </div></div>`;
+    </tbody></table></div>`;
 }
+
 
 async function toggleSubjectPublish(id,cb){
   const val=cb.checked;
