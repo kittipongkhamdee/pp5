@@ -8,6 +8,8 @@ let _notes=[], _noteQ='', _noteShowDone=false, _noteEdit=null, _noteSaveT=null, 
 const _noteSub=id=>(S.subjectsAll||S.subjects||[]).find(x=>x.id===id);
 const _noteSubLbl=id=>{const x=_noteSub(id);return x?x.subject_name+' '+grm(x.grade_level,x.room):'วิชา (ภาคอื่น)'};
 let _noteStuCache={};
+// ตัวเลือกแนบวิชา: เฉพาะวิชาภาคปัจจุบัน (แอดมินมี S.subjects ทุกภาค จึงกรองซ้ำที่นี่)
+const _noteCurSubs=()=>(S.subjects||[]).filter(x=>typeof _inCurTerm!=='function'||_inCurTerm(x));
 
 function _noteClean(html){
   const box=document.createElement('div');box.innerHTML=html||'';
@@ -108,9 +110,10 @@ function noteOpen(id){
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">📘 แนบวิชา
           <select class="fs" id="note-sub" onchange="_noteSetSub(this.value)" style="height:32px;padding:2px 8px;width:auto;flex:1;min-width:160px">
             <option value="">— ไม่แนบ —</option>
-            ${(S.subjects||[]).map(x=>`<option value="${x.id}" ${_noteEdit.subject_id===x.id?'selected':''}>${esc(x.subject_name+' '+grm(x.grade_level,x.room))}</option>`).join('')}
-            ${_noteEdit.subject_id&&!(S.subjects||[]).some(x=>x.id===_noteEdit.subject_id)?`<option value="${_noteEdit.subject_id}" selected>${esc(_noteSubLbl(_noteEdit.subject_id))}</option>`:''}
+            ${_noteCurSubs().map(x=>`<option value="${x.id}" ${_noteEdit.subject_id===x.id?'selected':''}>${esc(x.subject_name+' '+grm(x.grade_level,x.room))}</option>`).join('')}
+            ${_noteEdit.subject_id&&!_noteCurSubs().some(x=>x.id===_noteEdit.subject_id)?`<option value="${_noteEdit.subject_id}" selected>${esc(_noteSubLbl(_noteEdit.subject_id))}</option>`:''}
           </select></div>
+        ${_noteCurSubs().length?'':`<div style="font-size:12px;color:var(--muted);margin-top:6px">ยังไม่มีวิชาในภาคเรียนปัจจุบัน (${esc(S.config.semester||'')}/${esc(S.config.academic_year||'')})</div>`}
         <div id="note-stu" style="margin-top:8px"></div>
       </div>
       <div id="note-st" style="font-size:12px;color:var(--muted);margin-top:8px">${_noteEdit.id?'บันทึกอัตโนมัติขณะพิมพ์':'โน้ตใหม่ — บันทึกอัตโนมัติเมื่อเริ่มพิมพ์'}</div>
