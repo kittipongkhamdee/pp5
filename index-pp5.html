@@ -1865,7 +1865,7 @@ function _applyConcurrencyGuards(){
 // (ของโมดูลจะถูกห่อเพิ่มใน ensureModule หลังโหลดเสร็จ)
 _applyConcurrencyGuards();
 // ?v= กันแคชเก่าค้าง (modules/*.js แคชไว้ 1 วันตาม vercel.json) — แก้ไฟล์ใน modules/ เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย
-const MODULE_V = '118';
+const MODULE_V = '119';
 // ห่อฟังก์ชันของโมดูลหลังโหลดเสร็จด้วย (ตอนเริ่มระบบยังไม่มีฟังก์ชันเหล่านี้)
 function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V).then(()=>{ _applyConcurrencyGuards(); }); }
 function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
@@ -1913,10 +1913,20 @@ function nav(page,subId){
 }
 
 // ── SUBJECTS helpers ─────────────────────────────────────────────
+// วิชาภาคเรียนเก่า: ครูเห็นเฉพาะภาคปัจจุบันที่แอดมินตั้ง (ไม่เปิดดู/แก้วิชาภาคเก่าได้)
+// แอดมินเห็นทุกภาค · แอดมินเปิดชั่วคราวให้ครูทุกคนได้ (config old_terms_enabled='1' เช่น ช่วงแก้ 0/ร/มส)
+// S.subjectsAll = วิชาทุกภาคของครู (ใช้เป็นต้นทางตอนคัดลอกวิชาไปภาคใหม่)
+function _inCurTerm(s){
+  if(!s.academic_year) return true;
+  return String(s.academic_year)===String(S.config.academic_year||'')&&String(s.semester)===String(S.config.semester||'');
+}
+function _canSeeOldTerms(){ return !!S.profile?.is_admin || S.config.old_terms_enabled==='1'; }
 async function loadSubjects(){
-  S.subjects = await qc('subjects_'+S.user.id, ()=>
+  const all = await qc('subjects_'+S.user.id, ()=>
     q(sb.from('subjects').select('*').eq('user_id',S.user.id).order('grade_level').order('room').order('subject_name'))
   );
+  S.subjectsAll = all||[];
+  S.subjects = _canSeeOldTerms() ? S.subjectsAll : S.subjectsAll.filter(_inCurTerm);
 }
 function invalidateSubjects(){ cacheInv('subjects_'+S.user.id); }
 function getSubject(id){ return S.subjects.find(s=>s.id===id)||null; }
@@ -2120,12 +2130,12 @@ async function pgDash(){
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <!-- Toggle แสดงภาคปัจจุบัน/ทั้งหมด -->
-      <button onclick="_toggleDashFilter()" id="dash-toggle-btn"
+      ${_canSeeOldTerms()?'':'<span style="display:none">'}<button onclick="_toggleDashFilter()" id="dash-toggle-btn"
         class="btn bs" style="font-size:12px;padding:6px 12px;${window._dashShowAll?'background:rgba(255,149,0,.12);color:#c2410c;border-color:#fed7aa':''}">
         ${window._dashShowAll
           ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> ทุกภาค'
           : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> ภาคปัจจุบัน'}
-      </button>
+      </button>${_canSeeOldTerms()?'':'</span>'}
       <button class="btn bp" onclick="nav('subjects')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>เพิ่มรายวิชา</button>
     </div>
   </div>
@@ -2258,7 +2268,7 @@ async function pgSubjects(){
   <div class="ph"><div class="ptitle">จัดการรายวิชา</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
     ${(S.profile?.is_admin||S.config.copy_subjects_enabled!=='0')?`
-    <button class="btn bs" onclick="openCopySubjectsModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>คัดลอกวิชาไปปีการศึกษาใหม่</button>`:''}
+    <button class="btn bs" onclick="openCopySubjectsModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>คัดลอกวิชาไปภาคเรียน/ปีการศึกษาใหม่</button>`:''}
     <button class="btn bp" onclick="openSubModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>เพิ่มรายวิชา</button>
     </div></div>
   <div class="card"><div class="cb">
@@ -2546,7 +2556,7 @@ async function delSub(id,name){
 }
 
 // ── คัดลอกวิชาไปปีการศึกษาใหม่ ──────────────────────────────────────
-// ครูทั่วไป: คัดลอกได้เฉพาะวิชาของตัวเอง (_cpsSubjects = S.subjects เสมอ)
+// ครูทั่วไป: คัดลอกได้เฉพาะวิชาของตัวเอง (_cpsSubjects = S.subjectsAll ทุกภาค แม้ครูจะไม่เห็นวิชาภาคเก่าในเมนูอื่นแล้ว)
 // แอดมิน: เลือกครูคนอื่นได้ — _cpsSubjects จะถูกดึงใหม่ตามครูที่เลือก และวิชาที่คัดลอกจะเป็นของครูคนนั้น ไม่ใช่ของแอดมิน
 let _cpsSubjects=[], _cpsTeacherId=null, _cpsTeachers=[];
 function _subYearCombos(){
@@ -2562,7 +2572,7 @@ function _subYearCombos(){
 async function openCopySubjectsModal(){
   if(!S.profile?.is_admin&&S.config.copy_subjects_enabled==='0'){ _denyMenuAccess('คัดลอกวิชาไปปีการศึกษาใหม่'); return; }
   _cpsTeacherId=S.user.id;
-  _cpsSubjects=S.subjects;
+  _cpsSubjects=S.subjectsAll||S.subjects;
   if(S.profile?.is_admin){
     try{ _cpsTeachers=await q(sb.from('profiles').select('id,full_name').order('full_name')); }
     catch(e){ _cpsTeachers=[]; }
@@ -2570,7 +2580,7 @@ async function openCopySubjectsModal(){
   const curY=S.config.academic_year||'2568', curS=parseInt(S.config.semester||1);
   document.body.insertAdjacentHTML('beforeend',`
   <div class="mo" id="cpsMod"><div class="md md-lg">
-    <div class="mh"><div class="mt">คัดลอกวิชาไปปีการศึกษาใหม่</div>
+    <div class="mh"><div class="mt">คัดลอกวิชาไปภาคเรียน/ปีการศึกษาใหม่</div>
     <button class="mx" onclick="rmModal('cpsMod')">✕</button></div>
     <div class="mb">
       ${S.profile?.is_admin?`
@@ -2587,8 +2597,8 @@ async function openCopySubjectsModal(){
           <select class="fs" id="cps-src" onchange="_renderCopySubList()"></select>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <div><label class="fl">ปีการศึกษาใหม่</label><input class="fi" id="cps-ty" value="${esc(curY)}"></div>
-          <div><label class="fl">ภาคเรียน</label><select class="fs" id="cps-ts">
+          <div><label class="fl">ไปปีการศึกษา</label><input class="fi" id="cps-ty" value="${esc(curY)}"></div>
+          <div><label class="fl">ไปภาคเรียน</label><select class="fs" id="cps-ts">
             <option value="1" ${curS===1?'selected':''}>1</option>
             <option value="2" ${curS===2?'selected':''}>2</option>
           </select></div>
@@ -2632,7 +2642,7 @@ async function _onCpsTeacherChange(teacherId){
   _cpsTeacherId=teacherId;
   loading(true);
   try{
-    _cpsSubjects = teacherId===S.user.id ? S.subjects : await q(sb.from('subjects').select('*').eq('user_id',teacherId));
+    _cpsSubjects = teacherId===S.user.id ? (S.subjectsAll||S.subjects) : await q(sb.from('subjects').select('*').eq('user_id',teacherId));
   }catch(e){ _cpsSubjects=[]; toast('โหลดรายวิชาไม่สำเร็จ: '+e.message,'er'); }
   finally{ loading(false); }
   _refreshCpsSourceOptions();

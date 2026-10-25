@@ -817,7 +817,7 @@ async function pgSettings(){
     <div class="ch">
       <div class="ct" style="display:flex;align-items:center;gap:7px">
         <svg viewBox="0 0 24 24" fill="none" stroke="var(--ac)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        ปุ่มคัดลอกวิชาไปปีการศึกษาใหม่
+        ปุ่มคัดลอกวิชาไปภาคเรียน/ปีการศึกษาใหม่
       </div>
     </div>
     <div class="cb">
@@ -827,6 +827,21 @@ async function pgSettings(){
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
         <input type="checkbox" id="c-copysub-on" ${S.config.copy_subjects_enabled!=='0'?'checked':''} onchange="toggleCopySubjectsEnabled(this)" style="width:18px;height:18px;accent-color:var(--ac)">
         <span style="font-size:14px;font-weight:600">แสดงปุ่มคัดลอกวิชาสำหรับครู</span>
+      </label>
+    </div>
+  </div>`:''}
+
+  ${S.profile?.is_admin?`<!-- ── วิชาภาคเรียนเก่า ── -->
+  <div class="card">
+    <div class="ch"><div class="ct">วิชาภาคเรียนเก่า</div></div>
+    <div class="cb">
+      <div style="font-size:12px;color:#6e6e73;margin-bottom:14px;line-height:1.6">
+        ปกติครูเห็นเฉพาะวิชาของภาคเรียนปัจจุบัน (${esc(S.config.semester||'')}/${esc(S.config.academic_year||'')}) — เปิดดู/แก้ไขวิชาภาคเก่าไม่ได้ แอดมินเห็นทุกภาคเสมอ
+        เปิดสวิตช์นี้ชั่วคราวเมื่อต้องให้ครูแก้ผลภาคเก่า (เช่น แก้ 0 / ร / มส) แล้วปิดเมื่อเสร็จ
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input type="checkbox" ${S.config.old_terms_enabled==='1'?'checked':''} onchange="toggleOldTermsEnabled(this)" style="width:18px;height:18px;accent-color:var(--ac)">
+        <span style="font-size:14px;font-weight:600">อนุญาตให้ครูเปิด/แก้ไขวิชาภาคเรียนเก่า</span>
       </label>
     </div>
   </div>`:''}
@@ -1689,6 +1704,19 @@ async function saveCheckinSync(){
     await loadConfig();
     toast('บันทึกการตั้งค่าเรียบร้อย');
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
+}
+
+async function toggleOldTermsEnabled(cb){
+  const val=cb.checked?'1':'0';
+  cb.disabled=true;
+  try{
+    await q(sb.from('config').upsert([{key:'old_terms_enabled',value:val}],{onConflict:'key'}));
+    S.config.old_terms_enabled=val;
+    toast(cb.checked?'เปิดให้ครูแก้ไขวิชาภาคเก่าแล้ว — อย่าลืมปิดเมื่อเสร็จ':'ปิดแล้ว — ครูเห็นเฉพาะวิชาภาคปัจจุบัน');
+  }catch(e){
+    cb.checked=!cb.checked;
+    toast('บันทึกไม่สำเร็จ: '+e.message,'er');
+  }finally{ cb.disabled=false; }
 }
 
 async function toggleCopySubjectsEnabled(cb){
