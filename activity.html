@@ -56,6 +56,14 @@ html[data-theme="dark"] #topbar{background:rgba(17,24,39,0.82);border-bottom-col
 @media(prefers-color-scheme:dark){html:not([data-theme="light"]) #topbar{background:rgba(17,24,39,0.82);border-bottom-color:rgba(255,255,255,0.07);box-shadow:0 1px 0 rgba(0,0,0,0.3)}}
 #topbar-title{font-size:18px;font-weight:700;letter-spacing:-.4px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #topbar-sub{font-size:12px;color:var(--txt2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* แถบหัวสีตามธีม (ไล่จากสีหลักเข้ม → สีหลัก) ตัวอักษรขาว — --primary/--primary-dark มาจากธีมที่ครูเลือก (theme.js) */
+#topbar,html[data-theme] #topbar{background:linear-gradient(135deg,var(--primary-dark,#1D4ED8),var(--primary,#2563EB))!important;border-bottom:none!important;box-shadow:0 4px 16px rgba(0,0,0,.12)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+#topbar #topbar-title{color:#fff}
+#topbar #topbar-sub{color:rgba(255,255,255,.85)}
+#topbar #more-btn{background:rgba(255,255,255,.2)!important;border-color:rgba(255,255,255,.35)!important;color:#fff!important}
+#topbar #app-logo img{background:#fff;border-radius:50%;padding:2px;box-shadow:0 2px 6px rgba(0,0,0,.15)}
+#topbar #topbar-clock{background:rgba(255,255,255,.18)!important;border-color:rgba(255,255,255,.3)!important;box-shadow:none!important}
+#topbar #clock-date{color:rgba(255,255,255,.85)}#topbar #clock-time{color:#fff}
 
 /* ── Pages ── */
 .page{flex:1;display:none;flex-direction:column;overflow:hidden}
