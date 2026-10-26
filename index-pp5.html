@@ -6640,9 +6640,9 @@ function _mchkRender(){
     ${m.stus.length?m.stus.map((s,i)=>{const v=m.st[String(s.id)];return `<div style="display:flex;align-items:center;background:#fff;border-radius:16px;padding:9px 10px;margin-bottom:7px;gap:10px;box-shadow:0 1px 6px rgba(0,0,0,.05)">
       <span style="width:30px;height:30px;border-radius:50%;background:${_MCHK_CLR[v]}22;color:${_MCHK_CLR[v]};font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</span>
       <span style="flex:1;font-size:14px">${esc(s.student_name)}<span style="display:block;color:#6e6e73;font-size:11px">${esc(s.student_code||'')}${_mchkMsTag(s.id)}</span></span>
-      <button onclick="mchkCycle('${s.id}')" style="width:64px;height:40px;border:none;border-radius:20px;font:700 15px var(--font);color:#fff;background:${_MCHK_CLR[v]};box-shadow:0 3px 8px ${_MCHK_CLR[v]}55">${_MCHK_LBL[v]}</button></div>`;}).join('')
+      <button onclick="mchkCycle('${s.id}',this)" style="width:64px;height:40px;border:none;border-radius:20px;font:700 15px var(--font);color:#fff;background:${_MCHK_CLR[v]};box-shadow:0 3px 8px ${_MCHK_CLR[v]}55">${_MCHK_LBL[v]}<i style="font-style:normal;font-size:10px;opacity:.85;margin-left:2px">▾</i></button></div>`;}).join('')
       :'<div style="text-align:center;color:#6e6e73;padding:30px">ไม่พบนักเรียนในชั้นนี้</div>'}`;
-  _mchkShell({text:esc(m.sub.subject_name)+' · '+grm(m.sub.grade_level,m.sub.room),back:'openMobileCheck()'},esc(m.sub.subject_code)+' · '+m.periods+' คาบ · แตะปุ่มเพื่อเปลี่ยน มา → ขาด → ลา',body,
+  _mchkShell({text:esc(m.sub.subject_name)+' · '+grm(m.sub.grade_level,m.sub.room),back:'openMobileCheck()'},esc(m.sub.subject_code)+' · '+m.periods+' คาบ · แตะปุ่มเพื่อเลือก มา / ลา / ขาด',body,
     `<div style="display:flex;gap:8px"><button onclick="mchkAll()" style="${_MB_G};flex:0 0 38%">✓ มาทั้งหมด</button>
      <button style="${_MB_P};flex:1" onclick="mchkSave()" ${m.stus.length?'':'disabled'}>บันทึก (${m.stus.length} คน)</button></div>`);
 }
@@ -6655,7 +6655,24 @@ function _mchkMsTag(sid){
   if(r.lv==='risk') return ` <b style="color:#ff9500">· เสี่ยง มส ${r.pct}%${msLeftTxt(r.left)}</b>`;
   return '';
 }
-function mchkCycle(sid){ const m=_mchk; if(!m) return; const k=String(sid); m.st[k]=ATT_C[(ATT_C.indexOf(m.st[k])+1)%ATT_C.length]; _mchkRender(); }
+// แตะปุ่มสถานะ = เมนูเล็ก มา/ลา/ขาด เลือก 1 แตะ (แบบเดียวกับระบบเช็คชื่อกิจกรรม) — เดิมแตะวน นักเรียนที่ลาต้องแตะ 2 ครั้ง
+function mchkCycle(sid,btn){
+  const m=_mchk; if(!m) return; const k=String(sid);
+  if(!btn){ m.st[k]=ATT_C[(ATT_C.indexOf(m.st[k])+1)%ATT_C.length]; _mchkRender(); return; }
+  _mchkMenuClose();
+  const el=document.createElement('div'); el.id='mchk-menu';
+  el.style.cssText='position:fixed;z-index:3000;background:#fff;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.22);padding:5px;display:flex;gap:5px';
+  el.innerHTML=[['present','มา','#e8f8ec','#16803d'],['leave','ลา','#fff4e0','#b45309'],['absent','ขาด','#ffecec','#dc2626']].map(([v,t,bg,c])=>
+    `<button data-v="${v}" style="border:none;border-radius:12px;height:44px;min-width:60px;font:700 15px var(--font);cursor:pointer;background:${bg};color:${c};${m.st[k]===v?'outline:2.5px solid '+c+';':''}">${t}</button>`).join('');
+  el.addEventListener('click',e=>{ const v=e.target.closest('button')?.dataset.v; if(!v) return; _mchkMenuClose(); if(m.st[k]!==v){ m.st[k]=v; _mchkRender(); } });
+  document.body.appendChild(el);
+  const r=btn.getBoundingClientRect(), w=el.offsetWidth, h=el.offsetHeight;
+  el.style.left=Math.max(8,Math.min(innerWidth-w-8,r.right-w))+'px';
+  el.style.top=(r.bottom+6+h>innerHeight-90?r.top-h-6:r.bottom+6)+'px';
+  setTimeout(()=>{ document.addEventListener('pointerdown',_mchkMenuOut,true); document.addEventListener('scroll',_mchkMenuClose,true); },0);
+}
+function _mchkMenuOut(e){ const el=document.getElementById('mchk-menu'); if(el&&!el.contains(e.target)) _mchkMenuClose(); }
+function _mchkMenuClose(){ document.getElementById('mchk-menu')?.remove(); document.removeEventListener('pointerdown',_mchkMenuOut,true); document.removeEventListener('scroll',_mchkMenuClose,true); }
 function mchkAll(){ const m=_mchk; if(!m) return; Object.keys(m.st).forEach(k=>m.st[k]='present'); _mchkRender(); }
 async function mchkSave(){
   const m=_mchk; if(!m||!m.stus.length) return;
