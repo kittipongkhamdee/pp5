@@ -705,6 +705,8 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
   background:var(--card2);font-family:var(--font);font-size:12px;font-weight:500;color:var(--txt2);cursor:pointer;
 }
 #admin-topbar-btn,#topbar #logout-btn{display:none!important}
+#ck-st-menu{position:fixed;z-index:3000;background:var(--card);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.22);padding:5px;display:flex;gap:5px}
+#ck-st-menu button{border:none;border-radius:12px;height:42px;min-width:56px;font-weight:700;font-size:14.5px;font-family:inherit;cursor:pointer}
 /* เลื่อนรายชื่อลง: ซ่อนแถวเลือกกิจกรรม/ชั้นเรียน ให้เห็นรายชื่อมากขึ้น — กลับมาแสดงเมื่อเลื่อนขึ้นถึงคนแรก */
 #ck-header.ck-compact #ck-act-sel,#ck-header.ck-compact #ck-class-sel{display:none}
 #top-menu{position:fixed;z-index:4000;right:12px;min-width:210px;background:var(--card);border:1px solid var(--sep);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.18);padding:6px;overflow:hidden}
@@ -1864,7 +1866,7 @@ function _stuCardHtml(s,num,unifOn){
   const stLbl={present:'มา',late:'ลา',absent:'ขาด'}[st]||'แตะ';
   const uSt=uchk?.status||'';
   const unifPill=unifOn?(hasUnif?`<button class="ck-dr ${uSt||'todo'}" onclick="cycleUnif('${s.id}')" title="การแต่งกาย">👕${uSt==='pass'?'✓':uSt==='fail'?'✗':'?'}</button>`:'<span class="ck-dr none"></span>'):'';
-  const ckBtns=`<div class="card-ck-btns"><button class="ck-pill ${st||'none'}" onclick="cycleStatus('${s.id}')">${stLbl}</button>${unifPill}</div>`;
+  const ckBtns=`<div class="card-ck-btns"><button class="ck-pill ${st||'none'}" onclick="cycleStatus('${s.id}',this)">${stLbl}${st?'<i style="font-style:normal;font-size:10px;opacity:.8;margin-left:2px">▾</i>':''}</button>${unifPill}</div>`;
   const chevron='';
 
   // uniform section (only if มา + setting enabled)
@@ -1907,6 +1909,7 @@ function _unifTodo(){
   const bind=()=>{
     const list=document.getElementById('ck-list'),hd=document.getElementById('ck-header');if(!list||!hd)return;
     list.addEventListener('scroll',()=>{
+      _ckStMenuClose(); // เมนูสถานะเป็น fixed — เลื่อนรายชื่อแล้วปิด ไม่ให้ค้างลอยผิดแถว
       const y=list.scrollTop;
       if(y>60)hd.classList.add('ck-compact');else if(y<8)hd.classList.remove('ck-compact');
     },{passive:true});
@@ -2005,12 +2008,29 @@ function updateCkStats(){
 
 // แตะวนสถานะ: (ยังไม่เช็ค) → มา → ลา → ขาด → (ยังไม่เช็ค) … — กันกดรัวระหว่างรอบันทึก
 const _ckBusy={};
-async function cycleStatus(stuId){
-  if(_ckBusy[stuId])return;_ckBusy[stuId]=1;
-  try{const cur=S.ckAttend[stuId]?.status;
-    // ขาด → แตะอีกครั้ง = ล้างค่า (setStatus ส่งสถานะเดิมซ้ำ = ลบ)
-    const nx=cur==='present'?'late':cur==='late'?'absent':cur==='absent'?'absent':'present';await setStatus(stuId,nx)}
-  finally{delete _ckBusy[stuId]}
+// ปุ่มสถานะ: ยังไม่เช็ค → แตะ = มา (1 แตะ) · เช็คแล้ว → แตะ = เมนูเล็ก มา/ลา/ขาด/ล้าง (เลือก 1 แตะ)
+// เดิมแตะวนตามลำดับ นักเรียนที่ขาดต้องแตะหลายครั้ง
+async function cycleStatus(stuId,btn){
+  if(_ckBusy[stuId])return;
+  const cur=S.ckAttend[stuId]?.status;
+  if(!cur){_ckBusy[stuId]=1;try{await setStatus(stuId,'present')}finally{delete _ckBusy[stuId]}return}
+  _ckStMenu(stuId,btn,cur);
+}
+function _ckStMenuClose(){document.getElementById('ck-st-menu')?.remove();document.removeEventListener('pointerdown',_ckStMenuOut,true)}
+function _ckStMenuOut(e){const m=document.getElementById('ck-st-menu');if(m&&!m.contains(e.target))_ckStMenuClose()}
+function _ckStMenu(stuId,btn,cur){
+  _ckStMenuClose();
+  const m=document.createElement('div');m.id='ck-st-menu';
+  const it=[['present','มา','#e8f8ec','#059669'],['late','ลา','#fff4e0','#b45309'],['absent','ขาด','#ffecec','#dc2626']];
+  m.innerHTML=it.map(([k,t,bg,c])=>`<button data-k="${k}" style="background:${bg};color:${c};${cur===k?`outline:2.5px solid ${c};`:''}">${t}</button>`).join('')+`<button data-k="clear" style="background:var(--card2);color:var(--txt2);min-width:44px" title="ล้าง">✕</button>`;
+  m.addEventListener('click',async e=>{const k=e.target.closest('button')?.dataset.k;if(!k)return;_ckStMenuClose();
+    if(k===cur)return;
+    _ckBusy[stuId]=1;try{await setStatus(stuId,k==='clear'?cur:k)}finally{delete _ckBusy[stuId]}});
+  document.body.appendChild(m);
+  const r=btn.getBoundingClientRect(),w=m.offsetWidth,h=m.offsetHeight;
+  m.style.left=Math.max(8,Math.min(innerWidth-w-8,r.right-w))+'px';
+  m.style.top=(r.bottom+6+h>innerHeight-70?r.top-h-6:r.bottom+6)+'px';
+  setTimeout(()=>document.addEventListener('pointerdown',_ckStMenuOut,true),0);
 }
 async function cycleUnif(stuId){
   const k='u'+stuId;if(_ckBusy[k])return;_ckBusy[k]=1;
