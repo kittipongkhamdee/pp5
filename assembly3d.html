@@ -130,7 +130,7 @@ async function loadData(){
   if(act){actId=act.id;actName=act.name;}
   let stu=[];for(let f=0;;f+=1000){const r=await sb.from('students').select('id,student_code,student_name,grade_level,room').order('grade_level').order('room').order('student_code').range(f,f+999);if(r.error)throw r.error;stu=stu.concat(r.data);if(r.data.length<1000)break;}
   const att=actId?((await sb.from('activity_attend').select('student_id,status,updated_at').eq('activity_id',actId).eq('date',TODAY).eq('session','morning')).data||[]):[];
-  return {stu,att,actName};
+  return {stu,att,actName,sb,actId};
 }
 
 loadData().then(function(D){setLoad(6,'กำลังสร้างแบบจำลอง…');try{init(D);}catch(err){console.error(err);fail('เบราว์เซอร์นี้แสดงภาพ 3 มิติไม่ได้');}})
@@ -148,7 +148,7 @@ const pick=a=>a[Math.floor(rnd()*a.length)];
 
 // ── จัดห้อง / แถวจากข้อมูลจริง ──
 const attMap={};D.att.forEach(a=>{attMap[a.student_id]=a;});
-const checkedAny=D.att.length>0;
+let checkedAny=D.att.length>0;
 const roomKeys=[],byRoom={};
 D.stu.forEach(s=>{const k=s.grade_level+'_'+s.room;if(!byRoom[k]){byRoom[k]=[];roomKeys.push(k);}byRoom[k].push(s);});
 roomKeys.sort((a,b)=>a.localeCompare(b,'th',{numeric:true}));
@@ -160,7 +160,7 @@ const CLASSES=roomKeys.map(k=>{
     gp:pres.filter(s=>isGirl(s.student_name)),bp:pres.filter(s=>!isGirl(s.student_name)),
     g:list.filter(s=>isGirl(s.student_name)).length,b:list.filter(s=>!isGirl(s.student_name)).length};
 });
-const totalKids=D.stu.length,presentKids=CLASSES.reduce((a,c)=>a+c.gp.length+c.bp.length,0);
+const totalKids=D.stu.length;let presentKids=CLASSES.reduce((a,c)=>a+c.gp.length+c.bp.length,0);
 $('#title').textContent=D.actName||'การเข้าแถว';
 $('#sub').textContent='โรงเรียนตาเบาวิทยา · '+new Date().toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 
@@ -367,23 +367,27 @@ const skinT=[0xe0b48a,0xd1a073,0xc28d62,0xb27c52,0xd9aa80],hairT=[0x15110f,0x1c1
 const whites=[0xf4f4f1,0xeeeeea,0xf8f8f6],jackets=[0x6b6f78,0x2f3a52,0xb98a8c,0x3c3c3c,0x4a6fb0];
 const students=[],classPos=[];
 // พื้นที่เดินเล่นรอบนอก: ขอบลานด้านซ้าย/ขวา และด้านหลังแถว (ไม่ทับแถวกลาง)
-function wanderTarget(){
-  const side=rnd();
-  const ex=Math.max(17,(NC/2)*CS+3); // เลยขอบแถวออกไป ไม่เดินทับแถว
-  if(side<0.4)return [rr(-ex-9,-ex),rr(-13,6)];
-  if(side<0.8)return [rr(ex,ex+9),rr(-13,6)];
-  return [rr(-14,14),rr(9,14)];
+// คนที่ยังไม่ได้เช็คว่ามา: อยู่ห่างแถวมาก และแต่ละคนอยู่ในโซนของตัวเองตลอด (ไม่เดินตัดผ่านแถว)
+//  โซน 0 = ซ้ายสุด, 1 = ขวาสุด, 2 = ด้านหลังเลยท้ายแถวยาวสุด
+let EX=20,ZB=20;
+function wanderTarget(zone){
+  if(zone===0)return [rr(-EX-12,-EX),rr(-12,ZB-4)];
+  if(zone===1)return [rr(EX,EX+12),rr(-12,ZB-4)];
+  return [rr(-EX+4,EX-4),rr(ZB,ZB+8)];
 }
+EX=(NC/2)*CS+9;
+ZB=Z0+Math.max(1,...CLASSES.map(c=>Math.max(c.g,c.b)))*GAP+7;
 CLASSES.forEach(function(c,ci){
   const xc=(ci-(NC-1)/2)*CS;classPos.push({x:xc,n:Math.max(c.gp.length,c.bp.length,1)});
   const h=0.92+Math.min(c.gl,6)*0.02;
   const mk=function(st,sex,idx,lineX){
     const jacket=rnd()<0.09;
-    const o={cls:ci,sex:sex,teacher:false,name:shortName(st.student_name),lined:idx>=0,line:idx,lineX:lineX,
+    const o={id:st.id,zone:Math.floor(rnd()*3),cls:ci,sex:sex,teacher:false,name:shortName(st.student_name),lined:idx>=0,line:idx,lineX:lineX,
       sc:h*(sex==='g'?0.985:1)*rr(0.97,1.04),skin:pick(skinT),hair:pick(hairT),shirt:jacket?pick(jackets):pick(whites),
       bottom:sex==='g'?0x1b2140:pick([0xb59b6a,0xae9462,0xbfa573]),heading:0,th:0,final:0,mode:'stand',delay:0,speed:1.7,phase:rnd()*6,amp:0,refs:[],label:null};
-    if(o.lined){o.tx=lineX;o.tz=Z0+idx*GAP;}else{const w=wanderTarget();o.tx=w[0];o.tz=w[1];o.mode='walk';o.delay=rnd()*3;o.speed=rr(0.6,1.1);}
-    o.x=o.tx;o.z=o.tz;if(!o.lined){const w=wanderTarget();o.x=w[0];o.z=w[1];}
+    o.rowX=sex==='g'?xc-0.62:xc+0.62;
+    if(o.lined){o.tx=lineX;o.tz=Z0+idx*GAP;}else{const w=wanderTarget(o.zone);o.tx=w[0];o.tz=w[1];o.mode='walk';o.delay=rnd()*3;o.speed=rr(0.6,1.1);}
+    o.x=o.tx;o.z=o.tz;if(!o.lined){const w=wanderTarget(o.zone);o.x=w[0];o.z=w[1];}
     students.push(o);
   };
   c.gp.forEach((s,i)=>mk(s,'g',i,xc-0.62));c.bp.forEach((s,i)=>mk(s,'b',i,xc+0.62));
@@ -449,7 +453,7 @@ function stepStudent(s,dt){
     const dx=s.tx-s.x,dz=s.tz-s.z,d=Math.hypot(dx,dz);
     if(d<0.06){s.x=s.tx;s.z=s.tz;s.mode='stand';s.th=s.final;
       // คนที่ยังไม่เช็คว่ามา: หยุดสักพักแล้วเดินต่อไปจุดใหม่ (เดินเล่นไปเรื่อยๆ)
-      if(!s.lined&&!s.teacher){const w=wanderTarget();s.tx=w[0];s.tz=w[1];s.mode='walk';s.delay=rr(1.5,5);s.speed=rr(0.6,1.1);}}
+      if(!s.lined&&!s.teacher){const w=wanderTarget(s.zone);s.tx=w[0];s.tz=w[1];s.mode='walk';s.delay=rr(1.5,5);s.speed=rr(0.6,1.1);}}
     else{const st=Math.min(d,s.speed*dt);s.x+=dx/d*st;s.z+=dz/d*st;s.th=Math.atan2(-dx,-dz);s.phase+=st*5.4;}
   }
   s.heading+=wrapA(s.th-s.heading)*(1-Math.exp(-dt*(s.mode==='walk'&&s.delay<=0?9:5)));
@@ -548,10 +552,12 @@ function openBoard(o){board.dataset.open=o?'true':'false';$('#boardBtn').setAttr
 $('#boardBtn').addEventListener('click',function(){openBoard(board.dataset.open!=='true');});
 $('#closeBoard').addEventListener('click',function(){openBoard(false);});
 const list=$('#list');
-list.innerHTML=CLASSES.map(function(c,i){
+function renderList(){list.innerHTML=CLASSES.map(function(c,i){
   return '<button class="cl" data-i="'+i+'" aria-pressed="false"><span class="cl-name">'+c.n+'</span><span class="cl-sub"><b class="g">หญิง '+c.gp.length+'/'+c.g+'</b> · <b class="b">ชาย '+c.bp.length+'/'+c.b+'</b></span><span class="cl-n">'+(c.gp.length+c.bp.length)+'/'+c.all.length+'</span></button>';
 }).join('');
+list.querySelectorAll('.cl').forEach(function(b){b.setAttribute('aria-pressed',+b.dataset.i===sel?'true':'false');b.addEventListener('click',function(){const i=+b.dataset.i;selectClass(sel===i?-1:i);});});}
 let sel=-1;
+renderList();
 function selectClass(i){
   sel=i;
   list.querySelectorAll('.cl').forEach(function(b){b.setAttribute('aria-pressed',+b.dataset.i===i?'true':'false');});
@@ -562,7 +568,6 @@ function selectClass(i){
   document.querySelectorAll('[data-view]').forEach(function(b){b.setAttribute('aria-pressed','false');});
   if(window.innerWidth<900)openBoard(false);
 }
-list.querySelectorAll('.cl').forEach(function(b){b.addEventListener('click',function(){const i=+b.dataset.i;selectClass(sel===i?-1:i);});});
 $('#sTotal').innerHTML=totalKids+'<small> คน</small>';
 $('#sPresent').innerHTML=presentKids+'<small>/'+totalKids+'</small>';
 const sState=$('#sState');let stT=0;
@@ -573,6 +578,32 @@ function hud(dt){
   sState.textContent=walking?(lined?'กำลังเข้าแถว':'กำลังแยกย้าย'):(lined?'เข้าแถวแล้ว':'แยกย้ายแล้ว');
   if(sel>=0)hi.visible=lined&&!walking;
 }
+
+/* อัปเดตสด: ทุก 15 วินาที ดึงการเช็คล่าสุด — คนที่เพิ่งถูกเช็คว่ามา เดินจากรอบนอกมาต่อท้ายแถวห้องตัวเอง */
+const rowLen={};
+students.forEach(s=>{if(s.lined&&!s.teacher){const k=s.cls+s.sex;rowLen[k]=Math.max(rowLen[k]||0,s.line+1);}});
+function joinLine(s){
+  const k=s.cls+s.sex;s.line=rowLen[k]||0;rowLen[k]=s.line+1;
+  s.lined=true;s.lineX=s.rowX;s.final=0;
+  if(lined){s.tx=s.rowX;s.tz=Z0+s.line*GAP;}else{s.tx=-24+Math.random()*48;s.tz=-5+Math.random()*21;}
+  s.mode='walk';s.delay=0;s.speed=2.2;
+  if(s.label){nameGroup.remove(s.label);const i=nameSprites.indexOf(s.label);if(i>=0)nameSprites.splice(i,1);s.label=null;}
+  const c=CLASSES[s.cls];(s.sex==='g'?c.gp:c.bp).push({id:s.id});
+  if(s.line+1>classPos[s.cls].n)classPos[s.cls].n=s.line+1;
+}
+async function poll(){
+  if(document.hidden||!D.actId)return;
+  try{
+    const r=await D.sb.from('activity_attend').select('student_id,status,updated_at').eq('activity_id',D.actId).eq('date',TODAY).eq('session','morning');
+    if(r.error||!r.data)return;
+    const pres=r.data.filter(a=>a.status==='present').sort((a,b)=>String(a.updated_at).localeCompare(String(b.updated_at)));
+    let changed=false;
+    pres.forEach(a=>{const s=students.find(x=>x.id===a.student_id);if(s&&!s.lined){joinLine(s);changed=true;}});
+    if(r.data.length)checkedAny=true;
+    if(changed){presentKids=CLASSES.reduce((a,c)=>a+c.gp.length+c.bp.length,0);renderList();$('#sPresent').innerHTML=presentKids+'<small>/'+totalKids+'</small>';}
+  }catch(e){}
+}
+setInterval(poll,15000);
 
 /* main loop */
 function resize(){const w=stage.clientWidth||window.innerWidth,h=stage.clientHeight||window.innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
