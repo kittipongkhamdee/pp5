@@ -135,6 +135,10 @@ async function loadData(){
   const act=acts.find(a=>a.id===actId)||acts.find(a=>a.is_active)||acts[0];
   if(act){actId=act.id;actName=act.name;}
   let stu=[];for(let f=0;;f+=1000){const r=await sb.from('students').select('id,student_code,student_name,grade_level,room').order('grade_level').order('room').order('student_code').range(f,f+999);if(r.error)throw r.error;stu=stu.concat(r.data);if(r.data.length<1000)break;}
+  let holiday=null;const dow=new Date(TODAY+'T00:00:00').getDay();
+  if(dow===0||dow===6)holiday=dow===0?'วันอาทิตย์':'วันเสาร์';
+  try{const h=(await sb.from('config').select('value').eq('key','activity_holidays').limit(1)).data;const hs=h&&h[0]?JSON.parse(h[0].value||'[]'):[];const f=hs.find(x=>x.date===TODAY);if(f)holiday=f.name||'วันหยุด';}catch(e){}
+  if(holiday)return {stu:[],att:[],actName,sb,actId,holiday,allStu:stu};
   const att=actId?((await sb.from('activity_attend').select('student_id,status,updated_at').eq('activity_id',actId).eq('date',TODAY).eq('session','morning')).data||[]):[];
   return {stu,att,actName,sb,actId};
 }
@@ -166,7 +170,9 @@ const CLASSES=roomKeys.map(k=>{
     gp:pres.filter(s=>isGirl(s.student_name)),bp:pres.filter(s=>!isGirl(s.student_name)),
     g:list.filter(s=>isGirl(s.student_name)).length,b:list.filter(s=>!isGirl(s.student_name)).length};
 });
-const totalKids=D.stu.length;let presentKids=CLASSES.reduce((a,c)=>a+c.gp.length+c.bp.length,0);
+if(D.holiday){const hb=document.createElement('div');hb.style.cssText='position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3;background:rgba(9,24,18,.88);border:1px solid var(--accent);border-radius:12px;padding:16px 22px;text-align:center;pointer-events:none';
+  hb.innerHTML='<div style="font-size:34px">🏖️</div><div style="font:600 22px var(--f-disp);color:var(--accent)">วันหยุด</div><div style="color:var(--muted)">'+D.holiday+' — ไม่มีการเข้าแถว</div>';$('#stage').appendChild(hb);}
+const totalKids=D.holiday?(D.allStu||[]).length:D.stu.length;let presentKids=CLASSES.reduce((a,c)=>a+c.gp.length+c.bp.length,0);
 $('#title').textContent=D.actName||'การเข้าแถว';
 $('#sub').textContent='โรงเรียนตาเบาวิทยา · '+new Date().toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 
@@ -372,6 +378,21 @@ const CS=NC>8?Math.max(2.4,29/NC):3.7,Z0=-7.6,GAP=0.95;
 const skinT=[0xe0b48a,0xd1a073,0xc28d62,0xb27c52,0xd9aa80],hairT=[0x15110f,0x1c1612,0x241a14,0x0f0d0c];
 const whites=[0xf4f4f1,0xeeeeea,0xf8f8f6],jackets=[0x6b6f78,0x2f3a52,0xb98a8c,0x3c3c3c,0x4a6fb0];
 const students=[],classPos=[];
+// ตารางการแต่งกายนักเรียน: จ.ชุดนักเรียน · อ.ชุดฟอร์มเขียวคอเหลือง+วอร์มดำ · พ.ม.ต้นลูกเสือ/เนตรนารี (ม.ปลายชุดนักเรียน)
+// พฤ.ม.ปลายชุดกีฬาเขียว-เหลือง (ม.ต้นชุดนักเรียน) · ศ.ชุดวิถีพุทธ เสื้อขาว+วอร์มดำ
+// ?dow=1..5 ใช้ดูตัวอย่างชุดของวันอื่น (ไม่มีผลกับข้อมูลการเช็คชื่อ)
+const _qd=new URLSearchParams(location.search).get('dow');
+const DOW=_qd!=null&&_qd!==''?+_qd:new Date(TODAY+'T00:00:00').getDay();
+function outfit(gl,sex){
+  const lower=gl<=3,WHITE=0xf6f6f3,GREEN=0x1f8f3a,SPORT=0x2e9b3e,YEL=0xf2c230,BLACK=0x17171a;
+  const school={shirt:WHITE,collar:sex==='g'?0x1b2140:null,bottom:sex==='g'?0x1b2140:pick([0xb59b6a,0xae9462,0xbfa573]),pants:sex!=='g',long:false};
+  const pantsBlack=(shirt,collar)=>({shirt,collar,bottom:BLACK,pants:true,long:true});
+  if(DOW===2)return pantsBlack(GREEN,YEL);
+  if(DOW===3)return lower?Object.assign(pantsBlack(SPORT,YEL),{scarf:0x3a2a1a,hat:sex==='g'?0x2a6b2f:0x7a1f2b}):school;
+  if(DOW===4)return lower?school:pantsBlack(SPORT,YEL);
+  if(DOW===5)return pantsBlack(WHITE,null);
+  return school;
+}
 // พื้นที่เดินเล่นรอบนอก: ขอบลานด้านซ้าย/ขวา และด้านหลังแถว (ไม่ทับแถวกลาง)
 // คนที่ยังไม่ได้เช็คว่ามา: อยู่ห่างแถวมาก และแต่ละคนอยู่ในโซนของตัวเองตลอด (ไม่เดินตัดผ่านแถว)
 //  โซน 0 = ซ้ายสุด, 1 = ขวาสุด, 2 = ด้านหลังเลยท้ายแถวยาวสุด
@@ -387,10 +408,9 @@ CLASSES.forEach(function(c,ci){
   const xc=(ci-(NC-1)/2)*CS;classPos.push({x:xc,n:Math.max(c.gp.length,c.bp.length,1)});
   const h=0.92+Math.min(c.gl,6)*0.02;
   const mk=function(st,sex,idx,lineX){
-    const jacket=rnd()<0.09;
+    const U=outfit(c.gl,sex);
     const o={full:String(st.student_name||'').trim(),id:st.id,zone:Math.floor(rnd()*3),cls:ci,sex:sex,teacher:false,name:shortName(st.student_name),lined:idx>=0,line:idx,lineX:lineX,
-      sc:h*(sex==='g'?0.985:1)*rr(0.97,1.04),skin:pick(skinT),hair:pick(hairT),shirt:jacket?pick(jackets):pick(whites),
-      bottom:sex==='g'?0x1b2140:pick([0xb59b6a,0xae9462,0xbfa573]),heading:0,th:0,final:0,mode:'stand',delay:0,speed:1.7,phase:rnd()*6,amp:0,refs:[],label:null};
+      sc:h*(sex==='g'?0.985:1)*rr(0.97,1.04),skin:pick(skinT),hair:pick(hairT),shirt:U.shirt,collar:U.collar,bottom:U.bottom,pants:U.pants,longPants:U.long,hat:U.hat,scarf:U.scarf,heading:0,th:0,final:0,mode:'stand',delay:0,speed:1.7,phase:rnd()*6,amp:0,refs:[],label:null};
     o.rowX=sex==='g'?xc-0.62:xc+0.62;
     if(o.lined){o.tx=lineX;o.tz=Z0+idx*GAP;}else{const w=wanderTarget(o.zone);o.tx=w[0];o.tz=w[1];o.mode='walk';o.delay=rnd()*3;o.speed=rr(0.35,0.6);}
     o.x=o.tx;o.z=o.tz;if(!o.lined){const w=wanderTarget(o.zone);o.x=w[0];o.z=w[1];}
@@ -400,7 +420,7 @@ CLASSES.forEach(function(c,ci){
   const presentIds=new Set(c.gp.concat(c.bp).map(s=>s.id));
   c.all.filter(s=>!presentIds.has(s.id)).forEach(s=>mk(s,isGirl(s.student_name)?'g':'b',-1,0));
 });
-[{x:-1.7,shirt:0x1b1b1d,bottom:0x111113},{x:1.7,shirt:0x6a6d70,bottom:0x151517}].forEach(function(t){
+(D.holiday?[]:[{x:-1.7,shirt:0x1b1b1d,bottom:0x111113},{x:1.7,shirt:0x6a6d70,bottom:0x151517}]).forEach(function(t){
   students.push({cls:-1,sex:'g',teacher:true,lined:true,tx:t.x,tz:-12.4,x:t.x,z:-12.4,sc:1.04,skin:0xcf9d72,hair:0x15110f,shirt:t.shirt,bottom:t.bottom,heading:Math.PI,th:Math.PI,final:Math.PI,mode:'stand',delay:0,speed:1.2,phase:rnd()*6,amp:0,refs:[]});
 });
 
@@ -410,10 +430,13 @@ const leg=(sx)=>({sw:{piv:[sx*0.085,0.82,0],off:[0,-0.41,0],dir:sx>0?1:-1,amp:1}
 const shoe=(sx)=>({sw:{piv:[sx*0.085,0.82,0],off:[0,-0.8,-0.035],dir:sx>0?1:-1,amp:1}});
 const arm=(sx,oy)=>({sw:{piv:[sx*0.225,1.425,0],off:[0,oy,0],dir:sx>0?-1:1,amp:0.75}});
 const PARTS=[
-  {geo:mkG(0.12,0.82,0.14),all:1,col:s=>s.skin,offs:[leg(-1),leg(1)]},
+  {geo:mkG(0.12,0.82,0.14),all:1,col:s=>s.longPants?s.bottom:s.skin,offs:[leg(-1),leg(1)]},
   {geo:mkG(0.125,0.07,0.22),all:1,col:()=>BK,offs:[shoe(-1),shoe(1)]},
-  {geo:mkG(0.35,0.38,0.2),f:s=>s.sex==='b',col:s=>s.bottom,offs:[{p:[0,0.76,0]}]},
-  {geo:new THREE.CylinderGeometry(0.17,0.225,0.42,12),f:s=>s.sex==='g',col:s=>s.bottom,offs:[{p:[0,0.74,0]}]},
+  {geo:mkG(0.35,0.38,0.2),f:s=>!!s.pants,col:s=>s.bottom,offs:[{p:[0,0.76,0]}]},
+  {geo:new THREE.CylinderGeometry(0.17,0.225,0.42,12),f:s=>!s.pants,col:s=>s.bottom,offs:[{p:[0,0.74,0]}]},
+  {geo:mkG(0.3,0.06,0.26),f:s=>s.collar!=null,col:s=>s.collar,offs:[{p:[0,1.42,0]}]},
+  {geo:mkG(0.16,0.2,0.03),f:s=>s.scarf!=null,col:s=>s.scarf,offs:[{p:[0,1.3,-0.125]}]},
+  {geo:new THREE.CylinderGeometry(0.15,0.17,0.09,12),f:s=>s.hat!=null,col:s=>s.hat,offs:[{p:[0,1.72,0.01],s:[1.05,1,1.05]}]},
   {geo:mkG(0.4,0.5,0.24),all:1,col:s=>s.shirt,offs:[{p:[0,1.19,0]}]},
   {geo:mkG(0.09,0.24,0.105),all:1,col:s=>s.shirt,offs:[arm(-1,-0.12),arm(1,-0.12)]},
   {geo:mkG(0.075,0.24,0.09),all:1,col:s=>s.skin,offs:[arm(-1,-0.36),arm(1,-0.36)]},
@@ -598,6 +621,7 @@ $('#sPresent').innerHTML=presentKids+'<small>/'+totalKids+'</small>';
 const sState=$('#sState');let stT=0;
 function hud(dt){
   stT-=dt;if(stT>0)return;stT=0.25;
+  if(D.holiday){sState.textContent='วันหยุด';return;}
   if(!checkedAny){sState.textContent='ยังไม่เช็คแถววันนี้';return;}
   const walking=students.some(function(s){return s.lined&&!s.teacher&&s.mode==='walk';});
   sState.textContent=walking?(lined?'กำลังเข้าแถว':'กำลังแยกย้าย'):(lined?'เข้าแถวแล้ว':'แยกย้ายแล้ว');
