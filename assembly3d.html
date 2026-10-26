@@ -387,7 +387,7 @@ CLASSES.forEach(function(c,ci){
       sc:h*(sex==='g'?0.985:1)*rr(0.97,1.04),skin:pick(skinT),hair:pick(hairT),shirt:jacket?pick(jackets):pick(whites),
       bottom:sex==='g'?0x1b2140:pick([0xb59b6a,0xae9462,0xbfa573]),heading:0,th:0,final:0,mode:'stand',delay:0,speed:1.7,phase:rnd()*6,amp:0,refs:[],label:null};
     o.rowX=sex==='g'?xc-0.62:xc+0.62;
-    if(o.lined){o.tx=lineX;o.tz=Z0+idx*GAP;}else{const w=wanderTarget(o.zone);o.tx=w[0];o.tz=w[1];o.mode='walk';o.delay=rnd()*3;o.speed=rr(0.6,1.1);}
+    if(o.lined){o.tx=lineX;o.tz=Z0+idx*GAP;}else{const w=wanderTarget(o.zone);o.tx=w[0];o.tz=w[1];o.mode='walk';o.delay=rnd()*3;o.speed=rr(0.35,0.6);}
     o.x=o.tx;o.z=o.tz;if(!o.lined){const w=wanderTarget(o.zone);o.x=w[0];o.z=w[1];}
     students.push(o);
   };
@@ -454,7 +454,7 @@ function stepStudent(s,dt){
     const dx=s.tx-s.x,dz=s.tz-s.z,d=Math.hypot(dx,dz);
     if(d<0.06){s.x=s.tx;s.z=s.tz;s.mode='stand';s.th=s.final;
       // คนที่ยังไม่เช็คว่ามา: หยุดสักพักแล้วเดินต่อไปจุดใหม่ (เดินเล่นไปเรื่อยๆ)
-      if(!s.lined&&!s.teacher){const w=wanderTarget(s.zone);s.tx=w[0];s.tz=w[1];s.mode='walk';s.delay=rr(1.5,5);s.speed=rr(0.6,1.1);}}
+      if(!s.lined&&!s.teacher){const w=wanderTarget(s.zone);s.tx=w[0];s.tz=w[1];s.mode='walk';s.delay=rr(1.5,5);s.speed=rr(0.35,0.6);}}
     else{const st=Math.min(d,s.speed*dt);s.x+=dx/d*st;s.z+=dz/d*st;s.th=Math.atan2(-dx,-dz);s.phase+=st*5.4;}
   }
   s.heading+=wrapA(s.th-s.heading)*(1-Math.exp(-dt*(s.mode==='walk'&&s.delay<=0?9:5)));
@@ -467,7 +467,7 @@ function sendStudents(toLine){
     if(s.teacher||!s.lined)return;
     if(toLine){s.tx=s.lineX;s.tz=Z0+s.line*GAP;s.final=0;}
     else{s.tx=-24+Math.random()*48;s.tz=-5+Math.random()*21;s.final=(Math.random()*2-1)*Math.PI;}
-    s.mode='walk';s.delay=Math.random()*1.5;s.speed=2.3+Math.random()*0.8;
+    s.mode='walk';s.delay=Math.random()*1.5;s.speed=1.3+Math.random()*0.4;
   });
 }
 /* ป้ายห้อง + ป้ายชื่อคนที่เดินรอบนอก */
@@ -588,7 +588,7 @@ function joinLine(s){
   const k=s.cls+s.sex;s.line=rowLen[k]||0;rowLen[k]=s.line+1;
   s.lined=true;s.lineX=s.rowX;s.final=0;
   if(lined){s.tx=s.rowX;s.tz=Z0+s.line*GAP;}else{s.tx=-24+Math.random()*48;s.tz=-5+Math.random()*21;}
-  s.mode='walk';s.delay=0;s.speed=2.2;
+  s.mode='walk';s.delay=0;s.speed=1.2;
   const c=CLASSES[s.cls];(s.sex==='g'?c.gp:c.bp).push({id:s.id});
   if(s.line+1>classPos[s.cls].n)classPos[s.cls].n=s.line+1;
 }
