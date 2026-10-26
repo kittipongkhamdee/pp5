@@ -705,6 +705,7 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
   background:var(--card2);font-family:var(--font);font-size:12px;font-weight:500;color:var(--txt2);cursor:pointer;
 }
 #admin-topbar-btn,#topbar #logout-btn{display:none!important}
+#rpt-content .late-card .rpt-table{background:var(--card)}
 #ck-st-menu{position:fixed;z-index:3000;background:var(--card);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.22);padding:5px;display:flex;gap:5px}
 #ck-st-menu button{border:none;border-radius:12px;height:42px;min-width:56px;font-weight:700;font-size:14.5px;font-family:inherit;cursor:pointer}
 /* เลื่อนรายชื่อลง: ซ่อนแถวเลือกกิจกรรม/ชั้นเรียน ให้เห็นรายชื่อมากขึ้น — กลับมาแสดงเมื่อเลื่อนขึ้นถึงคนแรก */
@@ -2603,18 +2604,20 @@ async function renderRptLate(){
     S._lateRows=rows;S._lateD=D;
     if(!rows.length&&!D.absent.length&&!D.pending.length){body.innerHTML='<div class="empty-state">ไม่มีนักเรียนที่เช็คแถวเช้าว่าขาด</div>';return}
     const subTxt=r=>r.subs.map(x=>`${esc(x.subject_name)}${x.teacher_name?` (${esc(x.teacher_name)})`:''}`).join(', ');
-    const sec=(t,c,n)=>`<div class="section-title" style="color:${c}">${t} · ${n} คน</div>`;
+    // แต่ละกลุ่มอยู่ในการ์ดพื้นทึบ — ตาราง rpt-table โปร่งใส มองเห็นพื้นหลังไล่สีของหน้าแล้วอ่านยาก
+    const card=(t,c,n,inner)=>`<div class="late-card" style="background:var(--card);border:1px solid var(--sep);border-top:4px solid ${c};border-radius:16px;padding:12px;margin-bottom:12px;box-shadow:0 2px 10px rgba(0,0,0,.05)"><div style="font-weight:800;font-size:14.5px;color:${c};margin-bottom:8px">${t} · ${n} คน</div>${inner}</div>`;
+    const sec=null;
     let html;
     if(md==='day'){
       const rs=D.roomStat[from]||{done:0,total:S.classes.length};
       const head=`<div style="font-size:13px;margin:0 2px 10px;padding:8px 12px;border-radius:12px;background:${rs.done>=rs.total?'#ecfdf5':'#fff7ed'};color:${rs.done>=rs.total?'#065f46':'#9a3412'}">📋 ${thDate(from)} ครูวิชาเช็คชื่อแล้ว <b>${rs.done}/${rs.total}</b> ห้อง${rs.done<rs.total?' — ข้อมูลยังไม่ครบ':''}</div>`;
       // บนจอ: ปุ่ม "N วิชา ›" กดดูรายละเอียดใน popup · ฉบับพิมพ์/PDF แสดงรายละเอียดเต็ม
-      const tLate=full=>rows.length?sec('🕘 มาสาย / ไม่เข้าแถว','var(--orange,#d97706)',rows.length)+`<div class="table-wrap"><table class="rpt-table"><thead><tr><th>#</th><th class="left">ชื่อ-สกุล</th><th>ชั้น</th><th${full?' class="left"':''}>มาเรียนวิชา${full?' (ครูที่เช็ค)':''}</th></tr></thead><tbody>
-        ${rows.map((r,i)=>`<tr><td>${i+1}</td><td class="left">${esc(r.stu.student_name)}</td><td style="white-space:nowrap">${classLabel(r.stu.grade_level,r.stu.room)}</td>${full?`<td class="left" style="font-size:12.5px">${subTxt(r)}</td>`:`<td><button onclick="_lateDetail(${i})" style="border:1px solid var(--sep);background:var(--card2);color:var(--primary,#2563EB);border-radius:99px;padding:4px 10px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap">${r.subs.length} วิชา ›</button></td>`}</tr>`).join('')}</tbody></table></div>`:'';
-      const tAbs=D.absent.length?sec('❌ ขาดทั้งวัน','var(--red)',D.absent.length)+`<div class="table-wrap"><table class="rpt-table"><thead><tr><th>#</th><th class="left">ชื่อ-สกุล</th><th>ชั้น</th></tr></thead><tbody>
-        ${D.absent.map((r,i)=>`<tr><td>${i+1}</td><td class="left">${esc(r.stu.student_name)}</td><td style="white-space:nowrap">${classLabel(r.stu.grade_level,r.stu.room)}</td></tr>`).join('')}</tbody></table></div>`:'';
-      const tPend=D.pending.length?sec('⏳ ยังไม่มีข้อมูลจากชั่วโมงเรียน','var(--txt3)',D.pending.reduce((a,p)=>a+p.stus.length,0))+`<div style="font-size:12px;color:var(--txt3);margin:-4px 2px 8px">วันนั้นยังไม่มีครูวิชาเช็คชื่อห้องนี้ — รอครูบันทึกเวลาเรียนใน ปพ.5</div>`+
-        D.pending.map(p=>`<div style="background:var(--card);border:1px solid var(--sep);border-radius:12px;padding:10px 12px;margin-bottom:8px"><b>${classLabel(p.gl,p.room)}</b> <span style="color:var(--txt3);font-size:12.5px">· ${p.stus.length} คน</span><div style="font-size:13px;color:var(--txt2);margin-top:4px;line-height:1.6">${p.stus.map(x=>esc(x.student_name)).join(', ')}</div></div>`).join(''):'';
+      const tLate=full=>rows.length?card('🕘 มาสาย / ไม่เข้าแถว','#d97706',rows.length,`<div class="table-wrap"><table class="rpt-table"><thead><tr><th>#</th><th class="left">ชื่อ-สกุล</th><th>ชั้น</th><th${full?' class="left"':''}>มาเรียนวิชา${full?' (ครูที่เช็ค)':''}</th></tr></thead><tbody>
+        ${rows.map((r,i)=>`<tr><td>${i+1}</td><td class="left">${esc(r.stu.student_name)}</td><td style="white-space:nowrap">${classLabel(r.stu.grade_level,r.stu.room)}</td>${full?`<td class="left" style="font-size:12.5px">${subTxt(r)}</td>`:`<td><button onclick="_lateDetail(${i})" style="border:1px solid var(--sep);background:var(--card2);color:var(--primary,#2563EB);border-radius:99px;padding:4px 10px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap">${r.subs.length} วิชา ›</button></td>`}</tr>`).join('')}</tbody></table></div>`):'';
+      const tAbs=D.absent.length?card('❌ ขาดทั้งวัน','#dc2626',D.absent.length,`<div class="table-wrap"><table class="rpt-table"><thead><tr><th>#</th><th class="left">ชื่อ-สกุล</th><th>ชั้น</th></tr></thead><tbody>
+        ${D.absent.map((r,i)=>`<tr><td>${i+1}</td><td class="left">${esc(r.stu.student_name)}</td><td style="white-space:nowrap">${classLabel(r.stu.grade_level,r.stu.room)}</td></tr>`).join('')}</tbody></table></div>`):'';
+      const tPend=D.pending.length?card('⏳ ยังไม่มีข้อมูลจากชั่วโมงเรียน','#6b7280',D.pending.reduce((a,p)=>a+p.stus.length,0),`<div style="font-size:12px;color:var(--txt3);margin:-2px 0 8px">วันนั้นยังไม่มีครูวิชาเช็คชื่อห้องนี้ — รอครูบันทึกเวลาเรียนใน ปพ.5</div>`+
+        D.pending.map(p=>`<div style="background:var(--card2);border-radius:12px;padding:10px 12px;margin-bottom:8px"><b>${classLabel(p.gl,p.room)}</b> <span style="color:var(--txt3);font-size:12.5px">· ${p.stus.length} คน</span><div style="font-size:13px;color:var(--txt2);margin-top:4px;line-height:1.6">${p.stus.map(x=>esc(x.student_name)).join(', ')}</div></div>`).join('')):'';
       html=head+tLate(false)+tAbs+tPend;S._latePrint=head+tLate(true)+tAbs+tPend;
     }else{
       const by={};
@@ -2625,8 +2628,8 @@ async function renderRptLate(){
       const nPend=D.pending.reduce((a,p)=>a+p.stus.length,0);
       html=`<div class="section-title">${new Date(from+'T00:00:00').toLocaleDateString('th-TH',{month:'long',year:'numeric'})} · มาสาย ${list.length} คน · ${rows.length} ครั้ง</div>
         ${nPend?`<div style="font-size:12.5px;margin:0 2px 10px;padding:8px 12px;border-radius:12px;background:#fff7ed;color:#9a3412">⏳ มี ${nPend} รายการที่ยังสรุปไม่ได้ (ครูวิชายังไม่เช็คชื่อห้องนั้นในวันนั้น)</div>`:''}
-        <div class="table-wrap"><table class="rpt-table"><thead><tr><th>#</th><th class="left">ชื่อ-สกุล</th><th>ชั้น</th><th>มาสาย</th><th>ขาดทั้งวัน</th><th class="left">วันที่มาสาย</th></tr></thead><tbody>
-        ${list.map((o,i)=>`<tr><td>${i+1}</td><td class="left">${esc(o.stu.student_name)}</td><td style="white-space:nowrap">${classLabel(o.stu.grade_level,o.stu.room)}</td><td><b style="color:${o.dates.length>=5?'var(--red)':'var(--txt)'}">${o.dates.length}</b></td><td>${o.abs||'-'}</td><td class="left" style="font-size:12px">${o.dates.map(d=>+d.slice(8)).join(', ')}</td></tr>`).join('')}</tbody></table></div>`;
+        <div class="late-card" style="background:var(--card);border:1px solid var(--sep);border-radius:16px;padding:12px;box-shadow:0 2px 10px rgba(0,0,0,.05)"><div class="table-wrap"><table class="rpt-table"><thead><tr><th>#</th><th class="left">ชื่อ-สกุล</th><th>ชั้น</th><th>มาสาย</th><th>ขาดทั้งวัน</th><th class="left">วันที่มาสาย</th></tr></thead><tbody>
+        ${list.map((o,i)=>`<tr><td>${i+1}</td><td class="left">${esc(o.stu.student_name)}</td><td style="white-space:nowrap">${classLabel(o.stu.grade_level,o.stu.room)}</td><td><b style="color:${o.dates.length>=5?'var(--red)':'var(--txt)'}">${o.dates.length}</b></td><td>${o.abs||'-'}</td><td class="left" style="font-size:12px">${o.dates.map(d=>+d.slice(8)).join(', ')}</td></tr>`).join('')}</tbody></table></div></div>`;
     }
     if(md!=='day')S._latePrint=html;
     S._lateHtml=`<div class="sr-header"><div class="sr-school">${esc(S.schoolName||'')}</div><div class="sr-title">รายงานนักเรียนมาสาย / ไม่เข้าแถว ${md==='day'?thDate(from):'ประจำเดือน'+new Date(from+'T00:00:00').toLocaleDateString('th-TH',{month:'long',year:'numeric'})}</div></div>`+S._latePrint;
