@@ -2557,8 +2557,10 @@ async function renderRptLate(){
     const subTxt=r=>r.subs.map(x=>`${esc(x.subject_name)}${x.teacher_name?` (${esc(x.teacher_name)})`:''}`).join(', ');
     let html;
     if(md==='day'){
-      html=`<div class="section-title">${thDate(from)} · ${rows.length} คน</div><div class="table-wrap"><table class="rpt-table"><thead><tr><th>#</th><th class="left">ชื่อ-สกุล</th><th>ชั้น</th><th class="left">มาเรียนวิชา (ครูที่เช็ค)</th></tr></thead><tbody>
-        ${rows.map((r,i)=>`<tr><td>${i+1}</td><td class="left">${esc(r.stu.student_name)}</td><td style="white-space:nowrap">${classLabel(r.stu.grade_level,r.stu.room)}</td><td class="left" style="font-size:12.5px">${subTxt(r)}</td></tr>`).join('')}</tbody></table></div>`;
+      // บนจอ: ปุ่ม "N วิชา ›" กดดูรายละเอียดใน popup (คอลัมน์วิชา/ครูยาวจนตารางแน่นบนมือถือ) · ฉบับพิมพ์/PDF ยังแสดงรายละเอียดเต็ม
+      const tbl=full=>`<div class="section-title">${thDate(from)} · ${rows.length} คน</div><div class="table-wrap"><table class="rpt-table"><thead><tr><th>#</th><th class="left">ชื่อ-สกุล</th><th>ชั้น</th><th${full?' class="left"':''}>มาเรียนวิชา${full?' (ครูที่เช็ค)':''}</th></tr></thead><tbody>
+        ${rows.map((r,i)=>`<tr><td>${i+1}</td><td class="left">${esc(r.stu.student_name)}</td><td style="white-space:nowrap">${classLabel(r.stu.grade_level,r.stu.room)}</td>${full?`<td class="left" style="font-size:12.5px">${subTxt(r)}</td>`:`<td><button onclick="_lateDetail(${i})" style="border:1px solid var(--sep);background:var(--card2);color:var(--primary,#2563EB);border-radius:99px;padding:4px 10px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap">${r.subs.length} วิชา ›</button></td>`}</tr>`).join('')}</tbody></table></div>`;
+      html=tbl(false);S._latePrint=tbl(true);
     }else{
       const by={};rows.forEach(r=>{(by[r.sid]=by[r.sid]||{stu:r.stu,dates:[]}).dates.push(r.date)});
       const list=Object.values(by).sort((a,b)=>b.dates.length-a.dates.length||String(a.stu.student_code).localeCompare(String(b.stu.student_code)));
@@ -2566,9 +2568,24 @@ async function renderRptLate(){
       html=`<div class="section-title">${new Date(from+'T00:00:00').toLocaleDateString('th-TH',{month:'long',year:'numeric'})} · ${list.length} คน · ${rows.length} ครั้ง</div><div class="table-wrap"><table class="rpt-table"><thead><tr><th>#</th><th class="left">ชื่อ-สกุล</th><th>ชั้น</th><th>ครั้ง</th><th class="left">วันที่</th></tr></thead><tbody>
         ${list.map((o,i)=>`<tr><td>${i+1}</td><td class="left">${esc(o.stu.student_name)}</td><td style="white-space:nowrap">${classLabel(o.stu.grade_level,o.stu.room)}</td><td><b style="color:${o.dates.length>=5?'var(--red)':'var(--txt)'}">${o.dates.length}</b></td><td class="left" style="font-size:12px">${o.dates.map(d=>+d.slice(8)).join(', ')}</td></tr>`).join('')}</tbody></table></div>`;
     }
-    S._lateHtml=`<div class="sr-header"><div class="sr-school">${esc(S.schoolName||'')}</div><div class="sr-title">รายงานนักเรียนมาสาย / ไม่เข้าแถว ${md==='day'?thDate(from):'ประจำเดือน'+new Date(from+'T00:00:00').toLocaleDateString('th-TH',{month:'long',year:'numeric'})}</div></div>`+html;
+    if(md!=='day')S._latePrint=html;
+    S._lateHtml=`<div class="sr-header"><div class="sr-school">${esc(S.schoolName||'')}</div><div class="sr-title">รายงานนักเรียนมาสาย / ไม่เข้าแถว ${md==='day'?thDate(from):'ประจำเดือน'+new Date(from+'T00:00:00').toLocaleDateString('th-TH',{month:'long',year:'numeric'})}</div></div>`+S._latePrint;
     body.innerHTML=`<div style="display:flex;gap:8px;margin-bottom:10px"><button class="btn btn-blue btn-sm" onclick="_openPrintWin('มาสาย-ไม่เข้าแถว',S._lateHtml)">🖨 พิมพ์ / PDF</button><button class="btn btn-green btn-sm" onclick="_lateExcel()">📊 Excel</button></div>`+html;
   }catch(e){body.innerHTML='<div class="empty-state">โหลดไม่สำเร็จ: '+esc(e.message||e)+'</div>'}
+}
+function _lateDetail(i){
+  const r=S._lateRows?.[i];if(!r)return;
+  document.getElementById('late-pop')?.remove();
+  const el=document.createElement('div');el.id='late-pop';
+  el.style.cssText='position:fixed;inset:0;z-index:4000;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;padding:20px';
+  el.innerHTML=`<div style="background:var(--card);border-radius:20px;width:100%;max-width:380px;padding:18px;box-shadow:0 20px 50px rgba(0,0,0,.25)">
+    <div style="font-weight:800;font-size:16px">${esc(r.stu.student_name)}</div>
+    <div style="font-size:12.5px;color:var(--txt3);margin-bottom:12px">${classLabel(r.stu.grade_level,r.stu.room)} · ${thDate(r.date)} · เช็คแถวเช้า: <b style="color:var(--red)">ขาด</b></div>
+    <div style="font-size:12.5px;font-weight:700;color:var(--txt2);margin-bottom:6px">มาเรียนวิชา (ครูที่เช็คว่ามา)</div>
+    ${r.subs.map(x=>`<div style="padding:9px 12px;border-radius:12px;background:var(--card2);margin-bottom:6px"><div style="font-weight:700;font-size:14px">📘 ${esc(x.subject_name)}</div><div style="font-size:12.5px;color:var(--txt2)">👤 ${esc(x.teacher_name||'-')}</div></div>`).join('')||'<div style="color:var(--txt3)">-</div>'}
+    <button onclick="document.getElementById('late-pop').remove()" style="margin-top:10px;width:100%;border:none;border-radius:12px;padding:11px;background:var(--primary,#2563EB);color:#fff;font:inherit;font-weight:700;cursor:pointer">ปิด</button></div>`;
+  el.addEventListener('click',e=>{if(e.target===el)el.remove()});
+  document.body.appendChild(el);
 }
 function _lateExcel(){
   if(typeof XLSX==='undefined'){toast('กำลังโหลดตัวสร้าง Excel ลองใหม่อีกครั้ง','er');return}
