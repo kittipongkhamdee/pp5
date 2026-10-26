@@ -1671,6 +1671,7 @@ async function renderHome(){
   </div>
   ${isNoSchool(today)?`<div style="background:rgba(148,163,184,.14);border:1px solid rgba(148,163,184,.35);border-radius:var(--radius);padding:12px 16px;margin-bottom:12px;font-size:14px;color:var(--txt2)">🏖️ วันนี้เป็น<b style="color:var(--txt)">${esc(holidayName(today))}</b> — ไม่ต้องเช็คชื่อ</div>`:''}
   <div id="home-streak"></div>
+  <div id="home-late"></div>
   <div class="home-stats-row" style="display:flex;justify-content:space-around;background:var(--card);border:1px solid var(--sep);border-radius:var(--radius);padding:8px 10px;margin-bottom:16px;font-size:13px;color:var(--txt2)">
     <span><b style="color:var(--txt);font-size:15px">${acts.length}</b> กิจกรรม</span>
     <span><b style="color:var(--txt);font-size:15px">${S.students.length}</b> นักเรียน</span>
@@ -1735,6 +1736,7 @@ async function renderHome(){
   html+=`</div>`;
   $('home-content').innerHTML=html;
   _homeStreakBanner();
+  _homeLateBanner();
 }
 
 // แตะ "N/M ห้อง" บนหน้าแรก → บอกห้องที่ยังไม่เช็ค
@@ -1744,6 +1746,22 @@ function _showUncheckedRooms(label,doneKeys){
   _showWarn(`รอบ${label} ยังไม่เช็ค ${left.length} ห้อง`,left.join('\n')||'เช็คครบทุกห้องแล้ว');
 }
 // ป้ายบนหน้าแรก: นักเรียนขาด/ลาติดต่อกัน 3 วันเรียนขึ้นไป (14 วันล่าสุด ไม่นับวันหยุด) — แคช 10 นาทีลดการดึงข้อมูล
+// ป้ายหน้าแรก: มาสาย / ไม่เข้าแถว วันนี้ (เช็คแถวเช้าว่าขาด แต่มาเรียนในชั่วโมงเรียน) — แคช 10 นาทีต่อแท็บ
+async function _homeLateBanner(){
+  const el=$('home-late'); if(!el) return;
+  const today=todayStr(); if(isNoSchool(today)) return;
+  const act=S.activities.find(a=>a.is_active); if(!act) return;
+  let r=null;
+  try{ const c=JSON.parse(sessionStorage.getItem('act_home_late')||'null'); if(c&&c.d===today&&c.a===act.id&&Date.now()-c.ts<600000) r=c.r; }catch(e){}
+  if(!r){
+    try{ const D=await _lateData(act.id,today,today); const rs=D.roomStat[today]||{done:0,total:S.classes.length};
+      r={late:D.late.length,abs:D.absent.length,pend:D.pending.reduce((a,p)=>a+p.stus.length,0),done:rs.done,total:rs.total}; }catch(e){ return; }
+    try{ sessionStorage.setItem('act_home_late',JSON.stringify({ts:Date.now(),d:today,a:act.id,r})); }catch(e){}
+  }
+  if(!r.late&&!r.abs) return;
+  el.innerHTML=`<div onclick="S.rptLateAct=${act.id};S.rptLateMode='day';S.rptLateDate='${today}';S.rptTab='late';nav('report')" style="cursor:pointer;background:rgba(217,119,6,.1);border:1px solid rgba(217,119,6,.3);color:#92400e;border-radius:var(--radius);padding:10px 14px;margin-bottom:12px;font-size:14px;display:flex;align-items:center;gap:8px">
+    <span>🕘</span><span style="flex:1">วันนี้มาสาย / ไม่เข้าแถว <b>${r.late} คน</b>${r.abs?` · ขาดทั้งวัน <b style="color:#b91c1c">${r.abs} คน</b>`:''}<span style="display:block;font-size:12px;opacity:.8">ครูวิชาเช็คชื่อแล้ว ${r.done}/${r.total} ห้อง${r.pend?` · รอข้อมูล ${r.pend} คน`:''}</span></span><span>›</span></div>`;
+}
 async function _homeStreakBanner(){
   const el=$('home-streak'); if(!el) return;
   const acts=S.activities.filter(a=>a.is_active); if(!acts.length) return;
