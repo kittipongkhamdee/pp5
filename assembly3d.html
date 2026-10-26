@@ -90,6 +90,7 @@ button{font:inherit;color:inherit}
         <button class="chip" data-view="side" aria-pressed="false">ด้านข้าง</button>
         <button class="chip" data-view="top" aria-pressed="false">มุมสูง</button>
         <button class="chip" data-view="building" aria-pressed="false">อาคารเรียน</button>
+        <button class="chip" data-view="campus" aria-pressed="false">รอบอาคาร</button>
       </div>
       <div class="row" id="gAct"><span class="row-label">ควบคุม</span>
         <button class="chip only-narrow" id="boardBtn" aria-pressed="false">รายชื่อห้อง</button>
@@ -370,6 +371,56 @@ palm(-3.8,-16.8,9.0,-0.5);palm(3.8,-16.8,9.6,0.6);
     d.position.set(x+rr(-12,12),2.7*s,z+rr(-12,12));d.updateMatrix();im2.setMatrixAt(k,d.matrix);}
   scene.add(im);scene.add(im2);
 })();
+/* ---------- บริเวณรอบอาคาร 4 (อาคารรักนักไทย) ตามแผนผังโรงเรียน ----------
+   ทิศ: -z = เหนือ (หลังอาคาร), +z = ใต้ (ลานเข้าแถว) · ระยะ/ขนาดประมาณจากแผนผัง ไม่ใช่แบบรังวัด */
+(function(){
+  const roadM=L(0x3d4046),lineM=L(0xe9e6da),curbM=L(0xd8d4c8);
+  function road(x,z,w,d){
+    const r=plane(w,d,roadM);r.rotation.x=-Math.PI/2;r.position.set(x,0.03,z);
+    const horiz=w>d,len=horiz?w:d,n=Math.floor(len/6);
+    for(let i=0;i<n;i++){const m=plane(horiz?2.4:0.18,horiz?0.18:2.4,lineM);m.rotation.x=-Math.PI/2;
+      m.position.set(horiz?x-len/2+3+i*6:x,0.05,horiz?z:z-len/2+3+i*6);}
+    return r;
+  }
+  // ถนนรอบบล็อกอาคาร 4: เหนือ (หลังอาคาร) · ใต้ (ถนนเส้นกลาง หน้าลาน) · ตะวันตก · ตะวันออก
+  road(0,-58,190,7);road(0,42,190,7);road(-58,-8,7,107);road(58,-8,7,107);
+  road(-58,75,7,60);road(58,75,7,60);road(0,75,7,60);
+  // ขอบคันหิน
+  [[0,-54.3,190],[0,38.3,190]].forEach(function(c){box(c[2],0.18,0.4,c[0],0.09,c[1],curbM,false);});
+  const roofR=L(0xb24b2c),wall=L(0xf2ead2),blue=L(0x2f5fa8),tin=L(0x8f9aa3);
+  function house(x,z,w,d,h,roof,label){
+    box(w,h,d,x,h/2,z,wall);
+    const r=new THREE.Mesh(new THREE.ConeGeometry(Math.max(w,d)*0.75,h*0.55,4),roof||roofR);
+    r.rotation.y=Math.PI/4;r.scale.set(w/Math.max(w,d),1,d/Math.max(w,d));r.position.set(x,h+h*0.27,z);r.castShadow=true;scene.add(r);
+    box(1.0,2.0,0.1,x,1.0,z+d/2+0.03,L(0x6b4423),false);
+    if(label){const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:labelTex(label,'#f4c542',360,80,30),transparent:true,depthWrite:false}));sp.scale.set(16,3.6,1);sp.position.set(x,h+h*0.6+3,z);scene.add(sp);campusLabels.push(sp);}
+  }
+  window.campusLabels=[];
+  // ฝั่งตะวันออก (ขวาเมื่อมองจากลาน): บ้านพักครู 12 ×2, บ้านพักผู้บริหาร 11, โรงรถ 3
+  house(70,-46,7,6,3.4,null,'12 บ้านพักครู');house(70,-34,7,6,3.4,null,'12 บ้านพักครู');
+  house(70,-20,6,8,3.4,null,'11 บ้านพักผู้บริหาร');
+  box(10,3.2,9,72,1.6,-2,L(0xd9dde0));(function(){const r=box(11,0.25,10,72,3.3,-2,tin,false);r.rotation.x=0.06;})();
+  // ฝั่งตะวันตก: ห้องน้ำ 16 + อาคารเล็ก
+  house(-72,-24,5,5,2.8,L(0x2f5fa8),'16 ห้องน้ำ');house(-76,-46,6,8,3.2,null,null);house(-88,-34,6,8,3.2,null,null);
+  // ทิศใต้ ข้ามถนนเส้นกลาง: หอประชุมโรงอาหาร 5, สระน้ำ 7, อาคารอนุบาล 2, กระท่อม 17
+  box(10,4.2,18,-38,2.1,62,wall);(function(){const r=new THREE.Mesh(new THREE.ConeGeometry(13,3,4),roofR);r.rotation.y=Math.PI/4;r.scale.set(0.6,1,1.05);r.position.set(-38,5.7,62);scene.add(r);})();
+  house(36,82,12,9,3.6,null,'2 อาคารอนุบาล');house(-4,58,4,4,2.4,null,null);house(22,56,4,4,2.4,null,null);
+  const pond=new THREE.Mesh(new THREE.CircleGeometry(9,32),L(0x4fa8d8));pond.rotation.x=-Math.PI/2;pond.scale.set(1.5,0.8,1);pond.position.set(-6,0.04,84);scene.add(pond);
+  // ต้นไม้: สวนป่าอนุรักษ์ทิศเหนือ (หลังถนน) + แนวต้นไม้รอบบล็อก
+  const sg=new THREE.SphereGeometry(2.4,8,6),tr=new THREE.CylinderGeometry(0.25,0.35,2.4,6);
+  const spots=[];
+  for(let i=0;i<(mobile?70:120);i++)spots.push([rr(-95,95),rr(-95,-64)]);
+  for(let i=0;i<(mobile?28:44);i++){const side=rnd()<0.5?-1:1;spots.push([side*rr(47,53),rr(-50,34)]);}
+  for(let i=0;i<(mobile?16:26);i++)spots.push([rr(-44,44),rr(-52,-41)]);
+  for(let i=0;i<(mobile?20:34);i++){const x=rr(-90,90),z=rr(48,100);if(Math.hypot((x+6)/1.5,(z-84)/0.8)<11||Math.abs(x+38)<8&&Math.abs(z-62)<11)continue;spots.push([x,z]);}
+  const ic=new THREE.InstancedMesh(sg,L(0x3f7a34),spots.length),it=new THREE.InstancedMesh(tr,L(0x6b5238),spots.length),d=new THREE.Object3D();
+  spots.forEach(function(p,k){const s=rr(0.7,1.25);d.position.set(p[0],3.4*s,p[1]);d.scale.setScalar(s);d.updateMatrix();ic.setMatrixAt(k,d.matrix);
+    d.position.set(p[0],1.2*s,p[1]);d.updateMatrix();it.setMatrixAt(k,d.matrix);});
+  ic.castShadow=true;scene.add(ic);scene.add(it);
+  // ป้ายชื่ออาคาร 4 บนหลังคา
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:labelTex('4 อาคารรักนักไทย','#f4c542',420,90,36),transparent:true,depthWrite:false}));
+  sp.scale.set(26,5.6,1);sp.position.set(0,H*3+6,-28);scene.add(sp);campusLabels.push(sp);
+})();
 setLoad(64);
 
 /* ---------- นักเรียน: มา = เข้าแถวตามลำดับเวลาเช็ค · ยังไม่เช็คว่ามา = เดินเล่นรอบนอก + ป้ายชื่อ ---------- */
@@ -532,7 +583,7 @@ const hi=new THREE.Mesh(new THREE.PlaneGeometry(1,1),hiMat);hi.rotation.x=-Math.
 setLoad(90);
 
 /* camera */
-const VIEWS={photo:{t:[0,3.6,-12],r:34,th:0,ph:1.5},front:{t:[0,1.5,3],r:14,th:Math.PI,ph:1.42},side:{t:[0,2.5,-4],r:42,th:Math.PI/2,ph:1.38},top:{t:[0,0,-6],r:62,th:0,ph:0.16},building:{t:[0,5,-24],r:44,th:0.4,ph:1.36}};
+const VIEWS={photo:{t:[0,3.6,-12],r:34,th:0,ph:1.5},front:{t:[0,1.5,3],r:14,th:Math.PI,ph:1.42},side:{t:[0,2.5,-4],r:42,th:Math.PI/2,ph:1.38},top:{t:[0,0,-6],r:62,th:0,ph:0.16},building:{t:[0,5,-24],r:44,th:0.4,ph:1.36},campus:{t:[0,0,-8],r:135,th:0.35,ph:0.62}};
 const cur={t:new THREE.Vector3(),r:36,th:0,ph:1.49},want={t:new THREE.Vector3(),r:36,th:0,ph:1.49};
 const fit=clamp(1.3/((stage.clientWidth||window.innerWidth)/(stage.clientHeight||window.innerHeight)),1,2.1);
 function setView(name){const v=VIEWS[name];want.t.set(v.t[0],v.t[1],v.t[2]);want.r=v.r*fit;want.th=cur.th+wrapA(v.th-cur.th);want.ph=v.ph;}
@@ -664,7 +715,7 @@ function tick(){
   for(let i=0;i<partMeshes.length;i++)partMeshes[i].instanceMatrix.needsUpdate=true;
   if(flagState.running){flagState.t=Math.min(1,flagState.t+dt/14);placeFlag();if(flagState.t>=1){flagState.running=false;flagBtn.disabled=false;flagBtn.textContent='ชักธงชาติ';}}
   waveFlags(time);
-  labelGroup.visible=showLabels&&lined;chipGroup.visible=showLabels&&lined;nameGroup.visible=showNames;
+  labelGroup.visible=showLabels&&lined;(window.campusLabels||[]).forEach(function(sp){sp.visible=showLabels&&cur.r>110;}); // ป้ายอาคารแสดงเฉพาะตอนมองไกล ไม่บังธง/ลานเข้าแถวchipGroup.visible=showLabels&&lined;nameGroup.visible=showNames;
   for(let i=0;i<labelSprites.length;i++){const sp=labelSprites[i],d=camera.position.distanceTo(sp.position),w=clamp(d*0.07,1.3,3.4);sp.scale.set(w,w*0.375,1);sp.material.opacity=clamp((d-8)/6,0,1);}
   for(let i=0;i<students.length;i++){const s=students[i],sp=s.label;if(!sp)continue;
     const d=camera.position.distanceTo(sp.position);
