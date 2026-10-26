@@ -42,6 +42,10 @@ html,body{height:100%;font-family:var(--font);color:var(--txt);overflow:hidden;b
 html[data-theme="dark"],html[data-theme="dark"] body{background:linear-gradient(150deg,#0f172a 0%,#111827 55%,#1e1b4b 100%)}
 @media(prefers-color-scheme:dark){html:not([data-theme="light"]),html:not([data-theme="light"]) body{background:linear-gradient(150deg,#0f172a 0%,#111827 55%,#1e1b4b 100%)}}
 #app{display:flex;flex-direction:column;height:100%;margin:0 auto;position:relative;width:100%;max-width:640px}
+/* พื้นหลังขาวล้วน เข้ากับทุกธีม (เดิมไล่สีฟ้า-ม่วง ไม่เข้ากับธีมเขียว/แดง) — การ์ดสีขาวจึงใส่เงาให้แยกจากพื้น */
+html:not([data-theme="dark"]),html:not([data-theme="dark"]) body{background:#fff!important}
+html:not([data-theme="dark"]) :is(.card,.stu-card,.home-stats-row,.late-card,.stat-box){box-shadow:0 2px 12px rgba(15,23,42,.08),0 1px 2px rgba(15,23,42,.04)!important}
+html:not([data-theme="dark"]) :is(.card,.home-stats-row,.late-card){border-color:#eef0f4!important}
 
 /* ── Top Bar ── */
 #topbar{
