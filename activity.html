@@ -4062,6 +4062,7 @@ async function doLogin(){
     S.user=data.user;
     PTheme.setUser(S.user.id);
     await Promise.all([_loadTeacherProfile(),_loadLastCk()]);
+    _welcomePopup();
     // จำเฉพาะอีเมล — ไม่เก็บรหัสผ่านไว้ในเครื่อง (session ค้างอยู่ผ่าน Supabase token อยู่แล้ว)
     if($('login-remember')?.checked){
       localStorage.setItem('_ac_email',email);
@@ -4207,6 +4208,7 @@ async function init(){
     S.user=session.user;
     PTheme.setUser(S.user.id);
     await Promise.all([_loadTeacherProfile(),_loadLastCk()]);
+    _welcomePopup();
     $('login-overlay').style.display='none';
     $('logout-btn').style.display='';
     await loadAppData();
@@ -4226,16 +4228,61 @@ function _wxShow(d){
   if(d.pm!=null){const [l,c]=AQ(d.pm);p.innerHTML=`PM2.5 <b style="color:${c}">${d.pm.toFixed(1)}</b> µg/m³ · <b style="color:${c}">${l}</b>`}
   else p.textContent='PM2.5 —';
 }
-async function _loadWx(){
+// ดึงสภาพอากาศ (แคช 30 นาที) — ใช้ทั้งการ์ดหน้าแรกและ popup ต้อนรับ
+async function _wxGet(){
   let c=null;try{c=JSON.parse(localStorage.getItem(WX_KEY))}catch(e){}
-  if(c&&Date.now()-c.at<WX_TTL)return _wxShow(c);
+  if(c&&c.v===2&&Date.now()-c.at<WX_TTL)return c;
   const q=`latitude=${WX_LAT}&longitude=${WX_LON}&timezone=Asia%2FBangkok`;
   const J=u=>fetch(u).then(r=>r.ok?r.json():null).catch(()=>null);
-  const [f,a]=await Promise.all([J(`https://api.open-meteo.com/v1/forecast?${q}&current=temperature_2m,weather_code,is_day`),J(`https://air-quality-api.open-meteo.com/v1/air-quality?${q}&current=pm2_5`)]);
-  if(!f?.current)return _wxShow(c);
-  const d={at:Date.now(),t:f.current.temperature_2m,code:f.current.weather_code,day:f.current.is_day,pm:a?.current?.pm2_5??null};
+  const [f,a]=await Promise.all([J(`https://api.open-meteo.com/v1/forecast?${q}&current=temperature_2m,relative_humidity_2m,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&forecast_days=1`),J(`https://air-quality-api.open-meteo.com/v1/air-quality?${q}&current=pm2_5`)]);
+  if(!f?.current)return c;
+  const d={v:2,at:Date.now(),t:f.current.temperature_2m,hum:f.current.relative_humidity_2m,code:f.current.weather_code,day:f.current.is_day,
+    hi:f.daily?.temperature_2m_max?.[0],lo:f.daily?.temperature_2m_min?.[0],rain:f.daily?.precipitation_probability_max?.[0],pm:a?.current?.pm2_5??null};
   try{localStorage.setItem(WX_KEY,JSON.stringify(d))}catch(e){}
-  _wxShow(d);
+  return d;
+}
+async function _loadWx(){ _wxShow(await _wxGet()); }
+
+// popup ต้อนรับ ครั้งแรกของวันต่อบัญชี (จำในเครื่อง) — ทักทาย + อุณหภูมิ/PM2.5/สภาพอากาศ และคำแนะนำกิจกรรมกลางแจ้ง
+async function _welcomePopup(){
+  if(!S.user)return;
+  const today=todayStr(),key='act_welcome_'+S.user.id;
+  try{if(localStorage.getItem(key)===today)return}catch(e){}
+  const d=await _wxGet();
+  try{localStorage.setItem(key,today)}catch(e){}
+  const h=new Date().getHours();
+  const greet=h<12?['🌅','สวัสดีตอนเช้า']:h<16?['☀️','สวัสดีตอนบ่าย']:['🌇','สวัสดีตอนเย็น'];
+  const name=(S.teacherName||'').trim();
+  const dateTxt=new Date().toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const WD=c=>c===0?['☀️','ท้องฟ้าแจ่มใส']:c<=2?['🌤️','มีเมฆบางส่วน']:c===3?['☁️','เมฆมาก']:c<=48?['🌫️','มีหมอก']:c<=57?['🌦️','ฝนปรอย']:c<=67?['🌧️','ฝนตก']:c<=82?['🌦️','ฝนตกเป็นช่วงๆ']:['⛈️','พายุฝนฟ้าคะนอง'];
+  const AQ=v=>v<=15?['ดีมาก','#0ea5e9']:v<=25?['ดี','#16a34a']:v<=37.5?['ปานกลาง','#ca8a04']:v<=75?['เริ่มมีผลต่อสุขภาพ','#ea580c']:['มีผลต่อสุขภาพ','#dc2626'];
+  let wx='<div style="color:var(--txt3);font-size:13px;text-align:center;padding:10px">โหลดข้อมูลสภาพอากาศไม่ได้</div>',tip='';
+  if(d){
+    let [emo,desc]=WD(d.code??0);if(d.day===0&&(d.code??0)<=2)emo='🌙';
+    const aq=d.pm!=null?AQ(d.pm):null;
+    const box=(lbl,val,sub,c)=>`<div style="flex:1;background:var(--card2);border-radius:14px;padding:10px 6px;text-align:center"><div style="font-size:11.5px;color:var(--txt3)">${lbl}</div><div style="font-size:19px;font-weight:800;color:${c||'var(--txt)'}">${val}</div>${sub?`<div style="font-size:11px;color:${c||'var(--txt3)'};font-weight:600">${sub}</div>`:''}</div>`;
+    wx=`<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px"><span style="font-size:42px;line-height:1">${emo}</span><div><div style="font-size:16px;font-weight:800">${desc}</div><div style="font-size:12.5px;color:var(--txt3)">อ.ปราสาท · ${d.hi!=null?`สูงสุด ${Math.round(d.hi)}° ต่ำสุด ${Math.round(d.lo)}°`:''}</div></div></div>
+      <div style="display:flex;gap:8px">${box('อุณหภูมิ',Math.round(d.t)+'°C',d.hum!=null?`ชื้น ${Math.round(d.hum)}%`:'')}${box('PM2.5',d.pm!=null?d.pm.toFixed(1):'—',aq?aq[0]:'µg/m³',aq?.[1])}${box('โอกาสฝน',d.rain!=null?d.rain+'%':'—','')}</div>`;
+    const t=[];
+    if(d.pm!=null&&d.pm>37.5)t.push('😷 ฝุ่น PM2.5 สูง — ควรลดกิจกรรมกลางแจ้ง/ให้นักเรียนสวมหน้ากาก');
+    if((d.rain??0)>=60||((d.code??0)>=51))t.push('☔ มีโอกาสฝนตก — เตรียมจัดกิจกรรม/เข้าแถวในอาคาร');
+    if((d.hi??d.t)>=37)t.push('🥵 อากาศร้อนจัด — ให้นักเรียนดื่มน้ำและหลบแดด');
+    tip=t.length?`<div style="margin-top:10px;padding:10px 12px;border-radius:12px;background:#fff7ed;color:#9a3412;font-size:13px;line-height:1.6">${t.join('<br>')}</div>`:`<div style="margin-top:10px;font-size:13px;color:var(--txt3);text-align:center">อากาศเหมาะกับกิจกรรมกลางแจ้ง 👍</div>`;
+  }
+  document.getElementById('welcome-pop')?.remove();
+  const el=document.createElement('div');el.id='welcome-pop';
+  el.style.cssText='position:fixed;inset:0;z-index:4500;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;padding:20px';
+  el.innerHTML=`<div style="background:var(--card);border-radius:22px;width:100%;max-width:380px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="background:linear-gradient(135deg,var(--primary-dark,#1D4ED8),var(--primary,#2563EB));color:#fff;padding:18px 18px 16px">
+      <div style="font-size:30px;line-height:1">${greet[0]}</div>
+      <div style="font-size:19px;font-weight:800;margin-top:6px">${greet[1]}${name?` คุณครู${esc(name.replace(/^(นาย|นางสาว|นาง)\s*/,''))}`:''}</div>
+      <div style="font-size:13px;opacity:.9">${dateTxt}</div>
+    </div>
+    <div style="padding:16px 16px 12px">${wx}${tip}
+      <button onclick="document.getElementById('welcome-pop').remove()" style="margin-top:14px;width:100%;border:none;border-radius:14px;padding:12px;background:var(--primary,#2563EB);color:#fff;font:inherit;font-size:15px;font-weight:700;cursor:pointer">เริ่มใช้งาน</button>
+    </div></div>`;
+  el.addEventListener('click',e=>{if(e.target===el)el.remove()});
+  document.body.appendChild(el);
 }
 function startClock(){
   const D=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
