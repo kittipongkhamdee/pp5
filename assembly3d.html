@@ -56,6 +56,11 @@ button{font:inherit;color:inherit}
 .cl-sub{font-size:12px;color:var(--muted);white-space:nowrap}
 .cl-sub .g{color:var(--girl)}.cl-sub .b{color:var(--boy)}
 .cl-n{font:500 13px/1 var(--f-mono);color:var(--muted)}
+.kids{padding:4px 6px 10px 12px;border-bottom:1px solid var(--line);display:grid;gap:2px}
+.kid{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:none;border:0;border-radius:6px;padding:7px 8px;cursor:pointer;font-size:13.5px}
+.kid:hover,.kid[aria-pressed="true"]{background:rgba(255,255,255,.08)}
+.kid i{flex:none;width:8px;height:8px;border-radius:50%}
+.kid small{margin-left:auto;color:var(--muted);font-size:11.5px;white-space:nowrap}
 .note{margin:14px 0 0;font-size:12px;color:var(--muted)}
 .loader{position:absolute;inset:0;z-index:6;display:grid;place-content:center;justify-items:center;gap:8px;background:var(--bg);transition:opacity .6s ease;text-align:center;padding:24px}
 .loader.done{opacity:0;pointer-events:none}
@@ -87,11 +92,11 @@ button{font:inherit;color:inherit}
         <button class="chip" data-view="building" aria-pressed="false">อาคารเรียน</button>
       </div>
       <div class="row" id="gAct"><span class="row-label">ควบคุม</span>
+        <button class="chip only-narrow" id="boardBtn" aria-pressed="false">รายชื่อห้อง</button>
         <button class="chip" id="lineBtn" aria-pressed="false">แยกย้าย</button>
         <button class="chip" id="flagBtn" aria-pressed="false">ชักธงชาติ</button>
         <button class="chip" id="labelBtn" aria-pressed="true">ป้ายห้อง</button>
         <button class="chip" id="nameBtn" aria-pressed="true">ป้ายชื่อ</button>
-        <button class="chip only-narrow" id="boardBtn" aria-pressed="false">รายชื่อห้อง</button>
       </div>
     </div>
     <div class="loader" id="loader"><h2>โรงเรียนตาเบาวิทยา</h2><div class="load-track"><i id="loadBar"></i></div><p><span id="loadMsg">กำลังโหลดข้อมูลการเช็คชื่อ…</span> <span id="loadPct">0%</span></p></div>
@@ -383,7 +388,7 @@ CLASSES.forEach(function(c,ci){
   const h=0.92+Math.min(c.gl,6)*0.02;
   const mk=function(st,sex,idx,lineX){
     const jacket=rnd()<0.09;
-    const o={id:st.id,zone:Math.floor(rnd()*3),cls:ci,sex:sex,teacher:false,name:shortName(st.student_name),lined:idx>=0,line:idx,lineX:lineX,
+    const o={full:String(st.student_name||'').trim(),id:st.id,zone:Math.floor(rnd()*3),cls:ci,sex:sex,teacher:false,name:shortName(st.student_name),lined:idx>=0,line:idx,lineX:lineX,
       sc:h*(sex==='g'?0.985:1)*rr(0.97,1.04),skin:pick(skinT),hair:pick(hairT),shirt:jacket?pick(jackets):pick(whites),
       bottom:sex==='g'?0x1b2140:pick([0xb59b6a,0xae9462,0xbfa573]),heading:0,th:0,final:0,mode:'stand',delay:0,speed:1.7,phase:rnd()*6,amp:0,refs:[],label:null};
     o.rowX=sex==='g'?xc-0.62:xc+0.62;
@@ -510,6 +515,7 @@ const fit=clamp(1.3/((stage.clientWidth||window.innerWidth)/(stage.clientHeight|
 function setView(name){const v=VIEWS[name];want.t.set(v.t[0],v.t[1],v.t[2]);want.r=v.r*fit;want.th=cur.th+wrapA(v.th-cur.th);want.ph=v.ph;}
 setView('photo');cur.t.copy(want.t);cur.r=want.r;cur.th=want.th;cur.ph=want.ph;
 function updateCamera(dt){
+  if(follow)want.t.set(follow.x,1.2*follow.sc,follow.z);
   const k=1-Math.exp(-dt*4.5);
   cur.t.lerp(want.t,k);cur.r=lerp(cur.r,want.r,k);cur.th=lerp(cur.th,want.th,k);cur.ph=lerp(cur.ph,want.ph,k);
   const sp=Math.sin(cur.ph);
@@ -522,13 +528,13 @@ function pan(dx,dy){
   want.t.x=clamp(want.t.x-rx*dx*s+fx*dy*s,-60,60);want.t.z=clamp(want.t.z-rz*dx*s+fz*dy*s,-60,60);
 }
 const ptrs=new Map();
-canvas.addEventListener('pointerdown',function(e){canvas.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY,b:e.button});});
+canvas.addEventListener('pointerdown',function(e){if(follow&&e.button!==0){follow=null;}canvas.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY,b:e.button});});
 function endPtr(e){ptrs.delete(e.pointerId);}
 canvas.addEventListener('pointerup',endPtr);canvas.addEventListener('pointercancel',endPtr);
 canvas.addEventListener('pointermove',function(e){
   const p=ptrs.get(e.pointerId);if(!p)return;
   if(ptrs.size===1){const dx=e.clientX-p.x,dy=e.clientY-p.y;
-    if(p.b===2||p.b===1||e.shiftKey)pan(dx,dy);else{want.th-=dx*0.006;want.ph=clamp(want.ph-dy*0.005,0.1,1.52);}
+    if(p.b===2||p.b===1||e.shiftKey){follow=null;pan(dx,dy);}else{want.th-=dx*0.006;want.ph=clamp(want.ph-dy*0.005,0.1,1.52);}
     p.x=e.clientX;p.y=e.clientY;}
   else if(ptrs.size===2){const a=Array.from(ptrs.values());
     const d0=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y),m0x=(a[0].x+a[1].x)/2,m0y=(a[0].y+a[1].y)/2;
@@ -554,21 +560,38 @@ function openBoard(o){board.dataset.open=o?'true':'false';$('#boardBtn').setAttr
 $('#boardBtn').addEventListener('click',function(){openBoard(board.dataset.open!=='true');});
 $('#closeBoard').addEventListener('click',function(){openBoard(false);});
 const list=$('#list');
+// แตะห้อง = ซูมไปที่แถว + แสดงรายชื่อนักเรียนของห้อง · แตะชื่อ = กล้องตามนักเรียนคนนั้น
+const escH=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let follow=null;
+function kidsOf(i){
+  const ks=students.filter(s=>!s.teacher&&s.cls===i);
+  return ks.filter(s=>s.lined).sort((a,b)=>a.sex.localeCompare(b.sex)||a.line-b.line).concat(ks.filter(s=>!s.lined));
+}
 function renderList(){list.innerHTML=CLASSES.map(function(c,i){
-  return '<button class="cl" data-i="'+i+'" aria-pressed="false"><span class="cl-name">'+c.n+'</span><span class="cl-sub"><b class="g">หญิง '+c.gp.length+'/'+c.g+'</b> · <b class="b">ชาย '+c.bp.length+'/'+c.b+'</b></span><span class="cl-n">'+(c.gp.length+c.bp.length)+'/'+c.all.length+'</span></button>';
+  let h='<button class="cl" data-i="'+i+'" aria-pressed="false"><span class="cl-name">'+c.n+'</span><span class="cl-sub"><b class="g">หญิง '+c.gp.length+'/'+c.g+'</b> · <b class="b">ชาย '+c.bp.length+'/'+c.b+'</b></span><span class="cl-n">'+(c.gp.length+c.bp.length)+'/'+c.all.length+' '+(sel===i?'▾':'▸')+'</span></button>';
+  if(sel===i)h+='<div class="kids">'+kidsOf(i).map(function(s){const k=students.indexOf(s);
+    return '<button class="kid" data-k="'+k+'" aria-pressed="'+(follow===s)+'"><i style="background:'+(s.sex==='g'?'var(--girl)':'var(--boy)')+'"></i>'+escH(s.full||s.name)+'<small>'+(s.lined?'แถว'+(s.sex==='g'?'หญิง':'ชาย')+' ลำดับ '+(s.line+1):'<span style="color:var(--accent)">ยังไม่เช็คว่ามา</span>')+'</small></button>';}).join('')+'</div>';
+  return h;
 }).join('');
-list.querySelectorAll('.cl').forEach(function(b){b.setAttribute('aria-pressed',+b.dataset.i===sel?'true':'false');b.addEventListener('click',function(){const i=+b.dataset.i;selectClass(sel===i?-1:i);});});}
+list.querySelectorAll('.cl').forEach(function(b){b.setAttribute('aria-pressed',+b.dataset.i===sel?'true':'false');b.addEventListener('click',function(){const i=+b.dataset.i;selectClass(sel===i?-1:i,true);});});
+list.querySelectorAll('.kid').forEach(function(b){b.addEventListener('click',function(){followKid(students[+b.dataset.k]);});});}
+function followKid(s){
+  if(!s)return;follow=s;hi.visible=false;
+  want.r=6.5;want.ph=1.2;want.th=cur.th+wrapA(-0.6-cur.th);
+  document.querySelectorAll('[data-view]').forEach(function(b){b.setAttribute('aria-pressed','false');});
+  renderList();
+  if(window.innerWidth<900)openBoard(false);
+}
 let sel=-1;
 renderList();
-function selectClass(i){
-  sel=i;
-  list.querySelectorAll('.cl').forEach(function(b){b.setAttribute('aria-pressed',+b.dataset.i===i?'true':'false');});
+function selectClass(i,keepOpen){
+  sel=i;follow=null;renderList();
   if(i<0){hi.visible=false;return;}
   const n=classPos[i].n,len=(n-1)*GAP+1.4;
   hi.scale.set(2.5,len,1);hi.position.set(classPos[i].x,0.07,Z0+(n-1)*GAP/2);hi.visible=lined;
   want.t.set(classPos[i].x,1.3,Z0+(n-1)*GAP/2);want.r=Math.max(9,len*0.95)*Math.min(fit,1.6);want.th=cur.th+wrapA(-0.55-cur.th);want.ph=1.3;
   document.querySelectorAll('[data-view]').forEach(function(b){b.setAttribute('aria-pressed','false');});
-  if(window.innerWidth<900)openBoard(false);
+  if(window.innerWidth<900&&!keepOpen)openBoard(false);
 }
 $('#sTotal').innerHTML=totalKids+'<small> คน</small>';
 $('#sPresent').innerHTML=presentKids+'<small>/'+totalKids+'</small>';
