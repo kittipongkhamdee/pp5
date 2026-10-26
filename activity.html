@@ -1768,11 +1768,17 @@ function quickCheckin(actId){
   S.ckActivityId=actId;S.ckDate=todayStr();
   const act=S.activities.find(a=>a.id==actId);
   S.ckSession=act?.has_evening?_autoSession():'morning';
+  _saveLastCk();
   nav('checkin');
 }
 
 // ─── CHECK-IN ──────────────────────────────────────────────────────────────
 async function renderCheckin(){
+  // ยังไม่ได้เลือกกิจกรรม → ใช้กิจกรรมที่เช็คล่าสุดของบัญชีนี้ (ถ้ายังเปิดใช้งานอยู่)
+  if(!S.ckActivityId&&S.lastCk?.act&&S.activities.some(a=>a.id==S.lastCk.act&&a.is_active)){
+    S.ckActivityId=S.lastCk.act;const a0=S.activities.find(a=>a.id==S.ckActivityId);
+    S.ckSession=(a0?.has_evening&&S.ckDate===todayStr())?_autoSession():'morning';
+  }
   const opts=S.activities.filter(a=>a.is_active).map(a=>`<option value="${a.id}"${S.ckActivityId==a.id?' selected':''}>${esc(a.name)}</option>`).join('');
   $('ck-act-sel').innerHTML=`<option value="">-- เลือกกิจกรรม --</option>`+opts;
   $('ck-date-inp').value=S.ckDate;
@@ -1782,6 +1788,7 @@ async function renderCheckin(){
   $('ck-sess-m').classList.toggle('active',S.ckSession==='morning');
   $('ck-sess-e').classList.toggle('active',S.ckSession==='evening');
   // จำห้องที่เลือกล่าสุดในเครื่องนี้ (ครูประจำชั้นเช็คห้องเดิมทุกวัน)
+  if(!S.ckFilter&&S.lastCk?.cls&&S.classes.some(c=>`${c.grade_level}_${c.room}`===S.lastCk.cls)) S.ckFilter=S.lastCk.cls;
   if(!S.ckFilter){ try{ const k=localStorage.getItem('act_ck_class'); if(k&&S.classes.some(c=>`${c.grade_level}_${c.room}`===k)) S.ckFilter=k; }catch(e){} }
   // populate class dropdown
   const sel=$('ck-class-sel');
@@ -1804,6 +1811,7 @@ async function renderCheckin(){
 function setCkFilterFromDrop(){
   S.ckFilter=$('ck-class-sel').value;
   try{ localStorage.setItem('act_ck_class',S.ckFilter||''); }catch(e){}
+  _saveLastCk();
   renderCkList();updateCkStats();
   if(S.ckFilter){
     const[gl,r]=S.ckFilter.split('_');
@@ -2380,6 +2388,7 @@ async function onCkActChange(){
   S.ckActivityId=parseInt($('ck-act-sel').value)||null;
   const act=S.activities.find(a=>a.id==S.ckActivityId);
   S.ckSession=(act?.has_evening&&S.ckDate===todayStr())?_autoSession():'morning';
+  _saveLastCk();
   await renderCheckin();
 }
 async function onCkDateChange(){
@@ -3869,7 +3878,7 @@ async function doLogin(){
     if(error)throw error;
     S.user=data.user;
     PTheme.setUser(S.user.id);
-    await _loadTeacherProfile();
+    await Promise.all([_loadTeacherProfile(),_loadLastCk()]);
     // จำเฉพาะอีเมล — ไม่เก็บรหัสผ่านไว้ในเครื่อง (session ค้างอยู่ผ่าน Supabase token อยู่แล้ว)
     if($('login-remember')?.checked){
       localStorage.setItem('_ac_email',email);
@@ -3907,7 +3916,7 @@ async function confirmLogout(){
   try{
     // scope:'local' — ออกเฉพาะแอปนี้ ไม่เตะ session ของระบบ ปพ.5 ที่เปิดค้างอยู่
     await sb.auth.signOut({scope:'local'});
-    S.user=null;S.teacherName='';
+    S.user=null;S.teacherName='';S.lastCk=null;S.ckActivityId=null;S.ckFilter='';
     $('login-overlay').style.display='flex';
     $('logout-btn').style.display='none';
     $('login-pass').value='';
@@ -3988,6 +3997,18 @@ function initTheme(){
 }
 
 // ดึงชื่อจริงของครูจากตาราง profiles (ใช้ร่วมกับระบบ ปพ.5) — ถ้าไม่มีข้อมูลใช้อีเมลแทน
+// จำกิจกรรม+ชั้นเรียนที่เช็คชื่อล่าสุด ผูกกับบัญชีครู (config: act_last_<user id>) — เปิดเครื่องไหนก็กลับมาที่เดิม
+let _lastCkT=null;
+async function _loadLastCk(){
+  S.lastCk=null;if(!S.user)return;
+  try{const r=await q(sb.from('config').select('value').eq('key','act_last_'+S.user.id).maybeSingle());S.lastCk=r?.value?JSON.parse(r.value):null}catch(e){}
+}
+function _saveLastCk(){
+  if(!S.user)return;
+  S.lastCk={act:S.ckActivityId||null,cls:S.ckFilter||''};
+  clearTimeout(_lastCkT);
+  _lastCkT=setTimeout(()=>{q(sb.from('config').upsert({key:'act_last_'+S.user.id,value:JSON.stringify(S.lastCk)},{onConflict:'key'})).catch(()=>{})},800);
+}
 async function _loadTeacherProfile(){
   if(!S.user){S.teacherName='';return}
   try{
@@ -4002,7 +4023,7 @@ async function init(){
   if(session){
     S.user=session.user;
     PTheme.setUser(S.user.id);
-    await _loadTeacherProfile();
+    await Promise.all([_loadTeacherProfile(),_loadLastCk()]);
     $('login-overlay').style.display='none';
     $('logout-btn').style.display='';
     await loadAppData();
