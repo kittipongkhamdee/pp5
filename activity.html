@@ -2604,7 +2604,6 @@ async function renderRptLate(){
       <div class="seg-ctrl" style="flex-shrink:0"><button class="${md==='day'?'active':''}" onclick="S.rptLateMode='day';renderRptLate()">รายวัน</button><button class="${md==='month'?'active':''}" onclick="S.rptLateMode='month';renderRptLate()">รายเดือน</button></div>
       ${md==='day'?`<input type="date" class="ios-input" style="flex:1" value="${S.rptLateDate}" onchange="S.rptLateDate=this.value;renderRptLate()">`:`<input type="month" class="ios-input" style="flex:1" value="${S.rptLateMonth}" onchange="S.rptLateMonth=this.value;renderRptLate()">`}
     </div>
-    <div style="font-size:12px;color:var(--txt3);margin:0 2px 10px;line-height:1.6">นักเรียนที่เช็คแถว<b>ตอนเช้า</b>ว่า <b style="color:var(--red)">ขาด</b> แต่วันเดียวกันครูประจำวิชาเช็คว่า <b style="color:var(--green)">มาเรียน</b> ในระบบ ปพ.5 = มาสาย · ห้องมีครูวิชาเช็คแล้วแต่ไม่มีวิชาไหนเช็คว่ามา = ขาดทั้งวัน (ไม่นับ "ลา")</div>
     <div id="rpt-late-body">${S.rptLateAct?'<div class="loading-text">กำลังโหลด...</div>':'<div class="empty-state">เลือกกิจกรรม</div>'}</div>`;
   if(!S.rptLateAct)return;
   let from,to;
