@@ -3729,7 +3729,8 @@ async function renderRptStreak(){
   if(!S.rptStreakActivityId)return;
   try{
     const act=S.activities.find(a=>a.id==S.rptStreakActivityId);
-    const useSession=act?.has_evening?'evening':'morning';
+    // นับจากการเช็คแถวตอนเช้าเสมอ — เดิมกิจกรรมที่มีรอบบ่ายไปใช้รอบบ่าย ซึ่งแทบไม่มีการเช็ค รายงานจึงว่าง
+    const useSession='morning';
     // ดึงข้อมูล 60 วันย้อนหลัง
     const since=new Date();since.setDate(since.getDate()-60);
     const sinceStr=since.toISOString().split('T')[0];
