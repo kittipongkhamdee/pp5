@@ -754,6 +754,9 @@ body.dark .subc{background:var(--card);border-color:var(--bdr);}
 #ro-banner{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:8000;background:#3a3a3c;color:#fff;font:600 13px var(--font);padding:8px 10px 8px 14px;border-radius:99px;box-shadow:0 6px 20px rgba(0,0,0,.25);display:flex;gap:10px;align-items:center;white-space:nowrap}
 #ro-banner button{border:none;border-radius:99px;padding:5px 12px;background:#fff;color:#1d1d1f;font:700 12px var(--font);cursor:pointer}
 body.ro #pg :is(input:not([type=search]),textarea,[contenteditable="true"]){pointer-events:none;opacity:.8}
+/* ช่องกรอกแบบตัวเลือก/ปุ่มในตาราง (เช่น ประเมินอ่าน/คุณลักษณะ ใช้ select ต่อคน, เวลาเรียนใช้ปุ่มสถานะ) — select นอกตาราง (เลือกวิชา/ห้อง) ยังใช้ได้ */
+body.ro #pg table :is(select,button,label){pointer-events:none}
+body.ro #pg table select{opacity:.8}
 /* หน้าต่างแก้ไข (.mo เช่น แก้ไขหน่วยคะแนน) อยู่นอก #pg — ปิดช่องกรอก/ตัวเลือก/ปุ่มในเนื้อหา และซ่อนปุ่มบันทึก เหลือปุ่มยกเลิก/ปิด */
 body.ro .mo .mb :is(input,select,textarea,button,[contenteditable="true"]){pointer-events:none;opacity:.6}
 body.ro .mo .mf .bp,body.ro .mo .mf .bd{display:none!important}
