@@ -472,26 +472,54 @@ CLASSES.forEach(function(c,ci){
 
 const BK=new THREE.Color(0x151515);
 const mkG=(w,h,d)=>new THREE.BoxGeometry(w,h,d);
-const leg=(sx)=>({sw:{piv:[sx*0.085,0.82,0],off:[0,-0.41,0],dir:sx>0?1:-1,amp:1}});
-const shoe=(sx)=>({sw:{piv:[sx*0.085,0.82,0],off:[0,-0.8,-0.035],dir:sx>0?1:-1,amp:1}});
-const arm=(sx,oy)=>({sw:{piv:[sx*0.225,1.425,0],off:[0,oy,0],dir:sx>0?-1:1,amp:0.75}});
+/* โมเดลนักเรียนแบบโค้งมน (ตาม mockup-student-3d.html): แคปซูล/ทรงกลึง แทนกล่อง — ใช้ InstancedMesh ต่อชิ้นส่วนเหมือนเดิม จึงยังเบาพอสำหรับ ~110 คน */
+function capsule(r,len,seg){const pts=[],n=6;
+  for(let i=0;i<=n;i++){const a=-Math.PI/2+i/n*Math.PI/2;pts.push(new THREE.Vector2(Math.cos(a)*r,Math.sin(a)*r-len/2));}
+  for(let i=0;i<=n;i++){const a=i/n*Math.PI/2;pts.push(new THREE.Vector2(Math.cos(a)*r,Math.sin(a)*r+len/2));}
+  return new THREE.LatheGeometry(pts,seg||12);}
+const lathe=(pr,seg)=>new THREE.LatheGeometry(pr.map(p=>new THREE.Vector2(p[0],p[1])),seg||18);
+const HIP=0.84,SHY=1.38,SHX=0.2;
+const legO=(sx,oy,o)=>({sw:Object.assign({piv:[sx*0.085,HIP,0],off:[0,oy,0],dir:sx>0?1:-1,amp:1},o||{})});
+const armO=(sx,oy,o)=>({sw:Object.assign({piv:[sx*SHX,SHY,0],off:[0,oy,0],dir:sx>0?-1:1,amp:0.75},o||{})});
+const legs2=(oy,o)=>[legO(-1,oy,o),legO(1,oy,o)],arms2=(oy,o)=>[armO(-1,oy,o),armO(1,oy,o)];
+const NAVYC=0x1b2140,WHITEC=0xf2f2f0;
 const PARTS=[
-  {geo:mkG(0.12,0.82,0.14),all:1,col:s=>s.longPants?s.bottom:s.skin,offs:[leg(-1),leg(1)]},
-  {geo:mkG(0.125,0.07,0.22),all:1,col:()=>BK,offs:[shoe(-1),shoe(1)]},
-  {geo:mkG(0.35,0.38,0.2),f:s=>!!s.pants,col:s=>s.bottom,offs:[{p:[0,0.76,0]}]},
-  {geo:new THREE.CylinderGeometry(0.17,0.225,0.42,12),f:s=>!s.pants,col:s=>s.bottom,offs:[{p:[0,0.74,0]}]},
-  {geo:mkG(0.3,0.06,0.26),f:s=>s.collar!=null,col:s=>s.collar,offs:[{p:[0,1.42,0]}]},
-  {geo:mkG(0.16,0.2,0.03),f:s=>s.scarf!=null,col:s=>s.scarf,offs:[{p:[0,1.3,-0.125]}]},
-  {geo:new THREE.CylinderGeometry(0.15,0.17,0.09,12),f:s=>s.hat!=null,col:s=>s.hat,offs:[{p:[0,1.72,0.01],s:[1.05,1,1.05]}]},
-  {geo:mkG(0.4,0.5,0.24),all:1,col:s=>s.shirt,offs:[{p:[0,1.19,0]}]},
-  {geo:mkG(0.09,0.24,0.105),all:1,col:s=>s.shirt,offs:[arm(-1,-0.12),arm(1,-0.12)]},
-  {geo:mkG(0.075,0.24,0.09),all:1,col:s=>s.skin,offs:[arm(-1,-0.36),arm(1,-0.36)]},
-  {geo:new THREE.SphereGeometry(0.118,12,9),all:1,col:s=>s.skin,offs:[{p:[0,1.58,0],s:[0.95,1.1,1]}]},
-  {geo:new THREE.SphereGeometry(0.127,12,9),all:1,col:s=>s.hair,offs:[{p:[0,1.62,0.024],s:[1,0.88,1.05]}]},
-  {geo:mkG(0.06,0.2,0.07),f:s=>s.sex==='g',col:s=>s.hair,offs:[{p:[0,1.5,0.105]}]},
-  {geo:new THREE.SphereGeometry(0.013,6,5),all:1,col:()=>BK,offs:[{p:[-0.037,1.585,-0.1]},{p:[0.037,1.585,-0.1]}]}
+  // ขา: ต้นขา (สีกางเกงถ้าใส่กางเกง) · หน้าแข้ง (ขายาว = สีกางเกง) · ถุงเท้า · รองเท้ามน
+  {geo:capsule(0.062,0.30),all:1,col:s=>s.pants?s.bottom:s.skin,offs:legs2(-0.2)},
+  {geo:capsule(0.052,0.36),all:1,col:s=>s.longPants?s.bottom:s.skin,offs:legs2(-0.56)},
+  {geo:new THREE.CylinderGeometry(0.054,0.05,0.09,10),all:1,col:s=>s.longPants?s.bottom:WHITEC,offs:legs2(-0.76)},
+  {geo:new THREE.SphereGeometry(0.075,12,8),all:1,col:()=>BK,offs:legs2(-0.81,{offz:-0.035,sc:[0.95,0.5,1.6]})},
+  // กางเกง / กระโปรง
+  {geo:lathe([[0,0.62],[0.17,0.63],[0.185,0.72],[0.18,0.86],[0.16,0.9],[0,0.9]]),f:s=>!!s.pants,col:s=>s.bottom,offs:[{p:[0,0,0],s:[1,1,0.72]}]},
+  {geo:lathe([[0,0.5],[0.255,0.5],[0.24,0.6],[0.2,0.78],[0.165,0.92],[0,0.92]],20),f:s=>!s.pants,col:s=>s.bottom,offs:[{p:[0,0,0],s:[1,1,0.78]}]},
+  // ลำตัว เอวคอด ไหล่มน
+  {geo:lathe([[0,0.86],[0.165,0.87],[0.175,0.98],[0.19,1.18],[0.2,1.32],[0.17,1.42],[0.09,1.46],[0,1.46]],20),all:1,col:s=>s.shirt,offs:[{p:[0,0,0],s:[1,1,0.66]}]},
+  {geo:new THREE.TorusGeometry(0.17,0.016,6,20),f:s=>s.pants&&!s.longPants,col:()=>0x4a2f1c,offs:[{p:[0,0.885,0],r:[Math.PI/2,0,0],s:[1,0.68,1]}]},
+  {geo:new THREE.TorusGeometry(0.075,0.022,6,16),all:1,col:s=>s.collar!=null?s.collar:s.shirt,offs:[{p:[0,1.45,0],r:[Math.PI/2,0,0],s:[1,0.8,1]}]},
+  {geo:new THREE.SphereGeometry(0.04,10,6),f:s=>s.sex==='g'&&s.collar===NAVYC,col:()=>NAVYC,offs:[{p:[-0.04,1.41,-0.12],s:[1.2,0.7,0.5]},{p:[0.04,1.41,-0.12],s:[1.2,0.7,0.5]}]},
+  {geo:mkG(0.16,0.2,0.03),f:s=>s.scarf!=null,col:s=>s.scarf,offs:[{p:[0,1.3,-0.135]}]},
+  // แขน: ไหล่กลม + แขนเสื้อ + แขน + มือ
+  {geo:new THREE.SphereGeometry(0.058,12,8),all:1,col:s=>s.shirt,offs:arms2(-0.01)},
+  {geo:lathe([[0.06,0.0],[0.06,-0.13],[0.052,-0.17],[0,-0.17]],12),all:1,col:s=>s.shirt,offs:arms2(0)},
+  {geo:capsule(0.04,0.38),all:1,col:s=>s.skin,offs:arms2(-0.33)},
+  {geo:new THREE.SphereGeometry(0.046,10,8),all:1,col:s=>s.skin,offs:arms2(-0.56,{sc:[0.85,1.15,0.7]})},
+  // คอ หัว หู ผม
+  {geo:new THREE.CylinderGeometry(0.045,0.05,0.09,10),all:1,col:s=>s.skin,offs:[{p:[0,1.5,0]}]},
+  {geo:new THREE.SphereGeometry(0.115,18,14),all:1,col:s=>s.skin,offs:[{p:[0,1.63,0],s:[0.93,1.1,0.98]}]},
+  {geo:new THREE.SphereGeometry(0.026,8,6),all:1,col:s=>s.skin,offs:[{p:[-0.107,1.62,0.005],s:[0.5,1,0.8]},{p:[0.107,1.62,0.005],s:[0.5,1,0.8]}]},
+  {geo:new THREE.SphereGeometry(0.123,18,10,0,Math.PI*2,0,Math.PI*0.42),all:1,col:s=>s.hair,offs:[{p:[0,1.655,0.014],s:[0.97,1.08,1.04]}]},
+  {geo:new THREE.SphereGeometry(0.12,14,6,0,Math.PI*2,0,Math.PI*0.3),f:s=>s.sex!=='g',col:s=>s.hair,offs:[{p:[0,1.7,0],s:[1,0.7,1.05]}]},
+  {geo:lathe([[0.112,1.66],[0.118,1.56],[0.11,1.47],[0,1.46]],14),f:s=>s.sex==='g',col:s=>s.hair,offs:[{p:[0,0,0.02],s:[1,1,0.9]}]},
+  {geo:capsule(0.035,0.14,8),f:s=>s.sex==='g',col:s=>s.hair,offs:[{p:[0,1.52,0.13]}]},
+  {geo:new THREE.CylinderGeometry(0.14,0.16,0.08,14),f:s=>s.hat!=null,col:s=>s.hat,offs:[{p:[0,1.77,0.01],s:[1.05,1,1.05]}]},
+  // หน้า: ตาขาว ตาดำ คิ้ว จมูก ปาก (หันไปทาง -z = เสาธง)
+  {geo:new THREE.SphereGeometry(0.018,8,6),all:1,col:()=>0xffffff,offs:[{p:[-0.04,1.635,-0.1],s:[1.2,0.85,0.5]},{p:[0.04,1.635,-0.1],s:[1.2,0.85,0.5]}]},
+  {geo:new THREE.SphereGeometry(0.011,6,5),all:1,col:()=>0x111111,offs:[{p:[-0.04,1.635,-0.108]},{p:[0.04,1.635,-0.108]}]},
+  {geo:mkG(0.04,0.008,0.01),all:1,col:s=>s.hair,offs:[{p:[-0.041,1.668,-0.104],r:[0,0,0.12]},{p:[0.041,1.668,-0.104],r:[0,0,-0.12]}]},
+  {geo:new THREE.SphereGeometry(0.013,6,5),all:1,col:s=>s.skin,offs:[{p:[0,1.605,-0.115],s:[0.9,1,1.1]}]},
+  {geo:new THREE.TorusGeometry(0.02,0.0045,4,10,Math.PI),all:1,col:()=>0x9b4a3c,offs:[{p:[0,1.585,-0.106],r:[0,0,Math.PI]}]}
 ];
-const partMeshes=[],idQ=new THREE.Quaternion(),mat0=new THREE.MeshLambertMaterial({color:0xffffff});
+const partMeshes=[],idQ=new THREE.Quaternion(),mat0=new THREE.MeshStandardMaterial({color:0xffffff,roughness:0.75,metalness:0});
 PARTS.forEach(function(part){
   const list=students.filter(function(s){return part.all||part.f(s);});
   if(!list.length)return;
@@ -500,8 +528,8 @@ PARTS.forEach(function(part){
   let k=0;
   list.forEach(function(s){part.offs.forEach(function(o){
     const ref={mesh:mesh,idx:k++,sw:o.sw||null};
-    if(o.sw){ref.Tp=new THREE.Matrix4().makeTranslation(o.sw.piv[0],o.sw.piv[1],o.sw.piv[2]);ref.To=new THREE.Matrix4().makeTranslation(o.sw.off[0],o.sw.off[1],o.sw.off[2]);}
-    else{ref.L=new THREE.Matrix4().compose(new THREE.Vector3(o.p[0],o.p[1],o.p[2]),idQ,new THREE.Vector3(o.s?o.s[0]:1,o.s?o.s[1]:1,o.s?o.s[2]:1));}
+    if(o.sw){const w=o.sw.sc||[1,1,1];ref.Tp=new THREE.Matrix4().makeTranslation(o.sw.piv[0],o.sw.piv[1],o.sw.piv[2]);ref.To=new THREE.Matrix4().compose(new THREE.Vector3(o.sw.off[0],o.sw.off[1],o.sw.off[2]+(o.sw.offz||0)),idQ,new THREE.Vector3(w[0],w[1],w[2]));}
+    else{const q=o.r?new THREE.Quaternion().setFromEuler(new THREE.Euler(o.r[0],o.r[1],o.r[2])):idQ;ref.L=new THREE.Matrix4().compose(new THREE.Vector3(o.p[0],o.p[1],o.p[2]),q,new THREE.Vector3(o.s?o.s[0]:1,o.s?o.s[1]:1,o.s?o.s[2]:1));}
     s.refs.push(ref);mesh.setColorAt(ref.idx,new THREE.Color(part.col(s)));
   });});
   mesh.instanceColor.needsUpdate=true;scene.add(mesh);partMeshes.push(mesh);
