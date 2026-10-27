@@ -727,6 +727,52 @@ async function poll(){
 }
 setInterval(poll,15000);
 
+/* ---------- สุนัขประจำโรงเรียน 3 ตัว: เดินเล่นรอบนอกลาน (อยู่โซนของตัวเอง ไม่เดินตัดแถว) มีป้ายชื่อ · มีทุกวันรวมวันหยุด ---------- */
+const DOGS=[{name:'แดง',col:0x8b3a1e,sz:1.35,zone:0,tail:true},{name:'คาปู',col:0x8a5a2b,sz:1.0,zone:1,tail:true},{name:'โอเลี้ยง',col:0x1b1b1b,sz:0.68,zone:2,tail:false}];
+const dogs=DOGS.map(function(d){
+  const g=new THREE.Group(),M=c=>new THREE.MeshStandardMaterial({color:c,roughness:0.85,metalness:0});
+  const fur=M(d.col),dark=M(0x0d0d0d),light=M(d.col===0x1b1b1b?0x2c2c2c:0xc9a27a);
+  const put=(geo,mat,x,y,z,sx,sy,sz,par)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);if(sx)m.scale.set(sx,sy,sz);m.castShadow=true;(par||g).add(m);return m;};
+  // ลำตัวแนวนอน (หัวหันทาง -z)
+  const body=put(capsule(0.12,0.34,12),fur,0,0.42,0);body.rotation.x=Math.PI/2;
+  put(new THREE.SphereGeometry(0.1,12,8),light,0,0.38,-0.12,1,0.7,1.4);
+  // หัว + จมูก + หู + ตา
+  const head=new THREE.Group();head.position.set(0,0.58,-0.28);g.add(head);
+  put(new THREE.SphereGeometry(0.105,14,10),fur,0,0,0,1,0.95,1.05,head);
+  put(capsule(0.05,0.07,10),light,0,-0.03,-0.11,1,1,1,head).rotation.x=Math.PI/2;
+  put(new THREE.SphereGeometry(0.022,8,6),dark,0,-0.015,-0.18,1,0.8,1,head);
+  [-1,1].forEach(function(sx){const e=put(new THREE.ConeGeometry(0.04,0.09,8),fur,sx*0.065,0.09,0.01,1,1,0.6,head);e.rotation.z=sx*-0.35;
+    put(new THREE.SphereGeometry(0.014,8,6),dark,sx*0.042,0.025,-0.09,1,1,1,head);});
+  // ขา 4 ข้าง (แกว่งตอนเดิน)
+  const legs=[[-0.07,-0.17],[0.07,-0.17],[-0.07,0.17],[0.07,0.17]].map(function(p,i){
+    const piv=new THREE.Group();piv.position.set(p[0],0.36,p[1]);g.add(piv);
+    put(capsule(0.032,0.24,8),fur,0,-0.17,0,1,1,1,piv);put(new THREE.SphereGeometry(0.036,8,6),fur,0,-0.33,-0.012,1,0.6,1.3,piv);
+    piv.userData.ph=i===0||i===3?0:Math.PI;return piv;});
+  // หาง (โอเลี้ยงไม่มีหาง)
+  let tail=null;
+  if(d.tail){tail=new THREE.Group();tail.position.set(0,0.5,0.28);g.add(tail);const t=put(capsule(0.022,0.16,8),fur,0,0.08,0.04,1,1,1,tail);t.rotation.x=-0.6;}
+  g.scale.setScalar(d.sz);scene.add(g);
+  const w=wanderTarget(d.zone);g.position.set(w[0],0,w[1]);
+  let lbl=null;
+  try{lbl=new THREE.Sprite(new THREE.SpriteMaterial({map:labelTex('🐕 '+d.name,'#f4c542',256,72,32),transparent:true,depthTest:false,depthWrite:false}));lbl.renderOrder=12;nameGroup.add(lbl);}catch(e){}
+  return {d,g,legs,tail,lbl,tx:w[0],tz:w[1],heading:0,wait:rr(0,3),speed:0.7+0.35*d.sz,phase:0};
+});
+// ใช้ทดสอบ/ดูสุนัขใกล้ๆ: __dogFollow(0..2)
+window.__dogFollow=function(i){const o=dogs[i];if(!o)return;follow={get x(){return o.g.position.x},get z(){return o.g.position.z},sc:0.5};want.r=3.2;want.ph=1.25;};
+function updateDogs(dt,t){
+  dogs.forEach(function(o){
+    const g=o.g;let moving=false;
+    if(o.wait>0){o.wait-=dt;}
+    else{const dx=o.tx-g.position.x,dz=o.tz-g.position.z,d=Math.hypot(dx,dz);
+      if(d<0.1){const w=wanderTarget(o.d.zone);o.tx=w[0];o.tz=w[1];o.wait=rr(1,6);}
+      else{const st=Math.min(d,o.speed*dt);g.position.x+=dx/d*st;g.position.z+=dz/d*st;o.heading=Math.atan2(-dx,-dz);o.phase+=st*9/o.d.sz;moving=true;}}
+    g.rotation.y+=wrapA(o.heading-g.rotation.y)*(1-Math.exp(-dt*6));
+    o.legs.forEach(function(l){l.rotation.x=moving?Math.sin(o.phase+l.userData.ph)*0.6:l.rotation.x*0.85;});
+    if(o.tail)o.tail.rotation.z=Math.sin(t*(moving?9:4))*0.45;
+    if(o.lbl){o.lbl.position.set(g.position.x,0.95*o.d.sz+0.35,g.position.z);const dd=camera.position.distanceTo(o.lbl.position),w=clamp(dd*0.05,0.9,2.8);o.lbl.scale.set(w,w*0.28,1);}
+  });
+}
+
 /* main loop */
 function resize(){const w=stage.clientWidth||window.innerWidth,h=stage.clientHeight||window.innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
 resize();
@@ -744,7 +790,7 @@ function tick(){
     const d=camera.position.distanceTo(sp.position);
     if(s.lined&&s.mode!=='walk'){const w=clamp(d*0.04,0.9,1.8);sp.scale.set(w,w*0.225,1);sp.material.opacity=clamp((30-d)/8,0,1);}
     else{const w=clamp(d*0.055,1.1,3.2);sp.scale.set(w,w*0.225,1);sp.material.opacity=1;}}
-  updateCamera(dt);hud(dt);
+  updateDogs(dt,time);updateCamera(dt);hud(dt);
   renderer.render(scene,camera);
   requestAnimationFrame(tick);
 }
