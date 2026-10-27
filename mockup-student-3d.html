@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ตัวอย่างโมเดลนักเรียน 3 มิติ</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600&family=Sarabun:wght@400;600&display=swap">
+<style>
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:#0b1a14;color:#eef6f0;font:14px/1.5 Sarabun,sans-serif;overflow:hidden}
+#c{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.top{position:absolute;top:12px;left:12px;right:12px;pointer-events:none}
+.top h1{margin:0;font:600 18px Prompt,sans-serif}.top p{margin:2px 0 0;color:#a2b8aa;font-size:12.5px}
+.lbl{position:absolute;bottom:92px;font:600 14px Prompt,sans-serif;color:#f4c542;transform:translateX(-50%);background:rgba(9,24,18,.8);border:1px solid rgba(190,225,205,.2);border-radius:6px;padding:3px 10px}
+.dock{position:absolute;left:0;right:0;bottom:0;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;padding:12px;background:linear-gradient(to top,rgba(5,14,10,.8),rgba(5,14,10,0))}
+.chip{min-height:38px;padding:8px 14px;font:500 13.5px Sarabun,sans-serif;color:#eef6f0;cursor:pointer;background:rgba(9,24,18,.85);border:1px solid rgba(190,225,205,.25);border-radius:6px}
+.chip[aria-pressed="true"]{background:rgba(244,197,66,.17);border-color:#f4c542;color:#f4c542}
+</style></head><body>
+<canvas id="c"></canvas>
+<div class="top"><h1>ตัวอย่างโมเดลนักเรียน</h1><p>ซ้าย = แบบเดิม (เหลี่ยม) · ขวา = แบบใหม่ (โค้งมน) · ลากเพื่อหมุนดูรอบตัว · เลื่อน/บีบเพื่อซูม</p></div>
+<div class="lbl" id="l1">แบบเดิม</div><div class="lbl" id="l2">แบบใหม่</div>
+<div class="dock">
+  <button class="chip" data-sex="b" aria-pressed="true">นักเรียนชาย</button>
+  <button class="chip" data-sex="g" aria-pressed="false">นักเรียนหญิง</button>
+  <button class="chip" id="walk" aria-pressed="false">เดิน</button>
+  <button class="chip" id="spin" aria-pressed="true">หมุนอัตโนมัติ</button>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+const cv=document.getElementById('c');
+const R=new THREE.WebGLRenderer({canvas:cv,antialias:true});R.setPixelRatio(Math.min(devicePixelRatio||1,2));
+R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFSoftShadowMap;R.outputEncoding=THREE.sRGBEncoding;
+const S=new THREE.Scene();S.background=new THREE.Color(0xcfe2ee);
+const cam=new THREE.PerspectiveCamera(32,1,0.1,100);
+S.add(new THREE.HemisphereLight(0xeaf4ff,0x8a8068,0.75));
+const sun=new THREE.DirectionalLight(0xfff2da,0.95);sun.position.set(3,6,4);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);
+Object.assign(sun.shadow.camera,{left:-3,right:3,top:3,bottom:-3});S.add(sun);
+const fl=new THREE.Mesh(new THREE.CircleGeometry(4,48),new THREE.MeshStandardMaterial({color:0xbdb7a8,roughness:1}));fl.rotation.x=-Math.PI/2;fl.receiveShadow=true;S.add(fl);
+
+const SKIN=0xd6a77c,HAIR=0x17120f,WHITE=0xf4f4f1,KHAKI=0xb59b6a,NAVY=0x1b2140,SHOE=0x151515;
+/* ── แบบเดิม (กล่อง) — เหมือนในแบบจำลองตอนนี้ ── */
+function oldKid(sex){
+  const g=new THREE.Group(),L=c=>new THREE.MeshLambertMaterial({color:c});
+  const add=(geo,c,x,y,z,sx,sy,sz)=>{const m=new THREE.Mesh(geo,L(c));m.position.set(x,y,z);if(sx)m.scale.set(sx,sy,sz);m.castShadow=true;g.add(m);return m;};
+  const legs=[],arms=[];
+  [-1,1].forEach(s=>{const p=new THREE.Group();p.position.set(s*0.085,0.82,0);g.add(p);
+    const l=new THREE.Mesh(new THREE.BoxGeometry(0.12,0.82,0.14),L(SKIN));l.position.y=-0.41;l.castShadow=true;p.add(l);
+    const sh=new THREE.Mesh(new THREE.BoxGeometry(0.125,0.07,0.22),L(SHOE));sh.position.set(0,-0.8,-0.035);p.add(sh);legs.push(p);});
+  if(sex==='b')add(new THREE.BoxGeometry(0.35,0.38,0.2),KHAKI,0,0.76,0);else add(new THREE.CylinderGeometry(0.17,0.225,0.42,12),NAVY,0,0.74,0);
+  add(new THREE.BoxGeometry(0.4,0.5,0.24),WHITE,0,1.19,0);
+  [-1,1].forEach(s=>{const p=new THREE.Group();p.position.set(s*0.225,1.425,0);g.add(p);
+    const a=new THREE.Mesh(new THREE.BoxGeometry(0.09,0.24,0.105),L(WHITE));a.position.y=-0.12;p.add(a);
+    const f=new THREE.Mesh(new THREE.BoxGeometry(0.075,0.24,0.09),L(SKIN));f.position.y=-0.36;p.add(f);arms.push(p);});
+  add(new THREE.SphereGeometry(0.118,12,9),SKIN,0,1.58,0,0.95,1.1,1);
+  add(new THREE.SphereGeometry(0.127,12,9),HAIR,0,1.62,0.024,1,0.88,1.05);
+  if(sex==='g')add(new THREE.BoxGeometry(0.06,0.2,0.07),HAIR,0,1.5,0.105);
+  return {g,legs,arms,leanArms:[]};
+}
+
+/* ── แบบใหม่ (โค้งมน) ── */
+// แคปซูล (ทรงกระบอกหัวมน) สร้างจาก LatheGeometry — three r128 ยังไม่มี CapsuleGeometry
+function capsule(r,len,seg){
+  const pts=[],n=8;
+  for(let i=0;i<=n;i++){const a=-Math.PI/2+i/n*Math.PI/2;pts.push(new THREE.Vector2(Math.cos(a)*r,Math.sin(a)*r-len/2));}
+  for(let i=0;i<=n;i++){const a=i/n*Math.PI/2;pts.push(new THREE.Vector2(Math.cos(a)*r,Math.sin(a)*r+len/2));}
+  return new THREE.LatheGeometry(pts,seg||16);
+}
+// ทรงเรียว (ลำตัว/กระโปรง): โปรไฟล์เส้นโค้งหมุนรอบแกน
+function lathe(profile,seg){return new THREE.LatheGeometry(profile.map(p=>new THREE.Vector2(p[0],p[1])),seg||24);}
+function newKid(sex){
+  const g=new THREE.Group(),M=(c,r)=>new THREE.MeshStandardMaterial({color:c,roughness:r==null?0.75:r,metalness:0});
+  const put=(geo,mat,x,y,z,parent)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;(parent||g).add(m);return m;};
+  const skin=M(SKIN,0.6),hair=M(HAIR,0.45),shirt=M(WHITE,0.85),bottomC=sex==='b'?KHAKI:NAVY,bottom=M(bottomC,0.9),shoe=M(SHOE,0.35),sock=M(0xf2f2f0,0.9);
+  const legs=[],arms=[];
+  // ขา: ต้นขา (ใต้กางเกง) + หน้าแข้งแคปซูล + ถุงเท้า + รองเท้าทรงมน
+  [-1,1].forEach(s=>{
+    const hip=new THREE.Group();hip.position.set(s*0.085,0.84,0);g.add(hip);
+    put(capsule(0.062,0.30),sex==='b'?bottom:skin,0,-0.2,0,hip);
+    put(capsule(0.052,0.36),skin,0,-0.56,0,hip);
+    put(new THREE.CylinderGeometry(0.054,0.05,0.09,14),sock,0,-0.76,0,hip);
+    const sh=put(new THREE.SphereGeometry(0.075,16,10),shoe,0,-0.81,-0.035,hip);sh.scale.set(0.95,0.5,1.6);
+    legs.push(hip);
+  });
+  // กางเกง/กระโปรง
+  if(sex==='b'){put(lathe([[0,0.62],[0.17,0.63],[0.185,0.72],[0.18,0.86],[0.16,0.9],[0,0.9]],24),bottom,0,0,0).scale.set(1,1,0.72);}
+  else{put(lathe([[0,0.5],[0.255,0.5],[0.24,0.6],[0.2,0.78],[0.165,0.92],[0,0.92]],28),bottom,0,0,0).scale.set(1,1,0.78);}
+  // ลำตัว: เอวแคบ ไหล่กว้าง มน
+  const torso=put(lathe([[0,0.86],[0.165,0.87],[0.175,0.98],[0.19,1.18],[0.2,1.32],[0.17,1.42],[0.09,1.46],[0,1.46]],28),shirt,0,0,0);torso.scale.set(1,1,0.66);
+  // เข็มขัด (ชาย) / ปกเสื้อ + โบว์ (หญิง)
+  if(sex==='b'){const belt=put(new THREE.TorusGeometry(0.17,0.016,8,28),M(0x4a2f1c,0.5),0,0.885,0);belt.rotation.x=Math.PI/2;belt.scale.set(1,0.68,1);}
+  const col=put(new THREE.TorusGeometry(0.075,0.022,8,20),shirt,0,1.45,0);col.rotation.x=Math.PI/2;col.scale.set(1,0.8,1);
+  if(sex==='g'){put(new THREE.SphereGeometry(0.04,12,8),M(NAVY,0.6),-0.04,1.41,-0.12).scale.set(1.2,0.7,0.5);put(new THREE.SphereGeometry(0.04,12,8),M(NAVY,0.6),0.04,1.41,-0.12).scale.set(1.2,0.7,0.5);}
+  // แขน: ไหล่กลม + แขนเสื้อสั้น + แขนแคปซูล + มือกลม
+  [-1,1].forEach(s=>{
+    const sh=new THREE.Group();sh.position.set(s*0.2,1.38,0);g.add(sh);
+    put(new THREE.SphereGeometry(0.058,16,12),shirt,0,-0.01,0,sh);
+    put(lathe([[0.06,0.0],[0.06,-0.13],[0.052,-0.17],[0,-0.17]],16),shirt,0,0,0,sh);
+    put(capsule(0.04,0.38),skin,0,-0.33,0,sh);
+    put(new THREE.SphereGeometry(0.046,14,10),skin,0,-0.56,0,sh).scale.set(0.85,1.15,0.7);
+    sh.rotation.z=s*0.06;arms.push(sh);
+  });
+  // คอ + หัว (ไข่) + หู + ผม
+  put(new THREE.CylinderGeometry(0.045,0.05,0.09,14),skin,0,1.5,0);
+  const head=put(new THREE.SphereGeometry(0.115,28,20),skin,0,1.63,0);head.scale.set(0.93,1.1,0.98);
+  [-1,1].forEach(s=>put(new THREE.SphereGeometry(0.026,10,8),skin,s*0.107,1.62,0.005).scale.set(0.5,1,0.8));
+  const cap=put(new THREE.SphereGeometry(0.123,28,16,0,Math.PI*2,0,Math.PI*0.42),hair,0,1.655,0.014);cap.scale.set(0.97,1.08,1.04);
+  if(sex==='g'){ // ผมยาวประบ่า + หางม้า
+    put(lathe([[0.112,1.66],[0.118,1.56],[0.11,1.47],[0,1.46]],20),hair,0,0,0.02).scale.set(1,1,0.9);
+    put(capsule(0.035,0.14),hair,0,1.52,0.13);
+  }else{ put(new THREE.SphereGeometry(0.12,20,10,0,Math.PI*2,0,Math.PI*0.3),hair,0,1.7,0.0).scale.set(1,0.7,1.05); }
+  // หน้า: ตา จมูก ปาก คิ้ว (หันไปทาง -z)
+  const eye=M(0x111111,0.3),white=M(0xffffff,0.4);
+  [-1,1].forEach(s=>{put(new THREE.SphereGeometry(0.018,12,10),white,s*0.04,1.635,-0.1).scale.set(1.2,0.85,0.5);
+    put(new THREE.SphereGeometry(0.011,10,8),eye,s*0.04,1.635,-0.108);
+    put(new THREE.BoxGeometry(0.04,0.008,0.01),hair,s*0.041,1.668,-0.104).rotation.z=s*-0.12;});
+  put(new THREE.SphereGeometry(0.013,10,8),skin,0,1.605,-0.115).scale.set(0.9,1,1.1);
+  put(new THREE.TorusGeometry(0.02,0.0045,6,14,Math.PI),M(0x9b4a3c,0.5),0,1.585,-0.106).rotation.z=Math.PI;
+  return {g,legs,arms};
+}
+
+let kids=[];
+function build(sex){
+  kids.forEach(k=>S.remove(k.g));
+  const a=oldKid(sex),b=newKid(sex);/* มองจากด้านหน้า (กล้องฝั่ง -z) ซ้ายจอ = +x */a.g.position.x=0.55;b.g.position.x=-0.55;S.add(a.g);S.add(b.g);kids=[a,b];
+}
+build('b');
+let th=Math.PI+0.25,ph=1.42,rad=3.6,walk=false,spin=true,t=0;
+function place(){cam.position.set(rad*Math.sin(ph)*Math.sin(th),0.95+rad*Math.cos(ph),rad*Math.sin(ph)*Math.cos(th));cam.lookAt(0,0.85,0);}
+const ptr=new Map();
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);ptr.set(e.pointerId,{x:e.clientX,y:e.clientY});spin=false;document.getElementById('spin').setAttribute('aria-pressed','false');});
+cv.addEventListener('pointerup',e=>ptr.delete(e.pointerId));cv.addEventListener('pointercancel',e=>ptr.delete(e.pointerId));
+cv.addEventListener('pointermove',e=>{const p=ptr.get(e.pointerId);if(!p)return;
+  if(ptr.size===1){th-=(e.clientX-p.x)*0.01;ph=Math.min(1.6,Math.max(0.3,ph-(e.clientY-p.y)*0.006));}
+  else if(ptr.size===2){const a=[...ptr.values()],d0=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);p.x=e.clientX;p.y=e.clientY;const d1=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);if(d0&&d1)rad=Math.min(8,Math.max(1.2,rad*d0/d1));return;}
+  p.x=e.clientX;p.y=e.clientY;});
+cv.addEventListener('wheel',e=>{e.preventDefault();rad=Math.min(8,Math.max(1.2,rad*Math.exp(e.deltaY*0.0012)));},{passive:false});
+document.querySelectorAll('[data-sex]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-sex]').forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false'));build(b.dataset.sex);});
+document.getElementById('walk').onclick=function(){walk=!walk;this.setAttribute('aria-pressed',walk);};
+document.getElementById('spin').onclick=function(){spin=!spin;this.setAttribute('aria-pressed',spin);};
+function resize(){R.setSize(innerWidth,innerHeight,false);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();rad=innerWidth<innerHeight?6.2:4.2;}
+addEventListener('resize',resize);resize();
+const lab=[document.getElementById('l1'),document.getElementById('l2')],v=new THREE.Vector3();
+(function loop(){
+  t+=1/60;if(spin)th+=0.004;place();
+  const sw=walk?Math.sin(t*5)*0.5:0;
+  kids.forEach(k=>{k.legs.forEach((l,i)=>l.rotation.x=(i?1:-1)*sw);k.arms.forEach((a,i)=>a.rotation.x=(i?-1:1)*sw*0.75);k.g.position.y=walk?Math.abs(Math.sin(t*5))*0.025:0;});
+  kids.forEach((k,i)=>{v.set(k.g.position.x,0,0).project(cam);lab[i].style.left=((v.x+1)/2*innerWidth)+'px';});
+  R.render(S,cam);requestAnimationFrame(loop);
+})();
+})();
+</script></body></html>
