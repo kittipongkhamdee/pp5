@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <!-- ฟอนต์ Sarabun เก็บไว้ในโปรเจกต์เอง (assets/fonts/) แล้ว ประกาศ @font-face อยู่ในหัวไฟล์ style.css -->
 <!-- ?v= กันแคชเก่าค้าง (style.css แคชไว้ 1 วันตาม vercel.json) — แก้ style.css เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย -->
-<link rel="stylesheet" href="style.css?v=17">
+<link rel="stylesheet" href="style.css?v=18">
 </head>
 <body class="bg-bg text-txt antialiased">
 
@@ -2427,6 +2427,7 @@ async function pgSubjects(){
     <div style="display:flex;gap:8px;flex-wrap:wrap">
     ${(S.profile?.is_admin||S.config.copy_subjects_enabled!=='0')?`
     <button class="btn bs" onclick="openCopySubjectsModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>คัดลอกวิชาไปภาคเรียน/ปีการศึกษาใหม่</button>`:''}
+    <button class="btn bs" onclick="openImgSubModal()" title="ถ่ายรูป/เลือกรูปตารางรายวิชาที่สอน">📷 เพิ่มจากรูป</button>
     <button class="btn bp" onclick="openSubModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>เพิ่มรายวิชา</button>
     </div></div>
   <div class="card"><div class="cb">
@@ -2590,6 +2591,139 @@ function _collectClassDays(root){
     map[day]=periods; // วันซ้ำ ใช้ค่าล่าสุด
   });
   return Object.keys(map).map(k=>({weekday:+k,periods:map[k]})).sort((a,b)=>a.weekday-b.weekday);
+}
+// ── เพิ่มรายวิชาจากรูปตารางรายวิชาที่สอน (อ่านด้วย Gemini) ───────────────
+// อ่านรูป → แตกแถวตามห้อง (ม.2/1-2 = 2 วิชา) → ให้ครูตรวจ/แก้/เลือกวันสอน → บันทึกพร้อมกัน
+let _imgRows=[];
+function _codeInfo(code){
+  const m=String(code||'').trim().match(/^(\S)(\d)(\d)(\d)/); if(!m) return {};
+  const key=CODE_GROUP[m[1]]||(/[ก-ฮA-Za-z]/.test(m[1])?'ต่างประเทศ':'');
+  const out={group:(key&&SUBJECT_GROUPS.find(x=>x.includes(key)))||''};
+  if(m[4]==='1'||m[4]==='2') out.type=m[4]==='1'?'รายวิชาพื้นฐาน':'วิชาเพิ่มเติม';
+  if((m[2]==='2'||m[2]==='3')&&+m[3]>=1&&+m[3]<=3) out.grade=String((m[2]==='2'?0:3)+(+m[3]));
+  return out;
+}
+function openImgSubModal(){
+  if(!S.config.gemini_api_key){ toast('ยังไม่ได้ตั้งค่า Gemini API key (เมนูตั้งค่า)','er'); return; }
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
+  inp.onchange=()=>{ if(inp.files[0]) _imgSubRead(inp.files[0]); };
+  inp.click();
+}
+function _imgToB64(file){
+  return new Promise((res,rej)=>{
+    const img=new Image(), url=URL.createObjectURL(file);
+    img.onload=()=>{
+      const k=Math.min(1,1800/Math.max(img.width,img.height));
+      const c=document.createElement('canvas'); c.width=Math.round(img.width*k); c.height=Math.round(img.height*k);
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height); URL.revokeObjectURL(url);
+      res(c.toDataURL('image/jpeg',0.85).split(',')[1]);
+    };
+    img.onerror=()=>rej(new Error('เปิดรูปไม่ได้')); img.src=url;
+  });
+}
+async function _imgSubRead(file){
+  loading(true);
+  try{
+    const b64=await _imgToB64(file);
+    const prompt=`รูปนี้คือตารางรายวิชาที่ครูสอน อ่านทุกแถวแล้วตอบเป็น JSON array เท่านั้น แต่ละแถวมีรูปแบบ
+{"name":ชื่อวิชา,"code":รหัสวิชา (ว่างถ้าไม่มี),"grade":ชั้น ม. เป็นตัวเลข 1-6,"rooms":[เลขห้องเป็นตัวเลข] (เช่น "ม.2/1-2" = [1,2], "ม.3/1" = [1], ไม่ระบุห้อง = []),"credits":หน่วยกิต (ตัวเลข, ว่างได้),"hours":ชั่วโมงต่อสัปดาห์ (ตัวเลข)}
+อ่านรหัสวิชาตามจริง (ตัวอักษรไทย 1 ตัวหรือ I ตามด้วยตัวเลข 5 หลัก) ห้ามเดา`;
+    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${S.config.gemini_api_key}`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({contents:[{parts:[{inline_data:{mime_type:'image/jpeg',data:b64}},{text:prompt}]}],
+        generationConfig:{temperature:0,responseMimeType:'application/json'}})});
+    const j=await res.json();
+    if(!res.ok) throw new Error(j.error?.message||'HTTP '+res.status);
+    const txt=(j.candidates?.[0]?.content?.parts||[]).map(p=>p.text||'').join('');
+    let arr=JSON.parse(txt); if(!Array.isArray(arr)) arr=arr.subjects||arr.rows||[];
+    _imgRows=[];
+    arr.forEach(it=>{
+      const code=String(it.code||'').trim().replace(/\s+/g,'');
+      const info=_codeInfo(code);
+      const grade=String(it.grade||info.grade||1);
+      const n=ROOMS_PER_GRADE[grade]||2;
+      let rooms=(it.rooms||[]).map(String).filter(r=>+r>=1&&+r<=n);
+      if(n<=1) rooms=['0']; else if(!rooms.length) rooms=['1'];
+      const hours=+it.hours||1;
+      rooms.forEach(room=>_imgRows.push({on:!!code,code,name:String(it.name||'').trim(),grade,room,
+        credits:it.credits!==''&&it.credits!=null?+it.credits:hours*0.5,hours,days:{}}));
+    });
+    if(!_imgRows.length){ toast('อ่านรายวิชาจากรูปไม่ได้ ลองถ่ายให้ชัดขึ้น','er'); return; }
+    _imgSubModal();
+  }catch(e){ toast('อ่านรูปไม่สำเร็จ: '+e.message,'er'); }
+  finally{ loading(false); }
+}
+function _imgDaysHtml(i){
+  const r=_imgRows[i], sum=Object.values(r.days).reduce((a,b)=>a+b,0);
+  return CD_DOW.map(d=>{const p=r.days[d.v]||0;
+    return `<button type="button" class="isd${p?' on':''}" onclick="_imgDay(${i},${d.v})" title="แตะเพื่อเพิ่มคาบ">${d.l.slice(0,d.v===4?2:1)}${p>1?`<sup>${p}</sup>`:''}</button>`;}).join('')
+    +`<span class="isd-sum" style="color:${sum===r.hours?'#16a34a':'#dc2626'}">${sum}/${r.hours}</span>`;
+}
+function _imgDay(i,d){
+  const r=_imgRows[i]; const p=((r.days[d]||0)+1)%3; // 0 → 1 คาบ → 2 คาบ → 0
+  if(p) r.days[d]=p; else delete r.days[d];
+  $('isd-'+i).innerHTML=_imgDaysHtml(i);
+}
+function _imgSet(i,k,v){ const r=_imgRows[i]; r[k]=(k==='credits'||k==='hours')?+v:k==='on'?v:String(v);
+  if(k==='hours') $('isd-'+i).innerHTML=_imgDaysHtml(i);
+  if(k==='code'){ const g=_codeInfo(v).grade; if(g&&g!==r.grade){ r.grade=g; _imgSubModal(); } }
+  if(k==='grade'){ const n=ROOMS_PER_GRADE[r.grade]||2; r.room=n<=1?'0':(r.room==='0'?'1':String(Math.min(+r.room,n))); _imgSubModal(); } }
+function _imgSubModal(){
+  rmModal('imgSubMod');
+  const rows=_imgRows.map((r,i)=>{
+    const n=ROOMS_PER_GRADE[r.grade]||2;
+    const rmOpts=(n<=1?['0']:Array.from({length:n},(_,k)=>String(k+1))).map(v=>`<option value="${v}" ${v===r.room?'selected':''}>${v==='0'?'ห้องเดียว':'ห้อง '+v}</option>`).join('');
+    return `<tr${r.on?'':' style="opacity:.55"'}>
+      <td><input type="checkbox" ${r.on?'checked':''} onchange="_imgSet(${i},'on',this.checked);this.closest('tr').style.opacity=this.checked?1:.55"></td>
+      <td><input class="fi" value="${esc(r.code)}" style="width:86px" oninput="_imgSet(${i},'code',this.value)"></td>
+      <td><input class="fi" value="${esc(r.name)}" style="min-width:140px" oninput="_imgSet(${i},'name',this.value)"></td>
+      <td><select class="fs" style="width:62px" onchange="_imgSet(${i},'grade',this.value)">${gradeSelectOptions(r.grade)}</select></td>
+      <td><select class="fs" style="width:96px" onchange="_imgSet(${i},'room',this.value)">${rmOpts}</select></td>
+      <td><input class="fi" type="number" step="0.5" min="0" value="${r.credits}" style="width:62px" oninput="_imgSet(${i},'credits',this.value)"></td>
+      <td><input class="fi" type="number" min="1" value="${r.hours}" style="width:52px" oninput="_imgSet(${i},'hours',this.value)"></td>
+      <td><div class="isd-box" id="isd-${i}">${_imgDaysHtml(i)}</div></td></tr>`;
+  }).join('');
+  document.body.insertAdjacentHTML('beforeend',`
+  <div class="mo" id="imgSubMod"><div class="md md-lg" style="max-width:1100px">
+    <div class="mh"><div class="mt">ตรวจรายวิชาจากรูป</div><button class="mx" onclick="rmModal('imgSubMod')">✕</button></div>
+    <div class="mb">
+      <div style="font-size:12.5px;color:var(--muted);margin-bottom:10px;line-height:1.6">
+        ตรวจข้อมูลที่ AI อ่านได้ก่อนบันทึก (อาจอ่านผิดได้) — แตะวันเพื่อเลือกวันสอน แตะซ้ำ = 2 คาบ แตะอีกครั้ง = ยกเลิก ·
+        ตัวเลข x/y = คาบที่เลือก/ชั่วโมงต่อสัปดาห์ · แถวที่ไม่มีรหัสวิชา (กิจกรรม) ไม่ได้ติ๊กไว้
+      </div>
+      <div style="overflow-x:auto"><table class="isd-t">
+        <thead><tr><th></th><th>รหัส</th><th>ชื่อวิชา</th><th>ชั้น ม.</th><th>ห้อง</th><th>หน่วยกิต</th><th>ชม./สัปดาห์</th><th>วันสอน</th></tr></thead>
+        <tbody>${rows}</tbody></table></div>
+      <div style="font-size:12.5px;color:var(--muted);margin-top:10px">ครูผู้สอน: <b>${esc(S.profile?.full_name||'')}</b> · กลุ่มสาระ/ประเภท เติมจากรหัสวิชา · ภาคเรียน ${esc(S.config.semester||'')}/${esc(S.config.academic_year||'')}</div>
+    </div>
+    <div class="mf">
+      <button class="btn bs" onclick="rmModal('imgSubMod')">ยกเลิก</button>
+      <button class="btn bp" onclick="saveImgSubs()">บันทึกรายวิชาที่เลือก</button>
+    </div>
+  </div></div>`);
+}
+async function saveImgSubs(){
+  const rows=_imgRows.filter(r=>r.on);
+  if(!rows.length){ toast('ยังไม่ได้เลือกรายวิชา','er'); return; }
+  const bad=rows.find(r=>!r.code||!r.name);
+  if(bad){ toast('กรุณากรอกรหัสและชื่อวิชาให้ครบทุกแถวที่เลือก','er'); return; }
+  let hog=''; try{ hog=localStorage.getItem('pp5_hog_'+S.user.id)||''; }catch(e){}
+  const payloads=rows.map(r=>{ const info=_codeInfo(r.code); return {
+    subject_code:r.code,subject_name:r.name,grade_level:r.grade,room:r.room,
+    credits:r.credits,hours_per_week:r.hours,total_hours:r.hours*20,
+    teacher_name:S.profile?.full_name||'',head_of_group:hog,advisor_name:'',
+    subject_group:info.group||'',subject_type:info.type||'รายวิชาพื้นฐาน',
+    academic_year:S.config.academic_year||'2568',semester:parseInt(S.config.semester||1),user_id:S.user.id};});
+  loading(true);
+  try{
+    const inserted=await q(sb.from('subjects').insert(payloads).select('id'));
+    try{
+      await q(sb.from('config').upsert(inserted.map((x,k)=>({key:'class_days_'+x.id,
+        value:JSON.stringify(Object.keys(rows[k].days).map(d=>({weekday:+d,periods:rows[k].days[d]})).sort((a,b)=>a.weekday-b.weekday))})),{onConflict:'key'}));
+    }catch(e){ toast('บันทึกวิชาสำเร็จ แต่บันทึกวันสอนไม่สำเร็จ: '+e.message,'er'); }
+    await loadConfig(); _subCat=null; invalidateSubjects(); await loadSubjects();
+    rmModal('imgSubMod'); toast(`เพิ่ม ${inserted.length} รายวิชาเรียบร้อย`); pgSubjects();
+  }catch(e){ toast('เกิดข้อผิดพลาด: '+e.message,'er'); }finally{ loading(false); }
 }
 function openSubModal(id){
   const s=id?S.subjects.find(x=>x.id===id):null;
