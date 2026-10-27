@@ -374,19 +374,18 @@ palm(-3.8,-16.8,9.0,-0.5);palm(3.8,-16.8,9.6,0.6);
 /* ---------- บริเวณรอบอาคาร 4 (อาคารรักนักไทย) ตามแผนผังโรงเรียน ----------
    ไม่มีป้ายชื่ออาคาร (ข้อมูลอาคารยังไม่ยืนยัน) · ทิศ: -z = เหนือ (หลังอาคาร), +z = ใต้ (ลานเข้าแถว) · ระยะ/ขนาดประมาณจากแผนผัง ไม่ใช่แบบรังวัด */
 (function(){
-  const roadM=L(0x3d4046),lineM=L(0xe9e6da),curbM=L(0xd8d4c8);
+  // ถนนคอนกรีตเลนเดียว กว้าง ~3.5 ม. (รถวิ่งได้ทีละคัน) มีรอยต่อแผ่นคอนกรีตทุก 4 ม.
+  const RW=3.5,jointM=L(0x8f8b82);
   function road(x,z,w,d){
-    const r=plane(w,d,roadM);r.rotation.x=-Math.PI/2;r.position.set(x,0.03,z);
-    const horiz=w>d,len=horiz?w:d,n=Math.floor(len/6);
-    for(let i=0;i<n;i++){const m=plane(horiz?2.4:0.18,horiz?0.18:2.4,lineM);m.rotation.x=-Math.PI/2;
-      m.position.set(horiz?x-len/2+3+i*6:x,0.05,horiz?z:z-len/2+3+i*6);}
+    const horiz=w>d,len=horiz?w:d;
+    const r=plane(w,d,L(0xffffff,{map:rep(concreteTex,(horiz?len:RW)/6,(horiz?RW:len)/6),color:0xcfcbc1,polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3}));
+    r.rotation.x=-Math.PI/2;r.position.set(x,0.035,z);
+    for(let i=1;i<len/4;i++){const m=plane(horiz?0.06:RW,horiz?RW:0.06,jointM);m.rotation.x=-Math.PI/2;m.position.set(horiz?x-len/2+i*4:x,0.045,horiz?z:z-len/2+i*4);}
     return r;
   }
   // ถนนรอบบล็อกอาคาร 4: เหนือ (หลังอาคาร) · ใต้ (ถนนเส้นกลาง หน้าลาน) · ตะวันตก · ตะวันออก
-  road(0,-58,190,7);road(0,42,190,7);road(-58,-8,7,107);road(58,-8,7,107);
-  road(-58,75,7,60);road(58,75,7,60);road(0,75,7,60);
-  // ขอบคันหิน
-  [[0,-54.3,190],[0,38.3,190]].forEach(function(c){box(c[2],0.18,0.4,c[0],0.09,c[1],curbM,false);});
+  road(0,-58,190,RW);road(0,42,190,RW);road(-58,-8,RW,107);road(58,-8,RW,107);
+  road(-58,75,RW,60);road(58,75,RW,60);road(0,75,RW,60);
   const roofR=L(0xb24b2c),wall=L(0xf2ead2),blue=L(0x2f5fa8),tin=L(0x8f9aa3);
   function house(x,z,w,d,h,roof,label){
     box(w,h,d,x,h/2,z,wall);
