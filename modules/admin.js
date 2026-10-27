@@ -835,19 +835,17 @@ async function pgSettings(){
   <div class="card">
     <div class="ch"><div class="ct">วิชาภาคเรียนเก่า</div></div>
     <div class="cb">
-      <div style="font-size:12px;color:#6e6e73;margin-bottom:14px;line-height:1.6">
-        ปกติครูเห็นเฉพาะวิชาของภาคเรียนปัจจุบัน (${esc(S.config.semester||'')}/${esc(S.config.academic_year||'')}) — เปิดดู/แก้ไขวิชาภาคเก่าไม่ได้ แอดมินเห็นทุกภาคเสมอ
-        เปิดสวิตช์นี้ชั่วคราวเมื่อต้องให้ครูแก้ผลภาคเก่า (เช่น แก้ 0 / ร / มส) แล้วปิดเมื่อเสร็จ
+      <div style="font-size:12px;color:#6e6e73;margin-bottom:12px;line-height:1.6">
+        ภาคเรียนปัจจุบัน ${esc(S.config.semester||'')}/${esc(S.config.academic_year||'')} — ครูทำงานได้ตามปกติเสมอ ตัวเลือกนี้กำหนดเฉพาะการเข้าถึงภาคเรียนเก่า (แอดมินเลือกดู/แก้ได้ทุกภาค)
       </div>
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-        <input type="checkbox" ${S.config.old_terms_enabled==='1'?'checked':''} onchange="toggleOldTermsEnabled(this)" style="width:18px;height:18px;accent-color:var(--ac)">
-        <span style="font-size:14px;font-weight:600">อนุญาตให้ครูเปิด/แก้ไขวิชาภาคเรียนเก่า</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:12px">
-        <input type="checkbox" ${S.config.old_terms_view_enabled!=='0'?'checked':''} onchange="toggleOldTermsView(this)" style="width:18px;height:18px;accent-color:var(--ac)">
-        <span style="font-size:14px;font-weight:600">ให้ครูเลือกดูภาคเรียนเก่าแบบอ่านอย่างเดียว</span>
-      </label>
-      <div style="font-size:12px;color:#6e6e73;margin:4px 0 0 26px">ปิดแล้ว ช่องเลือกภาคเรียนบนแดชบอร์ดของครูจะหายไป ครูเห็นเฉพาะภาคปัจจุบัน</div>
+      ${(()=>{const cur=_oldTermsMode();return[
+        ['off','ครูเห็นเฉพาะภาคปัจจุบัน','ไม่มีช่องเลือกภาคเรียนบนแดชบอร์ดของครู'],
+        ['view','ครูดูภาคเก่าได้แบบอ่านอย่างเดียว','เลือกดูภาคเก่าจากแดชบอร์ดได้ แต่แก้ไขไม่ได้ (แนะนำ)'],
+        ['edit','ครูเปิดแก้ไขภาคเก่าได้ (ชั่วคราว)','ใช้ช่วงแก้ 0 / ร / มส แล้วเปลี่ยนกลับเมื่อเสร็จ']
+      ].map(([v,l,d])=>`<label style="display:flex;gap:8px;cursor:pointer;margin-top:10px">
+        <input type="radio" name="old-terms-mode" value="${v}" ${cur===v?'checked':''} onchange="setOldTermsMode(this)" style="width:18px;height:18px;margin-top:1px;accent-color:var(--ac)">
+        <span><span style="font-size:14px;font-weight:600;display:block">${l}</span><span style="font-size:12px;color:#6e6e73">${d}</span></span>
+      </label>`).join('');})()}
     </div>
   </div>`:''}
 
@@ -1711,30 +1709,24 @@ async function saveCheckinSync(){
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
 }
 
-async function toggleOldTermsView(cb){
-  const val=cb.checked?'1':'0';
-  cb.disabled=true;
-  try{
-    await q(sb.from('config').upsert([{key:'old_terms_view_enabled',value:val}],{onConflict:'key'}));
-    S.config.old_terms_view_enabled=val;
-    toast(cb.checked?'เปิดให้ครูดูภาคเรียนเก่าแบบอ่านอย่างเดียวแล้ว':'ปิดแล้ว — ครูไม่มีตัวเลือกดูภาคเรียนเก่า');
-  }catch(e){
-    cb.checked=!cb.checked;
-    toast('บันทึกไม่สำเร็จ: '+e.message,'er');
-  }finally{ cb.disabled=false; }
+// 3 โหมดเก็บด้วย config เดิม 2 คีย์: off = 0/0, view = 0/1, edit = 1/1 (old_terms_enabled/old_terms_view_enabled)
+function _oldTermsMode(){
+  if(S.config.old_terms_enabled==='1') return 'edit';
+  return S.config.old_terms_view_enabled!=='0'?'view':'off';
 }
-
-async function toggleOldTermsEnabled(cb){
-  const val=cb.checked?'1':'0';
-  cb.disabled=true;
+async function setOldTermsMode(rb){
+  const prev=_oldTermsMode(), mode=rb.value;
+  const en=mode==='edit'?'1':'0', vw=mode==='off'?'0':'1';
+  const all=document.querySelectorAll('input[name="old-terms-mode"]');
+  all.forEach(i=>i.disabled=true);
   try{
-    await q(sb.from('config').upsert([{key:'old_terms_enabled',value:val}],{onConflict:'key'}));
-    S.config.old_terms_enabled=val;
-    toast(cb.checked?'เปิดให้ครูแก้ไขวิชาภาคเก่าแล้ว — อย่าลืมปิดเมื่อเสร็จ':'ปิดแล้ว — ครูเห็นเฉพาะวิชาภาคปัจจุบัน');
+    await q(sb.from('config').upsert([{key:'old_terms_enabled',value:en},{key:'old_terms_view_enabled',value:vw}],{onConflict:'key'}));
+    S.config.old_terms_enabled=en; S.config.old_terms_view_enabled=vw;
+    toast({off:'ครูเห็นเฉพาะภาคปัจจุบันแล้ว',view:'ครูดูภาคเก่าได้แบบอ่านอย่างเดียวแล้ว',edit:'เปิดให้ครูแก้ไขภาคเก่าแล้ว — อย่าลืมเปลี่ยนกลับเมื่อเสร็จ'}[mode]);
   }catch(e){
-    cb.checked=!cb.checked;
+    all.forEach(i=>i.checked=i.value===prev);
     toast('บันทึกไม่สำเร็จ: '+e.message,'er');
-  }finally{ cb.disabled=false; }
+  }finally{ all.forEach(i=>i.disabled=false); }
 }
 
 async function toggleCopySubjectsEnabled(cb){
