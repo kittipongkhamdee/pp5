@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <!-- ฟอนต์ Sarabun เก็บไว้ในโปรเจกต์เอง (assets/fonts/) แล้ว ประกาศ @font-face อยู่ในหัวไฟล์ style.css -->
 <!-- ?v= กันแคชเก่าค้าง (style.css แคชไว้ 1 วันตาม vercel.json) — แก้ style.css เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย -->
-<link rel="stylesheet" href="style.css?v=15">
+<link rel="stylesheet" href="style.css?v=16">
 </head>
 <body class="bg-bg text-txt antialiased">
 
@@ -1849,7 +1849,26 @@ function _roomOptions(grade,selectedRoom){
   for(let r=1;r<=n;r++){ opts+=`<option value="${r}" ${String(r)===String(selectedRoom)?'selected':''}>${r}</option>`; }
   return opts;
 }
+// วิชาใหม่เลือกได้หลายห้อง — สร้างวิชาแยกห้องละ 1 รายการพร้อมกัน
+function _roomChecks(grade,checked){
+  const n=ROOMS_PER_GRADE[String(grade)]||2;
+  const ck=new Set((checked||[]).map(String));
+  let h=`<label class="rms-i"><input type="checkbox" value="0" ${ck.has('0')?'checked':''} onchange="_rmsZero(this)"> ห้องเดียว/ไม่ระบุ</label>`;
+  for(let r=1;r<=n;r++) h+=`<label class="rms-i"><input type="checkbox" value="${r}" ${ck.has(String(r))?'checked':''} onchange="_rmsZero(this)"> ห้อง ${r}</label>`;
+  return h+`<button type="button" class="rms-all" onclick="_rmsAll()">เลือกทุกห้อง</button>`;
+}
+function _rmsZero(el){
+  // "ไม่ระบุห้อง" ใช้ร่วมกับห้องอื่นไม่ได้
+  const box=$('f-rms'); if(!box||!el.checked) return;
+  box.querySelectorAll('input').forEach(i=>{ if(i!==el&&((el.value==='0')===(i.value!=='0'))) i.checked=false; });
+}
+function _rmsAll(){ const box=$('f-rms'); if(box) box.querySelectorAll('input').forEach(i=>i.checked=i.value!=='0'); }
 function _rmOptsRefresh(){
+  const box=$('f-rms');
+  if(box&&$('f-gr')){
+    const cur=[...box.querySelectorAll('input:checked')].map(i=>i.value);
+    box.innerHTML=_roomChecks($('f-gr').value,cur.length?cur:['1']); return;
+  }
   const gEl=$('f-gr'), rEl=$('f-rm'); if(!gEl||!rEl) return;
   const cur=rEl.value;
   rEl.innerHTML=_roomOptions(gEl.value,cur);
@@ -2542,6 +2561,11 @@ function _collectClassDays(){
 }
 function openSubModal(id){
   const s=id?S.subjects.find(x=>x.id===id):null;
+  // วิชาใหม่: ครูผู้สอน = ครูที่ล็อกอินอยู่, หัวหน้ากลุ่มสาระ = ค่าที่เลือกครั้งล่าสุด (จำไว้ในเครื่อง)
+  const tchList=(S.config.teachers||'').split('\n').map(t=>t.trim()).filter(Boolean);
+  const tchDef=s?(s.teacher_name||''):(S.profile?.full_name||'');
+  let hogDef=s?(s.head_of_group||''):'';
+  if(!s){ try{ hogDef=localStorage.getItem('pp5_hog_'+S.user.id)||''; }catch(e){} }
   document.body.insertAdjacentHTML('beforeend',`
   <div class="mo" id="subMod"><div class="md md-lg">
     <div class="mh"><div class="mt">${s?'แก้ไขรายวิชา':'เพิ่มรายวิชาใหม่'}</div>
@@ -2584,7 +2608,7 @@ function openSubModal(id){
         <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:14px;margin-top:14px">
           <div><label class="fl">ชั้น ม.</label>
             <select class="fs" id="f-gr" onchange="_rmOptsRefresh()">${gradeSelectOptions(s?.grade_level)}</select></div>
-          <div><label class="fl">ห้อง</label><select class="fs" id="f-rm">${_roomOptions(s?.grade_level||1,s?.room)}</select></div>
+          <div><label class="fl">ห้อง</label>${s?`<select class="fs" id="f-rm">${_roomOptions(s.grade_level||1,s.room)}</select>`:`<div id="f-rms" class="rms-box">${_roomChecks(1,['1'])}</div>`}</div>
           <div><label class="fl">หน่วยกิต</label><input type="number" class="fi" id="f-cr" value="${s?.credits||1.5}" step="0.5" min="0.5" oninput="updHours()"></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
@@ -2603,15 +2627,16 @@ function openSubModal(id){
           <label class="fl">ครูผู้สอน</label>
           <select class="fs" id="f-tch">
             <option value="">— เลือกหรือพิมพ์ —</option>
-            ${(S.config.teachers||'').split('\n').filter(t=>t.trim()).map(t=>`<option value="${esc(t.trim())}" ${s?.teacher_name===t.trim()?'selected':''}>${esc(t.trim())}</option>`).join('')}
-            ${s?.teacher_name&&!(S.config.teachers||'').split('\n').map(t=>t.trim()).includes(s.teacher_name)?`<option value="${esc(s.teacher_name)}" selected>${esc(s.teacher_name)}</option>`:''}
+            ${tchList.map(t=>`<option value="${esc(t)}" ${tchDef===t?'selected':''}>${esc(t)}</option>`).join('')}
+            ${tchDef&&!tchList.includes(tchDef)?`<option value="${esc(tchDef)}" selected>${esc(tchDef)}</option>`:''}
           </select>
         </div>
         <div style="margin-top:14px">
           <label class="fl">หัวหน้ากลุ่มสาระการเรียนรู้</label>
           <select class="fs" id="f-hog">
             <option value="">— เลือก —</option>
-            ${(S.config.teachers||'').split('\n').filter(t=>t.trim()).map(t=>`<option value="${esc(t.trim())}" ${s?.head_of_group===t.trim()?'selected':''}>${esc(t.trim())}</option>`).join('')}
+            ${tchList.map(t=>`<option value="${esc(t)}" ${hogDef===t?'selected':''}>${esc(t)}</option>`).join('')}
+            ${hogDef&&!tchList.includes(hogDef)?`<option value="${esc(hogDef)}" selected>${esc(hogDef)}</option>`:''}
           </select>
         </div>
       <div style="margin-top:14px;font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:6px">
@@ -2637,7 +2662,7 @@ async function saveSubForm(id){
   const code=$('f-code').value.trim(),name=$('f-name').value.trim();
   if(!code||!name){toast('กรุณากรอกรหัสและชื่อวิชา','er');return;}
   const payload={
-    subject_code:code,subject_name:name,grade_level:$('f-gr').value,room:$('f-rm').value.trim(),
+    subject_code:code,subject_name:name,grade_level:$('f-gr').value,room:id?$('f-rm').value.trim():'',
     credits:+$('f-cr').value,hours_per_week:+$('f-hw').value,total_hours:+$('f-th').value,
     teacher_name:$('f-tch').value.trim(),head_of_group:$('f-hog')?.value||'',advisor_name:'',
     subject_group:$('f-sg')?.value||'',
@@ -2645,21 +2670,23 @@ async function saveSubForm(id){
     academic_year:S.config.academic_year||'2568',semester:parseInt(S.config.semester||1),
     user_id:S.user.id
   };
+  const rooms=id?[payload.room]:[...document.querySelectorAll('#f-rms input:checked')].map(i=>i.value);
+  if(!rooms.length){toast('กรุณาเลือกห้องอย่างน้อย 1 ห้อง','er');return;}
+  if(!id){ try{ localStorage.setItem('pp5_hog_'+S.user.id,payload.head_of_group); }catch(e){} }
   const classDays=_collectClassDays();
   loading(true);
   try{
-    let subjectId=id;
+    let subjectIds=[id];
     if(id){ await q(sb.from('subjects').update(payload).eq('id',id).eq('user_id',S.user.id)); }
-    else   { const inserted=await q(sb.from('subjects').insert(payload).select('id')); subjectId=inserted[0].id; }
+    else   { const inserted=await q(sb.from('subjects').insert(rooms.map(room=>({...payload,room}))).select('id')); subjectIds=inserted.map(x=>x.id); }
     // บันทึกวันสอนแยกจากตัววิชา — ถ้าพลาดตรงนี้ วิชายังถูกบันทึกแล้ว ห้ามให้ผู้ใช้กดซ้ำจนวิชาซ้ำ
-    const cdKey='class_days_'+subjectId;
     try{
-      await q(sb.from('config').upsert([{key:cdKey,value:JSON.stringify(classDays)}],{onConflict:'key'}));
+      await q(sb.from('config').upsert(subjectIds.map(sid=>({key:'class_days_'+sid,value:JSON.stringify(classDays)})),{onConflict:'key'}));
     }catch(e){toast('บันทึกวิชาสำเร็จ แต่บันทึกวันสอนไม่สำเร็จ: '+e.message,'er');}
     await loadConfig();
     _subCat=null;
     invalidateSubjects(); await loadSubjects();
-    rmModal('subMod');toast(id?'แก้ไขเรียบร้อย':'เพิ่มรายวิชาเรียบร้อย');pgSubjects();
+    rmModal('subMod');toast(id?'แก้ไขเรียบร้อย':(rooms.length>1?`เพิ่มรายวิชา ${rooms.length} ห้องเรียบร้อย`:'เพิ่มรายวิชาเรียบร้อย'));pgSubjects();
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
 }
 async function delSub(id,name){

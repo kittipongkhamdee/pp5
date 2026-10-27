@@ -761,3 +761,8 @@ body.ro #pg table select{opacity:.8}
 body.ro .mo .mb :is(input,select,textarea,button,[contenteditable="true"]){pointer-events:none;opacity:.6}
 body.ro .mo .mf .bp,body.ro .mo .mf .bd{display:none!important}
 body.ro :is(#pg,.mo) button:is([onclick*="save" i],[onclick*="del" i],[onclick*="add" i],[onclick*="import" i],[onclick*="upload" i],[onclick*="clear" i],[onclick*="gen" i],[onclick*="fill" i],[onclick*="openSubModal" i],[onclick*="copy" i],[onclick*="announce" i]){pointer-events:none;opacity:.35}
+/* เลือกหลายห้องตอนเพิ่มวิชาใหม่ */
+.rms-box{display:flex;flex-wrap:wrap;gap:6px}
+.rms-i{display:inline-flex;align-items:center;gap:4px;padding:5px 9px;border:1px solid var(--border,#d1d5db);border-radius:8px;font-size:13px;cursor:pointer}
+.rms-i:has(input:checked){background:#eef2ff;border-color:#6366f1}
+.rms-all{border:none;background:none;color:#4f46e5;font-size:12px;cursor:pointer;text-decoration:underline}
