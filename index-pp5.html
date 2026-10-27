@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <!-- ฟอนต์ Sarabun เก็บไว้ในโปรเจกต์เอง (assets/fonts/) แล้ว ประกาศ @font-face อยู่ในหัวไฟล์ style.css -->
 <!-- ?v= กันแคชเก่าค้าง (style.css แคชไว้ 1 วันตาม vercel.json) — แก้ style.css เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย -->
-<link rel="stylesheet" href="style.css?v=12">
+<link rel="stylesheet" href="style.css?v=13">
 </head>
 <body class="bg-bg text-txt antialiased">
 
@@ -2010,17 +2010,54 @@ function nav(page,subId){
 // วิชาภาคเรียนเก่า: ครูเห็นเฉพาะภาคปัจจุบันที่แอดมินตั้ง (ไม่เปิดดู/แก้วิชาภาคเก่าได้)
 // แอดมินเห็นทุกภาค · แอดมินเปิดชั่วคราวให้ครูทุกคนได้ (config old_terms_enabled='1' เช่น ช่วงแก้ 0/ร/มส)
 // S.subjectsAll = วิชาทุกภาคของครู (ใช้เป็นต้นทางตอนคัดลอกวิชาไปภาคใหม่)
+// ภาคที่กำลังดู: ปกติ = ภาคปัจจุบันที่แอดมินตั้ง · ครูเลือกดูภาคเก่าได้แบบอ่านอย่างเดียว (S.viewTerm = 'ปี/ภาค', เก็บใน sessionStorage)
+function _effTerm(){
+  if(S.viewTerm){ const [y,sm]=S.viewTerm.split('/'); return {y,s:sm}; }
+  return {y:String(S.config.academic_year||''),s:String(S.config.semester||'')};
+}
 function _inCurTerm(s){
   if(!s.academic_year) return true;
-  return String(s.academic_year)===String(S.config.academic_year||'')&&String(s.semester)===String(S.config.semester||'');
+  const t=_effTerm();
+  return String(s.academic_year)===t.y&&String(s.semester)===t.s;
 }
 function _canSeeOldTerms(){ return !!S.profile?.is_admin || S.config.old_terms_enabled==='1'; }
 async function loadSubjects(){
+  if(S.viewTerm===undefined){ try{ S.viewTerm=sessionStorage.getItem('pp5_view_term')||null; }catch(e){ S.viewTerm=null; } }
   const all = await qc('subjects_'+S.user.id, ()=>
     q(sb.from('subjects').select('*').eq('user_id',S.user.id).order('grade_level').order('room').order('subject_name'))
   );
   S.subjectsAll = all||[];
   S.subjects = _canSeeOldTerms() ? S.subjectsAll : S.subjectsAll.filter(_inCurTerm);
+  _applyReadOnly();
+}
+// ── ดูภาคเรียนเก่าแบบอ่านอย่างเดียว (ระดับหน้าเว็บ) ──
+// กันการบันทึกทุกชนิดตอนดูภาคเก่า: ครอบ sb.from() ให้ insert/update/upsert/delete โยน error (ยกเว้นตารางส่วนตัว เช่น โน้ต/ธีม/โปรไฟล์)
+// ถ้าแอดมินเปิดสวิตช์ "อนุญาตให้ครูแก้ภาคเก่า" หรือเป็นแอดมิน จะไม่เข้าโหมดนี้
+const RO_ALLOW=new Set(['teacher_notes','config','profiles','audit_log']);
+(function(){ const _from=sb.from.bind(sb);
+  sb.from=function(t){ const b=_from(t); if(!S.readOnly||RO_ALLOW.has(t)) return b;
+    ['insert','update','upsert','delete'].forEach(m=>{ b[m]=()=>{ throw new Error('ภาคเรียน '+S.viewTerm+' ดูอย่างเดียว — แก้ไขไม่ได้'); }; });
+    return b; };
+})();
+function _termOptions(){
+  const cur=String(S.config.semester||'')+'/'+String(S.config.academic_year||'');
+  const set=new Set((S.subjectsAll||[]).filter(x=>x.academic_year).map(x=>x.semester+'/'+x.academic_year));
+  set.delete(cur);
+  return [...set].sort((a,b)=>{const [as,ay]=a.split('/'),[bs,by]=b.split('/');return (+by-+ay)||(+bs-+as);});
+}
+function _applyReadOnly(){
+  S.readOnly=!!S.viewTerm&&!_canSeeOldTerms();
+  document.body.classList.toggle('ro',S.readOnly);
+  let b=document.getElementById('ro-banner');
+  if(!S.readOnly){ b?.remove(); return; }
+  if(!b){ b=document.createElement('div'); b.id='ro-banner'; document.body.appendChild(b); }
+  const [y,sm]=S.viewTerm.split('/');
+  b.innerHTML='📖 ภาคเรียนที่ '+sm+'/'+y+' · <b>ดูอย่างเดียว</b> <button onclick="setViewTerm(null)">กลับภาคปัจจุบัน</button>';
+}
+async function setViewTerm(k){
+  S.viewTerm=k||null;
+  try{ if(k) sessionStorage.setItem('pp5_view_term',k); else sessionStorage.removeItem('pp5_view_term'); }catch(e){}
+  S.selSub=null; await loadSubjects(); nav('dashboard');
 }
 function invalidateSubjects(){ cacheInv('subjects_'+S.user.id); }
 function getSubject(id){ return S.subjects.find(s=>s.id===id)||null; }
@@ -2159,7 +2196,7 @@ async function pgDash(){
       return {...s,stats:{total,pass,recorded,avg,passPercent:pct,msCount,hasAttendance,hasEval,hasMidExam,hasFinalExam}};
     });
     // สรุปบนแดชบอร์ด (การ์ดตัวเลข/มส/งานที่ค้าง) นับเฉพาะวิชาภาคที่เลือกดู ให้ตรงกับรายการวิชาด้านล่าง — เดิมนับทุกภาค จึงยังเห็นวิชาภาคเก่าหลังขึ้นภาคใหม่
-    const _dYr=String(S.config.academic_year||''), _dSm=String(S.config.semester||'');
+    const _dYr=_effTerm().y, _dSm=_effTerm().s;
     const DS = window._dashShowAll ? S.subjects : S.subjects.filter(s=>!s.academic_year||(String(s.academic_year)===_dYr&&String(s.semester)===_dSm));
     S._dashSubs = DS;
     // นับเฉพาะนักเรียนในห้องที่ครูสอน (ตาม grade_level+room ของวิชาที่มี)
@@ -2220,7 +2257,11 @@ async function pgDash(){
   <div class="ph">
     <div>
       <div class="ptitle">ภาพรวม ปพ.5</div>
-      <div class="psub">${esc(schoolNameWithPrefix(cfg.school_name))} ปีการศึกษา ${esc(cfg.academic_year||'')} ภาค ${esc(cfg.semester||'')}</div>
+      ${!_canSeeOldTerms()&&_termOptions().length?`<select onchange="setViewTerm(this.value)" class="fs" style="margin-top:6px;height:32px;font-size:13px;padding:2px 10px;width:auto">
+        <option value="" ${!S.viewTerm?'selected':''}>ภาคเรียนปัจจุบัน (${esc(String(S.config.semester||''))}/${esc(String(S.config.academic_year||''))})</option>
+        ${_termOptions().map(t=>{const [sm,y]=t.split('/');const k=y+'/'+sm;return `<option value="${k}" ${S.viewTerm===k?'selected':''}>ภาค ${sm}/${y} (ดูอย่างเดียว)</option>`;}).join('')}
+      </select>`:''}
+      <div class="psub">${esc(schoolNameWithPrefix(cfg.school_name))} ปีการศึกษา ${esc(_effTerm().y)} ภาค ${esc(_effTerm().s)}${S.readOnly?' · ดูอย่างเดียว':''}</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <!-- Toggle แสดงภาคปัจจุบัน/ทั้งหมด -->

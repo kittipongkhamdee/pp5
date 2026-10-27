@@ -750,3 +750,8 @@ body.dark .subc{background:var(--card);border-color:var(--bdr);}
 #login-page .lp-footer-tech{font-size:11px;color:#c7c7cc;margin-top:5px;display:flex;align-items:center;justify-content:center;gap:4px;}
 @keyframes lp-spin{to{transform:rotate(360deg)}}
 #login-page .lp-spinner{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:lp-spin .6s linear infinite;}
+/* ดูภาคเรียนเก่าแบบอ่านอย่างเดียว (body.ro) — ปิดช่องกรอกและปุ่มที่บันทึก/ลบ ส่วนการบันทึกจริงกันไว้ที่ sb.from() ใน index-pp5.html */
+#ro-banner{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:8000;background:#3a3a3c;color:#fff;font:600 13px var(--font);padding:8px 10px 8px 14px;border-radius:99px;box-shadow:0 6px 20px rgba(0,0,0,.25);display:flex;gap:10px;align-items:center;white-space:nowrap}
+#ro-banner button{border:none;border-radius:99px;padding:5px 12px;background:#fff;color:#1d1d1f;font:700 12px var(--font);cursor:pointer}
+body.ro #pg :is(input:not([type=search]),textarea,[contenteditable="true"]){pointer-events:none;opacity:.8}
+body.ro #pg button:is([onclick*="save" i],[onclick*="del" i],[onclick*="add" i],[onclick*="import" i],[onclick*="upload" i],[onclick*="clear" i],[onclick*="gen" i],[onclick*="fill" i],[onclick*="openSubModal" i],[onclick*="copy" i],[onclick*="announce" i]){pointer-events:none;opacity:.35}
