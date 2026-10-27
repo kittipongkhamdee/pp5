@@ -1931,7 +1931,7 @@ function _applyConcurrencyGuards(){
 // (ของโมดูลจะถูกห่อเพิ่มใน ensureModule หลังโหลดเสร็จ)
 _applyConcurrencyGuards();
 // ?v= กันแคชเก่าค้าง (modules/*.js แคชไว้ 1 วันตาม vercel.json) — แก้ไฟล์ใน modules/ เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย
-const MODULE_V = '122';
+const MODULE_V = '123';
 // ห่อฟังก์ชันของโมดูลหลังโหลดเสร็จด้วย (ตอนเริ่มระบบยังไม่มีฟังก์ชันเหล่านี้)
 function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V).then(()=>{ _applyConcurrencyGuards(); }); }
 function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
@@ -2020,9 +2020,12 @@ function _inCurTerm(s){
   const t=_effTerm();
   return String(s.academic_year)===t.y&&String(s.semester)===t.s;
 }
+// แอดมินปิดฟีเจอร์ "ครูดูภาคเก่าแบบอ่านอย่างเดียว" ได้ (config old_terms_view_enabled='0') — ค่าเริ่มต้นเปิด
+function _viewOldAllowed(){ return S.config.old_terms_view_enabled!=='0'; }
 function _canSeeOldTerms(){ return !!S.profile?.is_admin || S.config.old_terms_enabled==='1'; }
 async function loadSubjects(){
   if(S.viewTerm===undefined){ try{ S.viewTerm=sessionStorage.getItem('pp5_view_term')||null; }catch(e){ S.viewTerm=null; } }
+  if(S.viewTerm&&!_viewOldAllowed()){ S.viewTerm=null; try{ sessionStorage.removeItem('pp5_view_term'); }catch(e){} }
   const all = await qc('subjects_'+S.user.id, ()=>
     q(sb.from('subjects').select('*').eq('user_id',S.user.id).order('grade_level').order('room').order('subject_name'))
   );
@@ -2257,7 +2260,7 @@ async function pgDash(){
   <div class="ph">
     <div>
       <div class="ptitle">ภาพรวม ปพ.5</div>
-      ${!_canSeeOldTerms()&&_termOptions().length?`<select onchange="setViewTerm(this.value)" class="fs" style="margin-top:6px;height:32px;font-size:13px;padding:2px 10px;width:auto">
+      ${!_canSeeOldTerms()&&_viewOldAllowed()&&_termOptions().length?`<select onchange="setViewTerm(this.value)" class="fs" style="margin-top:6px;height:32px;font-size:13px;padding:2px 10px;width:auto">
         <option value="" ${!S.viewTerm?'selected':''}>ภาคเรียนปัจจุบัน (${esc(String(S.config.semester||''))}/${esc(String(S.config.academic_year||''))})</option>
         ${_termOptions().map(t=>{const [sm,y]=t.split('/');const k=y+'/'+sm;return `<option value="${k}" ${S.viewTerm===k?'selected':''}>ภาค ${sm}/${y} (ดูอย่างเดียว)</option>`;}).join('')}
       </select>`:''}

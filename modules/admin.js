@@ -843,6 +843,11 @@ async function pgSettings(){
         <input type="checkbox" ${S.config.old_terms_enabled==='1'?'checked':''} onchange="toggleOldTermsEnabled(this)" style="width:18px;height:18px;accent-color:var(--ac)">
         <span style="font-size:14px;font-weight:600">อนุญาตให้ครูเปิด/แก้ไขวิชาภาคเรียนเก่า</span>
       </label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:12px">
+        <input type="checkbox" ${S.config.old_terms_view_enabled!=='0'?'checked':''} onchange="toggleOldTermsView(this)" style="width:18px;height:18px;accent-color:var(--ac)">
+        <span style="font-size:14px;font-weight:600">ให้ครูเลือกดูภาคเรียนเก่าแบบอ่านอย่างเดียว</span>
+      </label>
+      <div style="font-size:12px;color:#6e6e73;margin:4px 0 0 26px">ปิดแล้ว ช่องเลือกภาคเรียนบนแดชบอร์ดของครูจะหายไป ครูเห็นเฉพาะภาคปัจจุบัน</div>
     </div>
   </div>`:''}
 
@@ -1704,6 +1709,19 @@ async function saveCheckinSync(){
     await loadConfig();
     toast('บันทึกการตั้งค่าเรียบร้อย');
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
+}
+
+async function toggleOldTermsView(cb){
+  const val=cb.checked?'1':'0';
+  cb.disabled=true;
+  try{
+    await q(sb.from('config').upsert([{key:'old_terms_view_enabled',value:val}],{onConflict:'key'}));
+    S.config.old_terms_view_enabled=val;
+    toast(cb.checked?'เปิดให้ครูดูภาคเรียนเก่าแบบอ่านอย่างเดียวแล้ว':'ปิดแล้ว — ครูไม่มีตัวเลือกดูภาคเรียนเก่า');
+  }catch(e){
+    cb.checked=!cb.checked;
+    toast('บันทึกไม่สำเร็จ: '+e.message,'er');
+  }finally{ cb.disabled=false; }
 }
 
 async function toggleOldTermsEnabled(cb){
