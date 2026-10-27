@@ -1838,6 +1838,22 @@ let _sgList=[];
 // คำนำหน้า (GRADE_PREFIX) และรายการระดับ (GRADE_LEVELS) ตั้งค่าได้จากหน้าตั้งค่าเท่านั้น
 let GRADE_PREFIX='ม.', GRADE_LEVELS=['1','2','3','4','5','6'];
 let _glPrefix='ม.', _glList=[];
+// เดากลุ่มสาระ/ประเภท/ชั้น จากรหัสวิชาตามหลักสูตรแกนกลาง เช่น ท21101 = ภาษาไทย ม.1 พื้นฐาน
+// ตัวอักษร = กลุ่มสาระ, หลัก 1 = ระดับ (2 ม.ต้น, 3 ม.ปลาย), หลัก 2 = ปีในระดับ (0 = ไม่ระบุปี), หลัก 3 = 1 พื้นฐาน / 2 เพิ่มเติม
+const CODE_GROUP={'ท':'ภาษาไทย','ค':'คณิต','ว':'วิทยาศาสตร์','ส':'สังคม','พ':'สุขศึกษา','ศ':'ศิลปะ','ง':'การงาน','I':'(IS)','i':'(IS)'};
+function _codeAutoFill(code){
+  const m=String(code||'').trim().match(/^(\S)(\d)(\d)(\d)/);
+  if(!m) return;
+  const key=CODE_GROUP[m[1]]||(/[ก-ฮA-Za-z]/.test(m[1])?'ต่างประเทศ':'');
+  const g=key&&SUBJECT_GROUPS.find(x=>x.includes(key));
+  if(g&&$('f-sg')) $('f-sg').value=g;
+  if($('f-styp')&&(m[4]==='1'||m[4]==='2')) $('f-styp').value=m[4]==='1'?'รายวิชาพื้นฐาน':'วิชาเพิ่มเติม';
+  const gr=(m[2]==='2'?0:m[2]==='3'?3:-1)+(+m[3]);
+  const gEl=$('f-gr');
+  if(gEl&&m[2]>='2'&&m[2]<='3'&&+m[3]>=1&&+m[3]<=3&&[...gEl.options].some(o=>o.value===String(gr))&&gEl.value!==String(gr)){
+    gEl.value=String(gr); _rmOptsRefresh();
+  }
+}
 function gradeSelectOptions(selected){
   return GRADE_LEVELS.map(g=>`<option value="${g}" ${String(selected)===String(g)?'selected':''}>${g}</option>`).join('');
 }
@@ -2600,7 +2616,7 @@ function openSubModal(id){
         </div>
         <div class="fg" style="grid-template-columns:1fr 2fr">
           <div><label class="fl">รหัสวิชา <span class="req">*</span></label>
-            <input class="fi" id="f-code" value="${esc(s?.subject_code||'')}"></div>
+            <input class="fi" id="f-code" value="${esc(s?.subject_code||'')}" oninput="_codeAutoFill(this.value)"></div>
           <div><label class="fl">ชื่อวิชา <span class="req">*</span></label>
             <input class="fi" id="f-name" value="${esc(s?.subject_name||'')}"></div>
         </div>
