@@ -2564,12 +2564,13 @@ function _cdAddRow(btn){
   c.insertAdjacentHTML('beforeend',_cdRowHtml(1,1));
 }
 // วิชาใหม่หลายห้อง: วันสอนแยกตามห้องที่ติ๊ก — ห้องที่เพิ่มใหม่คัดลอกวันสอนจากห้องแรกมาเป็นค่าตั้งต้น
+let _cdSeed=null; // วันสอนตั้งต้นของห้องแรก (ตอนแก้ไข = วันสอนเดิมของวิชา)
 function _cdRoomsSync(){
   const wrap=$('cd-rooms'), box=$('f-rms'); if(!wrap||!box) return;
   const rooms=[...box.querySelectorAll('input:checked')].map(i=>i.value);
   const old={}; wrap.querySelectorAll('.cd-room').forEach(b=>old[b.dataset.room]=b);
   const first=wrap.querySelector('.cd-room .cd-rlist');
-  const seed=first?_collectClassDays(first):_classDaysFor(null);
+  const seed=first?_collectClassDays(first):(_cdSeed||_classDaysFor(null));
   wrap.innerHTML='';
   if(!rooms.length){ wrap.innerHTML='<div style="font-size:12.5px;color:var(--muted)">เลือกห้องก่อน</div>'; return; }
   rooms.forEach(rm=>{
@@ -2639,7 +2640,7 @@ function openSubModal(id){
         <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:14px;margin-top:14px">
           <div><label class="fl">ชั้น ม.</label>
             <select class="fs" id="f-gr" onchange="_rmOptsRefresh()">${gradeSelectOptions(s?.grade_level)}</select></div>
-          <div><label class="fl">ห้อง</label>${s?`<select class="fs" id="f-rm">${_roomOptions(s.grade_level||1,s.room)}</select>`:`<div id="f-rms" class="rms-box">${_roomChecks(1,[])}</div>`}</div>
+          <div><label class="fl">ห้อง</label><div id="f-rms" class="rms-box">${_roomChecks(s?.grade_level||1,s?[s.room]:[])}</div></div>
           <div><label class="fl">หน่วยกิต</label><input type="number" class="fi" id="f-cr" value="${s?.credits||1.5}" step="0.5" min="0.5" oninput="updHours()"></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
@@ -2648,8 +2649,8 @@ function openSubModal(id){
         </div>
         <div style="margin-top:14px">
           <label class="fl">วันสอนประจำสัปดาห์ <span style="font-weight:400;color:var(--muted)">(ใช้กับปุ่ม "สร้างวันอัตโนมัติ" ในหน้าบันทึกเวลาเรียน)</span></label>
-          ${s?`<div id="cd-list">${_classDaysFor(s).map(d=>_cdRowHtml(d.weekday,d.periods)).join('')}</div>`:`<div id="cd-rooms"></div>`}
-          <button type="button" class="btn bs" onclick="_cdAddRow()" style="margin-top:6px;${s?'':'display:none'}">
+          <div id="cd-rooms"></div>
+          <button type="button" class="btn bs" onclick="_cdAddRow()" style="margin-top:6px;display:none">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             เพิ่มวัน
           </button>
@@ -2680,7 +2681,7 @@ function openSubModal(id){
       <button class="btn bp" onclick="saveSubForm('${id||''}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>บันทึก</button>
     </div>
   </div></div>`);
-  _cdRoomsSync();
+  _cdSeed=_classDaysFor(s); _cdRoomsSync();
   _loadSubCat();
 }
 function updHours(){
@@ -2694,7 +2695,7 @@ async function saveSubForm(id){
   const code=$('f-code').value.trim(),name=$('f-name').value.trim();
   if(!code||!name){toast('กรุณากรอกรหัสและชื่อวิชา','er');return;}
   const payload={
-    subject_code:code,subject_name:name,grade_level:$('f-gr').value,room:id?$('f-rm').value.trim():'',
+    subject_code:code,subject_name:name,grade_level:$('f-gr').value,room:'',
     credits:+$('f-cr').value,hours_per_week:+$('f-hw').value,total_hours:+$('f-th').value,
     teacher_name:$('f-tch').value.trim(),head_of_group:$('f-hog')?.value||'',advisor_name:'',
     subject_group:$('f-sg')?.value||'',
@@ -2702,15 +2703,22 @@ async function saveSubForm(id){
     academic_year:S.config.academic_year||'2568',semester:parseInt(S.config.semester||1),
     user_id:S.user.id
   };
-  const rooms=id?[payload.room]:[...document.querySelectorAll('#f-rms input:checked')].map(i=>i.value);
+  const rooms=[...document.querySelectorAll('#f-rms input:checked')].map(i=>i.value);
   if(!rooms.length){toast('กรุณาเลือกห้องอย่างน้อย 1 ห้อง','er');return;}
+  // แก้ไข: ถ้ายังติ๊กห้องเดิมอยู่ ให้วิชาเดิมคงห้องเดิม (ไม่สลับไปห้องที่ติ๊กเพิ่ม)
+  const orig=id?String(S.subjects.find(x=>x.id===id)?.room??''):'';
+  if(id&&rooms.includes(orig)){ rooms.splice(rooms.indexOf(orig),1); rooms.unshift(orig); }
   if(!id){ try{ localStorage.setItem('pp5_hog_'+S.user.id,payload.head_of_group); }catch(e){} }
-  const cdOf=rm=>id?_collectClassDays():_collectClassDays(document.querySelector(`#cd-rooms .cd-room[data-room="${rm}"] .cd-rlist`)||$('cd-rooms'));
+  const cdOf=rm=>_collectClassDays(document.querySelector(`#cd-rooms .cd-room[data-room="${rm}"] .cd-rlist`)||$('cd-rooms'));
   loading(true);
   try{
-    let saved=[{id,room:payload.room}];
-    if(id){ await q(sb.from('subjects').update(payload).eq('id',id).eq('user_id',S.user.id)); }
-    else   { const inserted=await q(sb.from('subjects').insert(rooms.map(room=>({...payload,room}))).select('id,room')); saved=inserted; }
+    // แก้ไข: ห้องแรกที่ติ๊ก = วิชาเดิม ห้องที่ติ๊กเพิ่มจะสร้างเป็นวิชาใหม่ (คัดลอกข้อมูลชุดเดียวกัน)
+    let saved=[], newRooms=rooms;
+    if(id){
+      await q(sb.from('subjects').update({...payload,room:rooms[0]}).eq('id',id).eq('user_id',S.user.id));
+      saved=[{id,room:rooms[0]}]; newRooms=rooms.slice(1);
+    }
+    if(newRooms.length){ const inserted=await q(sb.from('subjects').insert(newRooms.map(room=>({...payload,room}))).select('id,room')); saved=saved.concat(inserted); }
     // บันทึกวันสอนแยกจากตัววิชา — ถ้าพลาดตรงนี้ วิชายังถูกบันทึกแล้ว ห้ามให้ผู้ใช้กดซ้ำจนวิชาซ้ำ
     try{
       await q(sb.from('config').upsert(saved.map(x=>({key:'class_days_'+x.id,value:JSON.stringify(cdOf(String(x.room)))})),{onConflict:'key'}));
@@ -2718,7 +2726,7 @@ async function saveSubForm(id){
     await loadConfig();
     _subCat=null;
     invalidateSubjects(); await loadSubjects();
-    rmModal('subMod');toast(id?'แก้ไขเรียบร้อย':(rooms.length>1?`เพิ่มรายวิชา ${rooms.length} ห้องเรียบร้อย`:'เพิ่มรายวิชาเรียบร้อย'));pgSubjects();
+    rmModal('subMod');toast(id?(rooms.length>1?`แก้ไขแล้ว และเพิ่มอีก ${rooms.length-1} ห้อง`:'แก้ไขเรียบร้อย'):(rooms.length>1?`เพิ่มรายวิชา ${rooms.length} ห้องเรียบร้อย`:'เพิ่มรายวิชาเรียบร้อย'));pgSubjects();
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er');}finally{loading(false);}
 }
 async function delSub(id,name){
