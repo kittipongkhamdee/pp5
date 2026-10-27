@@ -1851,23 +1851,20 @@ function _roomOptions(grade,selectedRoom){
 }
 // วิชาใหม่เลือกได้หลายห้อง — สร้างวิชาแยกห้องละ 1 รายการพร้อมกัน
 function _roomChecks(grade,checked){
+  // นักเรียนชั้นที่มีห้องเดียวเก็บเป็นห้อง 0 — ห้ามให้เลือก "ห้อง 1" ไม่งั้นวิชาจะไม่มีนักเรียน
   const n=ROOMS_PER_GRADE[String(grade)]||2;
-  const ck=new Set((checked||[]).map(String));
-  let h=`<label class="rms-i"><input type="checkbox" value="0" ${ck.has('0')?'checked':''} onchange="_rmsZero(this);_cdRoomsSync()"> ห้องเดียว/ไม่ระบุ</label>`;
-  for(let r=1;r<=n;r++) h+=`<label class="rms-i"><input type="checkbox" value="${r}" ${ck.has(String(r))?'checked':''} onchange="_rmsZero(this);_cdRoomsSync()"> ห้อง ${r}</label>`;
-  return h+`<button type="button" class="rms-all" onclick="_rmsAll()">เลือกทุกห้อง</button>`;
+  const valid=n<=1?['0']:Array.from({length:n},(_,i)=>String(i+1));
+  let ck=(checked||[]).map(String).filter(v=>valid.includes(v));
+  if(!ck.length) ck=[valid[0]];
+  const h=valid.map(v=>`<label class="rms-i"><input type="checkbox" value="${v}" ${ck.includes(v)?'checked':''} onchange="_cdRoomsSync()"> ${v==='0'?'ห้องเดียว':'ห้อง '+v}</label>`).join('');
+  return h+(n>1?`<button type="button" class="rms-all" onclick="_rmsAll()">เลือกทุกห้อง</button>`:'');
 }
-function _rmsZero(el){
-  // "ไม่ระบุห้อง" ใช้ร่วมกับห้องอื่นไม่ได้
-  const box=$('f-rms'); if(!box||!el.checked) return;
-  box.querySelectorAll('input').forEach(i=>{ if(i!==el&&((el.value==='0')===(i.value!=='0'))) i.checked=false; });
-}
-function _rmsAll(){ const box=$('f-rms'); if(box) box.querySelectorAll('input').forEach(i=>i.checked=i.value!=='0'); _cdRoomsSync(); }
+function _rmsAll(){ const box=$('f-rms'); if(box) box.querySelectorAll('input').forEach(i=>i.checked=true); _cdRoomsSync(); }
 function _rmOptsRefresh(){
   const box=$('f-rms');
   if(box&&$('f-gr')){
     const cur=[...box.querySelectorAll('input:checked')].map(i=>i.value);
-    box.innerHTML=_roomChecks($('f-gr').value,cur.length?cur:['1']); _cdRoomsSync(); return;
+    box.innerHTML=_roomChecks($('f-gr').value,cur); _cdRoomsSync(); return;
   }
   const gEl=$('f-gr'), rEl=$('f-rm'); if(!gEl||!rEl) return;
   const cur=rEl.value;
@@ -2562,7 +2559,7 @@ function _cdRoomsSync(){
   rooms.forEach(rm=>{
     if(old[rm]){ wrap.appendChild(old[rm]); return; }
     wrap.insertAdjacentHTML('beforeend',`<div class="cd-room" data-room="${rm}">
-      <div class="cd-rh">${rm==='0'?'ห้องเดียว/ไม่ระบุ':'ห้อง '+rm}</div>
+      <div class="cd-rh">${rm==='0'?'ห้องเดียว':'ห้อง '+rm}</div>
       <div class="cd-rlist">${seed.map(d=>_cdRowHtml(d.weekday,d.periods)).join('')}</div>
       <button type="button" class="btn bs" onclick="_cdAddRow(this)" style="margin-top:2px;padding:4px 10px;font-size:12px">+ เพิ่มวัน</button>
     </div>`);
@@ -2626,7 +2623,7 @@ function openSubModal(id){
         <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:14px;margin-top:14px">
           <div><label class="fl">ชั้น ม.</label>
             <select class="fs" id="f-gr" onchange="_rmOptsRefresh()">${gradeSelectOptions(s?.grade_level)}</select></div>
-          <div><label class="fl">ห้อง</label>${s?`<select class="fs" id="f-rm">${_roomOptions(s.grade_level||1,s.room)}</select>`:`<div id="f-rms" class="rms-box">${_roomChecks(1,['1'])}</div>`}</div>
+          <div><label class="fl">ห้อง</label>${s?`<select class="fs" id="f-rm">${_roomOptions(s.grade_level||1,s.room)}</select>`:`<div id="f-rms" class="rms-box">${_roomChecks(1,[])}</div>`}</div>
           <div><label class="fl">หน่วยกิต</label><input type="number" class="fi" id="f-cr" value="${s?.credits||1.5}" step="0.5" min="0.5" oninput="updHours()"></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
