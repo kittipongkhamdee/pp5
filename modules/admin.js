@@ -849,6 +849,28 @@ async function pgSettings(){
     </div>
   </div>`:''}
 
+  ${S.profile?.is_admin?`<!-- ── หัวหน้ากลุ่มสาระ ── -->
+  <div class="card">
+    <div class="ch"><div class="ct">หัวหน้ากลุ่มสาระการเรียนรู้</div></div>
+    <div class="cb">
+      <div style="font-size:12px;color:#6e6e73;margin-bottom:12px;line-height:1.6">
+        ตอนครูเพิ่ม/แก้วิชา ระบบจะใส่ชื่อหัวหน้ากลุ่มสาระให้ตามกลุ่มสาระของวิชา (ครูยังเปลี่ยนเองได้) — กลุ่มที่ไม่ได้ตั้ง ใช้ชื่อที่ครูเลือกล่าสุด
+      </div>
+      ${(()=>{let m={};try{m=JSON.parse(S.config.group_heads||'{}');}catch(e){}
+        const tl=(S.config.teachers||'').split('\n').map(x=>x.trim()).filter(Boolean);
+        return SUBJECT_GROUPS.map((g,i)=>{const v=m[g]||'';const opts=tl.includes(v)||!v?tl:[v,...tl];
+          return `<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:10px;align-items:center;margin-top:8px">
+            <label class="fl" style="margin:0">${esc(g)}</label>
+            <select class="fs gh-sel" data-g="${esc(g)}"><option value="">— ไม่ระบุ —</option>${opts.map(x=>`<option value="${esc(x)}" ${x===v?'selected':''}>${esc(x)}</option>`).join('')}</select>
+          </div>`;}).join('');})()}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+        <button class="btn bp" onclick="saveGroupHeads()">บันทึก</button>
+        <button class="btn bs" onclick="applyGroupHeads()">อัปเดตวิชาภาคปัจจุบันทั้งหมด</button>
+      </div>
+      <div style="font-size:12px;color:#6e6e73;margin-top:6px">ปุ่ม "อัปเดต…" ใช้เมื่อเปลี่ยนหัวหน้ากลุ่มสาระ — เปลี่ยนชื่อในวิชาภาค ${esc(S.config.semester||'')}/${esc(S.config.academic_year||'')} ที่มีอยู่แล้วให้ตรงกับที่ตั้งไว้</div>
+    </div>
+  </div>`:''}
+
   <!-- ── เชื่อมโยงกับระบบเช็คชื่อ ── -->
   <div class="card">
     <div class="ch">
@@ -1727,6 +1749,38 @@ async function setOldTermsMode(rb){
     all.forEach(i=>i.checked=i.value===prev);
     toast('บันทึกไม่สำเร็จ: '+e.message,'er');
   }finally{ all.forEach(i=>i.disabled=false); }
+}
+
+function _ghCollect(){
+  const m={}; document.querySelectorAll('.gh-sel').forEach(s=>{ if(s.value) m[s.dataset.g]=s.value; }); return m;
+}
+async function saveGroupHeads(){
+  const val=JSON.stringify(_ghCollect());
+  loading(true);
+  try{
+    await q(sb.from('config').upsert([{key:'group_heads',value:val}],{onConflict:'key'}));
+    S.config.group_heads=val; toast('บันทึกหัวหน้ากลุ่มสาระแล้ว');
+  }catch(e){ toast('บันทึกไม่สำเร็จ: '+e.message,'er'); }finally{ loading(false); }
+}
+async function applyGroupHeads(){
+  const m=_ghCollect(), gs=Object.keys(m);
+  if(!gs.length){ toast('ยังไม่ได้ตั้งหัวหน้ากลุ่มสาระ','er'); return; }
+  confirm2({title:'อัปเดตวิชาภาคปัจจุบัน',msg:`เปลี่ยนชื่อหัวหน้ากลุ่มสาระในวิชาภาค ${esc(S.config.semester||'')}/${esc(S.config.academic_year||'')} ทุกวิชาของ ${gs.length} กลุ่มสาระที่ตั้งไว้ ให้ตรงกับรายชื่อนี้?`,type:'warn',confirmText:'อัปเดต',onConfirm:async()=>{
+    loading(true);
+    try{
+      const val=JSON.stringify(m);
+      await q(sb.from('config').upsert([{key:'group_heads',value:val}],{onConflict:'key'}));
+      S.config.group_heads=val;
+      let n=0;
+      for(const g of gs){
+        const rows=await q(sb.from('subjects').update({head_of_group:m[g]}).eq('subject_group',g)
+          .eq('academic_year',S.config.academic_year).eq('semester',parseInt(S.config.semester||1)).select('id'));
+        n+=(rows||[]).length;
+      }
+      invalidateSubjects(); await loadSubjects();
+      toast(`อัปเดตแล้ว ${n} วิชา`);
+    }catch(e){ toast('อัปเดตไม่สำเร็จ: '+e.message,'er'); }finally{ loading(false); }
+  }});
 }
 
 async function toggleCopySubjectsEnabled(cb){
