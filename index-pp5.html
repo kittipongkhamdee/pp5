@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <!-- ฟอนต์ Sarabun เก็บไว้ในโปรเจกต์เอง (assets/fonts/) แล้ว ประกาศ @font-face อยู่ในหัวไฟล์ style.css -->
 <!-- ?v= กันแคชเก่าค้าง (style.css แคชไว้ 1 วันตาม vercel.json) — แก้ style.css เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย -->
-<link rel="stylesheet" href="style.css?v=16">
+<link rel="stylesheet" href="style.css?v=17">
 </head>
 <body class="bg-bg text-txt antialiased">
 
@@ -1853,8 +1853,8 @@ function _roomOptions(grade,selectedRoom){
 function _roomChecks(grade,checked){
   const n=ROOMS_PER_GRADE[String(grade)]||2;
   const ck=new Set((checked||[]).map(String));
-  let h=`<label class="rms-i"><input type="checkbox" value="0" ${ck.has('0')?'checked':''} onchange="_rmsZero(this)"> ห้องเดียว/ไม่ระบุ</label>`;
-  for(let r=1;r<=n;r++) h+=`<label class="rms-i"><input type="checkbox" value="${r}" ${ck.has(String(r))?'checked':''} onchange="_rmsZero(this)"> ห้อง ${r}</label>`;
+  let h=`<label class="rms-i"><input type="checkbox" value="0" ${ck.has('0')?'checked':''} onchange="_rmsZero(this);_cdRoomsSync()"> ห้องเดียว/ไม่ระบุ</label>`;
+  for(let r=1;r<=n;r++) h+=`<label class="rms-i"><input type="checkbox" value="${r}" ${ck.has(String(r))?'checked':''} onchange="_rmsZero(this);_cdRoomsSync()"> ห้อง ${r}</label>`;
   return h+`<button type="button" class="rms-all" onclick="_rmsAll()">เลือกทุกห้อง</button>`;
 }
 function _rmsZero(el){
@@ -1862,12 +1862,12 @@ function _rmsZero(el){
   const box=$('f-rms'); if(!box||!el.checked) return;
   box.querySelectorAll('input').forEach(i=>{ if(i!==el&&((el.value==='0')===(i.value!=='0'))) i.checked=false; });
 }
-function _rmsAll(){ const box=$('f-rms'); if(box) box.querySelectorAll('input').forEach(i=>i.checked=i.value!=='0'); }
+function _rmsAll(){ const box=$('f-rms'); if(box) box.querySelectorAll('input').forEach(i=>i.checked=i.value!=='0'); _cdRoomsSync(); }
 function _rmOptsRefresh(){
   const box=$('f-rms');
   if(box&&$('f-gr')){
     const cur=[...box.querySelectorAll('input:checked')].map(i=>i.value);
-    box.innerHTML=_roomChecks($('f-gr').value,cur.length?cur:['1']); return;
+    box.innerHTML=_roomChecks($('f-gr').value,cur.length?cur:['1']); _cdRoomsSync(); return;
   }
   const gEl=$('f-gr'), rEl=$('f-rm'); if(!gEl||!rEl) return;
   const cur=rEl.value;
@@ -2546,13 +2546,31 @@ function _cdRowHtml(day,periods){
     </button>
   </div>`;
 }
-function _cdAddRow(){
-  const c=$('cd-list'); if(!c)return;
+function _cdAddRow(btn){
+  const c=btn?.closest('.cd-room')?.querySelector('.cd-rlist')||$('cd-list'); if(!c)return;
   c.insertAdjacentHTML('beforeend',_cdRowHtml(1,1));
 }
-function _collectClassDays(){
+// วิชาใหม่หลายห้อง: วันสอนแยกตามห้องที่ติ๊ก — ห้องที่เพิ่มใหม่คัดลอกวันสอนจากห้องแรกมาเป็นค่าตั้งต้น
+function _cdRoomsSync(){
+  const wrap=$('cd-rooms'), box=$('f-rms'); if(!wrap||!box) return;
+  const rooms=[...box.querySelectorAll('input:checked')].map(i=>i.value);
+  const old={}; wrap.querySelectorAll('.cd-room').forEach(b=>old[b.dataset.room]=b);
+  const first=wrap.querySelector('.cd-room .cd-rlist');
+  const seed=first?_collectClassDays(first):_classDaysFor(null);
+  wrap.innerHTML='';
+  if(!rooms.length){ wrap.innerHTML='<div style="font-size:12.5px;color:var(--muted)">เลือกห้องก่อน</div>'; return; }
+  rooms.forEach(rm=>{
+    if(old[rm]){ wrap.appendChild(old[rm]); return; }
+    wrap.insertAdjacentHTML('beforeend',`<div class="cd-room" data-room="${rm}">
+      <div class="cd-rh">${rm==='0'?'ห้องเดียว/ไม่ระบุ':'ห้อง '+rm}</div>
+      <div class="cd-rlist">${seed.map(d=>_cdRowHtml(d.weekday,d.periods)).join('')}</div>
+      <button type="button" class="btn bs" onclick="_cdAddRow(this)" style="margin-top:2px;padding:4px 10px;font-size:12px">+ เพิ่มวัน</button>
+    </div>`);
+  });
+}
+function _collectClassDays(root){
   const map={};
-  document.querySelectorAll('#cd-list .cd-row').forEach(r=>{
+  (root||$('cd-list')).querySelectorAll('.cd-row').forEach(r=>{
     const day=+r.querySelector('.cd-day').value;
     const periods=+r.querySelector('.cd-periods').value||1;
     map[day]=periods; // วันซ้ำ ใช้ค่าล่าสุด
@@ -2617,8 +2635,8 @@ function openSubModal(id){
         </div>
         <div style="margin-top:14px">
           <label class="fl">วันสอนประจำสัปดาห์ <span style="font-weight:400;color:var(--muted)">(ใช้กับปุ่ม "สร้างวันอัตโนมัติ" ในหน้าบันทึกเวลาเรียน)</span></label>
-          <div id="cd-list">${_classDaysFor(s).map(d=>_cdRowHtml(d.weekday,d.periods)).join('')}</div>
-          <button type="button" class="btn bs" onclick="_cdAddRow()" style="margin-top:6px">
+          ${s?`<div id="cd-list">${_classDaysFor(s).map(d=>_cdRowHtml(d.weekday,d.periods)).join('')}</div>`:`<div id="cd-rooms"></div>`}
+          <button type="button" class="btn bs" onclick="_cdAddRow()" style="margin-top:6px;${s?'':'display:none'}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             เพิ่มวัน
           </button>
@@ -2649,6 +2667,7 @@ function openSubModal(id){
       <button class="btn bp" onclick="saveSubForm('${id||''}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>บันทึก</button>
     </div>
   </div></div>`);
+  _cdRoomsSync();
   _loadSubCat();
 }
 function updHours(){
@@ -2673,15 +2692,15 @@ async function saveSubForm(id){
   const rooms=id?[payload.room]:[...document.querySelectorAll('#f-rms input:checked')].map(i=>i.value);
   if(!rooms.length){toast('กรุณาเลือกห้องอย่างน้อย 1 ห้อง','er');return;}
   if(!id){ try{ localStorage.setItem('pp5_hog_'+S.user.id,payload.head_of_group); }catch(e){} }
-  const classDays=_collectClassDays();
+  const cdOf=rm=>id?_collectClassDays():_collectClassDays(document.querySelector(`#cd-rooms .cd-room[data-room="${rm}"] .cd-rlist`)||$('cd-rooms'));
   loading(true);
   try{
-    let subjectIds=[id];
+    let saved=[{id,room:payload.room}];
     if(id){ await q(sb.from('subjects').update(payload).eq('id',id).eq('user_id',S.user.id)); }
-    else   { const inserted=await q(sb.from('subjects').insert(rooms.map(room=>({...payload,room}))).select('id')); subjectIds=inserted.map(x=>x.id); }
+    else   { const inserted=await q(sb.from('subjects').insert(rooms.map(room=>({...payload,room}))).select('id,room')); saved=inserted; }
     // บันทึกวันสอนแยกจากตัววิชา — ถ้าพลาดตรงนี้ วิชายังถูกบันทึกแล้ว ห้ามให้ผู้ใช้กดซ้ำจนวิชาซ้ำ
     try{
-      await q(sb.from('config').upsert(subjectIds.map(sid=>({key:'class_days_'+sid,value:JSON.stringify(classDays)})),{onConflict:'key'}));
+      await q(sb.from('config').upsert(saved.map(x=>({key:'class_days_'+x.id,value:JSON.stringify(cdOf(String(x.room)))})),{onConflict:'key'}));
     }catch(e){toast('บันทึกวิชาสำเร็จ แต่บันทึกวันสอนไม่สำเร็จ: '+e.message,'er');}
     await loadConfig();
     _subCat=null;
