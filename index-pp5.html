@@ -2605,7 +2605,22 @@ function _codeInfo(code){
 }
 function openImgSubModal(){
   if(!S.config.gemini_api_key){ toast('ยังไม่ได้ตั้งค่า Gemini API key (เมนูตั้งค่า)','er'); return; }
+  rmModal('imgPickMod');
+  document.body.insertAdjacentHTML('beforeend',`
+  <div class="mo" id="imgPickMod"><div class="md" style="max-width:360px">
+    <div class="mh"><div class="mt">เพิ่มรายวิชาจากรูป</div><button class="mx" onclick="rmModal('imgPickMod')">✕</button></div>
+    <div class="mb" style="display:grid;gap:10px">
+      <button class="btn bp" style="justify-content:center;padding:14px" onclick="_imgPick(true)">📸 ถ่ายรูปตอนนี้</button>
+      <button class="btn bs" style="justify-content:center;padding:14px" onclick="_imgPick(false)">🖼️ เลือกรูปจากเครื่อง</button>
+      <div style="font-size:12px;color:var(--muted);text-align:center">ถ่ายให้เห็นตารางทั้งแผ่น ตรง ไม่มีเงาบัง</div>
+    </div>
+  </div></div>`);
+}
+// capture="environment" = เปิดกล้องหลังทันที (มือถือ/แท็บเล็ต) — บนคอมพิวเตอร์จะเปิดเลือกไฟล์ตามปกติ
+function _imgPick(camera){
+  rmModal('imgPickMod');
   const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
+  if(camera) inp.setAttribute('capture','environment');
   inp.onchange=()=>{ if(inp.files[0]) _imgSubRead(inp.files[0]); };
   inp.click();
 }
