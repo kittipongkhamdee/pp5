@@ -2023,14 +2023,16 @@ function _inCurTerm(s){
 // แอดมินปิดฟีเจอร์ "ครูดูภาคเก่าแบบอ่านอย่างเดียว" ได้ (config old_terms_view_enabled='0') — ค่าเริ่มต้นเปิด
 function _viewOldAllowed(){ return S.config.old_terms_view_enabled!=='0'; }
 function _canSeeOldTerms(){ return !!S.profile?.is_admin || S.config.old_terms_enabled==='1'; }
+// เห็นวิชาทุกภาคปนกัน: เฉพาะครูตอนแอดมินเปิดสวิตช์แก้ภาคเก่า — แอดมินเห็นภาคปัจจุบันเหมือนครู แล้วเลือกภาคเก่าเองได้ (แก้ไขได้)
+function _seesAllTerms(){ return !S.profile?.is_admin && S.config.old_terms_enabled==='1'; }
 async function loadSubjects(){
   if(S.viewTerm===undefined){ try{ S.viewTerm=sessionStorage.getItem('pp5_view_term')||null; }catch(e){ S.viewTerm=null; } }
-  if(S.viewTerm&&!_viewOldAllowed()){ S.viewTerm=null; try{ sessionStorage.removeItem('pp5_view_term'); }catch(e){} }
+  if(S.viewTerm&&!_viewOldAllowed()&&!S.profile?.is_admin){ S.viewTerm=null; try{ sessionStorage.removeItem('pp5_view_term'); }catch(e){} }
   const all = await qc('subjects_'+S.user.id, ()=>
     q(sb.from('subjects').select('*').eq('user_id',S.user.id).order('grade_level').order('room').order('subject_name'))
   );
   S.subjectsAll = all||[];
-  S.subjects = _canSeeOldTerms() ? S.subjectsAll : S.subjectsAll.filter(_inCurTerm);
+  S.subjects = _seesAllTerms() ? S.subjectsAll : S.subjectsAll.filter(_inCurTerm);
   _applyReadOnly();
 }
 // ── ดูภาคเรียนเก่าแบบอ่านอย่างเดียว (ระดับหน้าเว็บ) ──
@@ -2052,10 +2054,10 @@ function _applyReadOnly(){
   S.readOnly=!!S.viewTerm&&!_canSeeOldTerms();
   document.body.classList.toggle('ro',S.readOnly);
   let b=document.getElementById('ro-banner');
-  if(!S.readOnly){ b?.remove(); return; }
+  if(!S.viewTerm||_seesAllTerms()){ b?.remove(); return; }
   if(!b){ b=document.createElement('div'); b.id='ro-banner'; document.body.appendChild(b); }
   const [y,sm]=S.viewTerm.split('/');
-  b.innerHTML='📖 ภาคเรียนที่ '+sm+'/'+y+' · <b>ดูอย่างเดียว</b> <button onclick="setViewTerm(null)">กลับภาคปัจจุบัน</button>';
+  b.innerHTML='📖 ภาคเรียนที่ '+sm+'/'+y+' · <b>'+(S.readOnly?'ดูอย่างเดียว':'ภาคเก่า (แก้ไขได้)')+'</b> <button onclick="setViewTerm(null)">กลับภาคปัจจุบัน</button>';
 }
 async function setViewTerm(k){
   S.viewTerm=k||null;
@@ -2260,20 +2262,20 @@ async function pgDash(){
   <div class="ph">
     <div>
       <div class="ptitle">ภาพรวม ปพ.5</div>
-      ${!_canSeeOldTerms()&&_viewOldAllowed()&&_termOptions().length?`<select onchange="setViewTerm(this.value)" class="fs" style="margin-top:6px;height:32px;font-size:13px;padding:2px 10px;width:auto">
+      ${(S.profile?.is_admin||(!_seesAllTerms()&&_viewOldAllowed()))&&_termOptions().length?`<select onchange="setViewTerm(this.value)" class="fs" style="margin-top:6px;height:32px;font-size:13px;padding:2px 10px;width:auto">
         <option value="" ${!S.viewTerm?'selected':''}>ภาคเรียนปัจจุบัน (${esc(String(S.config.semester||''))}/${esc(String(S.config.academic_year||''))})</option>
-        ${_termOptions().map(t=>{const [sm,y]=t.split('/');const k=y+'/'+sm;return `<option value="${k}" ${S.viewTerm===k?'selected':''}>ภาค ${sm}/${y} (ดูอย่างเดียว)</option>`;}).join('')}
+        ${_termOptions().map(t=>{const [sm,y]=t.split('/');const k=y+'/'+sm;return `<option value="${k}" ${S.viewTerm===k?'selected':''}>ภาค ${sm}/${y} (${S.profile?.is_admin?'แก้ไขได้':'ดูอย่างเดียว'})</option>`;}).join('')}
       </select>`:''}
       <div class="psub">${esc(schoolNameWithPrefix(cfg.school_name))} ปีการศึกษา ${esc(_effTerm().y)} ภาค ${esc(_effTerm().s)}${S.readOnly?' · ดูอย่างเดียว':''}</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <!-- Toggle แสดงภาคปัจจุบัน/ทั้งหมด -->
-      ${_canSeeOldTerms()?'':'<span style="display:none">'}<button onclick="_toggleDashFilter()" id="dash-toggle-btn"
+      ${_seesAllTerms()?'':'<span style="display:none">'}<button onclick="_toggleDashFilter()" id="dash-toggle-btn"
         class="btn bs" style="font-size:12px;padding:6px 12px;${window._dashShowAll?'background:rgba(255,149,0,.12);color:#c2410c;border-color:#fed7aa':''}">
         ${window._dashShowAll
           ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> ทุกภาค'
           : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> ภาคปัจจุบัน'}
-      </button>${_canSeeOldTerms()?'':'</span>'}
+      </button>${_seesAllTerms()?'':'</span>'}
       <button class="btn bp" onclick="nav('subjects')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>เพิ่มรายวิชา</button>
     </div>
   </div>
@@ -2302,7 +2304,7 @@ async function pgDash(){
         if(+a.room !== +b.room) return +a.room - +b.room;
         return (a.subject_name||'').localeCompare(b.subject_name||'','th');
       });
-      if(!_visibles.length && S.subjects.length) return '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13.5px;"><svg style="margin-bottom:8px" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg><br>ไม่มีรายวิชาในภาคเรียนนี้<br>'+(_canSeeOldTerms()?'<button onclick=\'_toggleDashFilter()\' style=\"margin-top:10px;background:none;border:none;color:var(--ac);font-weight:700;cursor:pointer;font-family:var(--font);font-size:13px;\">ดูทุกภาค →</button>':'')+'</div>';
+      if(!_visibles.length && S.subjects.length) return '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13.5px;"><svg style="margin-bottom:8px" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg><br>ไม่มีรายวิชาในภาคเรียนนี้<br>'+(_seesAllTerms()?'<button onclick=\'_toggleDashFilter()\' style=\"margin-top:10px;background:none;border:none;color:var(--ac);font-weight:700;cursor:pointer;font-family:var(--font);font-size:13px;\">ดูทุกภาค →</button>':'')+'</div>';
       return _visibles.map((s,_si)=>{
       const st=s.stats||{total:0,pass:0,recorded:0,avg:0,passPercent:0};
       // สีตาม grade_level: ม.1=น้ำเงิน ม.2=เขียว ม.3=ส้ม ม.4=ม่วง ม.5=ฟ้า ม.6=แดง
