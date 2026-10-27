@@ -1841,12 +1841,19 @@ let _glPrefix='ม.', _glList=[];
 // เดากลุ่มสาระ/ประเภท/ชั้น จากรหัสวิชาตามหลักสูตรแกนกลาง เช่น ท21101 = ภาษาไทย ม.1 พื้นฐาน
 // ตัวอักษร = กลุ่มสาระ, หลัก 1 = ระดับ (2 ม.ต้น, 3 ม.ปลาย), หลัก 2 = ปีในระดับ (0 = ไม่ระบุปี), หลัก 3 = 1 พื้นฐาน / 2 เพิ่มเติม
 const CODE_GROUP={'ท':'ภาษาไทย','ค':'คณิต','ว':'วิทยาศาสตร์','ส':'สังคม','พ':'สุขศึกษา','ศ':'ศิลปะ','ง':'การงาน','I':'(IS)','i':'(IS)'};
+// หัวหน้ากลุ่มสาระที่แอดมินตั้งไว้ (config group_heads = {"กลุ่มสาระ":"ชื่อ"})
+function _groupHead(g){ try{ return (JSON.parse(S.config.group_heads||'{}')[g]||'').trim(); }catch(e){ return ''; } }
+function _hogFromGroup(){
+  const sel=$('f-hog'), h=_groupHead($('f-sg')?.value||''); if(!sel||!h) return;
+  if(![...sel.options].some(o=>o.value===h)) sel.insertAdjacentHTML('beforeend',`<option value="${esc(h)}">${esc(h)}</option>`);
+  sel.value=h;
+}
 function _codeAutoFill(code){
   const m=String(code||'').trim().match(/^(\S)(\d)(\d)(\d)/);
   if(!m) return;
   const key=CODE_GROUP[m[1]]||(/[ก-ฮA-Za-z]/.test(m[1])?'ต่างประเทศ':'');
   const g=key&&SUBJECT_GROUPS.find(x=>x.includes(key));
-  if(g&&$('f-sg')) $('f-sg').value=g;
+  if(g&&$('f-sg')){ $('f-sg').value=g; _hogFromGroup(); }
   if($('f-styp')&&(m[4]==='1'||m[4]==='2')) $('f-styp').value=m[4]==='1'?'รายวิชาพื้นฐาน':'วิชาเพิ่มเติม';
   const gr=(m[2]==='2'?0:m[2]==='3'?3:-1)+(+m[3]);
   const gEl=$('f-gr');
@@ -1963,7 +1970,7 @@ function _applyConcurrencyGuards(){
 // (ของโมดูลจะถูกห่อเพิ่มใน ensureModule หลังโหลดเสร็จ)
 _applyConcurrencyGuards();
 // ?v= กันแคชเก่าค้าง (modules/*.js แคชไว้ 1 วันตาม vercel.json) — แก้ไฟล์ใน modules/ เมื่อไหร่ต้องขยับเลขนี้ขึ้นด้วย
-const MODULE_V = '124';
+const MODULE_V = '125';
 // ห่อฟังก์ชันของโมดูลหลังโหลดเสร็จด้วย (ตอนเริ่มระบบยังไม่มีฟังก์ชันเหล่านี้)
 function ensureModule(name){ return _loadScriptOnce(name, 'modules/'+name+'.js?v='+MODULE_V).then(()=>{ _applyConcurrencyGuards(); }); }
 function ensureXLSX(){ return _loadScriptOnce('xlsx', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
@@ -2722,11 +2729,11 @@ async function saveImgSubs(){
   if(!rows.length){ toast('ยังไม่ได้เลือกรายวิชา','er'); return; }
   const bad=rows.find(r=>!r.code||!r.name);
   if(bad){ toast('กรุณากรอกรหัสและชื่อวิชาให้ครบทุกแถวที่เลือก','er'); return; }
-  let hog=''; try{ hog=localStorage.getItem('pp5_hog_'+S.user.id)||''; }catch(e){}
+  let hogLast=''; try{ hogLast=localStorage.getItem('pp5_hog_'+S.user.id)||''; }catch(e){}
   const payloads=rows.map(r=>{ const info=_codeInfo(r.code); return {
     subject_code:r.code,subject_name:r.name,grade_level:r.grade,room:r.room,
     credits:r.credits,hours_per_week:r.hours,total_hours:r.hours*20,
-    teacher_name:S.profile?.full_name||'',head_of_group:hog,advisor_name:'',
+    teacher_name:S.profile?.full_name||'',head_of_group:_groupHead(info.group)||hogLast,advisor_name:'',
     subject_group:info.group||'',subject_type:info.type||'รายวิชาพื้นฐาน',
     academic_year:S.config.academic_year||'2568',semester:parseInt(S.config.semester||1),user_id:S.user.id};});
   loading(true);
@@ -2773,7 +2780,7 @@ function openSubModal(id){
         <div style="display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-top:14px">
           <div>
             <label class="fl">กลุ่มสาระการเรียนรู้</label>
-            <select class="fs" id="f-sg">
+            <select class="fs" id="f-sg" onchange="_hogFromGroup()">
               <option value="">— ไม่ระบุ —</option>
               ${SUBJECT_GROUPS.map(g=>`<option value="${esc(g)}" ${s?.subject_group===g?'selected':''}>${esc(g)}</option>`).join('')}
             </select>
