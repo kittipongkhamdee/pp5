@@ -766,3 +766,5 @@ body.ro :is(#pg,.mo) button:is([onclick*="save" i],[onclick*="del" i],[onclick*=
 .rms-i{display:inline-flex;align-items:center;gap:4px;padding:5px 9px;border:1px solid var(--border,#d1d5db);border-radius:8px;font-size:13px;cursor:pointer}
 .rms-i:has(input:checked){background:#eef2ff;border-color:#6366f1}
 .rms-all{border:none;background:none;color:#4f46e5;font-size:12px;cursor:pointer;text-decoration:underline}
+.cd-room{border:1px solid var(--border,#e5e7eb);border-radius:10px;padding:8px 10px;margin-bottom:8px}
+.cd-rh{font-weight:700;font-size:13px;margin-bottom:6px;color:#4f46e5}
