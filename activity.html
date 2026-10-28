@@ -583,6 +583,9 @@ html[data-theme="dark"] #leave-sheet{background:rgba(28,35,50,.9)}
 #confirm-overlay.show{opacity:1;pointer-events:auto}
 #confirm-sheet{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.72);-webkit-backdrop-filter:blur(28px) saturate(180%);backdrop-filter:blur(28px) saturate(180%);border:1px solid rgba(255,255,255,.6);border-bottom:none;border-radius:20px 20px 0 0;z-index:9001;padding:0 16px calc(env(safe-area-inset-bottom,0px) + 12px);transform:translateY(110%);transition:transform .32s cubic-bezier(.32,1,.23,1);max-width:480px;margin:0 auto}
 #confirm-sheet.show{transform:translateY(0)}
+.ck-todo-bar{margin:0 0 10px;padding:10px 14px;border-radius:12px;background:#fffbeb;border:1px solid #fcd34d;color:#b45309;font-weight:600;font-size:14px;cursor:pointer}
+.ck-partial .ck-pill.none{border:2px solid #f59e0b!important;background:#fffbeb!important;color:#b45309!important}
+.stu-card.ck-flash{box-shadow:0 0 0 3px #f59e0b!important;transition:box-shadow .2s}
 html[data-theme="dark"] #confirm-sheet{background:rgba(28,35,50,.78)}
 @media(prefers-color-scheme:dark){html:not([data-theme="light"]) #confirm-sheet{background:rgba(28,35,50,.78)}}
 .confirm-handle{width:36px;height:4px;background:rgba(120,130,150,.35);border-radius:2px;margin:12px auto 20px}
@@ -1179,7 +1182,8 @@ html[data-theme="dark"] #topbar-clock{background:rgba(55,65,81,0.65);border-colo
   <div class="confirm-title" id="confirm-title"></div>
   <div class="confirm-sub" id="confirm-sub"></div>
   <button class="confirm-btn" id="confirm-ok" onclick="_doConfirm()"></button>
-  <button class="confirm-btn cancel" onclick="_hideConfirm()">ยกเลิก</button>
+  <button class="confirm-btn" id="confirm-alt" style="display:none;background:#e5e7eb;color:#1f2937" onclick="_doConfirmAlt()"></button>
+  <button class="confirm-btn cancel" id="confirm-cancel" onclick="_hideConfirm()">ยกเลิก</button>
 </div>
 <div id="toast" class="toast"></div>
 <div id="loader" style="position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:200;display:none;align-items:center;justify-content:center">
@@ -1434,8 +1438,12 @@ async function checkPin(){
 }
 
 // ─── Navigation ────────────────────────────────────────────────────────────
+let _ckSkipTodo=false;
 function nav(page,force){
   // ออกจากหน้าเช็คชื่อทางไหนก็ตาม (แถบล่าง/เมนู/ปุ่มบันทึก) ถามก่อนถ้ายังมีคนที่มาแต่ยังไม่ตรวจแต่งกาย
+  if(!force&&S.page==='checkin'&&page!=='checkin'&&!_ckSkipTodo){
+    if(_ckTodoGuard(()=>{_ckSkipTodo=true;try{nav(page)}finally{_ckSkipTodo=false}}))return;
+  }
   if(!force&&S.page==='checkin'&&page!=='checkin'){
     const n=_unifTodo().length;
     if(n){_showConfirm('ยังไม่ได้ตรวจการแต่งกาย',`มีนักเรียนที่มา ${n} คน ยังไม่ได้ตรวจการแต่งกาย — กลับไปตรวจก่อน หรือออกเลย`,'ออกเลย','#d97706',()=>nav(page,true));return}
@@ -1845,7 +1853,9 @@ async function renderCheckin(){
 }
 
 function setCkFilterFromDrop(){
-  S.ckFilter=$('ck-class-sel').value;
+  const nv=$('ck-class-sel').value;
+  if(!_ckSkipTodo&&nv!==S.ckFilter&&_ckTodoGuard(()=>{$('ck-class-sel').value=nv;_ckSkipTodo=true;try{setCkFilterFromDrop()}finally{_ckSkipTodo=false}},()=>{$('ck-class-sel').value=S.ckFilter}))return;
+  S.ckFilter=nv;
   try{ localStorage.setItem('act_ck_class',S.ckFilter||''); }catch(e){}
   _saveLastCk();
   renderCkList();updateCkStats();
@@ -1877,7 +1887,7 @@ function renderCkList(){
   const[gl,r]=S.ckFilter.split('_');stus=stus.filter(s=>String(s.grade_level)===gl&&String(s.room)===r);
   if(!stus.length){$('ck-list').innerHTML=`<div class="empty-state">ไม่พบนักเรียน</div>`;return}
   const hol=isNoSchool(S.ckDate)?`<div style="background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35);color:#92400e;border-radius:14px;padding:10px 14px;margin-bottom:10px;font-size:13.5px">⚠ วันที่เลือกเป็น<b>${esc(holidayName(S.ckDate))}</b> — ปกติไม่ต้องเช็คชื่อ (ถ้าเช็ค ข้อมูลวันนี้จะไม่ถูกนับในรายงานขาดต่อเนื่อง/ร้อยละ)</div>`:'';
-  const cards=hol+'<div id="ck-unif-todo" style="display:none"></div>'+stus.map((s,i)=>_stuCardHtml(s,i+1,unifOn)).join('');
+  const cards=hol+'<div id="ck-todo" class="ck-todo-bar" style="display:none" onclick="_ckGoTodo()"></div><div id="ck-unif-todo" style="display:none"></div>'+stus.map((s,i)=>_stuCardHtml(s,i+1,unifOn)).join('');
   const saveBtn=`<div class="ck-save-wrap">
     <button class="ck-save-btn" onclick="saveCkAndGoHome()">✓ บันทึก</button>
     <div class="ck-save-hint">ข้อมูลบันทึกอัตโนมัติทุกครั้งที่กด · กดเพื่อกลับหน้าหลัก</div>
@@ -1933,6 +1943,28 @@ function _stuCardHtml(s,num,unifOn){
 }
 
 // นักเรียนที่ "มา" แต่ยังไม่ได้ตรวจการแต่งกาย (เฉพาะเมื่อรอบนี้เปิดตรวจแต่งกาย)
+// นักเรียนที่ยังไม่ได้แตะ — นับเฉพาะห้องที่เริ่มเช็คแล้ว (ยังไม่แตะใครเลย = แค่เปิดดู ไม่เตือน)
+function _ckTodo(){
+  if(!S.ckActivityId||!S.ckFilter)return [];
+  const f=_filteredStudents();
+  if(!f.some(s=>S.ckAttend[s.id]?.status))return [];
+  return f.filter(s=>!S.ckAttend[s.id]?.status);
+}
+function _ckGoTodo(){
+  const s=_ckTodo()[0]; const el=s&&document.getElementById('stu-'+s.id);
+  if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); el.classList.add('ck-flash'); setTimeout(()=>el.classList.remove('ck-flash'),1600); }
+}
+// ถามก่อนออก/เปลี่ยนห้อง/วัน/กิจกรรม ถ้ายังมีคนไม่ได้แตะ — go() = ทำสิ่งที่ตั้งใจต่อ (ข้ามการถามซ้ำ)
+function _ckTodoGuard(go,revert){
+  const todo=_ckTodo(); if(!todo.length)return false;
+  revert&&revert();
+  const names=todo.slice(0,5).map(s=>s.student_name||'').filter(Boolean).join(', ')+(todo.length>5?` และอีก ${todo.length-5} คน`:'');
+  _showConfirm(`ยังไม่ได้เช็คชื่อ ${todo.length} คน`,names,`ที่เหลือเป็น "ขาด"`,'#ef4444',
+    async()=>{ await checkAll('absent',todo); go(); },
+    {label:'ออกเลย (เว้นว่างไว้)',fn:go},'กลับไปเช็ค');
+  _confirmCancelGo=true;
+  return true;
+}
 function _unifTodo(){
   if(!_unifCheckActive()||!S.ckFilter)return [];
   return _filteredStudents().filter(s=>S.ckAttend[s.id]?.status==='present'&&!S.ckUnifChecks[String(s.id)]?.status);
@@ -2029,6 +2061,9 @@ function updateCkStats(){
   $('ck-stat-absent').textContent=absent;
   const unifEl=$('ck-stat-unif-fail');
   const unifActive=_unifCheckActive();
+  const ckt=$('ck-todo'), nt=_ckTodo().length;
+  if(ckt){ ckt.style.display=nt?'':'none'; ckt.textContent=`⏳ ยังไม่ได้เช็ค ${nt} คน — แตะเพื่อไปที่คนแรก`; }
+  $('ck-list')?.classList.toggle('ck-partial',!!nt);
   const todo=$('ck-unif-todo');
   if(todo){const n=_unifTodo().length;todo.style.display=unifActive&&n?'':'none';todo.textContent=`👕 ยังไม่ได้ตรวจการแต่งกาย ${n} คน (คนที่มา) — แตะปุ่ม 👕? หรือ "ผ่านทั้งหมด"`}
   if(unifEl){
@@ -2244,7 +2279,13 @@ async function _deleteLeaveRequest(id){
 
 // ── iOS-style confirm sheet ──
 let _confirmFn=null;
-function _showConfirm(title,sub,btnLabel,btnColor,fn){
+// alt = {label,fn} ปุ่มที่สอง (ไม่บังคับ), cancelLabel = ข้อความปุ่มยกเลิก
+let _confirmAltFn=null;
+function _doConfirmAlt(){const fn=_confirmAltFn;_confirmCancelGo=false;_hideConfirm();if(fn)fn()}
+function _showConfirm(title,sub,btnLabel,btnColor,fn,alt,cancelLabel){
+  const ab=$('confirm-alt'); _confirmAltFn=alt?.fn||null;
+  ab.style.display=alt?'':'none'; ab.textContent=alt?.label||'';
+  $('confirm-cancel').textContent=cancelLabel||'ยกเลิก';
   $('confirm-title').textContent=title;
   $('confirm-sub').textContent=sub;
   const ok=$('confirm-ok');
@@ -2253,12 +2294,14 @@ function _showConfirm(title,sub,btnLabel,btnColor,fn){
   $('confirm-overlay').classList.add('show');
   $('confirm-sheet').classList.add('show');
 }
+let _confirmCancelGo=false;
 function _hideConfirm(){
+  if(_confirmCancelGo){ _confirmCancelGo=false; setTimeout(_ckGoTodo,350); }
   $('confirm-overlay').classList.remove('show');
   $('confirm-sheet').classList.remove('show');
   _confirmFn=null;
 }
-function _doConfirm(){const fn=_confirmFn;_hideConfirm();if(fn)fn()}
+function _doConfirm(){const fn=_confirmFn;_confirmCancelGo=false;_hideConfirm();if(fn)fn()}
 function _toggleCkMore(e){ e.stopPropagation(); const m=$('ck-more-menu'); if(m) m.style.display=m.style.display==='none'?'block':'none'; }
 function _closeCkMore(){ const m=$('ck-more-menu'); if(m) m.style.display='none'; }
 document.addEventListener('click',()=>_closeCkMore());
@@ -2307,9 +2350,9 @@ function _confirmUnifPassAll(){
   );
 }
 
-async function checkAll(status){
+async function checkAll(status,list){
   if(!S.ckActivityId){toast('เลือกกิจกรรมก่อน','er');return}
-  const targets=_filteredStudents();
+  const targets=list||_filteredStudents();
   if(!targets.length){toast('ไม่มีนักเรียนในห้องที่เลือก','er');return}
   const label=S.ckFilter?`ห้อง ${classLabel(...S.ckFilter.split('_'))}`:'ทั้งหมด';
   loading(true);
@@ -2439,14 +2482,18 @@ async function clearAllCk(){
 
 function _autoSession(){return new Date().getHours()<12?'morning':'evening'}
 async function onCkActChange(){
-  S.ckActivityId=parseInt($('ck-act-sel').value)||null;
+  const nv=$('ck-act-sel').value;
+  if(!_ckSkipTodo&&String(nv)!==String(S.ckActivityId||'')&&_ckTodoGuard(()=>{$('ck-act-sel').value=nv;_ckSkipTodo=true;onCkActChange().finally(()=>{_ckSkipTodo=false})},()=>{$('ck-act-sel').value=S.ckActivityId||''}))return;
+  S.ckActivityId=parseInt(nv)||null;
   const act=S.activities.find(a=>a.id==S.ckActivityId);
   S.ckSession=(act?.has_evening&&S.ckDate===todayStr())?_autoSession():'morning';
   _saveLastCk();
   await renderCheckin();
 }
 async function onCkDateChange(){
-  S.ckDate=$('ck-date-inp').value;
+  const nv=$('ck-date-inp').value;
+  if(!_ckSkipTodo&&nv!==S.ckDate&&_ckTodoGuard(()=>{$('ck-date-inp').value=nv;_ckSkipTodo=true;onCkDateChange().finally(()=>{_ckSkipTodo=false})},()=>{$('ck-date-inp').value=S.ckDate}))return;
+  S.ckDate=nv;
   const act=S.activities.find(a=>a.id==S.ckActivityId);
   if(act?.has_evening&&S.ckDate===todayStr())S.ckSession=_autoSession();
   await renderCheckin();
