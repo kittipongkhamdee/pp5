@@ -1341,6 +1341,35 @@ async function delHoliday(d){
   try{loading(true);await saveHolidays();toast('ลบวันหยุดแล้ว')}catch(e){toast('บันทึกไม่สำเร็จ: '+e.message,'er')}finally{loading(false)}
   renderAdmin();
 }
+// ── เริ่มนับใหม่ตามภาคเรียน ─────────────────────────────────────────────
+// ภาคเรียน/ปีการศึกษาอ่านจาก config เดียวกับ ปพ.5 (academic_year, semester) — เมื่อค่านี้เปลี่ยน
+// act_term_start = วันที่เปลี่ยน (แอดมินแก้ได้) รายงานสะสมนับตั้งแต่วันนั้น ข้อมูลเก่าไม่ถูกลบ
+S.termStart='';S.termKey='';
+function _floorDate(d){ return S.termStart&&d<S.termStart?S.termStart:d; }
+async function loadTermSetting(){
+  try{
+    const rows=await q(sb.from('config').select('key,value').in('key',['academic_year','semester','act_term_start','act_term_key']));
+    const c={}; (rows||[]).forEach(x=>c[x.key]=x.value);
+    const key=(c.academic_year&&c.semester)?`${c.semester}/${c.academic_year}`:'';
+    S.termKey=key; S.termStart=c.act_term_start||'';
+    if(key&&c.act_term_key!==key){
+      // ครั้งแรกที่ระบบรู้จักภาคเรียน = แค่จดจำ (ไม่ตัดข้อมูลกลางภาค) · เปลี่ยนภาค = เริ่มนับใหม่วันนี้
+      const start=c.act_term_key?todayStr():(c.act_term_start||'');
+      await q(sb.from('config').upsert([{key:'act_term_key',value:key},{key:'act_term_start',value:start}],{onConflict:'key'}));
+      S.termStart=start;
+    }
+  }catch(e){}
+}
+async function saveTermStart(val){
+  loading(true);
+  try{
+    await q(sb.from('config').upsert({key:'act_term_start',value:val||''},{onConflict:'key'}));
+    S.termStart=val||''; S.homeCache=null; try{sessionStorage.removeItem('act_home_streak')}catch(e){}
+    toast(val?`เริ่มนับสถิติสะสมตั้งแต่ ${thDate(val)}`:'ยกเลิกการตัดช่วง — นับข้อมูลทั้งหมด');
+    renderAdmin();
+  }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er')}
+  finally{loading(false)}
+}
 async function loadUnifCheckSetting(){
   try{const r=await q(sb.from('config').select('value').eq('key','unif_check_sessions').limit(1));if(r&&r[0])S.unifCheckSessions=r[0].value||'';}catch(e){}
 }
@@ -1620,7 +1649,7 @@ async function renderUnifRptTop10(){
   try{
     const stuIds=S.students.map(s=>s.id);
     if(!stuIds.length){$('unifrpt-top10-body').innerHTML='<div class="empty-state">ไม่พบข้อมูลนักเรียน</div>';return}
-    const checks=await q(sb.from('uniform_checks').select('student_id,date,uniform_check_violations(violation_id,uniform_violations(name))').eq('status','fail').gte('date',S.unifTop10From).lte('date',S.unifTop10To).in('student_id',stuIds));
+    const checks=await q(sb.from('uniform_checks').select('student_id,date,uniform_check_violations(violation_id,uniform_violations(name))').eq('status','fail').gte('date',_floorDate(S.unifTop10From)).lte('date',S.unifTop10To).in('student_id',stuIds));
     if(!checks.length){$('unifrpt-top10-body').innerHTML='<div class="empty-state">ไม่มีข้อมูลในช่วงที่เลือก</div>';return}
     const violCount={};const stuDaySet={};
     checks.forEach(c=>{
@@ -1796,7 +1825,7 @@ async function _homeStreakBanner(){
   try{ const c=JSON.parse(sessionStorage.getItem('act_home_streak')||'null'); if(c&&Date.now()-c.ts<600000) res=c.res; }catch(e){}
   if(!res){
     const since=new Date(); since.setDate(since.getDate()-14);
-    const sinceStr=since.toISOString().split('T')[0];
+    const sinceStr=_floorDate(since.toISOString().split('T')[0]);
     res=[];
     for(const a of acts){
       try{
@@ -2571,7 +2600,7 @@ async function renderRptTrend(){
     <div id="rpt-trend-body">${S.rptTrendActId?'<div class="loading-text">กำลังโหลด...</div>':'<div class="empty-state">เลือกกิจกรรมเพื่อดูแนวโน้ม</div>'}</div>`;
   if(!S.rptTrendActId) return;
   try{
-    const since=new Date(); since.setDate(since.getDate()-S.rptTrendDays); const sinceStr=since.toISOString().split('T')[0];
+    const since=new Date(); since.setDate(since.getDate()-S.rptTrendDays); const sinceStr=_floorDate(since.toISOString().split('T')[0]);
     const rows=(await qAllA(()=>sb.from('activity_attend').select('student_id,date,status').eq('activity_id',S.rptTrendActId).eq('session','morning').gte('date',sinceStr))).filter(r=>!isNoSchool(r.date));
     if(!rows.length){ $('rpt-trend-body').innerHTML='<div class="empty-state">ไม่มีข้อมูลในช่วงที่เลือก</div>'; return; }
     const byD={}; rows.forEach(r=>{ const o=byD[r.date]=byD[r.date]||{p:0,n:0}; o.n++; if(r.status==='present')o.p++; });
@@ -2880,10 +2909,12 @@ async function _loadRptStudentData(){
     const _mk=()=>{
       let qb=sb.from('activity_attend').select('date,session,status,activities(name)').eq('student_id',S.rptStuId).order('date',{ascending:false}).order('session');
       if(S.rptStuActivityId) qb=qb.eq('activity_id',S.rptStuActivityId);
+      if(S.termStart&&!S.rptStuAllTerms) qb=qb.gte('date',S.termStart);
       return qb;
     };
     const rows=await qAllA(_mk);
-    if(!rows.length){$('rpt-stu-body').innerHTML='<div class="empty-state">ยังไม่มีข้อมูลการเข้าร่วมกิจกรรม</div>';return}
+    const _termBar=S.termStart?`<div style="font-size:12.5px;color:var(--txt2);margin-bottom:8px">${S.rptStuAllTerms?'แสดงข้อมูลทุกภาคเรียน':`นับตั้งแต่เริ่มภาคเรียน ${esc(S.termKey)} (${thDate(S.termStart)})`} · <a href="#" style="color:var(--primary,#2563EB)" onclick="S.rptStuAllTerms=!S.rptStuAllTerms;_loadRptStudentData();return false">${S.rptStuAllTerms?'ดูเฉพาะภาคนี้':'ดูย้อนหลังทุกภาค'}</a></div>`:'';
+    if(!rows.length){$('rpt-stu-body').innerHTML=_termBar+'<div class="empty-state">ยังไม่มีข้อมูลการเข้าร่วมกิจกรรม</div>';return}
     const stu=S.students.find(s=>s.id===S.rptStuId)||{};
     S.rptStuData={rows,stu};
     const pr=rows.filter(r=>r.status==='present').length,la=rows.filter(r=>r.status==='late').length,ab=rows.filter(r=>r.status==='absent').length;
@@ -2905,7 +2936,7 @@ async function _loadRptStudentData(){
       <div style="font-size:13px;color:#6b7280;margin-top:3px">${esc(stu.student_name||'')}${stu.student_code?` · ${esc(stu.student_code)}`:''}</div>
       <div style="font-size:12px;color:#6b7280;margin-top:3px">มา ${pr} · ลา ${la} · ขาด ${ab} ครั้ง</div>
     </div>`;
-    $('rpt-stu-body').innerHTML=_expBar('exportStuPDF','exportStuExcel','exportStuImage')+`<div id="rpt-stu-doc" style="background:#fff;border-radius:10px;border:1px solid #e5e7eb;padding:20px">${_stuDocH}${h}</div>`;
+    $('rpt-stu-body').innerHTML=_termBar+_expBar('exportStuPDF','exportStuExcel','exportStuImage')+`<div id="rpt-stu-doc" style="background:#fff;border-radius:10px;border:1px solid #e5e7eb;padding:20px">${_stuDocH}${h}</div>`;
   }catch(e){$('rpt-stu-body').innerHTML=`<div class="empty-state">เกิดข้อผิดพลาด: ${esc(e.message)}</div>`}
 }
 async function renderRptStudent(){
@@ -3878,7 +3909,7 @@ async function renderRptStreak(){
     const useSession='morning';
     // ดึงข้อมูล 60 วันย้อนหลัง
     const since=new Date();since.setDate(since.getDate()-60);
-    const sinceStr=since.toISOString().split('T')[0];
+    const sinceStr=_floorDate(since.toISOString().split('T')[0]);
     const stuIds=S.students.map(s=>s.id);
     if(!stuIds.length){$('rpt-streak-body').innerHTML='<div class="empty-state">ไม่พบข้อมูลนักเรียน</div>';return}
     const rows=await qAllA(()=>sb.from('activity_attend').select('student_id,date,status').eq('activity_id',S.rptStreakActivityId).eq('session',useSession).gte('date',sinceStr).order('date',{ascending:true}));
@@ -3965,6 +3996,16 @@ function renderAdmin(){
   }
   h+=`</div>`;
   const hols=(S.holidays||[]).filter(x=>x.date>=todayStr().slice(0,4)+'-01-01');
+  h+=`<div class="section" style="margin-top:16px">
+    <div class="admin-hd"><div class="admin-hd-title">ภาคเรียน / เริ่มนับสถิติใหม่</div></div>
+    <div class="card" style="padding:14px 16px">
+      <div style="font-size:12.5px;color:var(--txt2);margin-bottom:10px;line-height:1.6">ภาคเรียนปัจจุบัน <b>${esc(S.termKey||'—')}</b> (ตามการตั้งค่าของ ปพ.5) · เมื่อเปลี่ยนภาคเรียน/ปีการศึกษา ระบบเริ่มนับสถิติสะสมใหม่ให้อัตโนมัติ (ประวัติรายนักเรียน แนวโน้ม ขาดสาย/ขาดติดต่อกัน) ข้อมูลเดิมไม่ถูกลบ ยังดูย้อนหลังได้</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <input type="date" class="ios-input" id="term-start-inp" style="flex:1;min-width:150px" value="${S.termStart||''}">
+        <button class="btn btn-blue btn-sm" onclick="saveTermStart($('term-start-inp').value)">บันทึกวันเริ่มนับ</button>
+        <button class="btn btn-sm" onclick="saveTermStart(todayStr())">เริ่มนับใหม่วันนี้</button>
+      </div>
+    </div></div>`;
   h+=`<div class="section" style="margin-top:16px">
     <div class="admin-hd"><div class="admin-hd-title">วันหยุด</div></div>
     <div class="card" style="padding:14px 16px">
@@ -4206,7 +4247,7 @@ async function deleteViolation(id){
 async function loadAppData(){
   loading(true);
   try{
-    const[actR,stuR,nameR]=await Promise.allSettled([loadActivities(),loadStudents(),loadSchoolName(),loadViolations(),loadUnifCheckSetting(),loadHolidays()]);
+    const[actR,stuR,nameR]=await Promise.allSettled([loadActivities(),loadStudents(),loadSchoolName(),loadViolations(),loadUnifCheckSetting(),loadHolidays(),loadTermSetting()]);
     if(actR.status==='rejected')throw actR.reason;
     if(stuR.status==='rejected')throw stuR.reason;
     const sn=$('side-school-name');if(sn)sn.textContent=S.schoolName;
