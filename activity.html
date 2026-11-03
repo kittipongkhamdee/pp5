@@ -247,6 +247,18 @@ html[data-theme="dark"] .ios-select,html[data-theme="dark"] .ios-input{backgroun
 .stu-card:not(.collapsed) .stu-chevron{transform:rotate(180deg)}
 .card-btns-wrap{padding:0 14px 12px;padding-left:38px;display:flex;flex-direction:column;gap:8px}
 .card-ck-btns{display:flex;gap:6px}
+.ck-row{display:flex;align-items:center;gap:8px;padding-left:24px}
+.ck-c{width:38px;height:38px;border-radius:50%;padding:0;border:1.5px solid #d1d5db;background:#fff;font:inherit;font-weight:700;font-size:13px;color:var(--txt2);display:grid;place-items:center;flex:0 0 auto;cursor:pointer;transition:transform .1s}
+.ck-c:active{transform:scale(.9)}
+.ck-c.present.on{background:var(--green);border-color:var(--green);color:#fff;box-shadow:0 3px 8px rgba(5,150,105,.3)}
+.ck-c.late.on{background:#d97706;border-color:#d97706;color:#fff;box-shadow:0 3px 8px rgba(217,119,6,.3)}
+.ck-c.absent.on{background:var(--red);border-color:var(--red);color:#fff;box-shadow:0 3px 8px rgba(220,38,38,.3)}
+.ck-c.u{font-size:16px;line-height:1}
+.ck-c.u small{font-size:10px;font-weight:700;margin-left:-1px}
+.ck-c.u.pass.on{background:#ccfbf1;border-color:#0d9488;color:#0d9488}
+.ck-c.u.fail.on{background:#fee2e2;border-color:var(--red);color:var(--red)}
+.ck-c[disabled]{opacity:.3;cursor:default}
+.ck-sep{width:1px;height:22px;background:var(--sep);margin:0 2px}
 .card-unif-sec{padding:8px 10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:var(--radius-sm)}
 .card-unif-hd{display:flex;align-items:center;gap:6px}
 .card-unif-lbl{font-size:12px;font-weight:700;color:#475569;flex:1}
@@ -586,7 +598,7 @@ html[data-theme="dark"] #leave-sheet{background:rgba(28,35,50,.9)}
 .ck-streak{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:99px;font-size:11px;font-weight:700}
 .ck-streak.bad{background:#fee2e2;color:#b91c1c}.ck-streak.warn{background:#fef3c7;color:#b45309}
 .ck-todo-bar{margin:0 0 10px;padding:10px 14px;border-radius:12px;background:#fffbeb;border:1px solid #fcd34d;color:#b45309;font-weight:600;font-size:14px;cursor:pointer}
-.ck-partial .ck-pill.none{border:2px solid #f59e0b!important;background:#fffbeb!important;color:#b45309!important}
+.ck-partial .stu-card.ck-open .ck-c:not(.u){border-color:#f59e0b;background:#fffbeb}
 .stu-card.ck-flash{box-shadow:0 0 0 3px #f59e0b!important;transition:box-shadow .2s}
 html[data-theme="dark"] #confirm-sheet{background:rgba(28,35,50,.78)}
 @media(prefers-color-scheme:dark){html:not([data-theme="light"]) #confirm-sheet{background:rgba(28,35,50,.78)}}
@@ -1982,11 +1994,11 @@ function _stuCardHtml(s,num,unifOn){
   // unif badge (shown when done, beside chevron)
   const unifBadge=uchk?.status?`<span class="stu-cbadge ${uchk.status==='pass'?'unif-pass':'unif-fail'}" style="flex-shrink:0">${uchk.status==='pass'?'ผ่าน':'ไม่ผ่าน'}</span>`:'';
 
-  // ปุ่มสถานะปุ่มเดียว แตะวน มา → ลา → ขาด (แบบหน้าเช็คชื่อมือถือของ ปพ.5) + ปุ่ม 👕 ข้างกัน แตะสลับ ผ่าน/ไม่ผ่าน (เฉพาะคนที่มา)
-  const stLbl={present:'มา',late:'ลา',absent:'ขาด'}[st]||'แตะ';
+  // ปุ่มกลมเรียงใต้ชื่อ: มา / ลา / ขาด แตะเลือกได้ทันที (แตะซ้ำ = ล้างค่า) + 👕 ผ่าน/ไม่ผ่าน (ใช้ได้เมื่อมา)
   const uSt=uchk?.status||'';
-  const unifPill=unifOn?(hasUnif?`<button class="ck-dr ${uSt||'todo'}" onclick="cycleUnif('${s.id}')" title="การแต่งกาย">👕${uSt==='pass'?'✓':uSt==='fail'?'✗':'?'}</button>`:'<span class="ck-dr none"></span>'):'';
-  const ckBtns=`<div class="card-ck-btns"><button class="ck-pill ${st||'none'}" onclick="cycleStatus('${s.id}',this)">${stLbl}${st?'<i style="font-style:normal;font-size:10px;opacity:.8;margin-left:2px">▾</i>':''}</button>${unifPill}</div>`;
+  const sb_=(k,l)=>`<button class="ck-c ${k}${st===k?' on':''}" onclick="ckSet('${s.id}','${k}')">${l}</button>`;
+  const ub_=(k,m)=>`<button class="ck-c u ${k}${uSt===k?' on':''}" ${hasUnif?'':'disabled'} onclick="ckUnif('${s.id}','${k}')" title="${k==='pass'?'แต่งกายผ่าน':'แต่งกายไม่ผ่าน'}">👕<small>${m}</small></button>`;
+  const ckBtns=`<div class="ck-row">${sb_('present','มา')}${sb_('late','ลา')}${sb_('absent','ขาด')}${unifOn?`<span class="ck-sep"></span>${ub_('pass','✓')}${ub_('fail','✗')}`:''}</div>`;
   const chevron='';
 
   // uniform section (only if มา + setting enabled)
@@ -2003,7 +2015,7 @@ function _stuCardHtml(s,num,unifOn){
     </div>`;
   }
 
-  return`<div class="stu-card${cardClass?' '+cardClass:''}${collapsed}" id="stu-${s.id}">
+  return`<div class="stu-card${cardClass?' '+cardClass:''}${st?'':' ck-open'}${collapsed}" id="stu-${s.id}">
     <div class="stu-card-hd">
       <div class="stu-card-top">
         <span class="stu-card-num">${num}</span>
@@ -2011,8 +2023,8 @@ function _stuCardHtml(s,num,unifOn){
           <div class="stu-card-name">${esc(s.student_name)}</div>
           <div class="stu-card-meta">${esc(s.student_code)} · ${classLabel(s.grade_level,s.room)}${_ckStreakBadge(s,st)}</div>
         </div>
-        <div class="stu-card-actions">${ckBtns}${chevron}</div>
       </div>
+      ${ckBtns}
     </div>
     ${unifSec?`<div class="card-btns-wrap">${unifSec}</div>`:''}
   </div>`;
@@ -2156,6 +2168,14 @@ function updateCkStats(){
 const _ckBusy={};
 // ปุ่มสถานะ: ยังไม่เช็ค → แตะ = มา (1 แตะ) · เช็คแล้ว → แตะ = เมนูเล็ก มา/ลา/ขาด/ล้าง (เลือก 1 แตะ)
 // เดิมแตะวนตามลำดับ นักเรียนที่ขาดต้องแตะหลายครั้ง
+async function ckSet(stuId,status){
+  if(_ckBusy[stuId])return;_ckBusy[stuId]=1;
+  try{await setStatus(stuId,status)}finally{delete _ckBusy[stuId]}
+}
+async function ckUnif(stuId,status){
+  const k='u'+stuId;if(_ckBusy[k])return;_ckBusy[k]=1;
+  try{await setCkUnifStatus(stuId,status)}finally{delete _ckBusy[k]}
+}
 async function cycleStatus(stuId,btn){
   if(_ckBusy[stuId])return;
   const cur=S.ckAttend[stuId]?.status;
