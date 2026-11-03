@@ -583,6 +583,8 @@ html[data-theme="dark"] #leave-sheet{background:rgba(28,35,50,.9)}
 #confirm-overlay.show{opacity:1;pointer-events:auto}
 #confirm-sheet{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.72);-webkit-backdrop-filter:blur(28px) saturate(180%);backdrop-filter:blur(28px) saturate(180%);border:1px solid rgba(255,255,255,.6);border-bottom:none;border-radius:20px 20px 0 0;z-index:9001;padding:0 16px calc(env(safe-area-inset-bottom,0px) + 12px);transform:translateY(110%);transition:transform .32s cubic-bezier(.32,1,.23,1);max-width:480px;margin:0 auto}
 #confirm-sheet.show{transform:translateY(0)}
+.ck-streak{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:99px;font-size:11px;font-weight:700}
+.ck-streak.bad{background:#fee2e2;color:#b91c1c}.ck-streak.warn{background:#fef3c7;color:#b45309}
 .ck-todo-bar{margin:0 0 10px;padding:10px 14px;border-radius:12px;background:#fffbeb;border:1px solid #fcd34d;color:#b45309;font-weight:600;font-size:14px;cursor:pointer}
 .ck-partial .ck-pill.none{border:2px solid #f59e0b!important;background:#fffbeb!important;color:#b45309!important}
 .stu-card.ck-flash{box-shadow:0 0 0 3px #f59e0b!important;transition:box-shadow .2s}
@@ -1345,13 +1347,51 @@ async function delHoliday(d){
 // ภาคเรียน/ปีการศึกษาอ่านจาก config เดียวกับ ปพ.5 (academic_year, semester) — เมื่อค่านี้เปลี่ยน
 // act_term_start = วันที่เปลี่ยน (แอดมินแก้ได้) รายงานสะสมนับตั้งแต่วันนั้น ข้อมูลเก่าไม่ถูกลบ
 S.termStart='';S.termKey='';
+// เตือนขาดติดต่อกัน: จำนวนวัน (act_streak_days, เริ่มต้น 3) และนับ "ลา" รวมด้วยหรือไม่ (act_streak_leave, เริ่มต้นนับ)
+S.streakDays=3;S.streakLeave=true;S.ckPrev={};S.ckPrevKey='';
+function _isBad(st){ return st==='absent'||(S.streakLeave&&st==='late'); }
+async function saveStreakSetting(){
+  const n=Math.min(30,Math.max(2,+$('streak-days-inp').value||3)), lv=$('streak-leave-inp').checked;
+  loading(true);
+  try{
+    await q(sb.from('config').upsert([{key:'act_streak_days',value:String(n)},{key:'act_streak_leave',value:lv?'1':'0'}],{onConflict:'key'}));
+    S.streakDays=n;S.streakLeave=lv;S.rptStreakMin=n;S.ckPrevKey='';
+    try{sessionStorage.removeItem('act_home_streak')}catch(e){}
+    toast('บันทึกการตั้งค่าเตือนขาดติดต่อกันแล้ว');
+  }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'er')}
+  finally{loading(false)}
+}
+// จำนวนวันที่ขาดติดต่อกัน "ก่อนวันที่กำลังเช็ค" ของนักเรียนในห้องที่เลือก (นับเฉพาะวันที่มีการเช็คกิจกรรมนี้ ข้ามวันหยุด)
+async function _ckLoadPrev(){
+  if(!S.ckActivityId||!S.ckFilter)return;
+  const key=`${S.ckActivityId}_${S.ckDate}_${S.ckSession}_${S.ckFilter}`;
+  if(S.ckPrevKey===key)return;
+  try{
+    const ids=_filteredStudents().map(s=>s.id); if(!ids.length)return;
+    const d=new Date(S.ckDate+'T00:00:00'); d.setDate(d.getDate()-45);
+    const from=_floorDate(d.toISOString().slice(0,10));
+    const rows=await qAllA(()=>sb.from('activity_attend').select('student_id,date,status').eq('activity_id',S.ckActivityId).eq('session',S.ckSession).gte('date',from).lt('date',S.ckDate).in('student_id',ids));
+    const dates=[...new Set(rows.map(r=>r.date))].filter(x=>!isNoSchool(x)).sort();
+    const m={}; rows.forEach(r=>{(m[r.student_id]=m[r.student_id]||{})[r.date]=r.status});
+    const out={};
+    ids.forEach(id=>{ let k=0; for(let i=dates.length-1;i>=0;i--){ if(_isBad((m[id]||{})[dates[i]]))k++; else break; } out[id]=k; });
+    S.ckPrev=out; S.ckPrevKey=key;
+  }catch(e){ S.ckPrev={}; }
+}
+function _ckStreakBadge(s,st){
+  const prev=S.ckPrev[s.id]||0, n=S.streakDays;
+  if(_isBad(st)&&prev+1>=n) return `<span class="ck-streak bad">⚠ ขาดติดต่อกัน ${prev+1} วัน</span>`;
+  if(!st&&prev>=n-1&&prev>0) return `<span class="ck-streak warn">ขาดมาแล้ว ${prev} วัน</span>`;
+  return '';
+}
 function _floorDate(d){ return S.termStart&&d<S.termStart?S.termStart:d; }
 async function loadTermSetting(){
   try{
-    const rows=await q(sb.from('config').select('key,value').in('key',['academic_year','semester','act_term_start','act_term_key']));
+    const rows=await q(sb.from('config').select('key,value').in('key',['academic_year','semester','act_term_start','act_term_key','act_streak_days','act_streak_leave']));
     const c={}; (rows||[]).forEach(x=>c[x.key]=x.value);
     const key=(c.academic_year&&c.semester)?`${c.semester}/${c.academic_year}`:'';
     S.termKey=key; S.termStart=c.act_term_start||'';
+    S.streakDays=Math.min(30,Math.max(2,+c.act_streak_days||3)); S.streakLeave=c.act_streak_leave!=='0'; S.rptStreakMin=S.streakDays;
     if(key&&c.act_term_key!==key){
       // ครั้งแรกที่ระบบรู้จักภาคเรียน = แค่จดจำ (ไม่ตัดข้อมูลกลางภาค) · เปลี่ยนภาค = เริ่มนับใหม่วันนี้
       const start=c.act_term_key?todayStr():(c.act_term_start||'');
@@ -1832,13 +1872,13 @@ async function _homeStreakBanner(){
         const rows=await qAllA(()=>sb.from('activity_attend').select('student_id,date,status').eq('activity_id',a.id).eq('session','morning').gte('date',sinceStr));
         const dates=[...new Set(rows.map(r=>r.date))].filter(d=>!isNoSchool(d)).sort();
         const m={}; rows.forEach(r=>{(m[r.student_id]=m[r.student_id]||{})[r.date]=r.status});
-        let n=0; Object.values(m).forEach(rec=>{ let k=0; for(let i=dates.length-1;i>=0;i--){ const st=rec[dates[i]]; if(st==='absent'||st==='late')k++; else break; } if(k>=3)n++; });
+        let n=0; Object.values(m).forEach(rec=>{ let k=0; for(let i=dates.length-1;i>=0;i--){ const st=rec[dates[i]]; if(_isBad(st))k++; else break; } if(k>=S.streakDays)n++; });
         if(n) res.push({id:a.id,name:a.name,n});
       }catch(e){}
     }
     try{ sessionStorage.setItem('act_home_streak',JSON.stringify({ts:Date.now(),res})); }catch(e){}
   }
-  el.innerHTML=res.map(r=>`<div onclick="S.rptStreakActivityId=${r.id};S.rptStreakMin=3;S.rptTab='streak';nav('report')" style="cursor:pointer;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:var(--radius);padding:11px 14px;margin-bottom:10px;font-size:13.5px;color:#b91c1c;display:flex;align-items:center;gap:8px">
+  el.innerHTML=res.map(r=>`<div onclick="S.rptStreakActivityId=${r.id};S.rptStreakMin=S.streakDays;S.rptTab='streak';nav('report')" style="cursor:pointer;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:var(--radius);padding:11px 14px;margin-bottom:10px;font-size:13.5px;color:#b91c1c;display:flex;align-items:center;gap:8px">
     <span>⚠</span><span style="flex:1">${esc(r.name)}: ขาด/ลาติดต่อกัน 3 วันขึ้นไป <b>${r.n} คน</b></span><span>›</span></div>`).join('');
 }
 function quickCheckin(actId){
@@ -1881,10 +1921,12 @@ async function renderCheckin(){
   try{
     S.ckAttend=await loadAttend(S.ckActivityId,S.ckDate,S.ckSession);
     await loadCkUnifChecks();
+    await _ckLoadPrev();
   }finally{loading(false)}
   renderCkList();updateCkStats();
 }
 
+async function _ckAfterFilter(){ await _ckLoadPrev(); renderCkList();updateCkStats(); }
 function setCkFilterFromDrop(){
   const nv=$('ck-class-sel').value;
   if(!_ckSkipTodo&&nv!==S.ckFilter&&_ckTodoGuard(()=>{$('ck-class-sel').value=nv;_ckSkipTodo=true;try{setCkFilterFromDrop()}finally{_ckSkipTodo=false}},()=>{$('ck-class-sel').value=S.ckFilter}))return;
@@ -1892,6 +1934,7 @@ function setCkFilterFromDrop(){
   try{ localStorage.setItem('act_ck_class',S.ckFilter||''); }catch(e){}
   _saveLastCk();
   renderCkList();updateCkStats();
+  _ckAfterFilter();
   if(S.ckFilter){
     const[gl,r]=S.ckFilter.split('_');
     checkActiveLeaves(gl,r);
@@ -1966,7 +2009,7 @@ function _stuCardHtml(s,num,unifOn){
         <span class="stu-card-num">${num}</span>
         <div class="stu-card-info">
           <div class="stu-card-name">${esc(s.student_name)}</div>
-          <div class="stu-card-meta">${esc(s.student_code)} · ${classLabel(s.grade_level,s.room)}</div>
+          <div class="stu-card-meta">${esc(s.student_code)} · ${classLabel(s.grade_level,s.room)}${_ckStreakBadge(s,st)}</div>
         </div>
         <div class="stu-card-actions">${ckBtns}${chevron}</div>
       </div>
@@ -3933,7 +3976,7 @@ async function renderRptStreak(){
       for(let i=checkedDates.length-1;i>=0;i--){
         const d=checkedDates[i];
         const st=rec[d];
-        if(st==='absent'||st==='late'){streak++;streakStart=d;}
+        if(_isBad(st)){streak++;streakStart=d;}
         else break; // หยุดทันทีที่เจอวันที่ไม่ได้ขาด
       }
       if(streak>=S.rptStreakMin){
@@ -4005,6 +4048,18 @@ function renderAdmin(){
         <button class="btn btn-blue btn-sm" onclick="saveTermStart($('term-start-inp').value)">บันทึกวันเริ่มนับ</button>
         <button class="btn btn-sm" onclick="saveTermStart(todayStr())">เริ่มนับใหม่วันนี้</button>
       </div>
+    </div></div>`;
+  h+=`<div class="section" style="margin-top:16px">
+    <div class="admin-hd"><div class="admin-hd-title">เตือนขาดติดต่อกัน</div></div>
+    <div class="card" style="padding:14px 16px">
+      <div style="font-size:12.5px;color:var(--txt2);margin-bottom:10px;line-height:1.6">เตือนครูที่แบนเนอร์หน้าหลัก รายงาน และตอนเช็คชื่อ (ป้ายที่การ์ดนักเรียน) เมื่อนักเรียนขาดติดต่อกันครบจำนวนวันนี้ (นับเฉพาะวันเรียน รอบที่เช็ค)</div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <span style="font-size:14px">เตือนเมื่อขาดติดต่อกันตั้งแต่</span>
+        <input type="number" class="ios-input" id="streak-days-inp" style="width:70px;text-align:center" min="2" max="30" value="${S.streakDays}">
+        <span style="font-size:14px">วัน</span>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:14px;margin-bottom:12px"><input type="checkbox" id="streak-leave-inp" ${S.streakLeave?'checked':''}> นับสถานะ "ลา" รวมกับ "ขาด" ด้วย</label>
+      <button class="btn btn-blue btn-sm" onclick="saveStreakSetting()">บันทึก</button>
     </div></div>`;
   h+=`<div class="section" style="margin-top:16px">
     <div class="admin-hd"><div class="admin-hd-title">วันหยุด</div></div>
