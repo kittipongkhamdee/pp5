@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="th"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Mockup — เช็คชื่อแบบปุ่มเรียงใต้ชื่อ</title>
+<style>
+:root{--g:#059669;--o:#d97706;--r:#dc2626;--t:#0d9488;--bg:#f3f4f6;--sep:#e5e7eb}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);font-family:'Noto Sans Thai',system-ui,sans-serif;color:#111827}
+.top{background:#157a3c;color:#fff;padding:14px 16px;font-weight:700;font-size:18px}
+.wrap{max-width:480px;margin:0 auto;padding:12px 14px 40px}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:4px 0 12px}
+.st{border-radius:12px;padding:8px 2px;text-align:center;background:#fff;border:1px solid var(--sep);font-size:11px;color:#6b7280}
+.st b{display:block;font-size:20px;color:#111827}
+.st.p b{color:var(--g)}.st.l b{color:var(--o)}.st.a b{color:var(--r)}.st.u b{color:var(--r)}
+.note{font-size:12.5px;color:#6b7280;margin:0 0 10px;line-height:1.6}
+.card{background:#fff;border-radius:16px;padding:12px 12px 10px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.08);border:2px solid transparent}
+.card.todo{border-color:#fcd34d;background:#fffdf5}
+.nm{display:flex;gap:8px;align-items:baseline}
+.no{color:#9ca3af;font-size:13px;min-width:20px}
+.name{font-weight:700;font-size:16px}
+.sub{font-size:12px;color:#9ca3af;margin:1px 0 9px 28px}
+.row{display:flex;gap:6px;margin-left:28px}
+.b{flex:1;height:44px;border-radius:12px;border:1.5px solid #d1d5db;background:#fff;font:inherit;font-weight:700;font-size:15px;color:#6b7280}
+.b:active{transform:scale(.96)}
+.b.p.on{background:var(--g);border-color:var(--g);color:#fff}
+.b.l.on{background:var(--o);border-color:var(--o);color:#fff}
+.b.a.on{background:var(--r);border-color:var(--r);color:#fff}
+.sp{width:1px;background:var(--sep);margin:4px 2px}
+.u{flex:0 0 46px;font-size:18px}
+.u.pass.on{background:#ccfbf1;border-color:var(--t);color:var(--t)}
+.u.fail.on{background:#fee2e2;border-color:var(--r);color:var(--r)}
+.u[disabled]{opacity:.3}
+.u small{font-size:11px;font-weight:700}
+.hint{margin:14px 0 0;padding:12px;border-radius:12px;background:#ecfdf5;font-size:13px;line-height:1.7;color:#065f46}
+</style></head><body>
+<div class="top">เช็คชื่อ · ม.1 (ตัวอย่างดีไซน์)</div>
+<div class="wrap">
+  <div class="stats">
+    <div class="st"><b id="sT">0</b>ทั้งหมด</div><div class="st p"><b id="sP">0</b>มา</div>
+    <div class="st l"><b id="sL">0</b>ลา</div><div class="st a"><b id="sA">0</b>ขาด</div>
+    <div class="st u"><b id="sU">0</b>ไม่ผ่าน</div>
+  </div>
+  <p class="note">แตะสถานะได้ทันที 1 ครั้ง · แตะซ้ำที่ปุ่มเดิม = ล้างค่า · ปุ่ม 👕 ใช้ได้เมื่อเลือก "มา" · แถบเหลือง = ยังไม่ได้เช็ค</p>
+  <div id="list"></div>
+  <div class="hint">เทียบกับแบบเดิม: เดิมต้องแตะวนหลายครั้ง (แตะ → มา → ลา → ขาด) ใหม่เลือกได้ตรงๆ ครั้งเดียว และเห็นทุกตัวเลือกพร้อมกันตลอด</div>
+</div>
+<script>
+const names=[['เด็กชายณัฐวุฒิ ฉัตรเงิน','02413'],['เด็กชายจิรายุ แรงจบ','02426'],['เด็กชายนราธิป สิทธิ์ประโคน','02430'],['เด็กชายรัฐศาสตร์ ขนวน','02433'],['เด็กชายจิรพัฒน์ ลอยเลื่อน','02445'],['เด็กหญิงณิชกานต์ สุวรรณเพชร','02461']];
+const S=names.map(()=>({s:'',u:''}));
+function set(i,s){S[i].s=S[i].s===s?'':s; if(S[i].s!=='present')S[i].u=''; draw();}
+function uni(i,u){if(S[i].s!=='present')return;S[i].u=S[i].u===u?'':u;draw();}
+function draw(){
+  document.getElementById('list').innerHTML=names.map((n,i)=>{const x=S[i],ok=x.s==='present';
+    return `<div class="card${x.s?'':' todo'}"><div class="nm"><span class="no">${i+1}</span><span class="name">${n[0]}</span></div>
+    <div class="sub">${n[1]} · มัธยมศึกษาปีที่ 1</div>
+    <div class="row">
+      <button class="b p${x.s==='present'?' on':''}" onclick="set(${i},'present')">มา</button>
+      <button class="b l${x.s==='late'?' on':''}" onclick="set(${i},'late')">ลา</button>
+      <button class="b a${x.s==='absent'?' on':''}" onclick="set(${i},'absent')">ขาด</button>
+      <span class="sp"></span>
+      <button class="b u pass${x.u==='pass'?' on':''}" ${ok?'':'disabled'} onclick="uni(${i},'pass')">👕<small>✓</small></button>
+      <button class="b u fail${x.u==='fail'?' on':''}" ${ok?'':'disabled'} onclick="uni(${i},'fail')">👕<small>✗</small></button>
+    </div></div>`}).join('');
+  const c=k=>S.filter(x=>x.s===k).length;
+  sT.textContent=S.length;sP.textContent=c('present');sL.textContent=c('late');sA.textContent=c('absent');sU.textContent=S.filter(x=>x.u==='fail').length;
+}
+draw();
+</script></body></html>
